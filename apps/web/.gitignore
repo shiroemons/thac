@@ -21,6 +21,7 @@
 .react-router/
 .tanstack/
 .nitro/
+routeTree.gen.ts
 
 # Deployment
 .vercel
