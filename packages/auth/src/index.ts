@@ -1,12 +1,12 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { nanoid } from "nanoid";
 import { db } from "@thac/db";
 import * as schema from "@thac/db/schema/auth";
 
 export const auth = betterAuth({
 	database: drizzleAdapter(db, {
 		provider: "sqlite",
-
 		schema: schema,
 	}),
 	trustedOrigins: [process.env.CORS_ORIGIN || ""],
@@ -14,6 +14,9 @@ export const auth = betterAuth({
 		enabled: true,
 	},
 	advanced: {
+		database: {
+			generateId: () => nanoid(),
+		},
 		defaultCookieAttributes: {
 			sameSite: "none",
 			secure: true,

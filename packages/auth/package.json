@@ -17,6 +17,7 @@
   "dependencies": {
     "better-auth": "catalog:",
     "dotenv": "catalog:",
+    "nanoid": "catalog:",
     "zod": "catalog:",
     "@thac/db": "workspace:*"
   }
