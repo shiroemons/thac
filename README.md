@@ -1,82 +1,74 @@
 # thac
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Start, Hono, and more.
+このプロジェクトは [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack) で作成されました。React、TanStack Start、Honoなどを組み合わせたモダンなTypeScriptスタックです。
 
-## Features
+## 機能
 
-- **TypeScript** - For type safety and improved developer experience
-- **TanStack Start** - SSR framework with TanStack Router
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **shadcn/ui** - Reusable UI components
-- **Hono** - Lightweight, performant server framework
-- **Bun** - Runtime environment
-- **Drizzle** - TypeScript-first ORM
-- **SQLite/Turso** - Database engine
-- **Authentication** - Better-Auth
-- **Biome** - Linting and formatting
-- **Turborepo** - Optimized monorepo build system
+- **TypeScript** - 型安全性と開発者体験の向上
+- **TanStack Start** - TanStack Routerを使用したSSRフレームワーク
+- **TailwindCSS** - 高速なUI開発のためのユーティリティファーストCSS
+- **shadcn/ui** - 再利用可能なUIコンポーネント
+- **Hono** - 軽量で高性能なサーバーフレームワーク
+- **Bun** - ランタイム環境
+- **Drizzle** - TypeScriptファーストのORM
+- **SQLite/Turso** - データベースエンジン
+- **Better-Auth** - 認証
+- **Biome** - Lintとフォーマット
+- **Turborepo** - 最適化されたモノレポビルドシステム
 
-## Getting Started
+## はじめに
 
-First, install the dependencies:
+まず、依存関係をインストールします：
 
 ```bash
 bun install
 ```
-## Database Setup
 
-This project uses SQLite with Drizzle ORM.
+## データベースのセットアップ
 
-1. Start the local SQLite database:
+このプロジェクトはDrizzle ORMとSQLiteを使用しています。
+
+1. ローカルSQLiteデータベースを起動します：
 ```bash
 cd packages/db && bun run db:local
 ```
 
+2. 必要に応じて、`apps/server`ディレクトリの`.env`ファイルを適切な接続情報で更新します。
 
-2. Update your `.env` file in the `apps/server` directory with the appropriate connection details if needed.
-
-3. Apply the schema to your database:
+3. スキーマをデータベースに適用します：
 ```bash
 bun run db:push
 ```
 
-
-Then, run the development server:
+次に、開発サーバーを起動します：
 
 ```bash
 bun run dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+ブラウザで [http://localhost:3001](http://localhost:3001) を開くとWebアプリケーションが表示されます。
+APIは [http://localhost:3000](http://localhost:3000) で動作しています。
 
-
-
-
-
-
-
-## Project Structure
+## プロジェクト構成
 
 ```
 thac/
 ├── apps/
-│   ├── web/         # Frontend application (React + TanStack Start)
-│   └── server/      # Backend API (Hono)
+│   ├── web/         # フロントエンドアプリケーション（React + TanStack Start）
+│   └── server/      # バックエンドAPI（Hono）
 ├── packages/
-│   ├── api/         # API layer / business logic
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
+│   ├── auth/        # 認証設定とロジック
+│   └── db/          # データベーススキーマとクエリ
 ```
 
-## Available Scripts
+## 利用可能なスクリプト
 
-- `bun run dev`: Start all applications in development mode
-- `bun run build`: Build all applications
-- `bun run dev:web`: Start only the web application
-- `bun run dev:server`: Start only the server
-- `bun run check-types`: Check TypeScript types across all apps
-- `bun run db:push`: Push schema changes to database
-- `bun run db:studio`: Open database studio UI
-- `cd packages/db && bun run db:local`: Start the local SQLite database
-- `bun run check`: Run Biome formatting and linting
+- `bun run dev`: 全アプリケーションを開発モードで起動
+- `bun run build`: 全アプリケーションをビルド
+- `bun run dev:web`: Webアプリケーションのみを起動
+- `bun run dev:server`: サーバーのみを起動
+- `bun run check-types`: 全アプリの型チェック
+- `bun run db:push`: スキーマ変更をデータベースにプッシュ
+- `bun run db:studio`: データベーススタジオUIを開く
+- `cd packages/db && bun run db:local`: ローカルSQLiteデータベースを起動
+- `bun run check`: Biomeによるフォーマットとlintを実行
