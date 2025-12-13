@@ -48,3 +48,9 @@ coverage
 .cache
 tmp
 temp
+
+# Force track .claude (override global gitignore)
+!.claude/
+!.claude/CLAUDE.md
+!CLAUDE.md
+.claude/settings.local.json
