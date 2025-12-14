@@ -64,7 +64,9 @@ export default function AdminLoginForm() {
 
 	return (
 		<div className="mx-auto mt-10 w-full max-w-md p-6">
-			<h1 className="mb-6 text-center font-bold text-3xl">管理者ログイン</h1>
+			<h1 className="mb-6 text-center font-bold text-3xl text-slate-900">
+				管理者ログイン
+			</h1>
 
 			<form
 				onSubmit={(e) => {
@@ -81,7 +83,9 @@ export default function AdminLoginForm() {
 								<form.Field name="email">
 									{(field) => (
 										<div className="space-y-2">
-											<Label htmlFor={field.name}>メールアドレス</Label>
+											<Label htmlFor={field.name} className="text-slate-700">
+												メールアドレス
+											</Label>
 											<Input
 												id={field.name}
 												name={field.name}
@@ -90,6 +94,7 @@ export default function AdminLoginForm() {
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.value)}
 												disabled={isSubmitting}
+												className="border-slate-300 text-slate-900"
 											/>
 											{field.state.meta.errors.map((error) => (
 												<p
@@ -108,7 +113,9 @@ export default function AdminLoginForm() {
 								<form.Field name="password">
 									{(field) => (
 										<div className="space-y-2">
-											<Label htmlFor={field.name}>パスワード</Label>
+											<Label htmlFor={field.name} className="text-slate-700">
+												パスワード
+											</Label>
 											<Input
 												id={field.name}
 												name={field.name}
@@ -117,6 +124,7 @@ export default function AdminLoginForm() {
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.value)}
 												disabled={isSubmitting}
+												className="border-slate-300 text-slate-900"
 											/>
 											{field.state.meta.errors.map((error) => (
 												<p
@@ -147,7 +155,7 @@ export default function AdminLoginForm() {
 						return (
 							<Button
 								type="submit"
-								className="w-full"
+								className="w-full bg-slate-900 text-white hover:bg-slate-800"
 								disabled={isEmpty || !canSubmit || isSubmitting}
 							>
 								{isSubmitting ? "ログイン中..." : "ログイン"}
