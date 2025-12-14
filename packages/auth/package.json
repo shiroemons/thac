@@ -9,7 +9,9 @@
 		}
 	},
 	"type": "module",
-	"scripts": {},
+	"scripts": {
+		"test": "bun test"
+	},
 	"devDependencies": {
 		"typescript": "catalog:",
 		"@thac/config": "workspace:*"
