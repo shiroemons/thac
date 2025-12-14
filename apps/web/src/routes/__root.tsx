@@ -3,6 +3,7 @@ import {
 	HeadContent,
 	Outlet,
 	Scripts,
+	useLocation,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Toaster } from "@/components/ui/sonner";
@@ -37,6 +38,9 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 });
 
 function RootDocument() {
+	const location = useLocation();
+	const isAdminRoute = location.pathname.startsWith("/admin");
+
 	return (
 		<html lang="en" className="dark">
 			<head>
@@ -44,7 +48,7 @@ function RootDocument() {
 			</head>
 			<body>
 				<div className="grid h-svh grid-rows-[auto_1fr]">
-					<Header />
+					{!isAdminRoute && <Header />}
 					<Outlet />
 				</div>
 				<Toaster richColors />

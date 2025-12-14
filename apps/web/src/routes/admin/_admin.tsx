@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import AdminHeader from "@/components/admin-header";
 import ForbiddenPage from "@/components/forbidden-page";
 import { authClient } from "@/lib/auth-client";
 
@@ -33,11 +34,16 @@ export const Route = createFileRoute("/admin/_admin")({
 });
 
 function AdminLayout() {
-	const { isForbidden } = Route.useRouteContext();
+	const { user, isForbidden } = Route.useRouteContext();
 
 	if (isForbidden) {
 		return <ForbiddenPage />;
 	}
 
-	return <Outlet />;
+	return (
+		<>
+			<AdminHeader user={user} />
+			<Outlet />
+		</>
+	);
 }
