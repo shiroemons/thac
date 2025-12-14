@@ -5,7 +5,8 @@
 	"scripts": {
 		"build": "vite build",
 		"serve": "vite preview",
-		"dev": "vite dev --port=3001"
+		"dev": "vite dev --port=3001",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"radix-ui": "^1.4.2",
@@ -35,17 +36,18 @@
 		"@thac/auth": "workspace:*"
 	},
 	"devDependencies": {
+		"@happy-dom/global-registrator": "^20.0.11",
+		"@tanstack/react-query-devtools": "^5.91.1",
 		"@tanstack/react-router-devtools": "^1.141.1",
 		"@testing-library/dom": "^10.4.0",
 		"@testing-library/react": "^16.2.0",
+		"@thac/config": "workspace:*",
 		"@types/react": "19.2.7",
 		"@types/react-dom": "19.2.3",
 		"@vitejs/plugin-react": "^5.0.4",
 		"jsdom": "^26.0.0",
-		"vite": "^7.0.2",
-		"web-vitals": "^5.0.3",
-		"@tanstack/react-query-devtools": "^5.91.1",
 		"typescript": "catalog:",
-		"@thac/config": "workspace:*"
+		"vite": "^7.0.2",
+		"web-vitals": "^5.0.3"
 	}
 }
