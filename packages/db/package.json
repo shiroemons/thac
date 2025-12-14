@@ -16,6 +16,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:studio": "drizzle-kit studio",
 		"db:migrate": "drizzle-kit migrate",
+		"db:seed": "bun run src/seed-master.ts",
 		"test": "bun test"
 	},
 	"devDependencies": {
@@ -24,10 +25,11 @@
 		"@thac/config": "workspace:*"
 	},
 	"dependencies": {
-		"drizzle-orm": "^0.45.1",
 		"@libsql/client": "catalog:",
-		"libsql": "catalog:",
 		"dotenv": "catalog:",
+		"drizzle-orm": "^0.45.1",
+		"drizzle-zod": "^0.8.3",
+		"libsql": "catalog:",
 		"zod": "catalog:"
 	}
 }
