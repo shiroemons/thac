@@ -1,45 +1,45 @@
 {
-  "name": "thac",
-  "private": true,
-  "type": "module",
-  "workspaces": {
-    "packages": [
-      "apps/*",
-      "packages/*"
-    ],
-    "catalog": {
-      "dotenv": "^17.2.2",
-      "zod": "^4.1.13",
-      "typescript": "^5",
-      "@types/bun": "^1.3.4",
-      "better-auth": "1.4.5",
-      "@libsql/client": "0.15.15",
-      "libsql": "0.5.22",
-      "nanoid": "^5.1.6"
-    }
-  },
-  "scripts": {
-    "check": "biome check --write .",
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "check-types": "turbo check-types",
-    "dev:native": "turbo -F native dev",
-    "dev:web": "turbo -F web dev",
-    "dev:server": "turbo -F server dev",
-    "db:push": "turbo -F @thac/db db:push",
-    "db:studio": "turbo -F @thac/db db:studio",
-    "db:generate": "turbo -F @thac/db db:generate",
-    "db:migrate": "turbo -F @thac/db db:migrate"
-  },
-  "dependencies": {
-    "dotenv": "catalog:",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "turbo": "^2.5.4",
-    "@biomejs/biome": "^2.2.0",
-    "typescript": "catalog:",
-    "@types/bun": "catalog:"
-  },
-  "packageManager": "bun@1.2.15"
+	"name": "thac",
+	"private": true,
+	"type": "module",
+	"workspaces": {
+		"packages": [
+			"apps/*",
+			"packages/*"
+		],
+		"catalog": {
+			"dotenv": "^17.2.2",
+			"zod": "^4.1.13",
+			"typescript": "^5",
+			"@types/bun": "^1.3.4",
+			"better-auth": "1.4.5",
+			"@libsql/client": "0.15.15",
+			"libsql": "0.5.22",
+			"nanoid": "^5.1.6"
+		}
+	},
+	"scripts": {
+		"check": "biome check --write .",
+		"dev": "turbo dev",
+		"build": "turbo build",
+		"check-types": "turbo check-types",
+		"dev:native": "turbo -F native dev",
+		"dev:web": "turbo -F web dev",
+		"dev:server": "turbo -F server dev",
+		"db:push": "turbo -F @thac/db db:push",
+		"db:studio": "turbo -F @thac/db db:studio",
+		"db:generate": "turbo -F @thac/db db:generate",
+		"db:migrate": "turbo -F @thac/db db:migrate"
+	},
+	"dependencies": {
+		"dotenv": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"turbo": "^2.5.4",
+		"@biomejs/biome": "^2.2.0",
+		"typescript": "catalog:",
+		"@types/bun": "catalog:"
+	},
+	"packageManager": "bun@1.2.15"
 }
