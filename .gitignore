@@ -39,6 +39,10 @@ lerna-debug.log*
 # Better-T-Stack
 .alchemy
 
+# Local database
+local.db
+local.db-*
+
 # Testing
 coverage
 .nyc_output
