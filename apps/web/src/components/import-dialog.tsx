@@ -1,6 +1,14 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import type { ImportResult } from "@/lib/api-client";
 
@@ -59,61 +67,51 @@ export function ImportDialog({
 		}
 	};
 
-	if (!isOpen) {
-		return (
-			<Button variant="outline" onClick={() => setIsOpen(true)}>
-				インポート
-			</Button>
-		);
-	}
-
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-			<Card className="w-full max-w-md">
-				<CardHeader>
-					<CardTitle>{title}</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-4">
-						<div>
-							<Input
-								ref={fileInputRef}
-								type="file"
-								accept=".csv,.json"
-								onChange={handleFileChange}
-							/>
-							<p className="mt-1 text-slate-500 text-sm">
-								CSV または JSON ファイルをアップロードしてください
+		<Dialog open={isOpen} onOpenChange={setIsOpen}>
+			<DialogTrigger asChild>
+				<Button variant="outline">インポート</Button>
+			</DialogTrigger>
+			<DialogContent className="sm:max-w-[425px]">
+				<DialogHeader>
+					<DialogTitle>{title}</DialogTitle>
+					<DialogDescription>
+						CSV または JSON ファイルをアップロードしてください
+					</DialogDescription>
+				</DialogHeader>
+				<div className="grid gap-4 py-4">
+					<Input
+						ref={fileInputRef}
+						type="file"
+						accept=".csv,.json"
+						onChange={handleFileChange}
+					/>
+
+					{error && (
+						<div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
+							{error}
+						</div>
+					)}
+
+					{result && (
+						<div className="rounded-md bg-green-500/10 p-3 text-green-600 text-sm">
+							<p className="font-medium">インポートが完了しました</p>
+							<p className="mt-1">
+								作成: {result.created}件 / 更新: {result.updated}件 / 合計:{" "}
+								{result.total}件
 							</p>
 						</div>
-
-						{error && (
-							<div className="rounded bg-red-100 p-3 text-red-700 text-sm">
-								{error}
-							</div>
-						)}
-
-						{result && (
-							<div className="rounded bg-green-100 p-3 text-green-700 text-sm">
-								<p>インポートが完了しました</p>
-								<p>
-									作成: {result.created}件 / 更新: {result.updated}件 / 合計:{" "}
-									{result.total}件
-								</p>
-							</div>
-						)}
-
-						<div className="flex justify-end gap-2">
-							<Button variant="outline" onClick={handleClose}>
-								閉じる
-							</Button>
-							<Button onClick={handleImport} disabled={!file || loading}>
-								{loading ? "インポート中..." : "インポート"}
-							</Button>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
-		</div>
+					)}
+				</div>
+				<DialogFooter>
+					<Button variant="outline" onClick={handleClose}>
+						閉じる
+					</Button>
+					<Button onClick={handleImport} disabled={!file || loading}>
+						{loading ? "インポート中..." : "インポート"}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }

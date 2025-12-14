@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -13,6 +21,7 @@ export interface FieldConfig {
 
 interface CreateDialogProps {
 	title: string;
+	description?: string;
 	fields: FieldConfig[];
 	onCreate: (data: Record<string, string>) => Promise<void>;
 	onSuccess?: () => void;
@@ -20,6 +29,7 @@ interface CreateDialogProps {
 
 export function CreateDialog({
 	title,
+	description,
 	fields,
 	onCreate,
 	onSuccess,
@@ -78,52 +88,49 @@ export function CreateDialog({
 		setError(null);
 	};
 
-	if (!isOpen) {
-		return <Button onClick={() => setIsOpen(true)}>新規作成</Button>;
-	}
-
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-			<Card className="w-full max-w-md">
-				<CardHeader>
-					<CardTitle>{title}</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-4">
-						{fields.map((field) => (
-							<div key={field.name}>
-								<Label htmlFor={field.name}>
-									{field.label}
-									{field.required && (
-										<span className="ml-1 text-red-500">*</span>
-									)}
-								</Label>
-								<Input
-									id={field.name}
-									placeholder={field.placeholder}
-									value={formData[field.name]}
-									onChange={(e) => handleChange(field.name, e.target.value)}
-								/>
-							</div>
-						))}
-
-						{error && (
-							<div className="rounded bg-red-100 p-3 text-red-700 text-sm">
-								{error}
-							</div>
-						)}
-
-						<div className="flex justify-end gap-2">
-							<Button variant="outline" onClick={handleClose}>
-								キャンセル
-							</Button>
-							<Button onClick={handleCreate} disabled={loading}>
-								{loading ? "作成中..." : "作成"}
-							</Button>
+		<Dialog open={isOpen} onOpenChange={setIsOpen}>
+			<DialogTrigger asChild>
+				<Button>新規作成</Button>
+			</DialogTrigger>
+			<DialogContent className="sm:max-w-[425px]">
+				<DialogHeader>
+					<DialogTitle>{title}</DialogTitle>
+					{description && <DialogDescription>{description}</DialogDescription>}
+				</DialogHeader>
+				<div className="grid gap-4 py-4">
+					{fields.map((field) => (
+						<div key={field.name} className="grid gap-2">
+							<Label htmlFor={field.name}>
+								{field.label}
+								{field.required && (
+									<span className="ml-1 text-destructive">*</span>
+								)}
+							</Label>
+							<Input
+								id={field.name}
+								placeholder={field.placeholder}
+								value={formData[field.name]}
+								onChange={(e) => handleChange(field.name, e.target.value)}
+							/>
 						</div>
-					</div>
-				</CardContent>
-			</Card>
-		</div>
+					))}
+
+					{error && (
+						<div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
+							{error}
+						</div>
+					)}
+				</div>
+				<DialogFooter>
+					<Button variant="outline" onClick={handleClose}>
+						キャンセル
+					</Button>
+					<Button onClick={handleCreate} disabled={loading}>
+						{loading ? "作成中..." : "作成"}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
 	);
 }
