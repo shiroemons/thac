@@ -12,7 +12,13 @@ interface AdminHeaderProps {
 	} | null;
 }
 
-const navLinks = [{ to: "/admin", label: "ダッシュボード" }] as const;
+const navLinks = [
+	{ to: "/admin", label: "ダッシュボード" },
+	{ to: "/admin/master/platforms", label: "プラットフォーム" },
+	{ to: "/admin/master/alias-types", label: "別名義種別" },
+	{ to: "/admin/master/credit-roles", label: "クレジット役割" },
+	{ to: "/admin/master/official-work-categories", label: "公式作品カテゴリ" },
+] as const;
 
 export default function AdminHeader({ user }: AdminHeaderProps) {
 	const navigate = useNavigate();
