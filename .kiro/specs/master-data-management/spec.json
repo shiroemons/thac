@@ -1,9 +1,9 @@
 {
 	"feature_name": "master-data-management",
 	"created_at": "2025-12-14T08:47:00+09:00",
-	"updated_at": "2025-12-14T18:36:00+09:00",
+	"updated_at": "2025-12-15T01:05:00+09:00",
 	"language": "ja",
-	"phase": "tasks-generated",
+	"phase": "implemented",
 	"approvals": {
 		"requirements": {
 			"generated": true,
@@ -18,5 +18,6 @@
 			"approved": true
 		}
 	},
-	"ready_for_implementation": true
+	"ready_for_implementation": true,
+	"implementation_completed": true
 }
