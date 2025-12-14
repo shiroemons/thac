@@ -1,10 +1,10 @@
 import {
 	creditRoles,
 	db,
+	eq,
 	insertCreditRoleSchema,
 	updateCreditRoleSchema,
 } from "@thac/db";
-import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import type { AdminContext } from "../../../middleware/admin-auth";
 
