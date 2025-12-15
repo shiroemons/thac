@@ -56,13 +56,13 @@ function DataTableActionBar({
 						placeholder={searchPlaceholder}
 						value={searchValue}
 						onChange={(e) => onSearchChange(e.target.value)}
-						size="sm"
+						size="md"
 						containerClassName="w-64"
 					/>
 				)}
 				{filterOptions && filterOptions.length > 0 && onFilterChange && (
 					<Select
-						size="sm"
+						size="md"
 						value={filterValue}
 						onChange={(e) => onFilterChange(e.target.value)}
 						className="w-44"

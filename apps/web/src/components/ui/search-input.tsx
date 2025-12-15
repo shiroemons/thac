@@ -37,7 +37,7 @@ function SearchInput({
 		>
 			<Search
 				className={cn(
-					"-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 text-base-content/50",
+					"-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 z-10 text-base-content/50",
 					iconSizeClasses[size],
 				)}
 			/>
