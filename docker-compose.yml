@@ -8,10 +8,9 @@ services:
     volumes:
       - .:/app
       - node_modules:/app/node_modules
+    env_file:
+      - apps/server/.env
     environment:
-      - DATABASE_URL=file:/app/packages/db/local.db
-      - DATABASE_AUTH_TOKEN=
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-dev-secret-key-for-local-development}
       - BETTER_AUTH_URL=http://localhost:3000
       - CORS_ORIGIN=http://localhost:3001
     healthcheck:
