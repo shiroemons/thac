@@ -1,0 +1,47 @@
+services:
+  server:
+    image: oven/bun:1.2.15
+    working_dir: /app
+    command: sh -c "bun install && bun run --hot apps/server/src/index.ts"
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    env_file:
+      - apps/server/.env
+    environment:
+      - BETTER_AUTH_URL=http://localhost:3000
+      - CORS_ORIGIN=http://localhost:3001
+    healthcheck:
+      test: ["CMD", "bun", "-e", "await fetch('http://localhost:3000').catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    image: oven/bun:1.2.15
+    working_dir: /app
+    command: sh -c "bun install && cd apps/web && bunx vite dev --port=3001 --host"
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    environment:
+      - VITE_SERVER_URL=http://localhost:3000
+    healthcheck:
+      test: ["CMD", "bun", "-e", "await fetch('http://localhost:3001').catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+
+volumes:
+  node_modules:
