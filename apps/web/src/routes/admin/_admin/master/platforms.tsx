@@ -135,7 +135,7 @@ function PlatformsPage() {
 				description={`${serverTotal}件のプラットフォームが登録されています`}
 				breadcrumbs={[
 					{ label: "ダッシュボード", href: "/admin" },
-					{ label: "マスタ管理", href: "/admin" },
+					{ label: "マスタ管理" },
 					{ label: "プラットフォーム" },
 				]}
 			/>

@@ -115,7 +115,7 @@ function CreditRolesPage() {
 				description={`${serverTotal}件のクレジット役割が登録されています`}
 				breadcrumbs={[
 					{ label: "ダッシュボード", href: "/admin" },
-					{ label: "マスタ管理", href: "/admin" },
+					{ label: "マスタ管理" },
 					{ label: "クレジット役割" },
 				]}
 			/>

@@ -115,7 +115,7 @@ function AliasTypesPage() {
 				description={`${serverTotal}件の別名義種別が登録されています`}
 				breadcrumbs={[
 					{ label: "ダッシュボード", href: "/admin" },
-					{ label: "マスタ管理", href: "/admin" },
+					{ label: "マスタ管理" },
 					{ label: "別名義種別" },
 				]}
 			/>

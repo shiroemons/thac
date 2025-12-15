@@ -123,7 +123,7 @@ function OfficialWorkCategoriesPage() {
 				description={`${serverTotal}件の公式作品カテゴリが登録されています`}
 				breadcrumbs={[
 					{ label: "ダッシュボード", href: "/admin" },
-					{ label: "マスタ管理", href: "/admin" },
+					{ label: "マスタ管理" },
 					{ label: "公式作品カテゴリ" },
 				]}
 			/>
