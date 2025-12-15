@@ -10,8 +10,11 @@ type ButtonVariant =
 	| "ghost"
 	| "link"
 	| "outline"
-	| "destructive";
-type ButtonSize = "xs" | "sm" | "md" | "lg";
+	| "destructive"
+	| "success"
+	| "warning"
+	| "info";
+type ButtonSize = "xs" | "sm" | "md" | "lg" | "icon";
 
 const variantClasses: Record<ButtonVariant, string> = {
 	default: "",
@@ -22,6 +25,9 @@ const variantClasses: Record<ButtonVariant, string> = {
 	link: "btn-link",
 	outline: "btn-outline",
 	destructive: "btn-error",
+	success: "btn-success",
+	warning: "btn-warning",
+	info: "btn-info",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -29,6 +35,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 	sm: "btn-sm",
 	md: "",
 	lg: "btn-lg",
+	icon: "btn-square btn-sm",
 };
 
 interface ButtonProps extends React.ComponentProps<"button"> {

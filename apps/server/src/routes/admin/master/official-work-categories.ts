@@ -1,8 +1,11 @@
 import {
+	count,
 	db,
 	eq,
 	insertOfficialWorkCategorySchema,
+	like,
 	officialWorkCategories,
+	or,
 	updateOfficialWorkCategorySchema,
 } from "@thac/db";
 import { Hono } from "hono";
@@ -10,16 +13,44 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 
 const officialWorkCategoriesRouter = new Hono<AdminContext>();
 
-// 一覧取得
+// 一覧取得（ページネーション、検索対応）
 officialWorkCategoriesRouter.get("/", async (c) => {
-	const data = await db
-		.select()
-		.from(officialWorkCategories)
-		.orderBy(officialWorkCategories.code);
+	const page = Number(c.req.query("page")) || 1;
+	const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
+	const search = c.req.query("search");
+
+	const offset = (page - 1) * limit;
+
+	// 条件を構築
+	const whereCondition = search
+		? or(
+				like(officialWorkCategories.code, `%${search}%`),
+				like(officialWorkCategories.name, `%${search}%`),
+			)
+		: undefined;
+
+	// データ取得
+	const [data, totalResult] = await Promise.all([
+		db
+			.select()
+			.from(officialWorkCategories)
+			.where(whereCondition)
+			.limit(limit)
+			.offset(offset)
+			.orderBy(officialWorkCategories.code),
+		db
+			.select({ count: count() })
+			.from(officialWorkCategories)
+			.where(whereCondition),
+	]);
+
+	const total = totalResult[0]?.count ?? 0;
 
 	return c.json({
 		data,
-		total: data.length,
+		total,
+		page,
+		limit,
 	});
 });
 

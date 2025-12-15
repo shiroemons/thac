@@ -9,7 +9,10 @@ type BadgeVariant =
 	| "accent"
 	| "ghost"
 	| "outline"
-	| "destructive";
+	| "destructive"
+	| "success"
+	| "warning"
+	| "info";
 
 const variantClasses: Record<BadgeVariant, string> = {
 	default: "",
@@ -19,6 +22,9 @@ const variantClasses: Record<BadgeVariant, string> = {
 	ghost: "badge-ghost",
 	outline: "badge-outline",
 	destructive: "badge-error",
+	success: "badge-success",
+	warning: "badge-warning",
+	info: "badge-info",
 };
 
 interface BadgeProps extends React.ComponentProps<"span"> {

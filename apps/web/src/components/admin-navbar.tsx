@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { LogOut, Menu } from "lucide-react";
+import { LogOut, Menu, PanelLeft } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { ThemeSwitcher } from "./theme-switcher";
@@ -11,9 +11,10 @@ interface AdminNavbarProps {
 		email: string;
 		role: string;
 	} | null;
+	onToggleSidebar?: () => void;
 }
 
-export function AdminNavbar({ user }: AdminNavbarProps) {
+export function AdminNavbar({ user, onToggleSidebar }: AdminNavbarProps) {
 	const navigate = useNavigate();
 
 	const handleLogout = async () => {
@@ -40,7 +41,15 @@ export function AdminNavbar({ user }: AdminNavbarProps) {
 				>
 					<Menu className="size-5" />
 				</label>
-				<span className="hidden font-bold text-lg lg:block">管理画面</span>
+				{/* Desktop sidebar toggle button */}
+				<button
+					type="button"
+					onClick={onToggleSidebar}
+					className="btn btn-ghost btn-circle hidden lg:flex"
+					aria-label="サイドバーの表示切替"
+				>
+					<PanelLeft className="size-5" />
+				</button>
 			</div>
 
 			<div className="navbar-end gap-2">

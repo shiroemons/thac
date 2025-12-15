@@ -27,6 +27,14 @@ export interface OfficialWorkCategory {
 	description: string | null;
 }
 
+export interface DashboardStats {
+	users: number;
+	platforms: number;
+	aliasTypes: number;
+	creditRoles: number;
+	officialWorkCategories: number;
+}
+
 export interface PaginatedResponse<T> {
 	data: T[];
 	total: number;
@@ -57,11 +65,17 @@ async function fetchWithAuth<T>(
 
 // Platforms
 export const platformsApi = {
-	list: (params?: { page?: number; limit?: number; category?: string }) => {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		category?: string;
+		search?: string;
+	}) => {
 		const searchParams = new URLSearchParams();
 		if (params?.page) searchParams.set("page", String(params.page));
 		if (params?.limit) searchParams.set("limit", String(params.limit));
 		if (params?.category) searchParams.set("category", params.category);
+		if (params?.search) searchParams.set("search", params.search);
 		const query = searchParams.toString();
 		return fetchWithAuth<PaginatedResponse<Platform>>(
 			`/api/admin/master/platforms${query ? `?${query}` : ""}`,
@@ -90,10 +104,11 @@ export const platformsApi = {
 
 // Alias Types
 export const aliasTypesApi = {
-	list: (params?: { page?: number; limit?: number }) => {
+	list: (params?: { page?: number; limit?: number; search?: string }) => {
 		const searchParams = new URLSearchParams();
 		if (params?.page) searchParams.set("page", String(params.page));
 		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.search) searchParams.set("search", params.search);
 		const query = searchParams.toString();
 		return fetchWithAuth<PaginatedResponse<AliasType>>(
 			`/api/admin/master/alias-types${query ? `?${query}` : ""}`,
@@ -122,10 +137,11 @@ export const aliasTypesApi = {
 
 // Credit Roles
 export const creditRolesApi = {
-	list: (params?: { page?: number; limit?: number }) => {
+	list: (params?: { page?: number; limit?: number; search?: string }) => {
 		const searchParams = new URLSearchParams();
 		if (params?.page) searchParams.set("page", String(params.page));
 		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.search) searchParams.set("search", params.search);
 		const query = searchParams.toString();
 		return fetchWithAuth<PaginatedResponse<CreditRole>>(
 			`/api/admin/master/credit-roles${query ? `?${query}` : ""}`,
@@ -202,10 +218,11 @@ export const importApi = {
 };
 
 export const officialWorkCategoriesApi = {
-	list: (params?: { page?: number; limit?: number }) => {
+	list: (params?: { page?: number; limit?: number; search?: string }) => {
 		const searchParams = new URLSearchParams();
 		if (params?.page) searchParams.set("page", String(params.page));
 		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.search) searchParams.set("search", params.search);
 		const query = searchParams.toString();
 		return fetchWithAuth<PaginatedResponse<OfficialWorkCategory>>(
 			`/api/admin/master/official-work-categories${query ? `?${query}` : ""}`,
@@ -238,4 +255,9 @@ export const officialWorkCategoriesApi = {
 				method: "DELETE",
 			},
 		),
+};
+
+// Stats
+export const statsApi = {
+	get: () => fetchWithAuth<DashboardStats>("/api/admin/stats"),
 };

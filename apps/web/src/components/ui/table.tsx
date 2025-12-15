@@ -20,7 +20,11 @@ function Table({ className, zebra = false, ...props }: TableProps) {
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
 	return (
-		<thead data-slot="table-header" className={cn(className)} {...props} />
+		<thead
+			data-slot="table-header"
+			className={cn("bg-base-200", className)}
+			{...props}
+		/>
 	);
 }
 
@@ -41,7 +45,13 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 }
 
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {
-	return <th data-slot="table-head" className={cn(className)} {...props} />;
+	return (
+		<th
+			data-slot="table-head"
+			className={cn("font-semibold text-base-content", className)}
+			{...props}
+		/>
+	);
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {

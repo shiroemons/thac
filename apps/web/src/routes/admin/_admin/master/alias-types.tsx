@@ -1,11 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
+import { DataTablePagination } from "@/components/admin/data-table-pagination";
+import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { CreateDialog } from "@/components/create-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -13,15 +16,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -30,6 +26,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useDebounce } from "@/hooks/use-debounce";
 import { type AliasType, aliasTypesApi, importApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/_admin/master/alias-types")({
@@ -38,20 +35,33 @@ export const Route = createFileRoute("/admin/_admin/master/alias-types")({
 
 function AliasTypesPage() {
 	const queryClient = useQueryClient();
+
+	// ページネーション・フィルタ状態
 	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(20);
+	const [search, setSearch] = useState("");
+
+	// API呼び出し用にデバウンス（300ms）
+	const debouncedSearch = useDebounce(search, 300);
+
 	const [editingItem, setEditingItem] = useState<AliasType | null>(null);
 	const [editForm, setEditForm] = useState<Partial<AliasType>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
-
-	const limit = 20;
+	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["alias-types", page, limit],
-		queryFn: () => aliasTypesApi.list({ page, limit }),
-		staleTime: 30_000, // 30秒間キャッシュ
+		queryKey: ["alias-types", page, pageSize, debouncedSearch],
+		queryFn: () =>
+			aliasTypesApi.list({
+				page,
+				limit: pageSize,
+				search: debouncedSearch || undefined,
+			}),
+		staleTime: 30_000,
 	});
 
-	const aliasTypes = data?.data ?? [];
+	const items = data?.data ?? [];
 	const total = data?.total ?? 0;
 
 	const invalidateQuery = () => {
@@ -90,168 +100,167 @@ function AliasTypesPage() {
 		}
 	};
 
-	const totalPages = Math.ceil(total / limit);
+	const handlePageChange = (newPage: number) => {
+		setPage(newPage);
+	};
+
+	const handlePageSizeChange = (newPageSize: number) => {
+		setPageSize(newPageSize);
+		setPage(1);
+	};
+
+	const handleSearchChange = (value: string) => {
+		setSearch(value);
+		setPage(1);
+	};
+
 	const displayError =
 		mutationError || (error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto py-6">
-			<Card>
-				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-					<div>
-						<CardTitle className="font-bold text-2xl">別名義種別管理</CardTitle>
-						<p className="text-muted-foreground text-sm">
-							{total}件の別名義種別が登録されています
-						</p>
-					</div>
-					<div className="flex gap-2">
-						<ImportDialog
-							title="別名義種別のインポート"
-							onImport={importApi.aliasTypes}
-							onSuccess={invalidateQuery}
-						/>
-						<CreateDialog
-							title="新規別名義種別"
-							description="新しい別名義種別を登録します"
-							fields={[
-								{
-									name: "code",
-									label: "コード",
-									placeholder: "例: romanization",
-									required: true,
-								},
-								{
-									name: "label",
-									label: "ラベル",
-									placeholder: "例: ローマ字表記",
-									required: true,
-								},
-								{
-									name: "description",
-									label: "説明",
-									placeholder: "例: アーティスト名のローマ字表記",
-								},
-							]}
-							onCreate={handleCreate}
-							onSuccess={invalidateQuery}
-						/>
-					</div>
-				</CardHeader>
-				<CardContent>
-					{displayError && (
-						<div className="mb-4 rounded-md bg-destructive/10 p-3 text-destructive text-sm">
-							{displayError}
-						</div>
-					)}
+			<AdminPageHeader
+				title="別名義種別管理"
+				breadcrumbs={[{ label: "マスタ管理" }, { label: "別名義種別" }]}
+			/>
 
-					{isLoading ? (
-						<div className="space-y-2">
-							{[...Array(5)].map((_, i) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: Loading skeleton
-								<Skeleton key={i} className="h-12 w-full" />
-							))}
-						</div>
-					) : (
-						<>
-							<div className="rounded-md border">
-								<Table>
-									<TableHeader>
-										<TableRow>
-											<TableHead className="w-[150px]">コード</TableHead>
-											<TableHead className="w-[200px]">ラベル</TableHead>
-											<TableHead>説明</TableHead>
-											<TableHead className="w-[70px]" />
+			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
+				<DataTableActionBar
+					className="border-base-300 border-b p-4"
+					searchPlaceholder="ラベルまたはコードで検索..."
+					searchValue={search}
+					onSearchChange={handleSearchChange}
+					primaryAction={{
+						label: "新規作成",
+						onClick: () => setIsCreateDialogOpen(true),
+					}}
+					secondaryActions={[
+						{
+							label: "インポート",
+							icon: <Upload className="mr-2 h-4 w-4" />,
+							onClick: () => setIsImportDialogOpen(true),
+						},
+					]}
+				/>
+
+				{displayError && (
+					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+						{displayError}
+					</div>
+				)}
+
+				{isLoading ? (
+					<DataTableSkeleton
+						rows={5}
+						columns={4}
+						showActionBar={false}
+						showPagination={false}
+					/>
+				) : (
+					<>
+						<Table zebra>
+							<TableHeader>
+								<TableRow className="hover:bg-transparent">
+									<TableHead className="w-[150px]">コード</TableHead>
+									<TableHead className="w-[200px]">ラベル</TableHead>
+									<TableHead>説明</TableHead>
+									<TableHead className="w-[70px]" />
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{items.length === 0 ? (
+									<TableRow>
+										<TableCell
+											colSpan={4}
+											className="h-24 text-center text-base-content/50"
+										>
+											データがありません
+										</TableCell>
+									</TableRow>
+								) : (
+									items.map((a) => (
+										<TableRow key={a.code}>
+											<TableCell className="font-mono text-sm">
+												{a.code}
+											</TableCell>
+											<TableCell className="font-medium">{a.label}</TableCell>
+											<TableCell className="text-base-content/70">
+												{a.description || "-"}
+											</TableCell>
+											<TableCell>
+												<div className="flex items-center gap-1">
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => {
+															setEditingItem(a);
+															setEditForm({
+																label: a.label,
+																description: a.description,
+															});
+														}}
+													>
+														<Pencil className="h-4 w-4" />
+														<span className="sr-only">編集</span>
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="text-error hover:text-error"
+														onClick={() => handleDelete(a.code)}
+													>
+														<Trash2 className="h-4 w-4" />
+														<span className="sr-only">削除</span>
+													</Button>
+												</div>
+											</TableCell>
 										</TableRow>
-									</TableHeader>
-									<TableBody>
-										{aliasTypes.length === 0 ? (
-											<TableRow>
-												<TableCell
-													colSpan={4}
-													className="h-24 text-center text-muted-foreground"
-												>
-													データがありません
-												</TableCell>
-											</TableRow>
-										) : (
-											aliasTypes.map((a) => (
-												<TableRow key={a.code}>
-													<TableCell className="font-mono text-sm">
-														{a.code}
-													</TableCell>
-													<TableCell className="font-medium">
-														{a.label}
-													</TableCell>
-													<TableCell className="text-muted-foreground">
-														{a.description || "-"}
-													</TableCell>
-													<TableCell>
-														<DropdownMenu>
-															<DropdownMenuTrigger asChild>
-																<Button variant="ghost" size="icon">
-																	<MoreHorizontal className="h-4 w-4" />
-																	<span className="sr-only">
-																		メニューを開く
-																	</span>
-																</Button>
-															</DropdownMenuTrigger>
-															<DropdownMenuContent align="end">
-																<DropdownMenuItem
-																	onClick={() => {
-																		setEditingItem(a);
-																		setEditForm({
-																			label: a.label,
-																			description: a.description,
-																		});
-																	}}
-																>
-																	<Pencil className="mr-2 h-4 w-4" />
-																	編集
-																</DropdownMenuItem>
-																<DropdownMenuItem
-																	className="text-destructive"
-																	onClick={() => handleDelete(a.code)}
-																>
-																	<Trash2 className="mr-2 h-4 w-4" />
-																	削除
-																</DropdownMenuItem>
-															</DropdownMenuContent>
-														</DropdownMenu>
-													</TableCell>
-												</TableRow>
-											))
-										)}
-									</TableBody>
-								</Table>
-							</div>
+									))
+								)}
+							</TableBody>
+						</Table>
 
-							{totalPages > 1 && (
-								<div className="mt-4 flex items-center justify-center gap-2">
-									<Button
-										size="sm"
-										variant="outline"
-										disabled={page === 1}
-										onClick={() => setPage(page - 1)}
-									>
-										前へ
-									</Button>
-									<span className="text-muted-foreground text-sm">
-										{page} / {totalPages}
-									</span>
-									<Button
-										size="sm"
-										variant="outline"
-										disabled={page === totalPages}
-										onClick={() => setPage(page + 1)}
-									>
-										次へ
-									</Button>
-								</div>
-							)}
-						</>
-					)}
-				</CardContent>
-			</Card>
+						<div className="border-base-300 border-t p-4">
+							<DataTablePagination
+								page={page}
+								pageSize={pageSize}
+								total={total}
+								onPageChange={handlePageChange}
+								onPageSizeChange={handlePageSizeChange}
+							/>
+						</div>
+					</>
+				)}
+			</div>
+
+			{/* 新規作成ダイアログ */}
+			<CreateDialog
+				title="新規別名義種別"
+				description="新しい別名義種別を登録します"
+				fields={[
+					{
+						name: "code",
+						label: "コード",
+						placeholder: "例: romanization",
+						required: true,
+					},
+					{
+						name: "label",
+						label: "ラベル",
+						placeholder: "例: ローマ字表記",
+						required: true,
+					},
+					{
+						name: "description",
+						label: "説明",
+						placeholder: "例: アーティスト名のローマ字表記",
+					},
+				]}
+				onCreate={handleCreate}
+				onSuccess={invalidateQuery}
+				open={isCreateDialogOpen}
+				onOpenChange={setIsCreateDialogOpen}
+			/>
 
 			{/* 編集ダイアログ */}
 			<Dialog
@@ -296,6 +305,15 @@ function AliasTypesPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* インポートダイアログ */}
+			<ImportDialog
+				title="別名義種別のインポート"
+				onImport={importApi.aliasTypes}
+				onSuccess={invalidateQuery}
+				open={isImportDialogOpen}
+				onOpenChange={setIsImportDialogOpen}
+			/>
 		</div>
 	);
 }
