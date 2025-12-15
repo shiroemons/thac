@@ -24,7 +24,7 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 ### UI Components (`apps/web/src/components/`)
 **Location**: `/apps/web/src/components/`
 **Purpose**: Reactコンポーネント
-**Example**: `components/ui/`（shadcn/ui）、カスタムコンポーネント
+**Example**: `components/ui/`（daisyUIベースのカスタムコンポーネント）、カスタムコンポーネント
 
 ### Database Schema (`packages/db/src/schema/`)
 **Location**: `/packages/db/src/schema/`

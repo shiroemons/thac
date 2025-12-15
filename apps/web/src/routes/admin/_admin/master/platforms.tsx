@@ -1,6 +1,7 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { CreateDialog } from "@/components/create-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -44,41 +45,33 @@ const categoryColors: Record<string, string> = {
 };
 
 function PlatformsPage() {
-	const [platforms, setPlatforms] = useState<Platform[]>([]);
-	const [total, setTotal] = useState(0);
+	const queryClient = useQueryClient();
 	const [page, setPage] = useState(1);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
 	const [editingPlatform, setEditingPlatform] = useState<Platform | null>(null);
 	const [editForm, setEditForm] = useState<Partial<Platform>>({});
+	const [mutationError, setMutationError] = useState<string | null>(null);
 
 	const limit = 20;
 
-	const loadPlatforms = useCallback(async (p: number) => {
-		setLoading(true);
-		setError(null);
-		try {
-			const res = await platformsApi.list({ page: p, limit });
-			setPlatforms(res.data);
-			setTotal(res.total);
-			setPage(p);
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "読み込みに失敗しました");
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+	const { data, isLoading, error } = useQuery({
+		queryKey: ["platforms", page, limit],
+		queryFn: () => platformsApi.list({ page, limit }),
+		staleTime: 30_000,
+	});
 
-	useEffect(() => {
-		loadPlatforms(1);
-	}, [loadPlatforms]);
+	const platforms = data?.data ?? [];
+	const total = data?.total ?? 0;
 
-	const handleCreate = async (data: Record<string, string>) => {
+	const invalidateQuery = () => {
+		queryClient.invalidateQueries({ queryKey: ["platforms"] });
+	};
+
+	const handleCreate = async (formData: Record<string, string>) => {
 		await platformsApi.create({
-			code: data.code,
-			name: data.name,
-			category: data.category || null,
-			urlPattern: data.urlPattern || null,
+			code: formData.code,
+			name: formData.name,
+			category: formData.category || null,
+			urlPattern: formData.urlPattern || null,
 		});
 	};
 
@@ -91,9 +84,9 @@ function PlatformsPage() {
 				urlPattern: editForm.urlPattern,
 			});
 			setEditingPlatform(null);
-			loadPlatforms(page);
+			invalidateQuery();
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "更新に失敗しました");
+			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
 		}
 	};
 
@@ -101,13 +94,15 @@ function PlatformsPage() {
 		if (!confirm(`「${code}」を削除しますか？`)) return;
 		try {
 			await platformsApi.delete(code);
-			loadPlatforms(page);
+			invalidateQuery();
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "削除に失敗しました");
+			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
 		}
 	};
 
 	const totalPages = Math.ceil(total / limit);
+	const displayError =
+		mutationError || (error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto py-6">
@@ -125,7 +120,7 @@ function PlatformsPage() {
 						<ImportDialog
 							title="プラットフォームのインポート"
 							onImport={importApi.platforms}
-							onSuccess={() => loadPlatforms(page)}
+							onSuccess={invalidateQuery}
 						/>
 						<CreateDialog
 							title="新規プラットフォーム"
@@ -155,18 +150,18 @@ function PlatformsPage() {
 								},
 							]}
 							onCreate={handleCreate}
-							onSuccess={() => loadPlatforms(page)}
+							onSuccess={invalidateQuery}
 						/>
 					</div>
 				</CardHeader>
 				<CardContent>
-					{error && (
+					{displayError && (
 						<div className="mb-4 rounded-md bg-destructive/10 p-3 text-destructive text-sm">
-							{error}
+							{displayError}
 						</div>
 					)}
 
-					{loading ? (
+					{isLoading ? (
 						<div className="space-y-2">
 							{[...Array(5)].map((_, i) => (
 								// biome-ignore lint/suspicious/noArrayIndexKey: Loading skeleton
@@ -267,7 +262,7 @@ function PlatformsPage() {
 										size="sm"
 										variant="outline"
 										disabled={page === 1}
-										onClick={() => loadPlatforms(page - 1)}
+										onClick={() => setPage(page - 1)}
 									>
 										前へ
 									</Button>
@@ -278,7 +273,7 @@ function PlatformsPage() {
 										size="sm"
 										variant="outline"
 										disabled={page === totalPages}
-										onClick={() => loadPlatforms(page + 1)}
+										onClick={() => setPage(page + 1)}
 									>
 										次へ
 									</Button>

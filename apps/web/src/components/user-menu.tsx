@@ -1,14 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { authClient } from "@/lib/auth-client";
-import { Button } from "./ui/button";
 import { Skeleton } from "./ui/skeleton";
 
 export default function UserMenu() {
@@ -21,41 +12,40 @@ export default function UserMenu() {
 
 	if (!session) {
 		return (
-			<Button variant="outline" asChild>
-				<Link to="/login">Sign In</Link>
-			</Button>
+			<Link to="/login" className="btn btn-outline btn-sm">
+				Sign In
+			</Link>
 		);
 	}
 
+	const handleSignOut = () => {
+		authClient.signOut({
+			fetchOptions: {
+				onSuccess: () => {
+					navigate({
+						to: "/",
+					});
+				},
+			},
+		});
+	};
+
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button variant="outline">{session.user.name}</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent className="bg-card">
-				<DropdownMenuLabel>My Account</DropdownMenuLabel>
-				<DropdownMenuSeparator />
-				<DropdownMenuItem>{session.user.email}</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Button
-						variant="destructive"
-						className="w-full"
-						onClick={() => {
-							authClient.signOut({
-								fetchOptions: {
-									onSuccess: () => {
-										navigate({
-											to: "/",
-										});
-									},
-								},
-							});
-						}}
-					>
+		<div className="dropdown dropdown-end">
+			<div tabIndex={0} role="button" className="btn btn-ghost">
+				{session.user.name}
+			</div>
+			<ul
+				role="menu"
+				className="dropdown-content menu z-50 w-52 rounded-box bg-base-100 p-2 shadow-lg"
+			>
+				<li className="menu-title">{session.user.email}</li>
+				<li>
+					<button type="button" onClick={handleSignOut} className="text-error">
 						Sign Out
-					</Button>
-				</DropdownMenuItem>
-			</DropdownMenuContent>
-		</DropdownMenu>
+					</button>
+				</li>
+			</ul>
+		</div>
 	);
 }

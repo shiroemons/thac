@@ -1,5 +1,5 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import AdminHeader from "@/components/admin-header";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { AdminLayout } from "@/components/admin-layout";
 import ForbiddenPage from "@/components/forbidden-page";
 import { getAdminUser } from "@/functions/get-admin-user";
 
@@ -42,20 +42,15 @@ export const Route = createFileRoute("/admin/_admin")({
 			});
 		}
 	},
-	component: AdminLayout,
+	component: AdminLayoutWrapper,
 });
 
-function AdminLayout() {
+function AdminLayoutWrapper() {
 	const { user, isForbidden } = Route.useRouteContext();
 
 	if (isForbidden) {
 		return <ForbiddenPage />;
 	}
 
-	return (
-		<>
-			<AdminHeader user={user} />
-			<Outlet />
-		</>
-	);
+	return <AdminLayout user={user} />;
 }

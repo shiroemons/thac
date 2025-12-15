@@ -1,6 +1,7 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { CreateDialog } from "@/components/create-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
@@ -42,42 +43,34 @@ export const Route = createFileRoute(
 });
 
 function OfficialWorkCategoriesPage() {
-	const [categories, setCategories] = useState<OfficialWorkCategory[]>([]);
-	const [total, setTotal] = useState(0);
+	const queryClient = useQueryClient();
 	const [page, setPage] = useState(1);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
 	const [editingItem, setEditingItem] = useState<OfficialWorkCategory | null>(
 		null,
 	);
 	const [editForm, setEditForm] = useState<Partial<OfficialWorkCategory>>({});
+	const [mutationError, setMutationError] = useState<string | null>(null);
 
 	const limit = 20;
 
-	const loadCategories = useCallback(async (p: number) => {
-		setLoading(true);
-		setError(null);
-		try {
-			const res = await officialWorkCategoriesApi.list({ page: p, limit });
-			setCategories(res.data);
-			setTotal(res.total);
-			setPage(p);
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "読み込みに失敗しました");
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+	const { data, isLoading, error } = useQuery({
+		queryKey: ["official-work-categories", page, limit],
+		queryFn: () => officialWorkCategoriesApi.list({ page, limit }),
+		staleTime: 30_000,
+	});
 
-	useEffect(() => {
-		loadCategories(1);
-	}, [loadCategories]);
+	const categories = data?.data ?? [];
+	const total = data?.total ?? 0;
 
-	const handleCreate = async (data: Record<string, string>) => {
+	const invalidateQuery = () => {
+		queryClient.invalidateQueries({ queryKey: ["official-work-categories"] });
+	};
+
+	const handleCreate = async (formData: Record<string, string>) => {
 		await officialWorkCategoriesApi.create({
-			code: data.code,
-			name: data.name,
-			description: data.description || null,
+			code: formData.code,
+			name: formData.name,
+			description: formData.description || null,
 		});
 	};
 
@@ -89,9 +82,9 @@ function OfficialWorkCategoriesPage() {
 				description: editForm.description,
 			});
 			setEditingItem(null);
-			loadCategories(page);
+			invalidateQuery();
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "更新に失敗しました");
+			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
 		}
 	};
 
@@ -99,13 +92,15 @@ function OfficialWorkCategoriesPage() {
 		if (!confirm(`「${code}」を削除しますか？`)) return;
 		try {
 			await officialWorkCategoriesApi.delete(code);
-			loadCategories(page);
+			invalidateQuery();
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "削除に失敗しました");
+			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
 		}
 	};
 
 	const totalPages = Math.ceil(total / limit);
+	const displayError =
+		mutationError || (error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto py-6">
@@ -123,7 +118,7 @@ function OfficialWorkCategoriesPage() {
 						<ImportDialog
 							title="公式作品カテゴリのインポート"
 							onImport={importApi.officialWorkCategories}
-							onSuccess={() => loadCategories(page)}
+							onSuccess={invalidateQuery}
 						/>
 						<CreateDialog
 							title="新規公式作品カテゴリ"
@@ -148,18 +143,18 @@ function OfficialWorkCategoriesPage() {
 								},
 							]}
 							onCreate={handleCreate}
-							onSuccess={() => loadCategories(page)}
+							onSuccess={invalidateQuery}
 						/>
 					</div>
 				</CardHeader>
 				<CardContent>
-					{error && (
+					{displayError && (
 						<div className="mb-4 rounded-md bg-destructive/10 p-3 text-destructive text-sm">
-							{error}
+							{displayError}
 						</div>
 					)}
 
-					{loading ? (
+					{isLoading ? (
 						<div className="space-y-2">
 							{[...Array(5)].map((_, i) => (
 								// biome-ignore lint/suspicious/noArrayIndexKey: Loading skeleton
@@ -246,7 +241,7 @@ function OfficialWorkCategoriesPage() {
 										size="sm"
 										variant="outline"
 										disabled={page === 1}
-										onClick={() => loadCategories(page - 1)}
+										onClick={() => setPage(page - 1)}
 									>
 										前へ
 									</Button>
@@ -257,7 +252,7 @@ function OfficialWorkCategoriesPage() {
 										size="sm"
 										variant="outline"
 										disabled={page === totalPages}
-										onClick={() => loadCategories(page + 1)}
+										onClick={() => setPage(page + 1)}
 									>
 										次へ
 									</Button>
