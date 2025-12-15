@@ -121,11 +121,7 @@ function AliasTypesPage() {
 		<div className="container mx-auto py-6">
 			<AdminPageHeader
 				title="別名義種別管理"
-				breadcrumbs={[
-					{ label: "ダッシュボード", href: "/admin" },
-					{ label: "マスタ管理" },
-					{ label: "別名義種別" },
-				]}
+				breadcrumbs={[{ label: "マスタ管理" }, { label: "別名義種別" }]}
 			/>
 
 			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">

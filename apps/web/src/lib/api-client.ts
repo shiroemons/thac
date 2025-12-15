@@ -27,6 +27,14 @@ export interface OfficialWorkCategory {
 	description: string | null;
 }
 
+export interface DashboardStats {
+	users: number;
+	platforms: number;
+	aliasTypes: number;
+	creditRoles: number;
+	officialWorkCategories: number;
+}
+
 export interface PaginatedResponse<T> {
 	data: T[];
 	total: number;
@@ -247,4 +255,9 @@ export const officialWorkCategoriesApi = {
 				method: "DELETE",
 			},
 		),
+};
+
+// Stats
+export const statsApi = {
+	get: () => fetchWithAuth<DashboardStats>("/api/admin/stats"),
 };
