@@ -63,10 +63,8 @@ export default function AdminLoginForm() {
 	}
 
 	return (
-		<div className="mx-auto mt-10 w-full max-w-md p-6">
-			<h1 className="mb-6 text-center font-bold text-3xl text-slate-900">
-				管理者ログイン
-			</h1>
+		<div className="mx-auto w-full max-w-md">
+			<h1 className="mb-6 text-center font-bold text-3xl">管理者ログイン</h1>
 
 			<form
 				onSubmit={(e) => {
@@ -83,9 +81,7 @@ export default function AdminLoginForm() {
 								<form.Field name="email">
 									{(field) => (
 										<div className="space-y-2">
-											<Label htmlFor={field.name} className="text-slate-700">
-												メールアドレス
-											</Label>
+											<Label htmlFor={field.name}>メールアドレス</Label>
 											<Input
 												id={field.name}
 												name={field.name}
@@ -94,13 +90,9 @@ export default function AdminLoginForm() {
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.value)}
 												disabled={isSubmitting}
-												className="border-slate-300 text-slate-900"
 											/>
 											{field.state.meta.errors.map((error) => (
-												<p
-													key={error?.message}
-													className="text-red-500 text-sm"
-												>
+												<p key={error?.message} className="text-error text-sm">
 													{error?.message}
 												</p>
 											))}
@@ -113,9 +105,7 @@ export default function AdminLoginForm() {
 								<form.Field name="password">
 									{(field) => (
 										<div className="space-y-2">
-											<Label htmlFor={field.name} className="text-slate-700">
-												パスワード
-											</Label>
+											<Label htmlFor={field.name}>パスワード</Label>
 											<Input
 												id={field.name}
 												name={field.name}
@@ -124,13 +114,9 @@ export default function AdminLoginForm() {
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.value)}
 												disabled={isSubmitting}
-												className="border-slate-300 text-slate-900"
 											/>
 											{field.state.meta.errors.map((error) => (
-												<p
-													key={error?.message}
-													className="text-red-500 text-sm"
-												>
+												<p key={error?.message} className="text-error text-sm">
 													{error?.message}
 												</p>
 											))}
@@ -155,7 +141,8 @@ export default function AdminLoginForm() {
 						return (
 							<Button
 								type="submit"
-								className="w-full bg-slate-900 text-white hover:bg-slate-800"
+								variant="primary"
+								className="w-full"
 								disabled={isEmpty || !canSubmit || isSubmitting}
 							>
 								{isSubmitting ? "ログイン中..." : "ログイン"}
