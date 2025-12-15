@@ -152,7 +152,7 @@ function CreditRolesPage() {
 					/>
 				) : (
 					<>
-						<Table>
+						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
 									<TableHead className="w-[150px]">コード</TableHead>

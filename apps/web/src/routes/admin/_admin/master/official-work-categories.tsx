@@ -160,7 +160,7 @@ function OfficialWorkCategoriesPage() {
 					/>
 				) : (
 					<>
-						<Table>
+						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
 									<TableHead className="w-[200px]">コード</TableHead>
