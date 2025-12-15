@@ -65,7 +65,7 @@ function DataTableActionBar({
 						size="sm"
 						value={filterValue}
 						onChange={(e) => onFilterChange(e.target.value)}
-						className="w-40"
+						className="w-44"
 					>
 						<option value="">{filterPlaceholder}</option>
 						{filterOptions.map((option) => (
