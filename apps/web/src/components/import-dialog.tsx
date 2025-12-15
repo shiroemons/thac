@@ -9,7 +9,6 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import type { ImportResult } from "@/lib/api-client";
 
 interface ImportDialogProps {
@@ -91,11 +90,12 @@ export function ImportDialog({
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
-					<Input
+					<input
 						ref={fileInputRef}
 						type="file"
 						accept=".csv,.json"
 						onChange={handleFileChange}
+						className="file-input file-input-bordered w-full"
 					/>
 
 					{error && (
@@ -115,10 +115,14 @@ export function ImportDialog({
 					)}
 				</div>
 				<DialogFooter>
-					<Button variant="outline" onClick={handleClose}>
+					<Button variant="ghost" onClick={handleClose}>
 						閉じる
 					</Button>
-					<Button onClick={handleImport} disabled={!file || loading}>
+					<Button
+						variant="primary"
+						onClick={handleImport}
+						disabled={!file || loading}
+					>
 						{loading ? "インポート中..." : "インポート"}
 					</Button>
 				</DialogFooter>
