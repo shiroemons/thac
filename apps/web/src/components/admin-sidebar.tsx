@@ -90,7 +90,11 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 											<Link
 												to={to}
 												onClick={onNavigate}
-												className={isActive(to) ? "active" : ""}
+												className={
+													isActive(to)
+														? "active bg-base-content/10 font-medium"
+														: ""
+												}
 											>
 												<Icon className="size-4" />
 												{label}
@@ -105,7 +109,11 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 							<Link
 								to={entry.to}
 								onClick={onNavigate}
-								className={isActive(entry.to) ? "active" : ""}
+								className={
+									isActive(entry.to)
+										? "active bg-base-content/10 font-medium"
+										: ""
+								}
 							>
 								<entry.icon className="size-5" />
 								{entry.label}
