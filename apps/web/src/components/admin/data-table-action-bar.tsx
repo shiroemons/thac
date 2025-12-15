@@ -90,8 +90,8 @@ function DataTableActionBar({
 			<div className="flex items-center gap-2">
 				{primaryAction && (
 					<Button
-						variant="success"
-						size="sm"
+						variant="primary"
+						size="md"
 						onClick={primaryAction.onClick}
 						className="gap-1"
 					>
@@ -102,7 +102,7 @@ function DataTableActionBar({
 				{secondaryActions && secondaryActions.length > 0 && (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button variant="ghost" size="sm">
+							<Button variant="ghost" size="md">
 								<EllipsisVertical className="h-4 w-4" />
 							</Button>
 						</DropdownMenuTrigger>

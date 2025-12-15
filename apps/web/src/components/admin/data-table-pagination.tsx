@@ -83,7 +83,7 @@ function DataTablePagination({
 				{onPageSizeChange && (
 					<>
 						<Select
-							size="sm"
+							size="md"
 							value={pageSize.toString()}
 							onChange={(e) => onPageSizeChange(Number(e.target.value))}
 							className="w-20"
@@ -107,7 +107,7 @@ function DataTablePagination({
 			<div className="flex items-center gap-1">
 				<Button
 					variant="ghost"
-					size="sm"
+					size="md"
 					disabled={page === 1}
 					onClick={() => onPageChange(page - 1)}
 					aria-label="前のページ"
@@ -128,9 +128,9 @@ function DataTablePagination({
 						<Button
 							key={pageNum}
 							variant={pageNum === page ? "primary" : "ghost"}
-							size="sm"
+							size="md"
 							onClick={() => onPageChange(pageNum)}
-							className="min-w-9"
+							className="min-w-10"
 						>
 							{pageNum}
 						</Button>
@@ -139,7 +139,7 @@ function DataTablePagination({
 
 				<Button
 					variant="ghost"
-					size="sm"
+					size="md"
 					disabled={page === totalPages}
 					onClick={() => onPageChange(page + 1)}
 					aria-label="次のページ"
