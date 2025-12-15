@@ -75,14 +75,14 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 			<div className="p-4">
 				<span className="font-bold text-xl">管理画面</span>
 			</div>
-			<ul className="menu p-4 pt-0">
+			<ul className="menu w-full p-4 pt-0">
 				{navItems.map((entry) =>
 					isNavGroup(entry) ? (
-						<li key={entry.label}>
-							<details open={isGroupActive(entry)}>
-								<summary>
+						<li key={entry.label} className="w-full">
+							<details open={isGroupActive(entry)} className="w-full">
+								<summary className="w-full">
 									<entry.icon className="size-5" />
-									{entry.label}
+									<span className="flex-1 text-left">{entry.label}</span>
 								</summary>
 								<ul>
 									{entry.items.map(({ to, label, icon: Icon }) => (
