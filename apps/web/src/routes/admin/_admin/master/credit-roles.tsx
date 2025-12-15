@@ -26,6 +26,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useDebounce } from "@/hooks/use-debounce";
 import { type CreditRole, creditRolesApi, importApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/_admin/master/credit-roles")({
@@ -34,9 +35,15 @@ export const Route = createFileRoute("/admin/_admin/master/credit-roles")({
 
 function CreditRolesPage() {
 	const queryClient = useQueryClient();
+
+	// ページネーション・フィルタ状態
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(20);
-	const [searchQuery, setSearchQuery] = useState("");
+	const [search, setSearch] = useState("");
+
+	// API呼び出し用にデバウンス（300ms）
+	const debouncedSearch = useDebounce(search, 300);
+
 	const [editingItem, setEditingItem] = useState<CreditRole | null>(null);
 	const [editForm, setEditForm] = useState<Partial<CreditRole>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
@@ -44,25 +51,18 @@ function CreditRolesPage() {
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["credit-roles", page, pageSize],
-		queryFn: () => creditRolesApi.list({ page, limit: pageSize }),
+		queryKey: ["credit-roles", page, pageSize, debouncedSearch],
+		queryFn: () =>
+			creditRolesApi.list({
+				page,
+				limit: pageSize,
+				search: debouncedSearch || undefined,
+			}),
 		staleTime: 30_000,
 	});
 
-	// クライアントサイドでフィルタリング
-	const allItems = data?.data ?? [];
-	const filteredItems = allItems.filter((item) => {
-		const matchesSearch =
-			searchQuery === "" ||
-			item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			item.code.toLowerCase().includes(searchQuery.toLowerCase());
-		return matchesSearch;
-	});
-
-	const serverTotal = data?.total ?? 0;
-	const isFiltering = searchQuery !== "";
-	// フィルタリング中はフィルタ結果の件数を、それ以外はサーバーの総件数を使用
-	const displayTotal = isFiltering ? filteredItems.length : serverTotal;
+	const items = data?.data ?? [];
+	const total = data?.total ?? 0;
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["credit-roles"] });
@@ -100,8 +100,17 @@ function CreditRolesPage() {
 		}
 	};
 
+	const handlePageChange = (newPage: number) => {
+		setPage(newPage);
+	};
+
 	const handlePageSizeChange = (newPageSize: number) => {
 		setPageSize(newPageSize);
+		setPage(1);
+	};
+
+	const handleSearchChange = (value: string) => {
+		setSearch(value);
 		setPage(1);
 	};
 
@@ -112,7 +121,7 @@ function CreditRolesPage() {
 		<div className="container mx-auto py-6">
 			<AdminPageHeader
 				title="クレジット役割管理"
-				description={`${serverTotal}件のクレジット役割が登録されています`}
+				description={`${total}件のクレジット役割が登録されています`}
 				breadcrumbs={[
 					{ label: "ダッシュボード", href: "/admin" },
 					{ label: "マスタ管理" },
@@ -124,8 +133,8 @@ function CreditRolesPage() {
 				<DataTableActionBar
 					className="border-base-300 border-b p-4"
 					searchPlaceholder="ラベルまたはコードで検索..."
-					searchValue={searchQuery}
-					onSearchChange={setSearchQuery}
+					searchValue={search}
+					onSearchChange={handleSearchChange}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -164,7 +173,7 @@ function CreditRolesPage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{filteredItems.length === 0 ? (
+								{items.length === 0 ? (
 									<TableRow>
 										<TableCell
 											colSpan={4}
@@ -174,7 +183,7 @@ function CreditRolesPage() {
 										</TableCell>
 									</TableRow>
 								) : (
-									filteredItems.map((c) => (
+									items.map((c) => (
 										<TableRow key={c.code}>
 											<TableCell className="font-mono text-sm">
 												{c.code}
@@ -220,8 +229,8 @@ function CreditRolesPage() {
 							<DataTablePagination
 								page={page}
 								pageSize={pageSize}
-								total={displayTotal}
-								onPageChange={setPage}
+								total={total}
+								onPageChange={handlePageChange}
 								onPageSizeChange={handlePageSizeChange}
 							/>
 						</div>

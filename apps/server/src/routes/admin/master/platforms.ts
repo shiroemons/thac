@@ -1,8 +1,11 @@
 import {
+	and,
 	count,
 	db,
 	eq,
 	insertPlatformSchema,
+	like,
+	or,
 	platforms,
 	updatePlatformSchema,
 } from "@thac/db";
@@ -11,18 +14,33 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 
 const platformsRouter = new Hono<AdminContext>();
 
-// 一覧取得（ページネーション、カテゴリフィルタ対応）
+// 一覧取得（ページネーション、カテゴリフィルタ、検索対応）
 platformsRouter.get("/", async (c) => {
 	const page = Number(c.req.query("page")) || 1;
 	const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 	const category = c.req.query("category");
+	const search = c.req.query("search");
 
 	const offset = (page - 1) * limit;
 
 	// 条件を構築
-	const whereCondition = category
-		? eq(platforms.category, category)
-		: undefined;
+	const conditions = [];
+
+	if (category) {
+		conditions.push(eq(platforms.category, category));
+	}
+
+	if (search) {
+		const searchPattern = `%${search}%`;
+		conditions.push(
+			or(
+				like(platforms.code, searchPattern),
+				like(platforms.name, searchPattern),
+			),
+		);
+	}
+
+	const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
 
 	// データ取得
 	const [data, totalResult] = await Promise.all([

@@ -26,6 +26,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
 	importApi,
 	type OfficialWorkCategory,
@@ -40,9 +41,15 @@ export const Route = createFileRoute(
 
 function OfficialWorkCategoriesPage() {
 	const queryClient = useQueryClient();
+
+	// ページネーション・フィルタ状態
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(20);
-	const [searchQuery, setSearchQuery] = useState("");
+	const [search, setSearch] = useState("");
+
+	// API呼び出し用にデバウンス（300ms）
+	const debouncedSearch = useDebounce(search, 300);
+
 	const [editingItem, setEditingItem] = useState<OfficialWorkCategory | null>(
 		null,
 	);
@@ -52,25 +59,18 @@ function OfficialWorkCategoriesPage() {
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["official-work-categories", page, pageSize],
-		queryFn: () => officialWorkCategoriesApi.list({ page, limit: pageSize }),
+		queryKey: ["official-work-categories", page, pageSize, debouncedSearch],
+		queryFn: () =>
+			officialWorkCategoriesApi.list({
+				page,
+				limit: pageSize,
+				search: debouncedSearch || undefined,
+			}),
 		staleTime: 30_000,
 	});
 
-	// クライアントサイドでフィルタリング
-	const allItems = data?.data ?? [];
-	const filteredItems = allItems.filter((item) => {
-		const matchesSearch =
-			searchQuery === "" ||
-			item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			item.code.toLowerCase().includes(searchQuery.toLowerCase());
-		return matchesSearch;
-	});
-
-	const serverTotal = data?.total ?? 0;
-	const isFiltering = searchQuery !== "";
-	// フィルタリング中はフィルタ結果の件数を、それ以外はサーバーの総件数を使用
-	const displayTotal = isFiltering ? filteredItems.length : serverTotal;
+	const items = data?.data ?? [];
+	const total = data?.total ?? 0;
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["official-work-categories"] });
@@ -108,8 +108,17 @@ function OfficialWorkCategoriesPage() {
 		}
 	};
 
+	const handlePageChange = (newPage: number) => {
+		setPage(newPage);
+	};
+
 	const handlePageSizeChange = (newPageSize: number) => {
 		setPageSize(newPageSize);
+		setPage(1);
+	};
+
+	const handleSearchChange = (value: string) => {
+		setSearch(value);
 		setPage(1);
 	};
 
@@ -120,7 +129,7 @@ function OfficialWorkCategoriesPage() {
 		<div className="container mx-auto py-6">
 			<AdminPageHeader
 				title="公式作品カテゴリ管理"
-				description={`${serverTotal}件の公式作品カテゴリが登録されています`}
+				description={`${total}件の公式作品カテゴリが登録されています`}
 				breadcrumbs={[
 					{ label: "ダッシュボード", href: "/admin" },
 					{ label: "マスタ管理" },
@@ -132,8 +141,8 @@ function OfficialWorkCategoriesPage() {
 				<DataTableActionBar
 					className="border-base-300 border-b p-4"
 					searchPlaceholder="名前またはコードで検索..."
-					searchValue={searchQuery}
-					onSearchChange={setSearchQuery}
+					searchValue={search}
+					onSearchChange={handleSearchChange}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -172,7 +181,7 @@ function OfficialWorkCategoriesPage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{filteredItems.length === 0 ? (
+								{items.length === 0 ? (
 									<TableRow>
 										<TableCell
 											colSpan={4}
@@ -182,7 +191,7 @@ function OfficialWorkCategoriesPage() {
 										</TableCell>
 									</TableRow>
 								) : (
-									filteredItems.map((c) => (
+									items.map((c) => (
 										<TableRow key={c.code}>
 											<TableCell className="font-mono text-sm">
 												{c.code}
@@ -228,8 +237,8 @@ function OfficialWorkCategoriesPage() {
 							<DataTablePagination
 								page={page}
 								pageSize={pageSize}
-								total={displayTotal}
-								onPageChange={setPage}
+								total={total}
+								onPageChange={handlePageChange}
 								onPageSizeChange={handlePageSizeChange}
 							/>
 						</div>

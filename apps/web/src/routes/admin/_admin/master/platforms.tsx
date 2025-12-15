@@ -27,6 +27,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useDebounce } from "@/hooks/use-debounce";
 import { importApi, type Platform, platformsApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/_admin/master/platforms")({
@@ -49,10 +50,16 @@ const categoryOptions = [
 
 function PlatformsPage() {
 	const queryClient = useQueryClient();
+
+	// ページネーション・フィルタ状態
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(20);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [categoryFilter, setCategoryFilter] = useState("");
+	const [search, setSearch] = useState("");
+	const [category, setCategory] = useState("");
+
+	// API呼び出し用にデバウンス（300ms）
+	const debouncedSearch = useDebounce(search, 300);
+
 	const [editingPlatform, setEditingPlatform] = useState<Platform | null>(null);
 	const [editForm, setEditForm] = useState<Partial<Platform>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
@@ -60,27 +67,19 @@ function PlatformsPage() {
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["platforms", page, pageSize],
-		queryFn: () => platformsApi.list({ page, limit: pageSize }),
+		queryKey: ["platforms", page, pageSize, debouncedSearch, category],
+		queryFn: () =>
+			platformsApi.list({
+				page,
+				limit: pageSize,
+				search: debouncedSearch || undefined,
+				category: category || undefined,
+			}),
 		staleTime: 30_000,
 	});
 
-	// クライアントサイドでフィルタリング
-	const allPlatforms = data?.data ?? [];
-	const filteredPlatforms = allPlatforms.filter((p) => {
-		const matchesSearch =
-			searchQuery === "" ||
-			p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			p.code.toLowerCase().includes(searchQuery.toLowerCase());
-		const matchesCategory =
-			categoryFilter === "" || p.category === categoryFilter;
-		return matchesSearch && matchesCategory;
-	});
-
-	const serverTotal = data?.total ?? 0;
-	const isFiltering = searchQuery !== "" || categoryFilter !== "";
-	// フィルタリング中はフィルタ結果の件数を、それ以外はサーバーの総件数を使用
-	const displayTotal = isFiltering ? filteredPlatforms.length : serverTotal;
+	const platforms = data?.data ?? [];
+	const total = data?.total ?? 0;
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["platforms"] });
@@ -120,8 +119,22 @@ function PlatformsPage() {
 		}
 	};
 
+	const handlePageChange = (newPage: number) => {
+		setPage(newPage);
+	};
+
 	const handlePageSizeChange = (newPageSize: number) => {
 		setPageSize(newPageSize);
+		setPage(1);
+	};
+
+	const handleSearchChange = (value: string) => {
+		setSearch(value);
+		setPage(1);
+	};
+
+	const handleCategoryChange = (value: string) => {
+		setCategory(value);
 		setPage(1);
 	};
 
@@ -132,7 +145,7 @@ function PlatformsPage() {
 		<div className="container mx-auto py-6">
 			<AdminPageHeader
 				title="プラットフォーム管理"
-				description={`${serverTotal}件のプラットフォームが登録されています`}
+				description={`${total}件のプラットフォームが登録されています`}
 				breadcrumbs={[
 					{ label: "ダッシュボード", href: "/admin" },
 					{ label: "マスタ管理" },
@@ -144,12 +157,12 @@ function PlatformsPage() {
 				<DataTableActionBar
 					className="border-base-300 border-b p-4"
 					searchPlaceholder="名前またはコードで検索..."
-					searchValue={searchQuery}
-					onSearchChange={setSearchQuery}
+					searchValue={search}
+					onSearchChange={handleSearchChange}
 					filterOptions={categoryOptions}
-					filterValue={categoryFilter}
+					filterValue={category}
 					filterPlaceholder="カテゴリを選択"
-					onFilterChange={setCategoryFilter}
+					onFilterChange={handleCategoryChange}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -189,7 +202,7 @@ function PlatformsPage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{filteredPlatforms.length === 0 ? (
+								{platforms.length === 0 ? (
 									<TableRow>
 										<TableCell
 											colSpan={5}
@@ -199,7 +212,7 @@ function PlatformsPage() {
 										</TableCell>
 									</TableRow>
 								) : (
-									filteredPlatforms.map((p) => (
+									platforms.map((p) => (
 										<TableRow key={p.code}>
 											<TableCell className="font-mono text-sm">
 												{p.code}
@@ -258,8 +271,8 @@ function PlatformsPage() {
 							<DataTablePagination
 								page={page}
 								pageSize={pageSize}
-								total={displayTotal}
-								onPageChange={setPage}
+								total={total}
+								onPageChange={handlePageChange}
 								onPageSizeChange={handlePageSizeChange}
 							/>
 						</div>
