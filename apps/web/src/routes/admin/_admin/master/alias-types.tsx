@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -16,12 +16,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -188,35 +182,31 @@ function AliasTypesPage() {
 												{a.description || "-"}
 											</TableCell>
 											<TableCell>
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button variant="ghost" size="icon">
-															<MoreHorizontal className="h-4 w-4" />
-															<span className="sr-only">メニューを開く</span>
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent align="end">
-														<DropdownMenuItem
-															onClick={() => {
-																setEditingItem(a);
-																setEditForm({
-																	label: a.label,
-																	description: a.description,
-																});
-															}}
-														>
-															<Pencil className="mr-2 h-4 w-4" />
-															編集
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="text-error"
-															onClick={() => handleDelete(a.code)}
-														>
-															<Trash2 className="mr-2 h-4 w-4" />
-															削除
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
+												<div className="flex items-center gap-1">
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => {
+															setEditingItem(a);
+															setEditForm({
+																label: a.label,
+																description: a.description,
+															});
+														}}
+													>
+														<Pencil className="h-4 w-4" />
+														<span className="sr-only">編集</span>
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="text-error hover:text-error"
+														onClick={() => handleDelete(a.code)}
+													>
+														<Trash2 className="h-4 w-4" />
+														<span className="sr-only">削除</span>
+													</Button>
+												</div>
 											</TableCell>
 										</TableRow>
 									))
