@@ -1,6 +1,7 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { CreateDialog } from "@/components/create-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
@@ -36,40 +37,32 @@ export const Route = createFileRoute("/admin/_admin/master/credit-roles")({
 });
 
 function CreditRolesPage() {
-	const [creditRoles, setCreditRoles] = useState<CreditRole[]>([]);
-	const [total, setTotal] = useState(0);
+	const queryClient = useQueryClient();
 	const [page, setPage] = useState(1);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
 	const [editingItem, setEditingItem] = useState<CreditRole | null>(null);
 	const [editForm, setEditForm] = useState<Partial<CreditRole>>({});
+	const [mutationError, setMutationError] = useState<string | null>(null);
 
 	const limit = 20;
 
-	const loadCreditRoles = useCallback(async (p: number) => {
-		setLoading(true);
-		setError(null);
-		try {
-			const res = await creditRolesApi.list({ page: p, limit });
-			setCreditRoles(res.data);
-			setTotal(res.total);
-			setPage(p);
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "読み込みに失敗しました");
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+	const { data, isLoading, error } = useQuery({
+		queryKey: ["credit-roles", page, limit],
+		queryFn: () => creditRolesApi.list({ page, limit }),
+		staleTime: 30_000,
+	});
 
-	useEffect(() => {
-		loadCreditRoles(1);
-	}, [loadCreditRoles]);
+	const creditRoles = data?.data ?? [];
+	const total = data?.total ?? 0;
 
-	const handleCreate = async (data: Record<string, string>) => {
+	const invalidateQuery = () => {
+		queryClient.invalidateQueries({ queryKey: ["credit-roles"] });
+	};
+
+	const handleCreate = async (formData: Record<string, string>) => {
 		await creditRolesApi.create({
-			code: data.code,
-			label: data.label,
-			description: data.description || null,
+			code: formData.code,
+			label: formData.label,
+			description: formData.description || null,
 		});
 	};
 
@@ -81,9 +74,9 @@ function CreditRolesPage() {
 				description: editForm.description,
 			});
 			setEditingItem(null);
-			loadCreditRoles(page);
+			invalidateQuery();
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "更新に失敗しました");
+			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
 		}
 	};
 
@@ -91,13 +84,15 @@ function CreditRolesPage() {
 		if (!confirm(`「${code}」を削除しますか？`)) return;
 		try {
 			await creditRolesApi.delete(code);
-			loadCreditRoles(page);
+			invalidateQuery();
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "削除に失敗しました");
+			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
 		}
 	};
 
 	const totalPages = Math.ceil(total / limit);
+	const displayError =
+		mutationError || (error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto py-6">
@@ -115,7 +110,7 @@ function CreditRolesPage() {
 						<ImportDialog
 							title="クレジット役割のインポート"
 							onImport={importApi.creditRoles}
-							onSuccess={() => loadCreditRoles(page)}
+							onSuccess={invalidateQuery}
 						/>
 						<CreateDialog
 							title="新規クレジット役割"
@@ -140,18 +135,18 @@ function CreditRolesPage() {
 								},
 							]}
 							onCreate={handleCreate}
-							onSuccess={() => loadCreditRoles(page)}
+							onSuccess={invalidateQuery}
 						/>
 					</div>
 				</CardHeader>
 				<CardContent>
-					{error && (
+					{displayError && (
 						<div className="mb-4 rounded-md bg-destructive/10 p-3 text-destructive text-sm">
-							{error}
+							{displayError}
 						</div>
 					)}
 
-					{loading ? (
+					{isLoading ? (
 						<div className="space-y-2">
 							{[...Array(5)].map((_, i) => (
 								// biome-ignore lint/suspicious/noArrayIndexKey: Loading skeleton
@@ -238,7 +233,7 @@ function CreditRolesPage() {
 										size="sm"
 										variant="outline"
 										disabled={page === 1}
-										onClick={() => loadCreditRoles(page - 1)}
+										onClick={() => setPage(page - 1)}
 									>
 										前へ
 									</Button>
@@ -249,7 +244,7 @@ function CreditRolesPage() {
 										size="sm"
 										variant="outline"
 										disabled={page === totalPages}
-										onClick={() => loadCreditRoles(page + 1)}
+										onClick={() => setPage(page + 1)}
 									>
 										次へ
 									</Button>

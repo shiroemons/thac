@@ -1,6 +1,7 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { CreateDialog } from "@/components/create-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
@@ -36,40 +37,32 @@ export const Route = createFileRoute("/admin/_admin/master/alias-types")({
 });
 
 function AliasTypesPage() {
-	const [aliasTypes, setAliasTypes] = useState<AliasType[]>([]);
-	const [total, setTotal] = useState(0);
+	const queryClient = useQueryClient();
 	const [page, setPage] = useState(1);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
 	const [editingItem, setEditingItem] = useState<AliasType | null>(null);
 	const [editForm, setEditForm] = useState<Partial<AliasType>>({});
+	const [mutationError, setMutationError] = useState<string | null>(null);
 
 	const limit = 20;
 
-	const loadAliasTypes = useCallback(async (p: number) => {
-		setLoading(true);
-		setError(null);
-		try {
-			const res = await aliasTypesApi.list({ page: p, limit });
-			setAliasTypes(res.data);
-			setTotal(res.total);
-			setPage(p);
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "読み込みに失敗しました");
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+	const { data, isLoading, error } = useQuery({
+		queryKey: ["alias-types", page, limit],
+		queryFn: () => aliasTypesApi.list({ page, limit }),
+		staleTime: 30_000, // 30秒間キャッシュ
+	});
 
-	useEffect(() => {
-		loadAliasTypes(1);
-	}, [loadAliasTypes]);
+	const aliasTypes = data?.data ?? [];
+	const total = data?.total ?? 0;
 
-	const handleCreate = async (data: Record<string, string>) => {
+	const invalidateQuery = () => {
+		queryClient.invalidateQueries({ queryKey: ["alias-types"] });
+	};
+
+	const handleCreate = async (formData: Record<string, string>) => {
 		await aliasTypesApi.create({
-			code: data.code,
-			label: data.label,
-			description: data.description || null,
+			code: formData.code,
+			label: formData.label,
+			description: formData.description || null,
 		});
 	};
 
@@ -81,9 +74,9 @@ function AliasTypesPage() {
 				description: editForm.description,
 			});
 			setEditingItem(null);
-			loadAliasTypes(page);
+			invalidateQuery();
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "更新に失敗しました");
+			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
 		}
 	};
 
@@ -91,13 +84,15 @@ function AliasTypesPage() {
 		if (!confirm(`「${code}」を削除しますか？`)) return;
 		try {
 			await aliasTypesApi.delete(code);
-			loadAliasTypes(page);
+			invalidateQuery();
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "削除に失敗しました");
+			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
 		}
 	};
 
 	const totalPages = Math.ceil(total / limit);
+	const displayError =
+		mutationError || (error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto py-6">
@@ -113,7 +108,7 @@ function AliasTypesPage() {
 						<ImportDialog
 							title="別名義種別のインポート"
 							onImport={importApi.aliasTypes}
-							onSuccess={() => loadAliasTypes(page)}
+							onSuccess={invalidateQuery}
 						/>
 						<CreateDialog
 							title="新規別名義種別"
@@ -138,18 +133,18 @@ function AliasTypesPage() {
 								},
 							]}
 							onCreate={handleCreate}
-							onSuccess={() => loadAliasTypes(page)}
+							onSuccess={invalidateQuery}
 						/>
 					</div>
 				</CardHeader>
 				<CardContent>
-					{error && (
+					{displayError && (
 						<div className="mb-4 rounded-md bg-destructive/10 p-3 text-destructive text-sm">
-							{error}
+							{displayError}
 						</div>
 					)}
 
-					{loading ? (
+					{isLoading ? (
 						<div className="space-y-2">
 							{[...Array(5)].map((_, i) => (
 								// biome-ignore lint/suspicious/noArrayIndexKey: Loading skeleton
@@ -236,7 +231,7 @@ function AliasTypesPage() {
 										size="sm"
 										variant="outline"
 										disabled={page === 1}
-										onClick={() => loadAliasTypes(page - 1)}
+										onClick={() => setPage(page - 1)}
 									>
 										前へ
 									</Button>
@@ -247,7 +242,7 @@ function AliasTypesPage() {
 										size="sm"
 										variant="outline"
 										disabled={page === totalPages}
-										onClick={() => loadAliasTypes(page + 1)}
+										onClick={() => setPage(page + 1)}
 									>
 										次へ
 									</Button>

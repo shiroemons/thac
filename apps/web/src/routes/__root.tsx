@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	createRootRouteWithContext,
 	HeadContent,
@@ -10,6 +11,14 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/lib/theme";
 import Header from "../components/header";
 import appCss from "../index.css?url";
+
+const queryClient = new QueryClient({
+	defaultOptions: {
+		queries: {
+			staleTime: 30_000,
+		},
+	},
+});
 
 export type RouterAppContext = Record<string, never>;
 
@@ -55,7 +64,7 @@ function RootDocument() {
 	const isAdminRoute = location.pathname.startsWith("/admin");
 
 	return (
-		<html lang="ja">
+		<html lang="ja" suppressHydrationWarning>
 			<head>
 				<HeadContent />
 				<script
@@ -64,13 +73,15 @@ function RootDocument() {
 				/>
 			</head>
 			<body>
-				<ThemeProvider>
-					<div className="grid h-svh grid-rows-[auto_1fr]">
-						{!isAdminRoute && <Header />}
-						<Outlet />
-					</div>
-					<Toaster richColors />
-				</ThemeProvider>
+				<QueryClientProvider client={queryClient}>
+					<ThemeProvider>
+						<div className="grid h-svh grid-rows-[auto_1fr]">
+							{!isAdminRoute && <Header />}
+							<Outlet />
+						</div>
+						<Toaster richColors />
+					</ThemeProvider>
+				</QueryClientProvider>
 				<TanStackRouterDevtools position="bottom-left" />
 				<Scripts />
 			</body>
