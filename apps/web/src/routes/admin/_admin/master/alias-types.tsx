@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -41,6 +41,7 @@ function AliasTypesPage() {
 	const [editForm, setEditForm] = useState<Partial<AliasType>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["alias-types", page, pageSize],
@@ -117,13 +118,7 @@ function AliasTypesPage() {
 					{ label: "マスタ管理", href: "/admin" },
 					{ label: "別名義種別" },
 				]}
-			>
-				<ImportDialog
-					title="別名義種別のインポート"
-					onImport={importApi.aliasTypes}
-					onSuccess={invalidateQuery}
-				/>
-			</AdminPageHeader>
+			/>
 
 			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
 				<DataTableActionBar
@@ -135,6 +130,13 @@ function AliasTypesPage() {
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
+					secondaryActions={[
+						{
+							label: "インポート",
+							icon: <Upload className="mr-2 h-4 w-4" />,
+							onClick: () => setIsImportDialogOpen(true),
+						},
+					]}
 				/>
 
 				{displayError && (
@@ -299,6 +301,15 @@ function AliasTypesPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* インポートダイアログ */}
+			<ImportDialog
+				title="別名義種別のインポート"
+				onImport={importApi.aliasTypes}
+				onSuccess={invalidateQuery}
+				open={isImportDialogOpen}
+				onOpenChange={setIsImportDialogOpen}
+			/>
 		</div>
 	);
 }

@@ -16,14 +16,23 @@ interface ImportDialogProps {
 	title: string;
 	onImport: (file: File) => Promise<ImportResult>;
 	onSuccess?: () => void;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 }
 
 export function ImportDialog({
 	title,
 	onImport,
 	onSuccess,
+	open: controlledOpen,
+	onOpenChange: controlledOnOpenChange,
 }: ImportDialogProps) {
-	const [isOpen, setIsOpen] = useState(false);
+	const [internalOpen, setInternalOpen] = useState(false);
+	const isControlled = controlledOpen !== undefined;
+	const isOpen = isControlled ? controlledOpen : internalOpen;
+	const setIsOpen = isControlled
+		? (controlledOnOpenChange ?? (() => {}))
+		: setInternalOpen;
 	const [file, setFile] = useState<File | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [result, setResult] = useState<ImportResult | null>(null);
@@ -69,9 +78,11 @@ export function ImportDialog({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
-			<DialogTrigger asChild>
-				<Button variant="outline">インポート</Button>
-			</DialogTrigger>
+			{!isControlled && (
+				<DialogTrigger asChild>
+					<Button variant="outline">インポート</Button>
+				</DialogTrigger>
+			)}
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>

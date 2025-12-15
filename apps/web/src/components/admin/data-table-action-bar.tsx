@@ -1,6 +1,12 @@
-import { Plus, SlidersHorizontal } from "lucide-react";
+import { EllipsisVertical, Plus } from "lucide-react";
 import type * as React from "react";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SearchInput } from "@/components/ui/search-input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -8,6 +14,12 @@ import { cn } from "@/lib/utils";
 interface FilterOption {
 	value: string;
 	label: string;
+}
+
+interface SecondaryAction {
+	label: string;
+	icon?: React.ReactNode;
+	onClick: () => void;
 }
 
 interface DataTableActionBarProps extends React.ComponentProps<"div"> {
@@ -22,8 +34,7 @@ interface DataTableActionBarProps extends React.ComponentProps<"div"> {
 		label: string;
 		onClick: () => void;
 	};
-	showSettings?: boolean;
-	onSettingsClick?: () => void;
+	secondaryActions?: SecondaryAction[];
 }
 
 function DataTableActionBar({
@@ -35,8 +46,7 @@ function DataTableActionBar({
 	filterPlaceholder = "すべて",
 	onFilterChange,
 	primaryAction,
-	showSettings = false,
-	onSettingsClick,
+	secondaryActions,
 	className,
 	children,
 	...props
@@ -89,10 +99,22 @@ function DataTableActionBar({
 						{primaryAction.label}
 					</Button>
 				)}
-				{showSettings && (
-					<Button variant="ghost" size="sm" onClick={onSettingsClick}>
-						<SlidersHorizontal className="h-4 w-4" />
-					</Button>
+				{secondaryActions && secondaryActions.length > 0 && (
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant="ghost" size="sm">
+								<EllipsisVertical className="h-4 w-4" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end">
+							{secondaryActions.map((action) => (
+								<DropdownMenuItem key={action.label} onClick={action.onClick}>
+									{action.icon}
+									{action.label}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
 				)}
 			</div>
 		</div>
@@ -100,4 +122,4 @@ function DataTableActionBar({
 }
 
 export { DataTableActionBar };
-export type { DataTableActionBarProps, FilterOption };
+export type { DataTableActionBarProps, FilterOption, SecondaryAction };

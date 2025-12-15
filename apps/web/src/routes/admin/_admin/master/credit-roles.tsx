@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -41,6 +41,7 @@ function CreditRolesPage() {
 	const [editForm, setEditForm] = useState<Partial<CreditRole>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["credit-roles", page, pageSize],
@@ -117,13 +118,7 @@ function CreditRolesPage() {
 					{ label: "マスタ管理", href: "/admin" },
 					{ label: "クレジット役割" },
 				]}
-			>
-				<ImportDialog
-					title="クレジット役割のインポート"
-					onImport={importApi.creditRoles}
-					onSuccess={invalidateQuery}
-				/>
-			</AdminPageHeader>
+			/>
 
 			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
 				<DataTableActionBar
@@ -135,6 +130,13 @@ function CreditRolesPage() {
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
+					secondaryActions={[
+						{
+							label: "インポート",
+							icon: <Upload className="mr-2 h-4 w-4" />,
+							onClick: () => setIsImportDialogOpen(true),
+						},
+					]}
 				/>
 
 				{displayError && (
@@ -299,6 +301,15 @@ function CreditRolesPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* インポートダイアログ */}
+			<ImportDialog
+				title="クレジット役割のインポート"
+				onImport={importApi.creditRoles}
+				onSuccess={invalidateQuery}
+				open={isImportDialogOpen}
+				onOpenChange={setIsImportDialogOpen}
+			/>
 		</div>
 	);
 }

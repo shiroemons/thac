@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -57,6 +57,7 @@ function PlatformsPage() {
 	const [editForm, setEditForm] = useState<Partial<Platform>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["platforms", page, pageSize],
@@ -137,13 +138,7 @@ function PlatformsPage() {
 					{ label: "マスタ管理", href: "/admin" },
 					{ label: "プラットフォーム" },
 				]}
-			>
-				<ImportDialog
-					title="プラットフォームのインポート"
-					onImport={importApi.platforms}
-					onSuccess={invalidateQuery}
-				/>
-			</AdminPageHeader>
+			/>
 
 			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
 				<DataTableActionBar
@@ -159,6 +154,13 @@ function PlatformsPage() {
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
+					secondaryActions={[
+						{
+							label: "インポート",
+							icon: <Upload className="mr-2 h-4 w-4" />,
+							onClick: () => setIsImportDialogOpen(true),
+						},
+					]}
 				/>
 
 				{displayError && (
@@ -352,6 +354,15 @@ function PlatformsPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* インポートダイアログ */}
+			<ImportDialog
+				title="プラットフォームのインポート"
+				onImport={importApi.platforms}
+				onSuccess={invalidateQuery}
+				open={isImportDialogOpen}
+				onOpenChange={setIsImportDialogOpen}
+			/>
 		</div>
 	);
 }
