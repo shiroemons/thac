@@ -1,0 +1,49 @@
+# Dependencies
+node_modules
+
+# Build outputs
+.turbo
+dist
+.output
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.*
+.env*.local
+
+# Git
+.git
+.gitignore
+
+# GitHub
+.github
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local database
+local.db
+local.db-*
+*.db
+*.db-*
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation
+*.md
+
+# Project specific
+.kiro
+.serena
+.claude
