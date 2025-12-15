@@ -2,10 +2,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
+import { DataTablePagination } from "@/components/admin/data-table-pagination";
+import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { CreateDialog } from "@/components/create-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -21,7 +24,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -39,20 +41,33 @@ export const Route = createFileRoute("/admin/_admin/master/credit-roles")({
 function CreditRolesPage() {
 	const queryClient = useQueryClient();
 	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(20);
+	const [searchQuery, setSearchQuery] = useState("");
 	const [editingItem, setEditingItem] = useState<CreditRole | null>(null);
 	const [editForm, setEditForm] = useState<Partial<CreditRole>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
-
-	const limit = 20;
+	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["credit-roles", page, limit],
-		queryFn: () => creditRolesApi.list({ page, limit }),
+		queryKey: ["credit-roles", page, pageSize],
+		queryFn: () => creditRolesApi.list({ page, limit: pageSize }),
 		staleTime: 30_000,
 	});
 
-	const creditRoles = data?.data ?? [];
-	const total = data?.total ?? 0;
+	// クライアントサイドでフィルタリング
+	const allItems = data?.data ?? [];
+	const filteredItems = allItems.filter((item) => {
+		const matchesSearch =
+			searchQuery === "" ||
+			item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			item.code.toLowerCase().includes(searchQuery.toLowerCase());
+		return matchesSearch;
+	});
+
+	const serverTotal = data?.total ?? 0;
+	const isFiltering = searchQuery !== "";
+	// フィルタリング中はフィルタ結果の件数を、それ以外はサーバーの総件数を使用
+	const displayTotal = isFiltering ? filteredItems.length : serverTotal;
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["credit-roles"] });
@@ -90,170 +105,166 @@ function CreditRolesPage() {
 		}
 	};
 
-	const totalPages = Math.ceil(total / limit);
+	const handlePageSizeChange = (newPageSize: number) => {
+		setPageSize(newPageSize);
+		setPage(1);
+	};
+
 	const displayError =
 		mutationError || (error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto py-6">
-			<Card>
-				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-					<div>
-						<CardTitle className="font-bold text-2xl">
-							クレジット役割管理
-						</CardTitle>
-						<p className="text-muted-foreground text-sm">
-							{total}件のクレジット役割が登録されています
-						</p>
-					</div>
-					<div className="flex gap-2">
-						<ImportDialog
-							title="クレジット役割のインポート"
-							onImport={importApi.creditRoles}
-							onSuccess={invalidateQuery}
-						/>
-						<CreateDialog
-							title="新規クレジット役割"
-							description="新しいクレジット役割を登録します"
-							fields={[
-								{
-									name: "code",
-									label: "コード",
-									placeholder: "例: composer",
-									required: true,
-								},
-								{
-									name: "label",
-									label: "ラベル",
-									placeholder: "例: 作曲",
-									required: true,
-								},
-								{
-									name: "description",
-									label: "説明",
-									placeholder: "例: 楽曲の作曲者",
-								},
-							]}
-							onCreate={handleCreate}
-							onSuccess={invalidateQuery}
-						/>
-					</div>
-				</CardHeader>
-				<CardContent>
-					{displayError && (
-						<div className="mb-4 rounded-md bg-destructive/10 p-3 text-destructive text-sm">
-							{displayError}
-						</div>
-					)}
+			<AdminPageHeader
+				title="クレジット役割管理"
+				description={`${serverTotal}件のクレジット役割が登録されています`}
+				breadcrumbs={[
+					{ label: "ダッシュボード", href: "/admin" },
+					{ label: "マスタ管理", href: "/admin" },
+					{ label: "クレジット役割" },
+				]}
+			>
+				<ImportDialog
+					title="クレジット役割のインポート"
+					onImport={importApi.creditRoles}
+					onSuccess={invalidateQuery}
+				/>
+			</AdminPageHeader>
 
-					{isLoading ? (
-						<div className="space-y-2">
-							{[...Array(5)].map((_, i) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: Loading skeleton
-								<Skeleton key={i} className="h-12 w-full" />
-							))}
-						</div>
-					) : (
-						<>
-							<div className="rounded-md border">
-								<Table>
-									<TableHeader>
-										<TableRow>
-											<TableHead className="w-[150px]">コード</TableHead>
-											<TableHead className="w-[200px]">ラベル</TableHead>
-											<TableHead>説明</TableHead>
-											<TableHead className="w-[70px]" />
+			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
+				<DataTableActionBar
+					className="border-base-300 border-b p-4"
+					searchPlaceholder="ラベルまたはコードで検索..."
+					searchValue={searchQuery}
+					onSearchChange={setSearchQuery}
+					primaryAction={{
+						label: "新規作成",
+						onClick: () => setIsCreateDialogOpen(true),
+					}}
+				/>
+
+				{displayError && (
+					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+						{displayError}
+					</div>
+				)}
+
+				{isLoading ? (
+					<DataTableSkeleton
+						rows={5}
+						columns={4}
+						showActionBar={false}
+						showPagination={false}
+					/>
+				) : (
+					<>
+						<Table>
+							<TableHeader>
+								<TableRow className="hover:bg-transparent">
+									<TableHead className="w-[150px]">コード</TableHead>
+									<TableHead className="w-[200px]">ラベル</TableHead>
+									<TableHead>説明</TableHead>
+									<TableHead className="w-[70px]" />
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{filteredItems.length === 0 ? (
+									<TableRow>
+										<TableCell
+											colSpan={4}
+											className="h-24 text-center text-base-content/50"
+										>
+											データがありません
+										</TableCell>
+									</TableRow>
+								) : (
+									filteredItems.map((c) => (
+										<TableRow key={c.code}>
+											<TableCell className="font-mono text-sm">
+												{c.code}
+											</TableCell>
+											<TableCell className="font-medium">{c.label}</TableCell>
+											<TableCell className="text-base-content/70">
+												{c.description || "-"}
+											</TableCell>
+											<TableCell>
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button variant="ghost" size="icon">
+															<MoreHorizontal className="h-4 w-4" />
+															<span className="sr-only">メニューを開く</span>
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent align="end">
+														<DropdownMenuItem
+															onClick={() => {
+																setEditingItem(c);
+																setEditForm({
+																	label: c.label,
+																	description: c.description,
+																});
+															}}
+														>
+															<Pencil className="mr-2 h-4 w-4" />
+															編集
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															className="text-error"
+															onClick={() => handleDelete(c.code)}
+														>
+															<Trash2 className="mr-2 h-4 w-4" />
+															削除
+														</DropdownMenuItem>
+													</DropdownMenuContent>
+												</DropdownMenu>
+											</TableCell>
 										</TableRow>
-									</TableHeader>
-									<TableBody>
-										{creditRoles.length === 0 ? (
-											<TableRow>
-												<TableCell
-													colSpan={4}
-													className="h-24 text-center text-muted-foreground"
-												>
-													データがありません
-												</TableCell>
-											</TableRow>
-										) : (
-											creditRoles.map((c) => (
-												<TableRow key={c.code}>
-													<TableCell className="font-mono text-sm">
-														{c.code}
-													</TableCell>
-													<TableCell className="font-medium">
-														{c.label}
-													</TableCell>
-													<TableCell className="text-muted-foreground">
-														{c.description || "-"}
-													</TableCell>
-													<TableCell>
-														<DropdownMenu>
-															<DropdownMenuTrigger asChild>
-																<Button variant="ghost" size="icon">
-																	<MoreHorizontal className="h-4 w-4" />
-																	<span className="sr-only">
-																		メニューを開く
-																	</span>
-																</Button>
-															</DropdownMenuTrigger>
-															<DropdownMenuContent align="end">
-																<DropdownMenuItem
-																	onClick={() => {
-																		setEditingItem(c);
-																		setEditForm({
-																			label: c.label,
-																			description: c.description,
-																		});
-																	}}
-																>
-																	<Pencil className="mr-2 h-4 w-4" />
-																	編集
-																</DropdownMenuItem>
-																<DropdownMenuItem
-																	className="text-destructive"
-																	onClick={() => handleDelete(c.code)}
-																>
-																	<Trash2 className="mr-2 h-4 w-4" />
-																	削除
-																</DropdownMenuItem>
-															</DropdownMenuContent>
-														</DropdownMenu>
-													</TableCell>
-												</TableRow>
-											))
-										)}
-									</TableBody>
-								</Table>
-							</div>
+									))
+								)}
+							</TableBody>
+						</Table>
 
-							{totalPages > 1 && (
-								<div className="mt-4 flex items-center justify-center gap-2">
-									<Button
-										size="sm"
-										variant="outline"
-										disabled={page === 1}
-										onClick={() => setPage(page - 1)}
-									>
-										前へ
-									</Button>
-									<span className="text-muted-foreground text-sm">
-										{page} / {totalPages}
-									</span>
-									<Button
-										size="sm"
-										variant="outline"
-										disabled={page === totalPages}
-										onClick={() => setPage(page + 1)}
-									>
-										次へ
-									</Button>
-								</div>
-							)}
-						</>
-					)}
-				</CardContent>
-			</Card>
+						<div className="border-base-300 border-t p-4">
+							<DataTablePagination
+								page={page}
+								pageSize={pageSize}
+								total={displayTotal}
+								onPageChange={setPage}
+								onPageSizeChange={handlePageSizeChange}
+							/>
+						</div>
+					</>
+				)}
+			</div>
+
+			{/* 新規作成ダイアログ */}
+			<CreateDialog
+				title="新規クレジット役割"
+				description="新しいクレジット役割を登録します"
+				fields={[
+					{
+						name: "code",
+						label: "コード",
+						placeholder: "例: composer",
+						required: true,
+					},
+					{
+						name: "label",
+						label: "ラベル",
+						placeholder: "例: 作曲",
+						required: true,
+					},
+					{
+						name: "description",
+						label: "説明",
+						placeholder: "例: 楽曲の作曲者",
+					},
+				]}
+				onCreate={handleCreate}
+				onSuccess={invalidateQuery}
+				open={isCreateDialogOpen}
+				onOpenChange={setIsCreateDialogOpen}
+			/>
 
 			{/* 編集ダイアログ */}
 			<Dialog

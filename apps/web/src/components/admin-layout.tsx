@@ -28,7 +28,7 @@ export function AdminLayout({ user }: AdminLayoutProps) {
 			{/* Main content */}
 			<div className="drawer-content flex flex-col">
 				<AdminNavbar user={user} />
-				<main className="flex-1 bg-base-200/50 p-4">
+				<main className="flex-1 bg-base-200/30 p-4 lg:p-6">
 					<Outlet />
 				</main>
 			</div>

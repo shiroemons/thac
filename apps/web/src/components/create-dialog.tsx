@@ -25,6 +25,8 @@ interface CreateDialogProps {
 	fields: FieldConfig[];
 	onCreate: (data: Record<string, string>) => Promise<void>;
 	onSuccess?: () => void;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 }
 
 export function CreateDialog({
@@ -33,8 +35,14 @@ export function CreateDialog({
 	fields,
 	onCreate,
 	onSuccess,
+	open,
+	onOpenChange,
 }: CreateDialogProps) {
-	const [isOpen, setIsOpen] = useState(false);
+	const [internalOpen, setInternalOpen] = useState(false);
+
+	// 外部制御と内部制御の両方をサポート
+	const isOpen = open ?? internalOpen;
+	const setIsOpen = onOpenChange ?? setInternalOpen;
 	const [formData, setFormData] = useState<Record<string, string>>(() =>
 		fields.reduce(
 			(acc, field) => {
@@ -88,11 +96,16 @@ export function CreateDialog({
 		setError(null);
 	};
 
+	// 外部制御の場合はトリガーを表示しない
+	const isControlled = open !== undefined;
+
 	return (
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
-			<DialogTrigger asChild>
-				<Button>新規作成</Button>
-			</DialogTrigger>
+			{!isControlled && (
+				<DialogTrigger asChild>
+					<Button>新規作成</Button>
+				</DialogTrigger>
+			)}
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>

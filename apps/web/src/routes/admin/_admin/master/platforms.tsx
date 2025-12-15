@@ -2,11 +2,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
+import { DataTablePagination } from "@/components/admin/data-table-pagination";
+import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { CreateDialog } from "@/components/create-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -22,7 +25,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -44,23 +46,46 @@ const categoryColors: Record<string, string> = {
 	shop: "bg-purple-500",
 };
 
+const categoryOptions = [
+	{ value: "streaming", label: "Streaming" },
+	{ value: "video", label: "Video" },
+	{ value: "download", label: "Download" },
+	{ value: "shop", label: "Shop" },
+];
+
 function PlatformsPage() {
 	const queryClient = useQueryClient();
 	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(20);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [categoryFilter, setCategoryFilter] = useState("");
 	const [editingPlatform, setEditingPlatform] = useState<Platform | null>(null);
 	const [editForm, setEditForm] = useState<Partial<Platform>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
-
-	const limit = 20;
+	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["platforms", page, limit],
-		queryFn: () => platformsApi.list({ page, limit }),
+		queryKey: ["platforms", page, pageSize],
+		queryFn: () => platformsApi.list({ page, limit: pageSize }),
 		staleTime: 30_000,
 	});
 
-	const platforms = data?.data ?? [];
-	const total = data?.total ?? 0;
+	// クライアントサイドでフィルタリング
+	const allPlatforms = data?.data ?? [];
+	const filteredPlatforms = allPlatforms.filter((p) => {
+		const matchesSearch =
+			searchQuery === "" ||
+			p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			p.code.toLowerCase().includes(searchQuery.toLowerCase());
+		const matchesCategory =
+			categoryFilter === "" || p.category === categoryFilter;
+		return matchesSearch && matchesCategory;
+	});
+
+	const serverTotal = data?.total ?? 0;
+	const isFiltering = searchQuery !== "" || categoryFilter !== "";
+	// フィルタリング中はフィルタ結果の件数を、それ以外はサーバーの総件数を使用
+	const displayTotal = isFiltering ? filteredPlatforms.length : serverTotal;
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["platforms"] });
@@ -100,189 +125,189 @@ function PlatformsPage() {
 		}
 	};
 
-	const totalPages = Math.ceil(total / limit);
+	const handlePageSizeChange = (newPageSize: number) => {
+		setPageSize(newPageSize);
+		setPage(1);
+	};
+
 	const displayError =
 		mutationError || (error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto py-6">
-			<Card>
-				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-					<div>
-						<CardTitle className="font-bold text-2xl">
-							プラットフォーム管理
-						</CardTitle>
-						<p className="text-muted-foreground text-sm">
-							{total}件のプラットフォームが登録されています
-						</p>
-					</div>
-					<div className="flex gap-2">
-						<ImportDialog
-							title="プラットフォームのインポート"
-							onImport={importApi.platforms}
-							onSuccess={invalidateQuery}
-						/>
-						<CreateDialog
-							title="新規プラットフォーム"
-							description="新しいプラットフォームを登録します"
-							fields={[
-								{
-									name: "code",
-									label: "コード",
-									placeholder: "例: spotify",
-									required: true,
-								},
-								{
-									name: "name",
-									label: "名前",
-									placeholder: "例: Spotify",
-									required: true,
-								},
-								{
-									name: "category",
-									label: "カテゴリ",
-									placeholder: "例: streaming",
-								},
-								{
-									name: "urlPattern",
-									label: "URLパターン",
-									placeholder: "例: ^https?://open\\.spotify\\.com/",
-								},
-							]}
-							onCreate={handleCreate}
-							onSuccess={invalidateQuery}
-						/>
-					</div>
-				</CardHeader>
-				<CardContent>
-					{displayError && (
-						<div className="mb-4 rounded-md bg-destructive/10 p-3 text-destructive text-sm">
-							{displayError}
-						</div>
-					)}
+			<AdminPageHeader
+				title="プラットフォーム管理"
+				description={`${serverTotal}件のプラットフォームが登録されています`}
+				breadcrumbs={[
+					{ label: "ダッシュボード", href: "/admin" },
+					{ label: "マスタ管理", href: "/admin" },
+					{ label: "プラットフォーム" },
+				]}
+			>
+				<ImportDialog
+					title="プラットフォームのインポート"
+					onImport={importApi.platforms}
+					onSuccess={invalidateQuery}
+				/>
+			</AdminPageHeader>
 
-					{isLoading ? (
-						<div className="space-y-2">
-							{[...Array(5)].map((_, i) => (
-								// biome-ignore lint/suspicious/noArrayIndexKey: Loading skeleton
-								<Skeleton key={i} className="h-12 w-full" />
-							))}
-						</div>
-					) : (
-						<>
-							<div className="rounded-md border">
-								<Table>
-									<TableHeader>
-										<TableRow>
-											<TableHead className="w-[150px]">コード</TableHead>
-											<TableHead>名前</TableHead>
-											<TableHead className="w-[120px]">カテゴリ</TableHead>
-											<TableHead>URLパターン</TableHead>
-											<TableHead className="w-[70px]" />
+			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
+				<DataTableActionBar
+					className="border-base-300 border-b p-4"
+					searchPlaceholder="名前またはコードで検索..."
+					searchValue={searchQuery}
+					onSearchChange={setSearchQuery}
+					filterOptions={categoryOptions}
+					filterValue={categoryFilter}
+					filterPlaceholder="カテゴリを選択"
+					onFilterChange={setCategoryFilter}
+					primaryAction={{
+						label: "新規作成",
+						onClick: () => setIsCreateDialogOpen(true),
+					}}
+				/>
+
+				{displayError && (
+					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+						{displayError}
+					</div>
+				)}
+
+				{isLoading ? (
+					<DataTableSkeleton
+						rows={5}
+						columns={5}
+						showActionBar={false}
+						showPagination={false}
+					/>
+				) : (
+					<>
+						<Table>
+							<TableHeader>
+								<TableRow className="hover:bg-transparent">
+									<TableHead className="w-[150px]">コード</TableHead>
+									<TableHead>名前</TableHead>
+									<TableHead className="w-[120px]">カテゴリ</TableHead>
+									<TableHead>URLパターン</TableHead>
+									<TableHead className="w-[70px]" />
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{filteredPlatforms.length === 0 ? (
+									<TableRow>
+										<TableCell
+											colSpan={5}
+											className="h-24 text-center text-base-content/50"
+										>
+											データがありません
+										</TableCell>
+									</TableRow>
+								) : (
+									filteredPlatforms.map((p) => (
+										<TableRow key={p.code}>
+											<TableCell className="font-mono text-sm">
+												{p.code}
+											</TableCell>
+											<TableCell className="font-medium">{p.name}</TableCell>
+											<TableCell>
+												{p.category ? (
+													<Badge
+														variant="secondary"
+														className={`${categoryColors[p.category] || "bg-gray-500"} text-white`}
+													>
+														{p.category}
+													</Badge>
+												) : (
+													<span className="text-base-content/50">-</span>
+												)}
+											</TableCell>
+											<TableCell className="max-w-[300px] truncate font-mono text-base-content/70 text-xs">
+												{p.urlPattern || "-"}
+											</TableCell>
+											<TableCell>
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button variant="ghost" size="icon">
+															<MoreHorizontal className="h-4 w-4" />
+															<span className="sr-only">メニューを開く</span>
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent align="end">
+														<DropdownMenuItem
+															onClick={() => {
+																setEditingPlatform(p);
+																setEditForm({
+																	name: p.name,
+																	category: p.category,
+																	urlPattern: p.urlPattern,
+																});
+															}}
+														>
+															<Pencil className="mr-2 h-4 w-4" />
+															編集
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															className="text-error"
+															onClick={() => handleDelete(p.code)}
+														>
+															<Trash2 className="mr-2 h-4 w-4" />
+															削除
+														</DropdownMenuItem>
+													</DropdownMenuContent>
+												</DropdownMenu>
+											</TableCell>
 										</TableRow>
-									</TableHeader>
-									<TableBody>
-										{platforms.length === 0 ? (
-											<TableRow>
-												<TableCell
-													colSpan={5}
-													className="h-24 text-center text-muted-foreground"
-												>
-													データがありません
-												</TableCell>
-											</TableRow>
-										) : (
-											platforms.map((p) => (
-												<TableRow key={p.code}>
-													<TableCell className="font-mono text-sm">
-														{p.code}
-													</TableCell>
-													<TableCell className="font-medium">
-														{p.name}
-													</TableCell>
-													<TableCell>
-														{p.category ? (
-															<Badge
-																variant="secondary"
-																className={`${categoryColors[p.category] || "bg-gray-500"} text-white`}
-															>
-																{p.category}
-															</Badge>
-														) : (
-															<span className="text-muted-foreground">-</span>
-														)}
-													</TableCell>
-													<TableCell className="max-w-[300px] truncate font-mono text-muted-foreground text-xs">
-														{p.urlPattern || "-"}
-													</TableCell>
-													<TableCell>
-														<DropdownMenu>
-															<DropdownMenuTrigger asChild>
-																<Button variant="ghost" size="icon">
-																	<MoreHorizontal className="h-4 w-4" />
-																	<span className="sr-only">
-																		メニューを開く
-																	</span>
-																</Button>
-															</DropdownMenuTrigger>
-															<DropdownMenuContent align="end">
-																<DropdownMenuItem
-																	onClick={() => {
-																		setEditingPlatform(p);
-																		setEditForm({
-																			name: p.name,
-																			category: p.category,
-																			urlPattern: p.urlPattern,
-																		});
-																	}}
-																>
-																	<Pencil className="mr-2 h-4 w-4" />
-																	編集
-																</DropdownMenuItem>
-																<DropdownMenuItem
-																	className="text-destructive"
-																	onClick={() => handleDelete(p.code)}
-																>
-																	<Trash2 className="mr-2 h-4 w-4" />
-																	削除
-																</DropdownMenuItem>
-															</DropdownMenuContent>
-														</DropdownMenu>
-													</TableCell>
-												</TableRow>
-											))
-										)}
-									</TableBody>
-								</Table>
-							</div>
+									))
+								)}
+							</TableBody>
+						</Table>
 
-							{totalPages > 1 && (
-								<div className="mt-4 flex items-center justify-center gap-2">
-									<Button
-										size="sm"
-										variant="outline"
-										disabled={page === 1}
-										onClick={() => setPage(page - 1)}
-									>
-										前へ
-									</Button>
-									<span className="text-muted-foreground text-sm">
-										{page} / {totalPages}
-									</span>
-									<Button
-										size="sm"
-										variant="outline"
-										disabled={page === totalPages}
-										onClick={() => setPage(page + 1)}
-									>
-										次へ
-									</Button>
-								</div>
-							)}
-						</>
-					)}
-				</CardContent>
-			</Card>
+						<div className="border-base-300 border-t p-4">
+							<DataTablePagination
+								page={page}
+								pageSize={pageSize}
+								total={displayTotal}
+								onPageChange={setPage}
+								onPageSizeChange={handlePageSizeChange}
+							/>
+						</div>
+					</>
+				)}
+			</div>
+
+			{/* 新規作成ダイアログ */}
+			<CreateDialog
+				title="新規プラットフォーム"
+				description="新しいプラットフォームを登録します"
+				fields={[
+					{
+						name: "code",
+						label: "コード",
+						placeholder: "例: spotify",
+						required: true,
+					},
+					{
+						name: "name",
+						label: "名前",
+						placeholder: "例: Spotify",
+						required: true,
+					},
+					{
+						name: "category",
+						label: "カテゴリ",
+						placeholder: "例: streaming",
+					},
+					{
+						name: "urlPattern",
+						label: "URLパターン",
+						placeholder: "例: ^https?://open\\.spotify\\.com/",
+					},
+				]}
+				onCreate={handleCreate}
+				onSuccess={invalidateQuery}
+				open={isCreateDialogOpen}
+				onOpenChange={setIsCreateDialogOpen}
+			/>
 
 			{/* 編集ダイアログ */}
 			<Dialog
