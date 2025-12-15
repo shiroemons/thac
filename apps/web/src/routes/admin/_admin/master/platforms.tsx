@@ -145,7 +145,6 @@ function PlatformsPage() {
 		<div className="container mx-auto py-6">
 			<AdminPageHeader
 				title="プラットフォーム管理"
-				description={`${total}件のプラットフォームが登録されています`}
 				breadcrumbs={[
 					{ label: "ダッシュボード", href: "/admin" },
 					{ label: "マスタ管理" },

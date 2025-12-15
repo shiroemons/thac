@@ -121,7 +121,6 @@ function AliasTypesPage() {
 		<div className="container mx-auto py-6">
 			<AdminPageHeader
 				title="別名義種別管理"
-				description={`${total}件の別名義種別が登録されています`}
 				breadcrumbs={[
 					{ label: "ダッシュボード", href: "/admin" },
 					{ label: "マスタ管理" },

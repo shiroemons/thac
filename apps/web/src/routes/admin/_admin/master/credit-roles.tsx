@@ -121,7 +121,6 @@ function CreditRolesPage() {
 		<div className="container mx-auto py-6">
 			<AdminPageHeader
 				title="クレジット役割管理"
-				description={`${total}件のクレジット役割が登録されています`}
 				breadcrumbs={[
 					{ label: "ダッシュボード", href: "/admin" },
 					{ label: "マスタ管理" },

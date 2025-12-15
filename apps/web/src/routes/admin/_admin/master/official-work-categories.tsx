@@ -129,7 +129,6 @@ function OfficialWorkCategoriesPage() {
 		<div className="container mx-auto py-6">
 			<AdminPageHeader
 				title="公式作品カテゴリ管理"
-				description={`${total}件の公式作品カテゴリが登録されています`}
 				breadcrumbs={[
 					{ label: "ダッシュボード", href: "/admin" },
 					{ label: "マスタ管理" },
