@@ -136,10 +136,10 @@ export function CreateDialog({
 					)}
 				</div>
 				<DialogFooter>
-					<Button variant="outline" onClick={handleClose}>
+					<Button variant="ghost" onClick={handleClose}>
 						キャンセル
 					</Button>
-					<Button onClick={handleCreate} disabled={loading}>
+					<Button variant="primary" onClick={handleCreate} disabled={loading}>
 						{loading ? "作成中..." : "作成"}
 					</Button>
 				</DialogFooter>
