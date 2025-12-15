@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Turborepoによるモノレポ構成のフルスタックWebアプリケーション。
 
 ### Apps
-- **apps/web**: TanStack Start（SSR）、TanStack Router、TailwindCSS v4、shadcn/uiを使用したReactフロントエンド
+- **apps/web**: TanStack Start（SSR）、TanStack Router、TailwindCSS v4、daisyUIを使用したReactフロントエンド
 - **apps/server**: Bun上で動作するHono APIサーバー
 
 ### Packages（共有ライブラリ）
@@ -38,7 +38,7 @@ packages/auth → @thac/db
 - Drizzle ORM
 - Better-Auth
 - TailwindCSS
-- shadcn/ui
+- daisyUI
 
 ### Hono について
 

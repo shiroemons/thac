@@ -13,7 +13,7 @@ TanStack Start（SSR）ベースのReactフロントエンド（http://localhost
 - **フレームワーク**: TanStack Start（SSR対応）
 - **ルーティング**: TanStack Router
 - **スタイリング**: TailwindCSS v4
-- **UIコンポーネント**: shadcn/ui
+- **UIコンポーネント**: daisyUI
 
 ## ディレクトリ構成
 
@@ -21,7 +21,7 @@ TanStack Start（SSR）ベースのReactフロントエンド（http://localhost
 apps/web/src/
 ├── routes/           # ページルート（TanStack Router）
 ├── components/       # Reactコンポーネント
-│   └── ui/          # shadcn/uiコンポーネント
+│   └── ui/          # daisyUIベースのカスタムコンポーネント
 ├── lib/             # ユーティリティ
 ├── middleware/      # ミドルウェア
 ├── functions/       # サーバー関数
@@ -33,5 +33,5 @@ apps/web/src/
 
 - ルートは`src/routes/`に配置（TanStack Routerが自動検出）
 - `routeTree.gen.ts`は自動生成されるため手動編集しない
-- UIコンポーネントは`components/ui/`に配置（shadcn/ui）
+- UIコンポーネントは`components/ui/`に配置（daisyUIベースのラッパーコンポーネント）
 - 認証クライアントは`lib/auth-client.ts`を使用

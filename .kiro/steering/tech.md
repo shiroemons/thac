@@ -17,7 +17,7 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 - **Framework**: TanStack Start（SSR）
 - **Routing**: TanStack Router（ファイルベースルーティング）
 - **State**: TanStack Query（サーバー状態管理）
-- **UI**: React 19 + shadcn/ui + TailwindCSS v4
+- **UI**: React 19 + daisyUI + TailwindCSS v4
 
 ### Backend (apps/server)
 - **Framework**: Hono
