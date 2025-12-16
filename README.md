@@ -7,7 +7,7 @@
 - **TypeScript** - 型安全性と開発者体験の向上
 - **TanStack Start** - TanStack Routerを使用したSSRフレームワーク
 - **TailwindCSS** - 高速なUI開発のためのユーティリティファーストCSS
-- **shadcn/ui** - 再利用可能なUIコンポーネント
+- **daisyUI** - Tailwind CSSベースのUIコンポーネント
 - **Hono** - 軽量で高性能なサーバーフレームワーク
 - **Bun** - ランタイム環境
 - **Drizzle** - TypeScriptファーストのORM
