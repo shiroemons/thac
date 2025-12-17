@@ -27,12 +27,48 @@ export interface OfficialWorkCategory {
 	description: string | null;
 }
 
+export interface OfficialWork {
+	id: string;
+	categoryCode: string;
+	name: string;
+	nameJa: string;
+	nameEn: string | null;
+	shortNameJa: string | null;
+	shortNameEn: string | null;
+	seriesCode: string | null;
+	numberInSeries: number | null;
+	releaseDate: string | null;
+	officialOrganization: string | null;
+	position: number | null;
+	notes: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface OfficialSong {
+	id: string;
+	officialWorkId: string | null;
+	name: string;
+	nameJa: string;
+	nameEn: string | null;
+	themeType: string | null;
+	composerName: string | null;
+	isOfficialArrangement: boolean;
+	sourceSongId: string | null;
+	notes: string | null;
+	createdAt: string;
+	updatedAt: string;
+	workName?: string | null;
+}
+
 export interface DashboardStats {
 	users: number;
 	platforms: number;
 	aliasTypes: number;
 	creditRoles: number;
 	officialWorkCategories: number;
+	officialWorks: number;
+	officialSongs: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -215,6 +251,10 @@ export const importApi = {
 		uploadFile("/api/admin/master/credit-roles/import", file),
 	officialWorkCategories: (file: File) =>
 		uploadFile("/api/admin/master/official-work-categories/import", file),
+	officialWorks: (file: File) =>
+		uploadFile("/api/admin/official/works/import", file),
+	officialSongs: (file: File) =>
+		uploadFile("/api/admin/official/songs/import", file),
 };
 
 export const officialWorkCategoriesApi = {
@@ -255,6 +295,88 @@ export const officialWorkCategoriesApi = {
 				method: "DELETE",
 			},
 		),
+};
+
+// Official Works
+export const officialWorksApi = {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		category?: string;
+		search?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.category) searchParams.set("category", params.category);
+		if (params?.search) searchParams.set("search", params.search);
+		const query = searchParams.toString();
+		return fetchWithAuth<PaginatedResponse<OfficialWork>>(
+			`/api/admin/official/works${query ? `?${query}` : ""}`,
+		);
+	},
+	get: (id: string) =>
+		fetchWithAuth<OfficialWork>(`/api/admin/official/works/${id}`),
+	create: (data: Omit<OfficialWork, "createdAt" | "updatedAt">) =>
+		fetchWithAuth<OfficialWork>("/api/admin/official/works", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		id: string,
+		data: Partial<Omit<OfficialWork, "id" | "createdAt" | "updatedAt">>,
+	) =>
+		fetchWithAuth<OfficialWork>(`/api/admin/official/works/${id}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (id: string) =>
+		fetchWithAuth<{ success: boolean }>(`/api/admin/official/works/${id}`, {
+			method: "DELETE",
+		}),
+};
+
+// Official Songs
+export const officialSongsApi = {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		workId?: string;
+		themeType?: string;
+		search?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.workId) searchParams.set("workId", params.workId);
+		if (params?.themeType) searchParams.set("themeType", params.themeType);
+		if (params?.search) searchParams.set("search", params.search);
+		const query = searchParams.toString();
+		return fetchWithAuth<PaginatedResponse<OfficialSong>>(
+			`/api/admin/official/songs${query ? `?${query}` : ""}`,
+		);
+	},
+	get: (id: string) =>
+		fetchWithAuth<OfficialSong>(`/api/admin/official/songs/${id}`),
+	create: (data: Omit<OfficialSong, "createdAt" | "updatedAt" | "workName">) =>
+		fetchWithAuth<OfficialSong>("/api/admin/official/songs", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		id: string,
+		data: Partial<
+			Omit<OfficialSong, "id" | "createdAt" | "updatedAt" | "workName">
+		>,
+	) =>
+		fetchWithAuth<OfficialSong>(`/api/admin/official/songs/${id}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (id: string) =>
+		fetchWithAuth<{ success: boolean }>(`/api/admin/official/songs/${id}`, {
+			method: "DELETE",
+		}),
 };
 
 // Stats
