@@ -142,12 +142,52 @@ export function validateRows<T>(
 }
 
 /**
+ * TSVテキストをパースしてオブジェクト配列に変換
+ */
+export function parseTSV(tsvText: string): Record<string, string>[] {
+	const lines = tsvText.trim().split("\n");
+	if (lines.length < 2) {
+		return [];
+	}
+
+	const headerLine = lines[0];
+	if (!headerLine) {
+		return [];
+	}
+
+	const headers = headerLine.split("\t").map((h) => h.trim());
+	const rows: Record<string, string>[] = [];
+
+	for (let i = 1; i < lines.length; i++) {
+		const line = lines[i];
+		if (!line) continue;
+
+		const values = line.split("\t").map((v) => v.trim());
+		const row: Record<string, string> = {};
+		for (let j = 0; j < headers.length; j++) {
+			const header = headers[j];
+			if (header) {
+				row[header] = values[j] || "";
+			}
+		}
+		rows.push(row);
+	}
+
+	return rows;
+}
+
+/**
  * ファイルの種類を判定
  */
-export function detectFileType(filename: string): "csv" | "json" | "unknown" {
+export function detectFileType(
+	filename: string,
+): "csv" | "tsv" | "json" | "unknown" {
 	const lower = filename.toLowerCase();
 	if (lower.endsWith(".csv")) {
 		return "csv";
+	}
+	if (lower.endsWith(".tsv")) {
+		return "tsv";
 	}
 	if (lower.endsWith(".json")) {
 		return "json";
@@ -172,7 +212,7 @@ export function parseAndValidate<T>(
 				{
 					row: 0,
 					errors: [
-						"サポートされていないファイル形式です（.csv または .json のみ）",
+						"サポートされていないファイル形式です（.csv, .tsv または .json のみ）",
 					],
 				},
 			],
@@ -184,6 +224,8 @@ export function parseAndValidate<T>(
 
 		if (fileType === "csv") {
 			rows = parseCSV(content);
+		} else if (fileType === "tsv") {
+			rows = parseTSV(content);
 		} else {
 			rows = parseJSON(content);
 		}

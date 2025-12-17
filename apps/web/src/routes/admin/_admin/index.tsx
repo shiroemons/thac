@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FolderOpen, MonitorSmartphone, UserCog, Users } from "lucide-react";
+import {
+	Disc,
+	FolderOpen,
+	MonitorSmartphone,
+	Music,
+	UserCog,
+	Users,
+} from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { statsApi } from "@/lib/api-client";
 
@@ -58,6 +65,21 @@ function AdminDashboard() {
 		staleTime: 60_000,
 	});
 
+	const officialStats = [
+		{
+			title: "公式作品",
+			value: data?.officialWorks,
+			icon: <Disc className="h-8 w-8" />,
+			href: "/admin/official/works" as const,
+		},
+		{
+			title: "公式楽曲",
+			value: data?.officialSongs,
+			icon: <Music className="h-8 w-8" />,
+			href: "/admin/official/songs" as const,
+		},
+	];
+
 	const masterStats = [
 		{
 			title: "プラットフォーム",
@@ -108,6 +130,23 @@ function AdminDashboard() {
 					<h2 className="mb-3 font-semibold text-lg">マスタ管理</h2>
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 						{masterStats.map((stat) => (
+							<StatCard
+								key={stat.title}
+								title={stat.title}
+								value={stat.value}
+								icon={stat.icon}
+								href={stat.href}
+								isLoading={isLoading}
+							/>
+						))}
+					</div>
+				</section>
+
+				{/* 公式管理 */}
+				<section>
+					<h2 className="mb-3 font-semibold text-lg">公式管理</h2>
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+						{officialStats.map((stat) => (
 							<StatCard
 								key={stat.title}
 								title={stat.title}

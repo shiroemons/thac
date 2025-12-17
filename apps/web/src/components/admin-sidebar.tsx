@@ -1,9 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
 	Database,
+	Disc,
 	FolderOpen,
 	LayoutDashboard,
 	MonitorSmartphone,
+	Music,
 	UserCog,
 	Users,
 } from "lucide-react";
@@ -47,6 +49,22 @@ const navItems: NavEntry[] = [
 				to: "/admin/master/official-work-categories",
 				label: "公式作品カテゴリ",
 				icon: FolderOpen,
+			},
+		],
+	},
+	{
+		label: "公式管理",
+		icon: Disc,
+		items: [
+			{
+				to: "/admin/official/works",
+				label: "公式作品",
+				icon: Disc,
+			},
+			{
+				to: "/admin/official/songs",
+				label: "公式楽曲",
+				icon: Music,
 			},
 		],
 	},

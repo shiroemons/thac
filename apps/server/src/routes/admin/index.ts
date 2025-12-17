@@ -4,6 +4,7 @@ import {
 	adminAuthMiddleware,
 } from "../../middleware/admin-auth";
 import { masterRouter } from "./master";
+import { officialRouter } from "./official";
 import { statsRouter } from "./stats";
 
 const adminRouter = new Hono<AdminContext>();
@@ -16,5 +17,8 @@ adminRouter.route("/stats", statsRouter);
 
 // マスタデータ管理ルート
 adminRouter.route("/master", masterRouter);
+
+// 公式作品・楽曲管理ルート
+adminRouter.route("/official", officialRouter);
 
 export { adminRouter };
