@@ -111,8 +111,12 @@ function EventsPage() {
 			});
 			// シリーズ一覧を更新
 			queryClient.invalidateQueries({ queryKey: ["event-series"] });
-			// 新しいシリーズを選択状態にする
-			setCreateForm({ ...createForm, eventSeriesId: newSeries.id });
+			// 新しいシリーズを選択状態にする（新規作成または編集中のフォーム）
+			if (editingEvent) {
+				setEditForm({ ...editForm, eventSeriesId: newSeries.id });
+			} else {
+				setCreateForm({ ...createForm, eventSeriesId: newSeries.id });
+			}
 			setIsSeriesDialogOpen(false);
 			setNewSeriesName("");
 		} catch (e) {
@@ -646,20 +650,31 @@ function EventsPage() {
 							<Label htmlFor="edit-seriesId">
 								シリーズ <span className="text-error">*</span>
 							</Label>
-							<Select
-								id="edit-seriesId"
-								value={editForm.eventSeriesId || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, eventSeriesId: e.target.value })
-								}
-							>
-								<option value="">選択してください</option>
-								{seriesList.map((s) => (
-									<option key={s.id} value={s.id}>
-										{s.name}
-									</option>
-								))}
-							</Select>
+							<div className="flex items-center gap-2">
+								<Select
+									id="edit-seriesId"
+									value={editForm.eventSeriesId || ""}
+									onChange={(e) =>
+										setEditForm({ ...editForm, eventSeriesId: e.target.value })
+									}
+									className="flex-1"
+								>
+									<option value="">選択してください</option>
+									{seriesList.map((s) => (
+										<option key={s.id} value={s.id}>
+											{s.name}
+										</option>
+									))}
+								</Select>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => setIsSeriesDialogOpen(true)}
+								>
+									<Plus className="mr-1 h-4 w-4" />
+									新規シリーズ
+								</Button>
+							</div>
 						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="edit-name">

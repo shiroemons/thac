@@ -13,6 +13,7 @@ export const eventSeries = sqliteTable(
 	{
 		id: text("id").primaryKey(),
 		name: text("name").notNull(),
+		sortOrder: integer("sort_order").default(0).notNull(),
 		createdAt: integer("created_at", { mode: "timestamp_ms" })
 			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 			.notNull(),
@@ -23,6 +24,7 @@ export const eventSeries = sqliteTable(
 	},
 	(table) => [
 		index("idx_event_series_name").on(table.name),
+		index("idx_event_series_sort_order").on(table.sortOrder),
 		uniqueIndex("uq_event_series_name").on(table.name),
 	],
 );

@@ -21,10 +21,20 @@ const requiredDateSchema = z
 export const insertEventSeriesSchema = createInsertSchema(eventSeries, {
 	id: nonEmptyString,
 	name: nonEmptyString.max(200, "200文字以内で入力してください"),
+	sortOrder: z
+		.number()
+		.int()
+		.min(0, "0以上の整数を入力してください")
+		.optional(),
 }).omit({ createdAt: true, updatedAt: true });
 
 export const updateEventSeriesSchema = z.object({
 	name: nonEmptyString.max(200, "200文字以内で入力してください").optional(),
+	sortOrder: z
+		.number()
+		.int()
+		.min(0, "0以上の整数を入力してください")
+		.optional(),
 });
 
 export const selectEventSeriesSchema = createSelectSchema(eventSeries);

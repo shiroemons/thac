@@ -5,6 +5,7 @@ import {
 	CircleUser,
 	Disc,
 	FolderOpen,
+	Layers,
 	MonitorSmartphone,
 	Music,
 	UserCog,
@@ -105,6 +106,12 @@ function AdminDashboard() {
 	];
 
 	const eventStats = [
+		{
+			title: "イベントシリーズ",
+			value: data?.eventSeries,
+			icon: <Layers className="h-8 w-8" />,
+			href: "/admin/event-series" as const,
+		},
 		{
 			title: "イベント",
 			value: data?.events,

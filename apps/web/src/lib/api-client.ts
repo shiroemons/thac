@@ -73,6 +73,7 @@ export interface DashboardStats {
 	artistAliases: number;
 	circles: number;
 	events: number;
+	eventSeries: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -650,6 +651,7 @@ export const circleLinksApi = {
 export interface EventSeries {
 	id: string;
 	name: string;
+	sortOrder: number;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -707,6 +709,11 @@ export const eventSeriesApi = {
 	delete: (id: string) =>
 		fetchWithAuth<{ success: boolean }>(`/api/admin/event-series/${id}`, {
 			method: "DELETE",
+		}),
+	reorder: (items: { id: string; sortOrder: number }[]) =>
+		fetchWithAuth<{ success: boolean }>("/api/admin/event-series/reorder", {
+			method: "PUT",
+			body: JSON.stringify({ items }),
 		}),
 };
 

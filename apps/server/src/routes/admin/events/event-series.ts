@@ -1,4 +1,5 @@
 import {
+	asc,
 	count,
 	db,
 	eq,
@@ -6,6 +7,7 @@ import {
 	events,
 	insertEventSeriesSchema,
 	like,
+	max,
 	sql,
 	updateEventSeriesSchema,
 } from "@thac/db";
@@ -29,7 +31,7 @@ eventSeriesRouter.get("/", async (c) => {
 			.select()
 			.from(eventSeries)
 			.where(whereCondition)
-			.orderBy(eventSeries.name),
+			.orderBy(asc(eventSeries.sortOrder), asc(eventSeries.name)),
 		db.select({ count: count() }).from(eventSeries).where(whereCondition),
 	]);
 
@@ -79,10 +81,47 @@ eventSeriesRouter.post("/", async (c) => {
 		return c.json({ error: "Name already exists" }, 409);
 	}
 
+	// sortOrderが明示的に指定されていない場合は自動設定（最大値 + 1）
+	let sortOrder: number;
+	if (body.sortOrder === undefined || body.sortOrder === null) {
+		const maxResult = await db
+			.select({ maxOrder: max(eventSeries.sortOrder) })
+			.from(eventSeries);
+		sortOrder = (maxResult[0]?.maxOrder ?? -1) + 1;
+	} else {
+		sortOrder = parsed.data.sortOrder ?? 0;
+	}
+
 	// 作成
-	const result = await db.insert(eventSeries).values(parsed.data).returning();
+	const result = await db
+		.insert(eventSeries)
+		.values({ ...parsed.data, sortOrder })
+		.returning();
 
 	return c.json(result[0], 201);
+});
+
+// ソート順序の一括更新（/:id より先に定義する必要がある）
+eventSeriesRouter.put("/reorder", async (c) => {
+	const body = await c.req.json();
+
+	// バリデーション: { items: [{ id: string, sortOrder: number }] }
+	if (!body.items || !Array.isArray(body.items)) {
+		return c.json({ error: "items array is required" }, 400);
+	}
+
+	// 各アイテムのソート順序を更新
+	for (const item of body.items) {
+		if (!item.id || typeof item.sortOrder !== "number") {
+			return c.json({ error: "Each item must have id and sortOrder" }, 400);
+		}
+		await db
+			.update(eventSeries)
+			.set({ sortOrder: item.sortOrder })
+			.where(eq(eventSeries.id, item.id));
+	}
+
+	return c.json({ success: true });
 });
 
 // イベントシリーズ更新
