@@ -43,6 +43,7 @@
         "@tanstack/react-start": "^1.141.1",
         "@tanstack/router-plugin": "^1.141.1",
         "@thac/auth": "workspace:*",
+        "@thac/utils": "workspace:*",
         "better-auth": "catalog:",
         "clsx": "^2.1.1",
         "daisyui": "^5.5.14",
@@ -104,6 +105,13 @@
       "devDependencies": {
         "@thac/config": "workspace:*",
         "drizzle-kit": "^0.31.8",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/utils": {
+      "name": "@thac/utils",
+      "devDependencies": {
+        "@thac/config": "workspace:*",
         "typescript": "catalog:",
       },
     },
@@ -516,6 +524,8 @@
     "@thac/config": ["@thac/config@workspace:packages/config"],
 
     "@thac/db": ["@thac/db@workspace:packages/db"],
+
+    "@thac/utils": ["@thac/utils@workspace:packages/utils"],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.1", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg=="],
 

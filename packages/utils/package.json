@@ -1,0 +1,19 @@
+{
+	"name": "@thac/utils",
+	"type": "module",
+	"exports": {
+		".": {
+			"default": "./src/index.ts"
+		},
+		"./*": {
+			"default": "./src/*.ts"
+		}
+	},
+	"scripts": {
+		"test": "bun test"
+	},
+	"devDependencies": {
+		"typescript": "catalog:",
+		"@thac/config": "workspace:*"
+	}
+}

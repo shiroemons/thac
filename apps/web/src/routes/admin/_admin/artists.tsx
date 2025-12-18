@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { detectInitial } from "@thac/utils";
 import { Pencil, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useState } from "react";
@@ -326,9 +327,16 @@ function ArtistsPage() {
 							<Input
 								id="create-name"
 								value={createForm.name || ""}
-								onChange={(e) =>
-									setCreateForm({ ...createForm, name: e.target.value })
-								}
+								onChange={(e) => {
+									const name = e.target.value;
+									const initial = detectInitial(name);
+									setCreateForm({
+										...createForm,
+										name,
+										initialScript: initial.initialScript as InitialScript,
+										nameInitial: initial.nameInitial,
+									});
+								}}
 								placeholder="例: ZUN"
 							/>
 						</div>
@@ -460,9 +468,16 @@ function ArtistsPage() {
 							<Input
 								id="edit-name"
 								value={editForm.name || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, name: e.target.value })
-								}
+								onChange={(e) => {
+									const name = e.target.value;
+									const initial = detectInitial(name);
+									setEditForm({
+										...editForm,
+										name,
+										initialScript: initial.initialScript as InitialScript,
+										nameInitial: initial.nameInitial,
+									});
+								}}
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">

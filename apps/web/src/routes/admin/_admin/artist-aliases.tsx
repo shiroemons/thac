@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { detectInitial } from "@thac/utils";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useState } from "react";
@@ -424,9 +425,16 @@ function ArtistAliasesPage() {
 							<Input
 								id="create-name"
 								value={createForm.name || ""}
-								onChange={(e) =>
-									setCreateForm({ ...createForm, name: e.target.value })
-								}
+								onChange={(e) => {
+									const name = e.target.value;
+									const initial = detectInitial(name);
+									setCreateForm({
+										...createForm,
+										name,
+										initialScript: initial.initialScript as InitialScript,
+										nameInitial: initial.nameInitial,
+									});
+								}}
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -564,12 +572,16 @@ function ArtistAliasesPage() {
 							<Input
 								id="artist-create-name"
 								value={artistCreateForm.name || ""}
-								onChange={(e) =>
+								onChange={(e) => {
+									const name = e.target.value;
+									const initial = detectInitial(name);
 									setArtistCreateForm({
 										...artistCreateForm,
-										name: e.target.value,
-									})
-								}
+										name,
+										initialScript: initial.initialScript as InitialScript,
+										nameInitial: initial.nameInitial,
+									});
+								}}
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -676,9 +688,16 @@ function ArtistAliasesPage() {
 							<Input
 								id="edit-name"
 								value={editForm.name || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, name: e.target.value })
-								}
+								onChange={(e) => {
+									const name = e.target.value;
+									const initial = detectInitial(name);
+									setEditForm({
+										...editForm,
+										name,
+										initialScript: initial.initialScript as InitialScript,
+										nameInitial: initial.nameInitial,
+									});
+								}}
 							/>
 						</div>
 						<div className="grid gap-2">
