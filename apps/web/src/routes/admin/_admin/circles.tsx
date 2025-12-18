@@ -490,12 +490,16 @@ function CirclesPage() {
 					</div>
 					<DialogFooter>
 						<Button
-							variant="outline"
+							variant="ghost"
 							onClick={() => setIsCreateDialogOpen(false)}
 						>
 							キャンセル
 						</Button>
-						<Button onClick={handleCreate} disabled={isSubmitting}>
+						<Button
+							variant="primary"
+							onClick={handleCreate}
+							disabled={isSubmitting}
+						>
 							{isSubmitting ? "作成中..." : "作成"}
 						</Button>
 					</DialogFooter>
@@ -692,10 +696,14 @@ function CirclesPage() {
 						</div>
 					</div>
 					<DialogFooter>
-						<Button variant="outline" onClick={() => setEditingCircle(null)}>
+						<Button variant="ghost" onClick={() => setEditingCircle(null)}>
 							閉じる
 						</Button>
-						<Button onClick={handleUpdate} disabled={isSubmitting}>
+						<Button
+							variant="primary"
+							onClick={handleUpdate}
+							disabled={isSubmitting}
+						>
 							{isSubmitting ? "保存中..." : "保存"}
 						</Button>
 					</DialogFooter>
@@ -813,13 +821,14 @@ function CirclesPage() {
 						</div>
 					</div>
 					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setIsLinkDialogOpen(false)}
-						>
+						<Button variant="ghost" onClick={() => setIsLinkDialogOpen(false)}>
 							キャンセル
 						</Button>
-						<Button onClick={handleSaveLink} disabled={isSubmitting}>
+						<Button
+							variant="primary"
+							onClick={handleSaveLink}
+							disabled={isSubmitting}
+						>
 							{isSubmitting ? "保存中..." : "保存"}
 						</Button>
 					</DialogFooter>

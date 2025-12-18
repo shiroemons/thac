@@ -410,7 +410,7 @@ function ArtistAliasesPage() {
 								<Button
 									type="button"
 									variant="outline"
-									size="icon"
+									className="btn-square"
 									onClick={() => setIsArtistCreateDialogOpen(true)}
 									title="新規アーティスト作成"
 								>
@@ -490,12 +490,16 @@ function ArtistAliasesPage() {
 					</div>
 					<DialogFooter>
 						<Button
-							variant="outline"
+							variant="ghost"
 							onClick={() => setIsCreateDialogOpen(false)}
 						>
 							キャンセル
 						</Button>
-						<Button onClick={handleCreate} disabled={isSubmitting}>
+						<Button
+							variant="primary"
+							onClick={handleCreate}
+							disabled={isSubmitting}
+						>
 							{isSubmitting ? "作成中..." : "作成"}
 						</Button>
 					</DialogFooter>
@@ -539,12 +543,16 @@ function ArtistAliasesPage() {
 					</div>
 					<DialogFooter>
 						<Button
-							variant="outline"
+							variant="ghost"
 							onClick={() => setIsArtistCreateDialogOpen(false)}
 						>
 							キャンセル
 						</Button>
-						<Button onClick={handleArtistCreate} disabled={isSubmitting}>
+						<Button
+							variant="primary"
+							onClick={handleArtistCreate}
+							disabled={isSubmitting}
+						>
 							{isSubmitting ? "作成中..." : "作成"}
 						</Button>
 					</DialogFooter>
@@ -702,10 +710,14 @@ function ArtistAliasesPage() {
 						</div>
 					</div>
 					<DialogFooter>
-						<Button variant="outline" onClick={() => setEditingAlias(null)}>
+						<Button variant="ghost" onClick={() => setEditingAlias(null)}>
 							キャンセル
 						</Button>
-						<Button onClick={handleUpdate} disabled={isSubmitting}>
+						<Button
+							variant="primary"
+							onClick={handleUpdate}
+							disabled={isSubmitting}
+						>
 							{isSubmitting ? "保存中..." : "保存"}
 						</Button>
 					</DialogFooter>

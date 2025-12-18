@@ -386,12 +386,16 @@ function ArtistsPage() {
 					</div>
 					<DialogFooter>
 						<Button
-							variant="outline"
+							variant="ghost"
 							onClick={() => setIsCreateDialogOpen(false)}
 						>
 							キャンセル
 						</Button>
-						<Button onClick={handleCreate} disabled={isSubmitting}>
+						<Button
+							variant="primary"
+							onClick={handleCreate}
+							disabled={isSubmitting}
+						>
 							{isSubmitting ? "作成中..." : "作成"}
 						</Button>
 					</DialogFooter>
@@ -523,10 +527,14 @@ function ArtistsPage() {
 						</div>
 					</div>
 					<DialogFooter>
-						<Button variant="outline" onClick={() => setEditingArtist(null)}>
+						<Button variant="ghost" onClick={() => setEditingArtist(null)}>
 							キャンセル
 						</Button>
-						<Button onClick={handleUpdate} disabled={isSubmitting}>
+						<Button
+							variant="primary"
+							onClick={handleUpdate}
+							disabled={isSubmitting}
+						>
 							{isSubmitting ? "保存中..." : "保存"}
 						</Button>
 					</DialogFooter>
