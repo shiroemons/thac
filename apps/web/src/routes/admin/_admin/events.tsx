@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Calendar, Pencil, Plus, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -36,6 +36,7 @@ import {
 	eventSeriesApi,
 	eventsApi,
 } from "@/lib/api-client";
+import { suggestFromEventName } from "@/lib/event-name-parser";
 
 export const Route = createFileRoute("/admin/_admin/events")({
 	component: EventsPage,
@@ -79,6 +80,12 @@ function EventsPage() {
 		value: s.id,
 		label: s.name,
 	}));
+
+	// シリーズリストをユーティリティ関数で使えるようにラップ
+	const suggest = useCallback(
+		(eventName: string) => suggestFromEventName(eventName, seriesList),
+		[seriesList],
+	);
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["events", page, pageSize, debouncedSearch, seriesFilter],
@@ -451,6 +458,35 @@ function EventsPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
+							<Label htmlFor="create-name">
+								イベント名 <span className="text-error">*</span>
+							</Label>
+							<Input
+								id="create-name"
+								value={createForm.name || ""}
+								onChange={(e) => {
+									const newName = e.target.value;
+									const { seriesId, edition } = suggest(newName);
+									setCreateForm({
+										...createForm,
+										name: newName,
+										// シリーズが未選択の場合のみ自動設定
+										...(seriesId && !createForm.eventSeriesId
+											? { eventSeriesId: seriesId }
+											: {}),
+										// 回次が未入力の場合のみ自動設定
+										...(edition !== null && !createForm.edition
+											? { edition }
+											: {}),
+									});
+								}}
+								placeholder="例: コミックマーケット104"
+							/>
+							<p className="text-base-content/50 text-xs">
+								イベント名からシリーズと回次を自動推察します
+							</p>
+						</div>
+						<div className="grid gap-2">
 							<Label htmlFor="create-seriesId">
 								シリーズ <span className="text-error">*</span>
 							</Label>
@@ -482,18 +518,6 @@ function EventsPage() {
 									新規シリーズ
 								</Button>
 							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-name">
-								イベント名 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="create-name"
-								value={createForm.name || ""}
-								onChange={(e) =>
-									setCreateForm({ ...createForm, name: e.target.value })
-								}
-							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
@@ -647,6 +671,18 @@ function EventsPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
+							<Label htmlFor="edit-name">
+								イベント名 <span className="text-error">*</span>
+							</Label>
+							<Input
+								id="edit-name"
+								value={editForm.name || ""}
+								onChange={(e) =>
+									setEditForm({ ...editForm, name: e.target.value })
+								}
+							/>
+						</div>
+						<div className="grid gap-2">
 							<Label htmlFor="edit-seriesId">
 								シリーズ <span className="text-error">*</span>
 							</Label>
@@ -675,18 +711,6 @@ function EventsPage() {
 									新規シリーズ
 								</Button>
 							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-name">
-								イベント名 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="edit-name"
-								value={editForm.name || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, name: e.target.value })
-								}
-							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
