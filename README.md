@@ -1,78 +1,123 @@
-# thac
+# thac（東方編曲録）
 
-このプロジェクトは [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack) で作成されました。React、TanStack Start、Honoなどを組み合わせたモダンなTypeScriptスタックです。
+東方Projectの二次創作音楽（アレンジ曲）を管理・検索できるWebアプリケーション。
 
-## 機能
+## 主な機能
 
-- **TypeScript** - 型安全性と開発者体験の向上
-- **TanStack Start** - TanStack Routerを使用したSSRフレームワーク
-- **TailwindCSS** - 高速なUI開発のためのユーティリティファーストCSS
-- **daisyUI** - Tailwind CSSベースのUIコンポーネント
-- **Hono** - 軽量で高性能なサーバーフレームワーク
-- **Bun** - ランタイム環境
-- **Drizzle** - TypeScriptファーストのORM
-- **SQLite/Turso** - データベースエンジン
-- **Better-Auth** - 認証
-- **Biome** - Lintとフォーマット
-- **Turborepo** - 最適化されたモノレポビルドシステム
-- **Lefthook** - Git hooksによるコミット前チェック
+- **原曲から探す** - 公式曲からアレンジ曲を検索
+- **サークルから探す** - サークルのリリース・アレンジ曲を一覧
+- **アーティストから探す** - ボーカル・編曲者など役割別に検索
+- **イベントから探す** - 例大祭やコミケなどイベント別に新譜を追う
+- **配信先を見つける** - Spotify、BOOTHなど配信リンクを集約
+- **統計情報** - サークル・アーティスト・イベント別の統計
 
-## はじめに
+## 技術スタック
 
-まず、依存関係をインストールします：
-
-```bash
-bun install
-```
-
-## データベースのセットアップ
-
-このプロジェクトはDrizzle ORMとSQLiteを使用しています。
-
-1. ローカルSQLiteデータベースを起動します：
-```bash
-cd packages/db && bun run db:local
-```
-
-2. 必要に応じて、`apps/server`ディレクトリの`.env`ファイルを適切な接続情報で更新します。
-
-3. スキーマをデータベースに適用します：
-```bash
-bun run db:push
-```
-
-次に、開発サーバーを起動します：
-
-```bash
-bun run dev
-```
-
-ブラウザで [http://localhost:3001](http://localhost:3001) を開くとWebアプリケーションが表示されます。
-APIは [http://localhost:3000](http://localhost:3000) で動作しています。
+| カテゴリ | 技術 |
+|---------|------|
+| フロントエンド | React, TanStack Start, TanStack Router, TailwindCSS v4, daisyUI |
+| バックエンド | Hono (Bun) |
+| データベース | SQLite (Turso/libsql), Drizzle ORM |
+| 認証 | Better-Auth |
+| ビルド | Turborepo, Bun |
+| コード品質 | Biome, Lefthook |
 
 ## プロジェクト構成
 
 ```
 thac/
 ├── apps/
-│   ├── web/         # フロントエンドアプリケーション（React + TanStack Start）
+│   ├── web/         # フロントエンド（React + TanStack Start）
 │   └── server/      # バックエンドAPI（Hono）
 ├── packages/
-│   ├── auth/        # 認証設定とロジック
-│   └── db/          # データベーススキーマとクエリ
+│   ├── auth/        # 認証設定
+│   ├── db/          # データベーススキーマ
+│   └── config/      # 共有設定（TypeScript）
 ```
 
-## 利用可能なスクリプト
+## クイックスタート
 
-- `bun run dev`: 全アプリケーションを開発モードで起動
-- `bun run build`: 全アプリケーションをビルド
-- `bun run dev:web`: Webアプリケーションのみを起動
-- `bun run dev:server`: サーバーのみを起動
-- `bun run check-types`: 全アプリの型チェック
-- `bun run db:push`: スキーマ変更をデータベースにプッシュ
-- `bun run db:studio`: データベーススタジオUIを開く
-- `cd packages/db && bun run db:local`: ローカルSQLiteデータベースを起動
-- `bun run check`: Biomeによるフォーマットとlintを実行
+### 前提条件
+
+- Docker / Docker Compose
+- Bun（ローカル開発用）
+
+### 開発環境の起動
+
+```bash
+# 開発環境を起動（Docker Compose）
+make dev
+
+# バックグラウンドで起動する場合
+make up
+```
+
+- Web: http://localhost:3001
+- API: http://localhost:3000
+
+### 初回セットアップ
+
+```bash
+# 開発環境を起動後、DBセットアップ（スキーマ適用 + シードデータ投入）
+make db-setup
+```
+
+## 利用可能なコマンド
+
+`make help` で全コマンドを確認できます。
+
+### 開発環境（Docker Compose）
+
+| コマンド | 説明 |
+|---------|------|
+| `make dev` | 開発環境を起動（フォアグラウンド） |
+| `make up` | 開発環境を起動（バックグラウンド） |
+| `make down` | 開発環境を停止 |
+| `make logs` | ログを表示（フォロー） |
+| `make logs-server` | Serverのログを表示 |
+| `make logs-web` | Webのログを表示 |
+| `make ps` | コンテナの状態を表示 |
+| `make restart` | コンテナを再起動 |
+
+### データベース操作（Docker）
+
+| コマンド | 説明 |
+|---------|------|
+| `make db-push` | スキーマをDBにプッシュ |
+| `make db-generate` | マイグレーションを生成 |
+| `make db-migrate` | マイグレーションを実行 |
+| `make db-seed` | シードデータを投入 |
+| `make db-setup` | DBセットアップ（push + seed） |
+| `make db-studio` | Drizzle Studioを起動 |
+
+### メンテナンス
+
+| コマンド | 説明 |
+|---------|------|
+| `make rebuild` | イメージを再ビルドして起動 |
+| `make clean` | コンテナ・ボリューム・イメージを削除 |
+| `make shell-server` | Serverコンテナにシェル接続 |
+| `make shell-web` | Webコンテナにシェル接続 |
+
+### ユーティリティ（ローカル）
+
+| コマンド | 説明 |
+|---------|------|
+| `make install` | 依存関係をインストール |
+| `make check` | Lint・フォーマットチェック |
+| `make check-types` | 型チェック |
+| `make test` | テストを実行（Docker） |
+| `make test-local` | テストを実行（ローカル） |
+
+### ローカル開発用コマンド
+
+Docker環境を使わずローカルで開発する場合は、`-local`サフィックス付きのコマンドを使用します：
+
+```bash
+make db-local        # ローカルSQLiteサーバーを起動
+make db-push-local   # スキーマをDBにプッシュ
+make db-setup-local  # DBセットアップ（push + seed）
+```
 
 ## Git Hooks
 
