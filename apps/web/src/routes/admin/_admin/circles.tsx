@@ -413,8 +413,8 @@ function CirclesPage() {
 									<TableHead>名前</TableHead>
 									<TableHead className="w-[150px]">日本語名</TableHead>
 									<TableHead className="w-[150px]">英語名</TableHead>
-									<TableHead className="w-[100px]">頭文字</TableHead>
-									<TableHead className="w-[120px]">文字種</TableHead>
+									<TableHead className="w-[100px]">文字種</TableHead>
+									<TableHead className="w-[120px]">頭文字</TableHead>
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -440,9 +440,6 @@ function CirclesPage() {
 											<TableCell className="text-base-content/70">
 												{circle.nameEn || "-"}
 											</TableCell>
-											<TableCell className="font-mono">
-												{circle.nameInitial || "-"}
-											</TableCell>
 											<TableCell>
 												<Badge
 													variant={
@@ -452,6 +449,10 @@ function CirclesPage() {
 													{INITIAL_SCRIPT_LABELS[circle.initialScript]}
 												</Badge>
 											</TableCell>
+											<TableCell className="font-mono">
+												{circle.nameInitial || "-"}
+											</TableCell>
+
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button

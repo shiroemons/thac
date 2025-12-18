@@ -218,8 +218,8 @@ function ArtistsPage() {
 									<TableHead>名前</TableHead>
 									<TableHead className="w-[150px]">日本語名</TableHead>
 									<TableHead className="w-[150px]">英語名</TableHead>
-									<TableHead className="w-[120px]">頭文字</TableHead>
 									<TableHead className="w-[120px]">文字種</TableHead>
+									<TableHead className="w-[120px]">頭文字</TableHead>
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -245,9 +245,6 @@ function ArtistsPage() {
 											<TableCell className="text-base-content/70">
 												{artist.nameEn || "-"}
 											</TableCell>
-											<TableCell className="font-mono">
-												{artist.nameInitial || "-"}
-											</TableCell>
 											<TableCell>
 												<Badge
 													variant={
@@ -257,6 +254,10 @@ function ArtistsPage() {
 													{INITIAL_SCRIPT_LABELS[artist.initialScript]}
 												</Badge>
 											</TableCell>
+											<TableCell className="font-mono">
+												{artist.nameInitial || "-"}
+											</TableCell>
+
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button
