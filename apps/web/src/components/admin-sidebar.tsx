@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+	Circle,
 	Database,
 	Disc,
 	FolderOpen,
@@ -7,6 +8,8 @@ import {
 	MonitorSmartphone,
 	Music,
 	UserCog,
+	UserRound,
+	UserRoundPen,
 	Users,
 } from "lucide-react";
 
@@ -65,6 +68,27 @@ const navItems: NavEntry[] = [
 				to: "/admin/official/songs",
 				label: "公式楽曲",
 				icon: Music,
+			},
+		],
+	},
+	{
+		label: "アーティスト・サークル",
+		icon: Users,
+		items: [
+			{
+				to: "/admin/artists",
+				label: "アーティスト",
+				icon: UserRound,
+			},
+			{
+				to: "/admin/artist-aliases",
+				label: "アーティスト別名義",
+				icon: UserRoundPen,
+			},
+			{
+				to: "/admin/circles",
+				label: "サークル",
+				icon: Circle,
 			},
 		],
 	},

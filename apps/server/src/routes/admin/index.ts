@@ -3,6 +3,9 @@ import {
 	type AdminContext,
 	adminAuthMiddleware,
 } from "../../middleware/admin-auth";
+import { artistAliasesRouter } from "./artist-aliases";
+import { artistsRouter } from "./artists";
+import { circlesRouter } from "./circles";
 import { masterRouter } from "./master";
 import { officialRouter } from "./official";
 import { statsRouter } from "./stats";
@@ -20,5 +23,14 @@ adminRouter.route("/master", masterRouter);
 
 // 公式作品・楽曲管理ルート
 adminRouter.route("/official", officialRouter);
+
+// アーティスト管理ルート
+adminRouter.route("/artists", artistsRouter);
+
+// アーティスト別名義管理ルート
+adminRouter.route("/artist-aliases", artistAliasesRouter);
+
+// サークル管理ルート
+adminRouter.route("/circles", circlesRouter);
 
 export { adminRouter };
