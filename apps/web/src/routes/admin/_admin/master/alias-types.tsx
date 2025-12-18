@@ -120,8 +120,8 @@ function AliasTypesPage() {
 	return (
 		<div className="container mx-auto py-6">
 			<AdminPageHeader
-				title="別名義種別管理"
-				breadcrumbs={[{ label: "マスタ管理" }, { label: "別名義種別" }]}
+				title="名義種別管理"
+				breadcrumbs={[{ label: "マスタ管理" }, { label: "名義種別" }]}
 			/>
 
 			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
@@ -235,8 +235,8 @@ function AliasTypesPage() {
 
 			{/* 新規作成ダイアログ */}
 			<CreateDialog
-				title="新規別名義種別"
-				description="新しい別名義種別を登録します"
+				title="新規名義種別"
+				description="新しい名義種別を登録します"
 				fields={[
 					{
 						name: "code",
@@ -269,7 +269,7 @@ function AliasTypesPage() {
 			>
 				<DialogContent className="sm:max-w-[425px]">
 					<DialogHeader>
-						<DialogTitle>別名義種別の編集</DialogTitle>
+						<DialogTitle>名義種別の編集</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
@@ -308,7 +308,7 @@ function AliasTypesPage() {
 
 			{/* インポートダイアログ */}
 			<ImportDialog
-				title="別名義種別のインポート"
+				title="名義種別のインポート"
 				onImport={importApi.aliasTypes}
 				onSuccess={invalidateQuery}
 				open={isImportDialogOpen}

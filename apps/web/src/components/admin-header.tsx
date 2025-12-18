@@ -15,7 +15,7 @@ interface AdminHeaderProps {
 const navLinks = [
 	{ to: "/admin", label: "ダッシュボード" },
 	{ to: "/admin/master/platforms", label: "プラットフォーム" },
-	{ to: "/admin/master/alias-types", label: "別名義種別" },
+	{ to: "/admin/master/alias-types", label: "名義種別" },
 	{ to: "/admin/master/credit-roles", label: "クレジット役割" },
 	{ to: "/admin/master/official-work-categories", label: "公式作品カテゴリ" },
 ] as const;

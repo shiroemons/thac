@@ -44,7 +44,7 @@ const navItems: NavEntry[] = [
 				label: "プラットフォーム",
 				icon: MonitorSmartphone,
 			},
-			{ to: "/admin/master/alias-types", label: "別名義種別", icon: Users },
+			{ to: "/admin/master/alias-types", label: "名義種別", icon: Users },
 			{
 				to: "/admin/master/credit-roles",
 				label: "クレジット役割",
@@ -84,7 +84,7 @@ const navItems: NavEntry[] = [
 			},
 			{
 				to: "/admin/artist-aliases",
-				label: "アーティスト別名義",
+				label: "アーティスト名義",
 				icon: UserRoundPen,
 			},
 			{

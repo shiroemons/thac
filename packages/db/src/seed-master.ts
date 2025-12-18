@@ -187,6 +187,11 @@ const platformsData = [
 
 const aliasTypesData = [
 	{
+		code: "main",
+		label: "本名義",
+		description: "アーティストの本来の名前（メイン名義）",
+	},
+	{
 		code: "romanization",
 		label: "ローマ字表記",
 		description: "アーティスト名のローマ字表記",
