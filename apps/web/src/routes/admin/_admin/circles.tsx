@@ -476,54 +476,6 @@ function CirclesPage() {
 								/>
 							</div>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-initialScript">
-									頭文字の文字種 <span className="text-error">*</span>
-								</Label>
-								<Select
-									id="create-initialScript"
-									value={createForm.initialScript || "latin"}
-									onChange={(e) =>
-										setCreateForm({
-											...createForm,
-											initialScript: e.target.value as InitialScript,
-											nameInitial: requiresInitial(e.target.value)
-												? createForm.nameInitial
-												: null,
-										})
-									}
-								>
-									{initialScriptOptions.map((opt) => (
-										<option key={opt.value} value={opt.value}>
-											{opt.label}
-										</option>
-									))}
-								</Select>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="create-nameInitial">
-									頭文字
-									{requiresInitial(createForm.initialScript || "latin") && (
-										<span className="text-error"> *</span>
-									)}
-								</Label>
-								<Input
-									id="create-nameInitial"
-									value={createForm.nameInitial || ""}
-									onChange={(e) =>
-										setCreateForm({
-											...createForm,
-											nameInitial: e.target.value.slice(0, 1),
-										})
-									}
-									maxLength={1}
-									disabled={
-										!requiresInitial(createForm.initialScript || "latin")
-									}
-								/>
-							</div>
-						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="create-notes">備考</Label>
 							<Textarea
