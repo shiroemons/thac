@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+	Calendar,
 	Circle,
 	Database,
 	Disc,
@@ -89,6 +90,17 @@ const navItems: NavEntry[] = [
 				to: "/admin/circles",
 				label: "サークル",
 				icon: Circle,
+			},
+		],
+	},
+	{
+		label: "イベント管理",
+		icon: Calendar,
+		items: [
+			{
+				to: "/admin/events",
+				label: "イベント",
+				icon: Calendar,
 			},
 		],
 	},
