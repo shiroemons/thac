@@ -323,6 +323,23 @@ circlesRouter.post("/:circleId/links", async (c) => {
 		return c.json({ error: "URL already exists for this circle" }, 409);
 	}
 
+	// プラットフォームのURLパターンを取得してバリデーション
+	const platform = await db
+		.select({ urlPattern: platforms.urlPattern })
+		.from(platforms)
+		.where(eq(platforms.code, parsed.data.platformCode))
+		.limit(1);
+
+	if (platform[0]?.urlPattern) {
+		const regex = new RegExp(platform[0].urlPattern);
+		if (!regex.test(parsed.data.url)) {
+			return c.json(
+				{ error: "URLが選択されたプラットフォームの形式と一致しません" },
+				400,
+			);
+		}
+	}
+
 	// 作成
 	const result = await db.insert(circleLinks).values(parsed.data).returning();
 
@@ -345,6 +362,9 @@ circlesRouter.put("/:circleId/links/:linkId", async (c) => {
 	if (existing.length === 0) {
 		return c.json({ error: "Not found" }, 404);
 	}
+
+	// biome-ignore lint/style/noNonNullAssertion: existing.length > 0 is guaranteed by the check above
+	const existingLink = existing[0]!;
 
 	// バリデーション
 	const parsed = updateCircleLinkSchema.safeParse(body);
@@ -373,6 +393,28 @@ circlesRouter.put("/:circleId/links/:linkId", async (c) => {
 
 		if (existingUrl.length > 0 && existingUrl[0]?.id !== linkId) {
 			return c.json({ error: "URL already exists for this circle" }, 409);
+		}
+	}
+
+	// URLまたはplatformCodeが更新される場合、URLパターンバリデーション
+	if (parsed.data.url || parsed.data.platformCode) {
+		const platformCode = parsed.data.platformCode || existingLink.platformCode;
+		const url = parsed.data.url || existingLink.url;
+
+		const platform = await db
+			.select({ urlPattern: platforms.urlPattern })
+			.from(platforms)
+			.where(eq(platforms.code, platformCode))
+			.limit(1);
+
+		if (platform[0]?.urlPattern) {
+			const regex = new RegExp(platform[0].urlPattern);
+			if (!regex.test(url)) {
+				return c.json(
+					{ error: "URLが選択されたプラットフォームの形式と一致しません" },
+					400,
+				);
+			}
 		}
 	}
 
