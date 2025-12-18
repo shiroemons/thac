@@ -331,19 +331,31 @@ circlesRouter.post("/:circleId/links", async (c) => {
 		.limit(1);
 
 	if (platform[0]?.urlPattern) {
-		const regex = new RegExp(platform[0].urlPattern);
-		if (!regex.test(parsed.data.url)) {
-			return c.json(
-				{ error: "URLが選択されたプラットフォームの形式と一致しません" },
-				400,
-			);
+		try {
+			const regex = new RegExp(platform[0].urlPattern);
+			if (!regex.test(parsed.data.url)) {
+				return c.json(
+					{ error: "URLが選択されたプラットフォームの形式と一致しません" },
+					400,
+				);
+			}
+		} catch (e) {
+			// 無効な正規表現パターンの場合はスキップ
+			console.error("Invalid URL pattern:", platform[0].urlPattern, e);
 		}
 	}
 
 	// 作成
-	const result = await db.insert(circleLinks).values(parsed.data).returning();
-
-	return c.json(result[0], 201);
+	try {
+		const result = await db.insert(circleLinks).values(parsed.data).returning();
+		return c.json(result[0], 201);
+	} catch (e) {
+		console.error("Failed to create circle link:", e);
+		return c.json(
+			{ error: e instanceof Error ? e.message : "リンクの作成に失敗しました" },
+			500,
+		);
+	}
 });
 
 // サークルリンク更新
@@ -408,24 +420,36 @@ circlesRouter.put("/:circleId/links/:linkId", async (c) => {
 			.limit(1);
 
 		if (platform[0]?.urlPattern) {
-			const regex = new RegExp(platform[0].urlPattern);
-			if (!regex.test(url)) {
-				return c.json(
-					{ error: "URLが選択されたプラットフォームの形式と一致しません" },
-					400,
-				);
+			try {
+				const regex = new RegExp(platform[0].urlPattern);
+				if (!regex.test(url)) {
+					return c.json(
+						{ error: "URLが選択されたプラットフォームの形式と一致しません" },
+						400,
+					);
+				}
+			} catch (e) {
+				// 無効な正規表現パターンの場合はスキップ
+				console.error("Invalid URL pattern:", platform[0].urlPattern, e);
 			}
 		}
 	}
 
 	// 更新
-	const result = await db
-		.update(circleLinks)
-		.set(parsed.data)
-		.where(eq(circleLinks.id, linkId))
-		.returning();
-
-	return c.json(result[0]);
+	try {
+		const result = await db
+			.update(circleLinks)
+			.set(parsed.data)
+			.where(eq(circleLinks.id, linkId))
+			.returning();
+		return c.json(result[0]);
+	} catch (e) {
+		console.error("Failed to update circle link:", e);
+		return c.json(
+			{ error: e instanceof Error ? e.message : "リンクの更新に失敗しました" },
+			500,
+		);
+	}
 });
 
 // サークルリンク削除
