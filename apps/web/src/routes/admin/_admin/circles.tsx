@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { detectInitial } from "@thac/utils";
 import { ExternalLink, Link2, Pencil, Plus, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableGroupedSelect } from "@/components/ui/searchable-grouped-select";
 import { Select } from "@/components/ui/select";
 import {
 	Table,
@@ -90,6 +91,43 @@ function CirclesPage() {
 		staleTime: 60_000,
 	});
 	const platforms = platformsData?.data ?? [];
+
+	// プラットフォームカテゴリの日本語ラベル
+	const PLATFORM_CATEGORY_LABELS: Record<string, string> = {
+		streaming: "ストリーミング",
+		download: "ダウンロード",
+		video: "動画",
+		shop: "ショップ",
+	};
+
+	// プラットフォームをカテゴリでグルーピング
+	const groupedPlatforms = useMemo(() => {
+		const groups: Record<string, typeof platforms> = {};
+		for (const p of platforms) {
+			const category = p.category || "other";
+			if (!groups[category]) {
+				groups[category] = [];
+			}
+			groups[category].push(p);
+		}
+		// カテゴリの表示順を定義
+		const categoryOrder = ["streaming", "download", "video", "shop", "other"];
+		const sortedCategories = Object.keys(groups).sort((a, b) => {
+			const aIndex = categoryOrder.indexOf(a);
+			const bIndex = categoryOrder.indexOf(b);
+			if (aIndex === -1 && bIndex === -1) return a.localeCompare(b, "ja");
+			if (aIndex === -1) return 1;
+			if (bIndex === -1) return -1;
+			return aIndex - bIndex;
+		});
+		return sortedCategories.map((category) => ({
+			label: PLATFORM_CATEGORY_LABELS[category] || "その他",
+			options: groups[category].map((p) => ({
+				value: p.code,
+				label: p.name,
+			})),
+		}));
+	}, [platforms]);
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["circles", page, pageSize, debouncedSearch, initialScript],
@@ -765,20 +803,16 @@ function CirclesPage() {
 							<Label htmlFor="link-platformCode">
 								プラットフォーム <span className="text-error">*</span>
 							</Label>
-							<Select
+							<SearchableGroupedSelect
 								id="link-platformCode"
 								value={linkForm.platformCode || ""}
-								onChange={(e) =>
-									setLinkForm({ ...linkForm, platformCode: e.target.value })
+								onChange={(value) =>
+									setLinkForm({ ...linkForm, platformCode: value })
 								}
-							>
-								<option value="">選択してください</option>
-								{platforms.map((p) => (
-									<option key={p.code} value={p.code}>
-										{p.name}
-									</option>
-								))}
-							</Select>
+								groups={groupedPlatforms}
+								placeholder="選択してください"
+								searchPlaceholder="プラットフォームを検索..."
+							/>
 						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="link-url">
