@@ -1,6 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Trash2, Upload } from "lucide-react";
+import {
+	ArrowDown,
+	ArrowUp,
+	ArrowUpDown,
+	Pencil,
+	Trash2,
+	Upload,
+} from "lucide-react";
 import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -39,23 +46,35 @@ const categoryColors: Record<string, string> = {
 	video: "bg-red-500",
 	download: "bg-green-500",
 	shop: "bg-purple-500",
+	other: "bg-gray-500",
+};
+
+const categoryLabels: Record<string, string> = {
+	streaming: "ストリーミング",
+	video: "動画",
+	download: "ダウンロード",
+	shop: "ショップ",
+	other: "その他",
 };
 
 const categoryOptions = [
-	{ value: "streaming", label: "Streaming" },
-	{ value: "video", label: "Video" },
-	{ value: "download", label: "Download" },
-	{ value: "shop", label: "Shop" },
+	{ value: "streaming", label: "ストリーミング" },
+	{ value: "video", label: "動画" },
+	{ value: "download", label: "ダウンロード" },
+	{ value: "shop", label: "ショップ" },
+	{ value: "other", label: "その他" },
 ];
 
 function PlatformsPage() {
 	const queryClient = useQueryClient();
 
-	// ページネーション・フィルタ状態
+	// ページネーション・フィルタ・ソート状態
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(20);
 	const [search, setSearch] = useState("");
 	const [category, setCategory] = useState("");
+	const [sortBy, setSortBy] = useState<string>("code");
+	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
@@ -67,13 +86,23 @@ function PlatformsPage() {
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["platforms", page, pageSize, debouncedSearch, category],
+		queryKey: [
+			"platforms",
+			page,
+			pageSize,
+			debouncedSearch,
+			category,
+			sortBy,
+			sortOrder,
+		],
 		queryFn: () =>
 			platformsApi.list({
 				page,
 				limit: pageSize,
 				search: debouncedSearch || undefined,
 				category: category || undefined,
+				sortBy,
+				sortOrder,
 			}),
 		staleTime: 30_000,
 	});
@@ -138,6 +167,29 @@ function PlatformsPage() {
 		setPage(1);
 	};
 
+	const handleSort = (column: string) => {
+		if (sortBy === column) {
+			setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+		} else {
+			setSortBy(column);
+			setSortOrder("asc");
+		}
+		setPage(1);
+	};
+
+	const SortIcon = ({ column }: { column: string }) => {
+		if (sortBy !== column) {
+			return (
+				<ArrowUpDown className="ml-1 inline h-4 w-4 text-base-content/30" />
+			);
+		}
+		return sortOrder === "asc" ? (
+			<ArrowUp className="ml-1 inline h-4 w-4" />
+		) : (
+			<ArrowDown className="ml-1 inline h-4 w-4" />
+		);
+	};
+
 	const displayError =
 		mutationError || (error instanceof Error ? error.message : null);
 
@@ -189,9 +241,27 @@ function PlatformsPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead className="w-[150px]">コード</TableHead>
-									<TableHead>名前</TableHead>
-									<TableHead className="w-[120px]">カテゴリ</TableHead>
+									<TableHead
+										className="w-[150px] cursor-pointer select-none hover:bg-base-200"
+										onClick={() => handleSort("code")}
+									>
+										コード
+										<SortIcon column="code" />
+									</TableHead>
+									<TableHead
+										className="cursor-pointer select-none hover:bg-base-200"
+										onClick={() => handleSort("name")}
+									>
+										名前
+										<SortIcon column="name" />
+									</TableHead>
+									<TableHead
+										className="w-[120px] cursor-pointer select-none hover:bg-base-200"
+										onClick={() => handleSort("category")}
+									>
+										カテゴリ
+										<SortIcon column="category" />
+									</TableHead>
 									<TableHead>URLパターン</TableHead>
 									<TableHead className="w-[70px]" />
 								</TableRow>
@@ -219,7 +289,7 @@ function PlatformsPage() {
 														variant="secondary"
 														className={`${categoryColors[p.category] || "bg-gray-500"} text-white`}
 													>
-														{p.category}
+														{categoryLabels[p.category] || p.category}
 													</Badge>
 												) : (
 													<span className="text-base-content/50">-</span>

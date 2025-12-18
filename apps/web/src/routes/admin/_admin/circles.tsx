@@ -98,6 +98,7 @@ function CirclesPage() {
 		download: "ダウンロード",
 		video: "動画",
 		shop: "ショップ",
+		other: "その他",
 	};
 
 	// プラットフォームをカテゴリでグルーピング
@@ -789,6 +790,7 @@ function CirclesPage() {
 							isOfficial: true,
 							isPrimary: false,
 						});
+						setMutationError(null);
 					}
 				}}
 			>
@@ -883,6 +885,11 @@ function CirclesPage() {
 								</Label>
 							</div>
 						</div>
+						{mutationError && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{mutationError}
+							</div>
+						)}
 					</div>
 					<DialogFooter>
 						<Button variant="ghost" onClick={() => setIsLinkDialogOpen(false)}>

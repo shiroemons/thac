@@ -1,7 +1,9 @@
 import {
 	and,
+	asc,
 	count,
 	db,
+	desc,
 	eq,
 	insertPlatformSchema,
 	like,
@@ -14,12 +16,14 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 
 const platformsRouter = new Hono<AdminContext>();
 
-// 一覧取得（ページネーション、カテゴリフィルタ、検索対応）
+// 一覧取得（ページネーション、カテゴリフィルタ、検索、ソート対応）
 platformsRouter.get("/", async (c) => {
 	const page = Number(c.req.query("page")) || 1;
 	const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 	const category = c.req.query("category");
 	const search = c.req.query("search");
+	const sortBy = c.req.query("sortBy") || "code";
+	const sortOrder = c.req.query("sortOrder") || "asc";
 
 	const offset = (page - 1) * limit;
 
@@ -42,6 +46,16 @@ platformsRouter.get("/", async (c) => {
 
 	const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
 
+	// ソート条件を構築
+	const sortColumn =
+		sortBy === "category"
+			? platforms.category
+			: sortBy === "name"
+				? platforms.name
+				: platforms.code;
+	const orderByClause =
+		sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
+
 	// データ取得
 	const [data, totalResult] = await Promise.all([
 		db
@@ -50,7 +64,7 @@ platformsRouter.get("/", async (c) => {
 			.where(whereCondition)
 			.limit(limit)
 			.offset(offset)
-			.orderBy(platforms.code),
+			.orderBy(orderByClause),
 		db.select({ count: count() }).from(platforms).where(whereCondition),
 	]);
 
