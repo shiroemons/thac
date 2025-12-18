@@ -1,0 +1,10 @@
+# Lefthook configuration
+# https://github.com/evilmartians/lefthook
+
+pre-commit:
+  parallel: false
+  commands:
+    check-types:
+      run: bun run check-types
+    biome:
+      run: bun run check

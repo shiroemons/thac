@@ -19,6 +19,7 @@
 		}
 	},
 	"scripts": {
+		"postinstall": "lefthook install",
 		"check": "biome check --write .",
 		"dev": "turbo dev",
 		"build": "turbo build",
@@ -44,6 +45,7 @@
 		"@dnd-kit/sortable": "^10.0.0",
 		"@dnd-kit/utilities": "^3.2.2",
 		"@types/bun": "catalog:",
+		"lefthook": "^2.0.12",
 		"turbo": "^2.5.4",
 		"typescript": "catalog:",
 		"web": "workspace:*"
