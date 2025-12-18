@@ -69,6 +69,11 @@ export interface DashboardStats {
 	officialWorkCategories: number;
 	officialWorks: number;
 	officialSongs: number;
+	artists: number;
+	artistAliases: number;
+	circles: number;
+	events: number;
+	eventSeries: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -635,6 +640,145 @@ export const circleLinksApi = {
 	delete: (circleId: string, linkId: string) =>
 		fetchWithAuth<{ success: boolean }>(
 			`/api/admin/circles/${circleId}/links/${linkId}`,
+			{
+				method: "DELETE",
+			},
+		),
+};
+
+// ===== イベント管理 =====
+
+export interface EventSeries {
+	id: string;
+	name: string;
+	sortOrder: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface Event {
+	id: string;
+	eventSeriesId: string;
+	name: string;
+	edition: number | null;
+	totalDays: number | null;
+	venue: string | null;
+	startDate: string | null;
+	endDate: string | null;
+	createdAt: string;
+	updatedAt: string;
+	seriesName?: string | null;
+}
+
+export interface EventDay {
+	id: string;
+	eventId: string;
+	dayNumber: number;
+	date: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface EventWithDays extends Event {
+	days: EventDay[];
+}
+
+// Event Series
+export const eventSeriesApi = {
+	list: (params?: { search?: string }) => {
+		const searchParams = new URLSearchParams();
+		if (params?.search) searchParams.set("search", params.search);
+		const query = searchParams.toString();
+		return fetchWithAuth<{ data: EventSeries[]; total: number }>(
+			`/api/admin/event-series${query ? `?${query}` : ""}`,
+		);
+	},
+	create: (data: Omit<EventSeries, "createdAt" | "updatedAt">) =>
+		fetchWithAuth<EventSeries>("/api/admin/event-series", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		id: string,
+		data: Partial<Omit<EventSeries, "id" | "createdAt" | "updatedAt">>,
+	) =>
+		fetchWithAuth<EventSeries>(`/api/admin/event-series/${id}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (id: string) =>
+		fetchWithAuth<{ success: boolean }>(`/api/admin/event-series/${id}`, {
+			method: "DELETE",
+		}),
+	reorder: (items: { id: string; sortOrder: number }[]) =>
+		fetchWithAuth<{ success: boolean }>("/api/admin/event-series/reorder", {
+			method: "PUT",
+			body: JSON.stringify({ items }),
+		}),
+};
+
+// Events
+export const eventsApi = {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		seriesId?: string;
+		search?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.seriesId) searchParams.set("seriesId", params.seriesId);
+		if (params?.search) searchParams.set("search", params.search);
+		const query = searchParams.toString();
+		return fetchWithAuth<PaginatedResponse<Event>>(
+			`/api/admin/events${query ? `?${query}` : ""}`,
+		);
+	},
+	get: (id: string) => fetchWithAuth<EventWithDays>(`/api/admin/events/${id}`),
+	create: (data: Omit<Event, "createdAt" | "updatedAt" | "seriesName">) =>
+		fetchWithAuth<Event>("/api/admin/events", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		id: string,
+		data: Partial<Omit<Event, "id" | "createdAt" | "updatedAt" | "seriesName">>,
+	) =>
+		fetchWithAuth<Event>(`/api/admin/events/${id}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (id: string) =>
+		fetchWithAuth<{ success: boolean }>(`/api/admin/events/${id}`, {
+			method: "DELETE",
+		}),
+};
+
+// Event Days
+export const eventDaysApi = {
+	list: (eventId: string) =>
+		fetchWithAuth<EventDay[]>(`/api/admin/events/${eventId}/days`),
+	create: (
+		eventId: string,
+		data: Omit<EventDay, "eventId" | "createdAt" | "updatedAt">,
+	) =>
+		fetchWithAuth<EventDay>(`/api/admin/events/${eventId}/days`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		eventId: string,
+		dayId: string,
+		data: Partial<Omit<EventDay, "id" | "eventId" | "createdAt" | "updatedAt">>,
+	) =>
+		fetchWithAuth<EventDay>(`/api/admin/events/${eventId}/days/${dayId}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (eventId: string, dayId: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/events/${eventId}/days/${dayId}`,
 			{
 				method: "DELETE",
 			},

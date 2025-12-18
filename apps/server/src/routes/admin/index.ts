@@ -6,6 +6,7 @@ import {
 import { artistAliasesRouter } from "./artist-aliases";
 import { artistsRouter } from "./artists";
 import { circlesRouter } from "./circles";
+import { eventSeriesRouter, eventsAdminRouter } from "./events";
 import { masterRouter } from "./master";
 import { officialRouter } from "./official";
 import { statsRouter } from "./stats";
@@ -32,5 +33,11 @@ adminRouter.route("/artist-aliases", artistAliasesRouter);
 
 // サークル管理ルート
 adminRouter.route("/circles", circlesRouter);
+
+// イベントシリーズ管理ルート
+adminRouter.route("/event-series", eventSeriesRouter);
+
+// イベント管理ルート
+adminRouter.route("/events", eventsAdminRouter);
 
 export { adminRouter };
