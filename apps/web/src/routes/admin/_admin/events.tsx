@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
 	Table,
 	TableBody,
@@ -491,24 +491,23 @@ function EventsPage() {
 								シリーズ <span className="text-error">*</span>
 							</Label>
 							<div className="flex items-center gap-2">
-								<Select
+								<SearchableSelect
 									id="create-seriesId"
 									value={createForm.eventSeriesId || ""}
-									onChange={(e) =>
+									onChange={(value) =>
 										setCreateForm({
 											...createForm,
-											eventSeriesId: e.target.value,
+											eventSeriesId: value,
 										})
 									}
+									options={seriesList.map((s) => ({
+										value: s.id,
+										label: s.name,
+									}))}
+									placeholder="選択してください"
+									searchPlaceholder="シリーズを検索..."
 									className="flex-1"
-								>
-									<option value="">選択してください</option>
-									{seriesList.map((s) => (
-										<option key={s.id} value={s.id}>
-											{s.name}
-										</option>
-									))}
-								</Select>
+								/>
 								<Button
 									type="button"
 									variant="outline"
@@ -690,21 +689,20 @@ function EventsPage() {
 								シリーズ <span className="text-error">*</span>
 							</Label>
 							<div className="flex items-center gap-2">
-								<Select
+								<SearchableSelect
 									id="edit-seriesId"
 									value={editForm.eventSeriesId || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, eventSeriesId: e.target.value })
+									onChange={(value) =>
+										setEditForm({ ...editForm, eventSeriesId: value })
 									}
+									options={seriesList.map((s) => ({
+										value: s.id,
+										label: s.name,
+									}))}
+									placeholder="選択してください"
+									searchPlaceholder="シリーズを検索..."
 									className="flex-1"
-								>
-									<option value="">選択してください</option>
-									{seriesList.map((s) => (
-										<option key={s.id} value={s.id}>
-											{s.name}
-										</option>
-									))}
-								</Select>
+								/>
 								<Button
 									type="button"
 									variant="outline"
