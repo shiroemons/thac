@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+	CircleUser,
 	Disc,
 	FolderOpen,
 	MonitorSmartphone,
 	Music,
 	UserCog,
+	UserPen,
 	Users,
 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -80,6 +82,27 @@ function AdminDashboard() {
 		},
 	];
 
+	const artistCircleStats = [
+		{
+			title: "アーティスト",
+			value: data?.artists,
+			icon: <UserPen className="h-8 w-8" />,
+			href: "/admin/artists" as const,
+		},
+		{
+			title: "アーティスト別名義",
+			value: data?.artistAliases,
+			icon: <Users className="h-8 w-8" />,
+			href: "/admin/artist-aliases" as const,
+		},
+		{
+			title: "サークル",
+			value: data?.circles,
+			icon: <CircleUser className="h-8 w-8" />,
+			href: "/admin/circles" as const,
+		},
+	];
+
 	const masterStats = [
 		{
 			title: "プラットフォーム",
@@ -147,6 +170,23 @@ function AdminDashboard() {
 					<h2 className="mb-3 font-semibold text-lg">公式管理</h2>
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 						{officialStats.map((stat) => (
+							<StatCard
+								key={stat.title}
+								title={stat.title}
+								value={stat.value}
+								icon={stat.icon}
+								href={stat.href}
+								isLoading={isLoading}
+							/>
+						))}
+					</div>
+				</section>
+
+				{/* アーティスト・サークル */}
+				<section>
+					<h2 className="mb-3 font-semibold text-lg">アーティスト・サークル</h2>
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+						{artistCircleStats.map((stat) => (
 							<StatCard
 								key={stat.title}
 								title={stat.title}

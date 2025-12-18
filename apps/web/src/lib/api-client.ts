@@ -383,3 +383,256 @@ export const officialSongsApi = {
 export const statsApi = {
 	get: () => fetchWithAuth<DashboardStats>("/api/admin/stats"),
 };
+
+// ===== アーティスト・サークル管理 =====
+
+export type InitialScript =
+	| "latin"
+	| "hiragana"
+	| "katakana"
+	| "kanji"
+	| "digit"
+	| "symbol"
+	| "other";
+
+export const INITIAL_SCRIPT_LABELS: Record<InitialScript, string> = {
+	latin: "ラテン文字 (A-Z)",
+	hiragana: "ひらがな",
+	katakana: "カタカナ",
+	kanji: "漢字",
+	digit: "数字",
+	symbol: "記号",
+	other: "その他",
+};
+
+export const INITIAL_SCRIPT_BADGE_VARIANTS: Record<
+	InitialScript,
+	"primary" | "success" | "info" | "warning" | "accent" | "ghost"
+> = {
+	latin: "primary",
+	hiragana: "success",
+	katakana: "info",
+	kanji: "warning",
+	digit: "accent",
+	symbol: "ghost",
+	other: "ghost",
+};
+
+export interface Artist {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	sortName: string | null;
+	nameInitial: string | null;
+	initialScript: InitialScript;
+	notes: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface ArtistAlias {
+	id: string;
+	artistId: string;
+	name: string;
+	aliasTypeCode: string | null;
+	nameInitial: string | null;
+	initialScript: InitialScript;
+	periodFrom: string | null;
+	periodTo: string | null;
+	createdAt: string;
+	updatedAt: string;
+	artistName?: string | null;
+}
+
+export interface Circle {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	sortName: string | null;
+	nameInitial: string | null;
+	initialScript: InitialScript;
+	notes: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface CircleLink {
+	id: string;
+	circleId: string;
+	platformCode: string;
+	url: string;
+	platformId: string | null;
+	handle: string | null;
+	isOfficial: boolean;
+	isPrimary: boolean;
+	createdAt: string;
+	updatedAt: string;
+	platformName?: string | null;
+}
+
+export interface CircleWithLinks extends Circle {
+	links: CircleLink[];
+}
+
+// Artists
+export const artistsApi = {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		initialScript?: string;
+		search?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.initialScript)
+			searchParams.set("initialScript", params.initialScript);
+		if (params?.search) searchParams.set("search", params.search);
+		const query = searchParams.toString();
+		return fetchWithAuth<PaginatedResponse<Artist>>(
+			`/api/admin/artists${query ? `?${query}` : ""}`,
+		);
+	},
+	get: (id: string) => fetchWithAuth<Artist>(`/api/admin/artists/${id}`),
+	create: (data: Omit<Artist, "createdAt" | "updatedAt">) =>
+		fetchWithAuth<Artist>("/api/admin/artists", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		id: string,
+		data: Partial<Omit<Artist, "id" | "createdAt" | "updatedAt">>,
+	) =>
+		fetchWithAuth<Artist>(`/api/admin/artists/${id}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (id: string) =>
+		fetchWithAuth<{ success: boolean }>(`/api/admin/artists/${id}`, {
+			method: "DELETE",
+		}),
+};
+
+// Artist Aliases
+export const artistAliasesApi = {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		artistId?: string;
+		search?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.artistId) searchParams.set("artistId", params.artistId);
+		if (params?.search) searchParams.set("search", params.search);
+		const query = searchParams.toString();
+		return fetchWithAuth<PaginatedResponse<ArtistAlias>>(
+			`/api/admin/artist-aliases${query ? `?${query}` : ""}`,
+		);
+	},
+	get: (id: string) =>
+		fetchWithAuth<ArtistAlias>(`/api/admin/artist-aliases/${id}`),
+	create: (data: Omit<ArtistAlias, "createdAt" | "updatedAt" | "artistName">) =>
+		fetchWithAuth<ArtistAlias>("/api/admin/artist-aliases", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		id: string,
+		data: Partial<
+			Omit<ArtistAlias, "id" | "createdAt" | "updatedAt" | "artistName">
+		>,
+	) =>
+		fetchWithAuth<ArtistAlias>(`/api/admin/artist-aliases/${id}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (id: string) =>
+		fetchWithAuth<{ success: boolean }>(`/api/admin/artist-aliases/${id}`, {
+			method: "DELETE",
+		}),
+};
+
+// Circles
+export const circlesApi = {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		initialScript?: string;
+		search?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.initialScript)
+			searchParams.set("initialScript", params.initialScript);
+		if (params?.search) searchParams.set("search", params.search);
+		const query = searchParams.toString();
+		return fetchWithAuth<PaginatedResponse<Circle>>(
+			`/api/admin/circles${query ? `?${query}` : ""}`,
+		);
+	},
+	get: (id: string) =>
+		fetchWithAuth<CircleWithLinks>(`/api/admin/circles/${id}`),
+	create: (data: Omit<Circle, "createdAt" | "updatedAt">) =>
+		fetchWithAuth<Circle>("/api/admin/circles", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		id: string,
+		data: Partial<Omit<Circle, "id" | "createdAt" | "updatedAt">>,
+	) =>
+		fetchWithAuth<Circle>(`/api/admin/circles/${id}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (id: string) =>
+		fetchWithAuth<{ success: boolean }>(`/api/admin/circles/${id}`, {
+			method: "DELETE",
+		}),
+};
+
+// Circle Links
+export const circleLinksApi = {
+	list: (circleId: string) =>
+		fetchWithAuth<CircleLink[]>(`/api/admin/circles/${circleId}/links`),
+	create: (
+		circleId: string,
+		data: Omit<
+			CircleLink,
+			"circleId" | "createdAt" | "updatedAt" | "platformName"
+		>,
+	) =>
+		fetchWithAuth<CircleLink>(`/api/admin/circles/${circleId}/links`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		circleId: string,
+		linkId: string,
+		data: Partial<
+			Omit<
+				CircleLink,
+				"id" | "circleId" | "createdAt" | "updatedAt" | "platformName"
+			>
+		>,
+	) =>
+		fetchWithAuth<CircleLink>(
+			`/api/admin/circles/${circleId}/links/${linkId}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(data),
+			},
+		),
+	delete: (circleId: string, linkId: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/circles/${circleId}/links/${linkId}`,
+			{
+				method: "DELETE",
+			},
+		),
+};

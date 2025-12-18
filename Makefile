@@ -1,4 +1,4 @@
-.PHONY: help dev up down logs ps build clean rebuild shell-server shell-web db-push db-studio
+.PHONY: help dev up down logs ps build clean rebuild shell-server shell-web db-push db-studio test test-local
 
 # デフォルトターゲット
 help: ## ヘルプを表示
@@ -87,3 +87,9 @@ check: ## Lint・フォーマットチェック（ローカル）
 
 check-types: ## 型チェック（ローカル）
 	bun run check-types
+
+test: ## テストを実行（Docker）
+	docker compose exec server bun test
+
+test-local: ## テストを実行（ローカル）
+	bun test

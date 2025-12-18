@@ -42,7 +42,11 @@ function Badge({
 	return (
 		<span
 			data-slot="badge"
-			className={cn("badge", variantClasses[variant], className)}
+			className={cn(
+				"badge whitespace-nowrap",
+				variantClasses[variant],
+				className,
+			)}
 			{...props}
 		/>
 	);
