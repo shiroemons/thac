@@ -6,6 +6,7 @@ import {
 	count,
 	creditRoles,
 	db,
+	events,
 	officialSongs,
 	officialWorkCategories,
 	officialWorks,
@@ -30,6 +31,7 @@ statsRouter.get("/", async (c) => {
 		artistsResult,
 		artistAliasesResult,
 		circlesResult,
+		eventsResult,
 	] = await Promise.all([
 		db.select({ count: count() }).from(user),
 		db.select({ count: count() }).from(platforms),
@@ -41,6 +43,7 @@ statsRouter.get("/", async (c) => {
 		db.select({ count: count() }).from(artists),
 		db.select({ count: count() }).from(artistAliases),
 		db.select({ count: count() }).from(circles),
+		db.select({ count: count() }).from(events),
 	]);
 
 	return c.json({
@@ -54,6 +57,7 @@ statsRouter.get("/", async (c) => {
 		artists: artistsResult[0]?.count ?? 0,
 		artistAliases: artistAliasesResult[0]?.count ?? 0,
 		circles: circlesResult[0]?.count ?? 0,
+		events: eventsResult[0]?.count ?? 0,
 	});
 });
 

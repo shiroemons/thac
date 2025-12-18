@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+	Calendar,
 	CircleUser,
 	Disc,
 	FolderOpen,
@@ -103,6 +104,15 @@ function AdminDashboard() {
 		},
 	];
 
+	const eventStats = [
+		{
+			title: "イベント",
+			value: data?.events,
+			icon: <Calendar className="h-8 w-8" />,
+			href: "/admin/events" as const,
+		},
+	];
+
 	const masterStats = [
 		{
 			title: "プラットフォーム",
@@ -187,6 +197,23 @@ function AdminDashboard() {
 					<h2 className="mb-3 font-semibold text-lg">アーティスト・サークル</h2>
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 						{artistCircleStats.map((stat) => (
+							<StatCard
+								key={stat.title}
+								title={stat.title}
+								value={stat.value}
+								icon={stat.icon}
+								href={stat.href}
+								isLoading={isLoading}
+							/>
+						))}
+					</div>
+				</section>
+
+				{/* イベント管理 */}
+				<section>
+					<h2 className="mb-3 font-semibold text-lg">イベント管理</h2>
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+						{eventStats.map((stat) => (
 							<StatCard
 								key={stat.title}
 								title={stat.title}

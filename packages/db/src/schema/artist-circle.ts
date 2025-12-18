@@ -42,9 +42,9 @@ export const artists = sqliteTable(
 			.notNull(),
 	},
 	(table) => [
-		index("idx_artists_name").on(table.name),
-		index("idx_artists_initial_script").on(table.initialScript),
-		uniqueIndex("uq_artists_name_lower").on(sql`lower(${table.name})`),
+		uniqueIndex("uq_artists_name").on(table.name),
+		index("idx_artists_sort").on(table.sortName),
+		index("idx_artists_initial").on(table.nameInitial, table.initialScript),
 	],
 );
 
@@ -72,10 +72,7 @@ export const artistAliases = sqliteTable(
 	},
 	(table) => [
 		index("idx_artist_aliases_artist_id").on(table.artistId),
-		uniqueIndex("uq_artist_aliases_artist_name").on(
-			table.artistId,
-			sql`lower(${table.name})`,
-		),
+		uniqueIndex("uq_artist_aliases_name").on(table.artistId, table.name),
 	],
 );
 
@@ -100,9 +97,8 @@ export const circles = sqliteTable(
 			.notNull(),
 	},
 	(table) => [
-		index("idx_circles_name").on(table.name),
-		index("idx_circles_initial_script").on(table.initialScript),
-		uniqueIndex("uq_circles_name_lower").on(sql`lower(${table.name})`),
+		uniqueIndex("uq_circles_name").on(table.name),
+		index("idx_circles_initial").on(table.nameInitial, table.initialScript),
 	],
 );
 

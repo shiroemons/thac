@@ -69,6 +69,10 @@ export interface DashboardStats {
 	officialWorkCategories: number;
 	officialWorks: number;
 	officialSongs: number;
+	artists: number;
+	artistAliases: number;
+	circles: number;
+	events: number;
 }
 
 export interface PaginatedResponse<T> {

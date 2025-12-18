@@ -449,37 +449,37 @@ function EventsPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
-							<div className="flex items-center justify-between">
-								<Label htmlFor="create-seriesId">
-									シリーズ <span className="text-error">*</span>
-								</Label>
+							<Label htmlFor="create-seriesId">
+								シリーズ <span className="text-error">*</span>
+							</Label>
+							<div className="flex items-center gap-2">
+								<Select
+									id="create-seriesId"
+									value={createForm.eventSeriesId || ""}
+									onChange={(e) =>
+										setCreateForm({
+											...createForm,
+											eventSeriesId: e.target.value,
+										})
+									}
+									className="flex-1"
+								>
+									<option value="">選択してください</option>
+									{seriesList.map((s) => (
+										<option key={s.id} value={s.id}>
+											{s.name}
+										</option>
+									))}
+								</Select>
 								<Button
 									type="button"
-									variant="ghost"
-									size="sm"
+									variant="outline"
 									onClick={() => setIsSeriesDialogOpen(true)}
 								>
-									<Plus className="mr-1 h-3 w-3" />
+									<Plus className="mr-1 h-4 w-4" />
 									新規シリーズ
 								</Button>
 							</div>
-							<Select
-								id="create-seriesId"
-								value={createForm.eventSeriesId || ""}
-								onChange={(e) =>
-									setCreateForm({
-										...createForm,
-										eventSeriesId: e.target.value,
-									})
-								}
-							>
-								<option value="">選択してください</option>
-								{seriesList.map((s) => (
-									<option key={s.id} value={s.id}>
-										{s.name}
-									</option>
-								))}
-							</Select>
 						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="create-name">

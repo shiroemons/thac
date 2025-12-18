@@ -23,7 +23,7 @@ export const eventSeries = sqliteTable(
 	},
 	(table) => [
 		index("idx_event_series_name").on(table.name),
-		uniqueIndex("uq_event_series_name_lower").on(sql`lower(${table.name})`),
+		uniqueIndex("uq_event_series_name").on(table.name),
 	],
 );
 
