@@ -22,26 +22,26 @@ packages/db/
 └── tsconfig.json
 ```
 
-## コマンド
+## コマンド（Docker）
 
 ```bash
-# packages/dbディレクトリで実行
-cd packages/db
+make db-local      # ローカルSQLiteサーバーを起動
+make db-push       # スキーマをDBにプッシュ
+make db-generate   # マイグレーションを生成
+make db-migrate    # マイグレーションを実行
+make db-seed       # シードデータを投入
+make db-setup      # DBセットアップ（push + seed）
+make db-studio     # Drizzle Studioを起動
+```
 
-# ローカルSQLiteデータベースの起動
-bun run db:local
+## コマンド（ローカル）
 
-# スキーマをデータベースにプッシュ
-bun run db:push
-
-# マイグレーション生成
-bun run db:generate
-
-# マイグレーション実行
-bun run db:migrate
-
-# Drizzle Studioを開く
-bun run db:studio
+```bash
+make db-push-local       # スキーマをDBにプッシュ
+make db-generate-local   # マイグレーションを生成
+make db-migrate-local    # マイグレーションを実行
+make db-seed-local       # シードデータを投入
+make db-setup-local      # DBセットアップ（push + seed）
 ```
 
 ## 開発ガイドライン
