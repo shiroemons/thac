@@ -1,55 +1,55 @@
 {
-  "version": "7",
-  "dialect": "sqlite",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "6",
-      "when": 1765692345739,
-      "tag": "0000_lucky_cardiac",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1765983592277,
-      "tag": "0001_furry_starjammers",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1766027147558,
-      "tag": "0002_massive_synch",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1766037671990,
-      "tag": "0003_even_oracle",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1766059637669,
-      "tag": "0004_dizzy_korath",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1766059938500,
-      "tag": "0005_woozy_zarek",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1766065517563,
-      "tag": "0006_stormy_blonde_phantom",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "sqlite",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "6",
+			"when": 1765692345739,
+			"tag": "0000_lucky_cardiac",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "6",
+			"when": 1765983592277,
+			"tag": "0001_furry_starjammers",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "6",
+			"when": 1766027147558,
+			"tag": "0002_massive_synch",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "6",
+			"when": 1766037671990,
+			"tag": "0003_even_oracle",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "6",
+			"when": 1766059637669,
+			"tag": "0004_dizzy_korath",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "6",
+			"when": 1766059938500,
+			"tag": "0005_woozy_zarek",
+			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "6",
+			"when": 1766065517563,
+			"tag": "0006_stormy_blonde_phantom",
+			"breakpoints": true
+		}
+	]
 }
