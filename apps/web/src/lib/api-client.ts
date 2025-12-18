@@ -450,6 +450,7 @@ export interface Circle {
 	name: string;
 	nameJa: string | null;
 	nameEn: string | null;
+	sortName: string | null;
 	nameInitial: string | null;
 	initialScript: InitialScript;
 	notes: string | null;

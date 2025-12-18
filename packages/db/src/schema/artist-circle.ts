@@ -87,6 +87,7 @@ export const circles = sqliteTable(
 		name: text("name").notNull(),
 		nameJa: text("name_ja"),
 		nameEn: text("name_en"),
+		sortName: text("sort_name"),
 		nameInitial: text("name_initial"),
 		initialScript: text("initial_script").notNull(),
 		notes: text("notes"),

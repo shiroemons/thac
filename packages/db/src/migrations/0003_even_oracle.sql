@@ -1,0 +1,1 @@
+ALTER TABLE `circles` ADD `sort_name` text;

@@ -154,6 +154,7 @@ export const insertCircleSchema = createInsertSchema(circles, {
 	name: nonEmptyString.max(200, "200文字以内で入力してください"),
 	nameJa: optionalString,
 	nameEn: optionalString,
+	sortName: optionalString,
 	nameInitial: nameInitialSchema,
 	initialScript: initialScriptSchema,
 	notes: optionalString.pipe(
@@ -183,6 +184,7 @@ export const updateCircleSchema = z
 		name: nonEmptyString.max(200, "200文字以内で入力してください").optional(),
 		nameJa: optionalString,
 		nameEn: optionalString,
+		sortName: optionalString,
 		nameInitial: nameInitialSchema,
 		initialScript: initialScriptSchema.optional(),
 		notes: optionalString.pipe(

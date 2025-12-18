@@ -120,6 +120,7 @@ function CirclesPage() {
 				name: createForm.name || "",
 				nameJa: createForm.nameJa || null,
 				nameEn: createForm.nameEn || null,
+				sortName: createForm.sortName || null,
 				nameInitial: createForm.nameInitial || null,
 				initialScript: (createForm.initialScript as InitialScript) || "latin",
 				notes: createForm.notes || null,
@@ -143,6 +144,7 @@ function CirclesPage() {
 				name: editForm.name,
 				nameJa: editForm.nameJa,
 				nameEn: editForm.nameEn,
+				sortName: editForm.sortName,
 				nameInitial: editForm.nameInitial,
 				initialScript: editForm.initialScript,
 				notes: editForm.notes,
@@ -182,6 +184,7 @@ function CirclesPage() {
 				name: circleWithLinks.name,
 				nameJa: circleWithLinks.nameJa,
 				nameEn: circleWithLinks.nameEn,
+				sortName: circleWithLinks.sortName,
 				nameInitial: circleWithLinks.nameInitial,
 				initialScript: circleWithLinks.initialScript,
 				notes: circleWithLinks.notes,
@@ -484,6 +487,16 @@ function CirclesPage() {
 							</div>
 						</div>
 						<div className="grid gap-2">
+							<Label htmlFor="create-sortName">ソート用名</Label>
+							<Input
+								id="create-sortName"
+								value={createForm.sortName || ""}
+								onChange={(e) =>
+									setCreateForm({ ...createForm, sortName: e.target.value })
+								}
+							/>
+						</div>
+						<div className="grid gap-2">
 							<Label htmlFor="create-notes">備考</Label>
 							<Textarea
 								id="create-notes"
@@ -568,6 +581,16 @@ function CirclesPage() {
 									}
 								/>
 							</div>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="edit-sortName">ソート用名</Label>
+							<Input
+								id="edit-sortName"
+								value={editForm.sortName || ""}
+								onChange={(e) =>
+									setEditForm({ ...editForm, sortName: e.target.value })
+								}
+							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
