@@ -43,6 +43,7 @@ import {
 	type InitialScript,
 	platformsApi,
 } from "@/lib/api-client";
+import { getExternalLinkUrl } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/_admin/circles")({
 	component: CirclesPage,
@@ -98,6 +99,7 @@ function CirclesPage() {
 		download: "ダウンロード",
 		video: "動画",
 		shop: "ショップ",
+		other: "その他",
 	};
 
 	// プラットフォームをカテゴリでグルーピング
@@ -128,6 +130,31 @@ function CirclesPage() {
 			})),
 		}));
 	}, [platforms]);
+
+	// URLからプラットフォームを推測する関数
+	const detectPlatformFromUrl = (url: string): string => {
+		if (!url || platforms.length === 0) return "";
+
+		// web_siteとblogは汎用パターンなのでスキップし、フォールバックとして扱う
+		const genericPlatforms = ["web_site", "blog"];
+
+		for (const platform of platforms) {
+			// 汎用プラットフォームはスキップ
+			if (genericPlatforms.includes(platform.code)) continue;
+
+			if (platform.urlPattern) {
+				try {
+					const regex = new RegExp(platform.urlPattern);
+					if (regex.test(url)) {
+						return platform.code;
+					}
+				} catch {
+					// 無効な正規表現パターンはスキップ
+				}
+			}
+		}
+		return "web_site"; // マッチしなければweb_site
+	};
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["circles", page, pageSize, debouncedSearch, initialScript],
@@ -717,7 +744,7 @@ function CirclesPage() {
 													{link.platformName || link.platformCode}
 												</Badge>
 												<a
-													href={link.url}
+													href={getExternalLinkUrl(link.url)}
 													target="_blank"
 													rel="noopener noreferrer"
 													className="flex items-center gap-1 text-primary text-sm hover:underline"
@@ -789,6 +816,7 @@ function CirclesPage() {
 							isOfficial: true,
 							isPrimary: false,
 						});
+						setMutationError(null);
 					}
 				}}
 			>
@@ -799,6 +827,33 @@ function CirclesPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
+						<div className="grid gap-2">
+							<Label htmlFor="link-url">
+								URL <span className="text-error">*</span>
+							</Label>
+							<Input
+								id="link-url"
+								type="url"
+								value={linkForm.url || ""}
+								onChange={(e) => {
+									const url = e.target.value;
+									setLinkForm({ ...linkForm, url });
+								}}
+								onBlur={(e) => {
+									// URLからプラットフォームを自動検出（未選択の場合のみ）
+									if (!linkForm.platformCode) {
+										const detectedPlatform = detectPlatformFromUrl(
+											e.target.value,
+										);
+										setLinkForm((prev) => ({
+											...prev,
+											platformCode: detectedPlatform,
+										}));
+									}
+								}}
+								placeholder="https://..."
+							/>
+						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="link-platformCode">
 								プラットフォーム <span className="text-error">*</span>
@@ -812,20 +867,6 @@ function CirclesPage() {
 								groups={groupedPlatforms}
 								placeholder="選択してください"
 								searchPlaceholder="プラットフォームを検索..."
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="link-url">
-								URL <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="link-url"
-								type="url"
-								value={linkForm.url || ""}
-								onChange={(e) =>
-									setLinkForm({ ...linkForm, url: e.target.value })
-								}
-								placeholder="https://..."
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -883,6 +924,11 @@ function CirclesPage() {
 								</Label>
 							</div>
 						</div>
+						{mutationError && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{mutationError}
+							</div>
+						)}
 					</div>
 					<DialogFooter>
 						<Button variant="ghost" onClick={() => setIsLinkDialogOpen(false)}>

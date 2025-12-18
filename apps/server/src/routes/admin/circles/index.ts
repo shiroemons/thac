@@ -323,10 +323,39 @@ circlesRouter.post("/:circleId/links", async (c) => {
 		return c.json({ error: "URL already exists for this circle" }, 409);
 	}
 
-	// 作成
-	const result = await db.insert(circleLinks).values(parsed.data).returning();
+	// プラットフォームのURLパターンを取得してバリデーション
+	const platform = await db
+		.select({ urlPattern: platforms.urlPattern })
+		.from(platforms)
+		.where(eq(platforms.code, parsed.data.platformCode))
+		.limit(1);
 
-	return c.json(result[0], 201);
+	if (platform[0]?.urlPattern) {
+		try {
+			const regex = new RegExp(platform[0].urlPattern);
+			if (!regex.test(parsed.data.url)) {
+				return c.json(
+					{ error: "URLが選択されたプラットフォームの形式と一致しません" },
+					400,
+				);
+			}
+		} catch (e) {
+			// 無効な正規表現パターンの場合はスキップ
+			console.error("Invalid URL pattern:", platform[0].urlPattern, e);
+		}
+	}
+
+	// 作成
+	try {
+		const result = await db.insert(circleLinks).values(parsed.data).returning();
+		return c.json(result[0], 201);
+	} catch (e) {
+		console.error("Failed to create circle link:", e);
+		return c.json(
+			{ error: e instanceof Error ? e.message : "リンクの作成に失敗しました" },
+			500,
+		);
+	}
 });
 
 // サークルリンク更新
@@ -345,6 +374,9 @@ circlesRouter.put("/:circleId/links/:linkId", async (c) => {
 	if (existing.length === 0) {
 		return c.json({ error: "Not found" }, 404);
 	}
+
+	// biome-ignore lint/style/noNonNullAssertion: existing.length > 0 is guaranteed by the check above
+	const existingLink = existing[0]!;
 
 	// バリデーション
 	const parsed = updateCircleLinkSchema.safeParse(body);
@@ -376,14 +408,48 @@ circlesRouter.put("/:circleId/links/:linkId", async (c) => {
 		}
 	}
 
-	// 更新
-	const result = await db
-		.update(circleLinks)
-		.set(parsed.data)
-		.where(eq(circleLinks.id, linkId))
-		.returning();
+	// URLまたはplatformCodeが更新される場合、URLパターンバリデーション
+	if (parsed.data.url || parsed.data.platformCode) {
+		const platformCode = parsed.data.platformCode || existingLink.platformCode;
+		const url = parsed.data.url || existingLink.url;
 
-	return c.json(result[0]);
+		const platform = await db
+			.select({ urlPattern: platforms.urlPattern })
+			.from(platforms)
+			.where(eq(platforms.code, platformCode))
+			.limit(1);
+
+		if (platform[0]?.urlPattern) {
+			try {
+				const regex = new RegExp(platform[0].urlPattern);
+				if (!regex.test(url)) {
+					return c.json(
+						{ error: "URLが選択されたプラットフォームの形式と一致しません" },
+						400,
+					);
+				}
+			} catch (e) {
+				// 無効な正規表現パターンの場合はスキップ
+				console.error("Invalid URL pattern:", platform[0].urlPattern, e);
+			}
+		}
+	}
+
+	// 更新
+	try {
+		const result = await db
+			.update(circleLinks)
+			.set(parsed.data)
+			.where(eq(circleLinks.id, linkId))
+			.returning();
+		return c.json(result[0]);
+	} catch (e) {
+		console.error("Failed to update circle link:", e);
+		return c.json(
+			{ error: e instanceof Error ? e.message : "リンクの更新に失敗しました" },
+			500,
+		);
+	}
 });
 
 // サークルリンク削除

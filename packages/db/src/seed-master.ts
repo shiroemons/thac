@@ -170,6 +170,19 @@ const platformsData = [
 		category: "shop",
 		urlPattern: "^https?://(www\\.)?d-stage\\.com/",
 	},
+	// その他
+	{
+		code: "web_site",
+		name: "Webサイト",
+		category: "other",
+		urlPattern: "^https?://",
+	},
+	{
+		code: "blog",
+		name: "ブログ",
+		category: "other",
+		urlPattern: "^https?://",
+	},
 ];
 
 const aliasTypesData = [
