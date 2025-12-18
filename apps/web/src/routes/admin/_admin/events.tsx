@@ -526,6 +526,7 @@ function EventsPage() {
 									id="create-edition"
 									type="number"
 									min="1"
+									placeholder="例: 104"
 									value={createForm.edition ?? ""}
 									onChange={(e) =>
 										setCreateForm({
@@ -541,6 +542,7 @@ function EventsPage() {
 									id="create-totalDays"
 									type="number"
 									min="1"
+									placeholder="例: 2"
 									value={createForm.totalDays ?? ""}
 									onChange={(e) =>
 										setCreateForm({
@@ -555,6 +557,7 @@ function EventsPage() {
 							<Label htmlFor="create-venue">会場</Label>
 							<Input
 								id="create-venue"
+								placeholder="例: 東京ビッグサイト"
 								value={createForm.venue || ""}
 								onChange={(e) =>
 									setCreateForm({ ...createForm, venue: e.target.value })
@@ -719,6 +722,7 @@ function EventsPage() {
 									id="edit-edition"
 									type="number"
 									min="1"
+									placeholder="例: 104"
 									value={editForm.edition ?? ""}
 									onChange={(e) =>
 										setEditForm({
@@ -734,6 +738,7 @@ function EventsPage() {
 									id="edit-totalDays"
 									type="number"
 									min="1"
+									placeholder="例: 2"
 									value={editForm.totalDays ?? ""}
 									onChange={(e) =>
 										setEditForm({
@@ -748,6 +753,7 @@ function EventsPage() {
 							<Label htmlFor="edit-venue">会場</Label>
 							<Input
 								id="edit-venue"
+								placeholder="例: 東京ビッグサイト"
 								value={editForm.venue || ""}
 								onChange={(e) =>
 									setEditForm({ ...editForm, venue: e.target.value })
