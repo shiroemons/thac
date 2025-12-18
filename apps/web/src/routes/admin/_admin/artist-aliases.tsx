@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select } from "@/components/ui/select";
 import {
 	Table,
@@ -50,6 +51,42 @@ const initialScriptOptions = Object.entries(INITIAL_SCRIPT_LABELS).map(
 const requiresInitial = (initialScript: string) =>
 	["latin", "hiragana", "katakana"].includes(initialScript);
 
+// 名義種別に応じたBadgeのvariantを返す
+const getAliasTypeBadgeVariant = (
+	aliasTypeCode: string | null,
+): "primary" | "info" | "accent" | "secondary" => {
+	switch (aliasTypeCode) {
+		case "main":
+			return "primary";
+		case "romanization":
+			return "info";
+		case "pseudonym":
+			return "accent";
+		default:
+			return "secondary";
+	}
+};
+
+// 文字種に応じたBadgeのvariantを返す
+const getInitialScriptBadgeVariant = (
+	initialScript: string,
+): "primary" | "info" | "accent" | "success" | "warning" | "ghost" => {
+	switch (initialScript) {
+		case "latin":
+			return "primary";
+		case "hiragana":
+			return "info";
+		case "katakana":
+			return "accent";
+		case "kanji":
+			return "success";
+		case "numeric":
+			return "warning";
+		default:
+			return "ghost";
+	}
+};
+
 function ArtistAliasesPage() {
 	const queryClient = useQueryClient();
 
@@ -66,6 +103,7 @@ function ArtistAliasesPage() {
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [createForm, setCreateForm] = useState<Partial<ArtistAlias>>({
 		initialScript: "latin",
+		aliasTypeCode: "main",
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -168,7 +206,7 @@ function ArtistAliasesPage() {
 				periodTo: createForm.periodTo || null,
 			});
 			setIsCreateDialogOpen(false);
-			setCreateForm({ initialScript: "latin" });
+			setCreateForm({ initialScript: "latin", aliasTypeCode: "main" });
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "作成に失敗しました");
@@ -245,15 +283,21 @@ function ArtistAliasesPage() {
 					searchPlaceholder="名義名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
-					filterOptions={artistFilterOptions}
-					filterValue={artistIdFilter}
-					filterPlaceholder="アーティストで絞り込み"
-					onFilterChange={setArtistIdFilter}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
-				/>
+				>
+					<SearchableSelect
+						value={artistIdFilter}
+						onChange={setArtistIdFilter}
+						options={artistFilterOptions}
+						placeholder="アーティストで絞り込み"
+						searchPlaceholder="アーティストを検索..."
+						emptyMessage="該当するアーティストがありません"
+						className="w-56"
+					/>
+				</DataTableActionBar>
 
 				{displayError && (
 					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
@@ -275,9 +319,10 @@ function ArtistAliasesPage() {
 								<TableRow className="hover:bg-transparent">
 									<TableHead>名義名</TableHead>
 									<TableHead className="w-[180px]">アーティスト</TableHead>
-									<TableHead className="w-[120px]">種別</TableHead>
-									<TableHead className="w-[100px]">頭文字</TableHead>
-									<TableHead className="w-[150px]">使用期間</TableHead>
+									<TableHead className="w-[100px]">種別</TableHead>
+									<TableHead className="w-[80px]">文字種</TableHead>
+									<TableHead className="w-[70px]">頭文字</TableHead>
+									<TableHead className="w-[140px]">使用期間</TableHead>
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -285,7 +330,7 @@ function ArtistAliasesPage() {
 								{aliases.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={6}
+											colSpan={7}
 											className="h-24 text-center text-base-content/50"
 										>
 											該当する名義が見つかりません
@@ -302,7 +347,11 @@ function ArtistAliasesPage() {
 											</TableCell>
 											<TableCell>
 												{alias.aliasTypeCode ? (
-													<Badge variant="secondary">
+													<Badge
+														variant={getAliasTypeBadgeVariant(
+															alias.aliasTypeCode,
+														)}
+													>
 														{aliasTypes.find(
 															(t) => t.code === alias.aliasTypeCode,
 														)?.label || alias.aliasTypeCode}
@@ -310,6 +359,17 @@ function ArtistAliasesPage() {
 												) : (
 													<span className="text-base-content/50">-</span>
 												)}
+											</TableCell>
+											<TableCell>
+												<Badge
+													variant={getInitialScriptBadgeVariant(
+														alias.initialScript,
+													)}
+												>
+													{INITIAL_SCRIPT_LABELS[
+														alias.initialScript as InitialScript
+													] || alias.initialScript}
+												</Badge>
 											</TableCell>
 											<TableCell className="font-mono">
 												{alias.nameInitial || "-"}
@@ -377,7 +437,7 @@ function ArtistAliasesPage() {
 				onOpenChange={(open) => {
 					if (!open) {
 						setIsCreateDialogOpen(false);
-						setCreateForm({ initialScript: "latin" });
+						setCreateForm({ initialScript: "latin", aliasTypeCode: "main" });
 						setMutationError(null);
 					}
 				}}
@@ -411,21 +471,18 @@ function ArtistAliasesPage() {
 								アーティスト <span className="text-error">*</span>
 							</Label>
 							<div className="flex gap-2">
-								<Select
-									id="create-artistId"
-									className="flex-1"
+								<SearchableSelect
 									value={createForm.artistId || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, artistId: e.target.value })
+									onChange={(value) =>
+										setCreateForm({ ...createForm, artistId: value })
 									}
-								>
-									<option value="">選択してください</option>
-									{artists.map((a) => (
-										<option key={a.id} value={a.id}>
-											{a.name}
-										</option>
-									))}
-								</Select>
+									options={artistFilterOptions}
+									placeholder="アーティストを選択"
+									searchPlaceholder="アーティストを検索..."
+									emptyMessage="該当するアーティストがありません"
+									clearable={false}
+									className="flex-1"
+								/>
 								<Button
 									type="button"
 									variant="outline"
@@ -599,20 +656,17 @@ function ArtistAliasesPage() {
 							<Label htmlFor="edit-artistId">
 								アーティスト <span className="text-error">*</span>
 							</Label>
-							<Select
-								id="edit-artistId"
+							<SearchableSelect
 								value={editForm.artistId || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, artistId: e.target.value })
+								onChange={(value) =>
+									setEditForm({ ...editForm, artistId: value })
 								}
-							>
-								<option value="">選択してください</option>
-								{artists.map((a) => (
-									<option key={a.id} value={a.id}>
-										{a.name}
-									</option>
-								))}
-							</Select>
+								options={artistFilterOptions}
+								placeholder="アーティストを選択"
+								searchPlaceholder="アーティストを検索..."
+								emptyMessage="該当するアーティストがありません"
+								clearable={false}
+							/>
 						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="edit-aliasTypeCode">名義種別</Label>
