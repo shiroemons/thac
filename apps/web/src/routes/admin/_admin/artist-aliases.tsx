@@ -84,7 +84,7 @@ function ArtistAliasesPage() {
 	});
 	const artists = artistsData?.data ?? [];
 
-	// 別名義種別一覧取得
+	// 名義種別一覧取得
 	const { data: aliasTypesData } = useQuery({
 		queryKey: ["aliasTypes", "all"],
 		queryFn: () => aliasTypesApi.list({ limit: 100 }),
@@ -235,14 +235,14 @@ function ArtistAliasesPage() {
 	return (
 		<div className="container mx-auto py-6">
 			<AdminPageHeader
-				title="アーティスト別名義管理"
-				breadcrumbs={[{ label: "アーティスト別名義" }]}
+				title="アーティスト名義管理"
+				breadcrumbs={[{ label: "アーティスト名義" }]}
 			/>
 
 			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
 				<DataTableActionBar
 					className="border-base-300 border-b p-4"
-					searchPlaceholder="別名義名で検索..."
+					searchPlaceholder="名義名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
 					filterOptions={artistFilterOptions}
@@ -273,7 +273,7 @@ function ArtistAliasesPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead>別名義名</TableHead>
+									<TableHead>名義名</TableHead>
 									<TableHead className="w-[180px]">アーティスト</TableHead>
 									<TableHead className="w-[120px]">種別</TableHead>
 									<TableHead className="w-[100px]">頭文字</TableHead>
@@ -288,7 +288,7 @@ function ArtistAliasesPage() {
 											colSpan={6}
 											className="h-24 text-center text-base-content/50"
 										>
-											該当する別名義が見つかりません
+											該当する名義が見つかりません
 										</TableCell>
 									</TableRow>
 								) : (
@@ -384,9 +384,28 @@ function ArtistAliasesPage() {
 			>
 				<DialogContent className="sm:max-w-[500px]">
 					<DialogHeader>
-						<DialogTitle>新規アーティスト別名義</DialogTitle>
+						<DialogTitle>新規アーティスト名義</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
+						<div className="grid gap-2">
+							<Label htmlFor="create-name">
+								名義名 <span className="text-error">*</span>
+							</Label>
+							<Input
+								id="create-name"
+								value={createForm.name || ""}
+								onChange={(e) => {
+									const name = e.target.value;
+									const initial = detectInitial(name);
+									setCreateForm({
+										...createForm,
+										name,
+										initialScript: initial.initialScript as InitialScript,
+										nameInitial: initial.nameInitial,
+									});
+								}}
+							/>
+						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="create-artistId">
 								アーティスト <span className="text-error">*</span>
@@ -419,26 +438,7 @@ function ArtistAliasesPage() {
 							</div>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="create-name">
-								別名義名 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="create-name"
-								value={createForm.name || ""}
-								onChange={(e) => {
-									const name = e.target.value;
-									const initial = detectInitial(name);
-									setCreateForm({
-										...createForm,
-										name,
-										initialScript: initial.initialScript as InitialScript,
-										nameInitial: initial.nameInitial,
-									});
-								}}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-aliasTypeCode">別名義種別</Label>
+							<Label htmlFor="create-aliasTypeCode">名義種別</Label>
 							<Select
 								id="create-aliasTypeCode"
 								value={createForm.aliasTypeCode || ""}
@@ -573,9 +573,28 @@ function ArtistAliasesPage() {
 			>
 				<DialogContent className="sm:max-w-[500px]">
 					<DialogHeader>
-						<DialogTitle>アーティスト別名義の編集</DialogTitle>
+						<DialogTitle>アーティスト名義の編集</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
+						<div className="grid gap-2">
+							<Label htmlFor="edit-name">
+								名義名 <span className="text-error">*</span>
+							</Label>
+							<Input
+								id="edit-name"
+								value={editForm.name || ""}
+								onChange={(e) => {
+									const name = e.target.value;
+									const initial = detectInitial(name);
+									setEditForm({
+										...editForm,
+										name,
+										initialScript: initial.initialScript as InitialScript,
+										nameInitial: initial.nameInitial,
+									});
+								}}
+							/>
+						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="edit-artistId">
 								アーティスト <span className="text-error">*</span>
@@ -596,26 +615,7 @@ function ArtistAliasesPage() {
 							</Select>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="edit-name">
-								別名義名 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="edit-name"
-								value={editForm.name || ""}
-								onChange={(e) => {
-									const name = e.target.value;
-									const initial = detectInitial(name);
-									setEditForm({
-										...editForm,
-										name,
-										initialScript: initial.initialScript as InitialScript,
-										nameInitial: initial.nameInitial,
-									});
-								}}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-aliasTypeCode">別名義種別</Label>
+							<Label htmlFor="edit-aliasTypeCode">名義種別</Label>
 							<Select
 								id="edit-aliasTypeCode"
 								value={editForm.aliasTypeCode || ""}

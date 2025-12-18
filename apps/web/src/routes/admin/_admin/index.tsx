@@ -92,7 +92,7 @@ function AdminDashboard() {
 			href: "/admin/artists" as const,
 		},
 		{
-			title: "アーティスト別名義",
+			title: "アーティスト名義",
 			value: data?.artistAliases,
 			icon: <Users className="h-8 w-8" />,
 			href: "/admin/artist-aliases" as const,
@@ -128,7 +128,7 @@ function AdminDashboard() {
 			href: "/admin/master/platforms" as const,
 		},
 		{
-			title: "別名義種別",
+			title: "名義種別",
 			value: data?.aliasTypes,
 			icon: <Users className="h-8 w-8" />,
 			href: "/admin/master/alias-types" as const,
