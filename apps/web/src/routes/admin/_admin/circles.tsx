@@ -448,6 +448,8 @@ function CirclesPage() {
 									setCreateForm({
 										...createForm,
 										name,
+										nameJa: name,
+										sortName: name,
 										initialScript: initial.initialScript as InitialScript,
 										nameInitial: initial.nameInitial,
 									});
