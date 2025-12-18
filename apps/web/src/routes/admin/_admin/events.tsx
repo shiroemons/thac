@@ -163,9 +163,7 @@ function EventsPage() {
 				startDate: editForm.startDate,
 				endDate: editForm.endDate,
 			});
-			// 編集中のイベント情報を更新
-			const updated = await eventsApi.get(editingEvent.id);
-			setEditingEvent(updated);
+			setEditingEvent(null);
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
@@ -354,11 +352,11 @@ function EventsPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead>イベント名</TableHead>
-									<TableHead className="w-[150px]">シリーズ</TableHead>
-									<TableHead className="w-[80px]">回次</TableHead>
-									<TableHead className="w-[200px]">開催期間</TableHead>
-									<TableHead className="w-[150px]">会場</TableHead>
+									<TableHead className="min-w-[200px]">イベント名</TableHead>
+									<TableHead className="w-[160px]">シリーズ</TableHead>
+									<TableHead className="w-[70px]">回次</TableHead>
+									<TableHead className="w-[180px]">開催期間</TableHead>
+									<TableHead className="w-[120px]">会場</TableHead>
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -383,10 +381,10 @@ function EventsPage() {
 													{event.seriesName || "-"}
 												</Badge>
 											</TableCell>
-											<TableCell className="text-base-content/70">
+											<TableCell className="whitespace-nowrap text-base-content/70">
 												{event.edition ? `第${event.edition}回` : "-"}
 											</TableCell>
-											<TableCell className="text-base-content/70">
+											<TableCell className="whitespace-nowrap text-base-content/70">
 												{formatDateRange(event.startDate, event.endDate)}
 											</TableCell>
 											<TableCell className="text-base-content/70">

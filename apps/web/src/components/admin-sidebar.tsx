@@ -5,6 +5,7 @@ import {
 	Database,
 	Disc,
 	FolderOpen,
+	Layers,
 	LayoutDashboard,
 	MonitorSmartphone,
 	Music,
@@ -97,6 +98,11 @@ const navItems: NavEntry[] = [
 		label: "イベント管理",
 		icon: Calendar,
 		items: [
+			{
+				to: "/admin/event-series",
+				label: "イベントシリーズ",
+				icon: Layers,
+			},
 			{
 				to: "/admin/events",
 				label: "イベント",
