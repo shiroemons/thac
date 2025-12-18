@@ -15,6 +15,7 @@
 - **Better-Auth** - 認証
 - **Biome** - Lintとフォーマット
 - **Turborepo** - 最適化されたモノレポビルドシステム
+- **Lefthook** - Git hooksによるコミット前チェック
 
 ## はじめに
 
@@ -72,6 +73,18 @@ thac/
 - `bun run db:studio`: データベーススタジオUIを開く
 - `cd packages/db && bun run db:local`: ローカルSQLiteデータベースを起動
 - `bun run check`: Biomeによるフォーマットとlintを実行
+
+## Git Hooks
+
+このプロジェクトはlefthookを使用してpre-commitフックを設定しています。
+`bun install`時に自動でhooksがインストールされます。
+
+コミット前に以下が自動実行されます：
+
+- **check-types**: 型チェック（`bun run check-types`）
+- **biome**: Lintとフォーマット（`bun run check`）
+
+エラーがある場合、コミットがブロックされます。
 
 ## 開発ワークフロー（cc-sdd）
 
