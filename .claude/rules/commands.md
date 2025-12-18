@@ -23,21 +23,46 @@ bun run check-types
 bun run check
 ```
 
-## データベースコマンド
+## データベースコマンド（Docker）
 
 ```bash
-# ローカルSQLiteデータベースの起動（packages/dbディレクトリで実行）
-cd packages/db && bun run db:local
+# ローカルSQLiteサーバーを起動（ローカル）
+make db-local
 
-# スキーマをデータベースにプッシュ
-bun run db:push
+# スキーマをDBにプッシュ
+make db-push
 
-# マイグレーション生成
-bun run db:generate
+# マイグレーションを生成
+make db-generate
 
-# マイグレーション実行
-bun run db:migrate
+# マイグレーションを実行
+make db-migrate
 
-# Drizzle Studioを開く
-bun run db:studio
+# シードデータを投入
+make db-seed
+
+# DBセットアップ（push + seed）
+make db-setup
+
+# Drizzle Studioを起動（ローカル）
+make db-studio
+```
+
+## データベースコマンド（ローカル）
+
+```bash
+# スキーマをDBにプッシュ
+make db-push-local
+
+# マイグレーションを生成
+make db-generate-local
+
+# マイグレーションを実行
+make db-migrate-local
+
+# シードデータを投入
+make db-seed-local
+
+# DBセットアップ（push + seed）
+make db-setup-local
 ```

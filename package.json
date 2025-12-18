@@ -30,7 +30,8 @@
 		"db:push": "turbo -F @thac/db db:push",
 		"db:studio": "turbo -F @thac/db db:studio",
 		"db:generate": "turbo -F @thac/db db:generate",
-		"db:migrate": "turbo -F @thac/db db:migrate"
+		"db:migrate": "turbo -F @thac/db db:migrate",
+		"db:seed": "bun run --cwd packages/db db:seed"
 	},
 	"dependencies": {
 		"date-fns": "^4.1.0",
