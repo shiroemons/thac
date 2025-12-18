@@ -33,6 +33,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import {
 	type Artist,
 	artistsApi,
+	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
 } from "@/lib/api-client";
@@ -248,7 +249,11 @@ function ArtistsPage() {
 												{artist.nameInitial || "-"}
 											</TableCell>
 											<TableCell>
-												<Badge variant="secondary">
+												<Badge
+													variant={
+														INITIAL_SCRIPT_BADGE_VARIANTS[artist.initialScript]
+													}
+												>
 													{INITIAL_SCRIPT_LABELS[artist.initialScript]}
 												</Badge>
 											</TableCell>

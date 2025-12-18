@@ -405,6 +405,19 @@ export const INITIAL_SCRIPT_LABELS: Record<InitialScript, string> = {
 	other: "その他",
 };
 
+export const INITIAL_SCRIPT_BADGE_VARIANTS: Record<
+	InitialScript,
+	"primary" | "success" | "info" | "warning" | "accent" | "ghost"
+> = {
+	latin: "primary",
+	hiragana: "success",
+	katakana: "info",
+	kanji: "warning",
+	digit: "accent",
+	symbol: "ghost",
+	other: "ghost",
+};
+
 export interface Artist {
 	id: string;
 	name: string;

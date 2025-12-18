@@ -37,6 +37,7 @@ import {
 	type CircleWithLinks,
 	circleLinksApi,
 	circlesApi,
+	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
 	platformsApi,
@@ -375,7 +376,11 @@ function CirclesPage() {
 												{circle.nameInitial || "-"}
 											</TableCell>
 											<TableCell>
-												<Badge variant="secondary">
+												<Badge
+													variant={
+														INITIAL_SCRIPT_BADGE_VARIANTS[circle.initialScript]
+													}
+												>
 													{INITIAL_SCRIPT_LABELS[circle.initialScript]}
 												</Badge>
 											</TableCell>
