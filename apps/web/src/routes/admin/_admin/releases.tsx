@@ -35,6 +35,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import {
 	type Disc,
 	discsApi,
+	RELEASE_TYPE_COLORS,
 	RELEASE_TYPE_LABELS,
 	type Release,
 	type ReleaseType,
@@ -399,7 +400,9 @@ function ReleasesPage() {
 											{isVisible("releaseType") && (
 												<TableCell>
 													{release.releaseType ? (
-														<Badge variant="outline">
+														<Badge
+															variant={RELEASE_TYPE_COLORS[release.releaseType]}
+														>
 															{RELEASE_TYPE_LABELS[release.releaseType]}
 														</Badge>
 													) : (

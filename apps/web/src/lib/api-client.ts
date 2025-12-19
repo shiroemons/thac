@@ -798,6 +798,17 @@ export const RELEASE_TYPE_LABELS: Record<ReleaseType, string> = {
 	video: "映像",
 };
 
+export const RELEASE_TYPE_COLORS: Record<
+	ReleaseType,
+	"primary" | "secondary" | "accent" | "info" | "warning"
+> = {
+	album: "primary",
+	single: "secondary",
+	ep: "accent",
+	digital: "info",
+	video: "warning",
+};
+
 export interface Release {
 	id: string;
 	name: string;
