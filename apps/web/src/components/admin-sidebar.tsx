@@ -4,6 +4,7 @@ import {
 	Circle,
 	Database,
 	Disc,
+	Disc3,
 	FolderOpen,
 	Layers,
 	LayoutDashboard,
@@ -107,6 +108,17 @@ const navItems: NavEntry[] = [
 				to: "/admin/events",
 				label: "イベント",
 				icon: Calendar,
+			},
+		],
+	},
+	{
+		label: "作品管理",
+		icon: Disc3,
+		items: [
+			{
+				to: "/admin/releases",
+				label: "作品",
+				icon: Disc3,
 			},
 		],
 	},

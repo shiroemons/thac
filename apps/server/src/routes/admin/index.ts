@@ -9,6 +9,7 @@ import { circlesRouter } from "./circles";
 import { eventSeriesRouter, eventsAdminRouter } from "./events";
 import { masterRouter } from "./master";
 import { officialRouter } from "./official";
+import { releasesAdminRouter } from "./releases";
 import { statsRouter } from "./stats";
 
 const adminRouter = new Hono<AdminContext>();
@@ -39,5 +40,8 @@ adminRouter.route("/event-series", eventSeriesRouter);
 
 // イベント管理ルート
 adminRouter.route("/events", eventsAdminRouter);
+
+// リリース管理ルート
+adminRouter.route("/releases", releasesAdminRouter);
 
 export { adminRouter };

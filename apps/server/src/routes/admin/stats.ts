@@ -12,6 +12,7 @@ import {
 	officialWorkCategories,
 	officialWorks,
 	platforms,
+	releases,
 	user,
 } from "@thac/db";
 import { Hono } from "hono";
@@ -34,6 +35,7 @@ statsRouter.get("/", async (c) => {
 		circlesResult,
 		eventsResult,
 		eventSeriesResult,
+		releasesResult,
 	] = await Promise.all([
 		db.select({ count: count() }).from(user),
 		db.select({ count: count() }).from(platforms),
@@ -47,6 +49,7 @@ statsRouter.get("/", async (c) => {
 		db.select({ count: count() }).from(circles),
 		db.select({ count: count() }).from(events),
 		db.select({ count: count() }).from(eventSeries),
+		db.select({ count: count() }).from(releases),
 	]);
 
 	return c.json({
@@ -62,6 +65,7 @@ statsRouter.get("/", async (c) => {
 		circles: circlesResult[0]?.count ?? 0,
 		events: eventsResult[0]?.count ?? 0,
 		eventSeries: eventSeriesResult[0]?.count ?? 0,
+		releases: releasesResult[0]?.count ?? 0,
 	});
 });
 

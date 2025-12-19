@@ -19,7 +19,7 @@
 		}
 	},
 	"scripts": {
-		"postinstall": "lefthook install",
+		"postinstall": "command -v git >/dev/null 2>&1 && lefthook install || true",
 		"check": "biome check --write .",
 		"dev": "turbo dev",
 		"build": "turbo build",
