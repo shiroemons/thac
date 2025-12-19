@@ -15,8 +15,8 @@ export const RELEASE_TYPES = [
 	"album",
 	"single",
 	"ep",
-	"digital_single",
-	"video_single",
+	"digital",
+	"video",
 ] as const;
 
 export type ReleaseType = (typeof RELEASE_TYPES)[number];

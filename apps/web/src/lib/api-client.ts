@@ -74,6 +74,7 @@ export interface DashboardStats {
 	circles: number;
 	events: number;
 	eventSeries: number;
+	releases: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -787,19 +788,14 @@ export const eventDaysApi = {
 
 // ===== リリース管理 =====
 
-export type ReleaseType =
-	| "album"
-	| "single"
-	| "ep"
-	| "digital_single"
-	| "video_single";
+export type ReleaseType = "album" | "single" | "ep" | "digital" | "video";
 
 export const RELEASE_TYPE_LABELS: Record<ReleaseType, string> = {
 	album: "アルバム",
 	single: "シングル",
 	ep: "EP",
-	digital_single: "配信シングル",
-	video_single: "映像シングル",
+	digital: "配信",
+	video: "映像",
 };
 
 export interface Release {

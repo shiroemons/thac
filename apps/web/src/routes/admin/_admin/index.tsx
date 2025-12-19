@@ -4,6 +4,7 @@ import {
 	Calendar,
 	CircleUser,
 	Disc,
+	Disc3,
 	FolderOpen,
 	Layers,
 	MonitorSmartphone,
@@ -120,6 +121,15 @@ function AdminDashboard() {
 		},
 	];
 
+	const releaseStats = [
+		{
+			title: "リリース",
+			value: data?.releases,
+			icon: <Disc3 className="h-8 w-8" />,
+			href: "/admin/releases" as const,
+		},
+	];
+
 	const masterStats = [
 		{
 			title: "プラットフォーム",
@@ -221,6 +231,23 @@ function AdminDashboard() {
 					<h2 className="mb-3 font-semibold text-lg">イベント管理</h2>
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 						{eventStats.map((stat) => (
+							<StatCard
+								key={stat.title}
+								title={stat.title}
+								value={stat.value}
+								icon={stat.icon}
+								href={stat.href}
+								isLoading={isLoading}
+							/>
+						))}
+					</div>
+				</section>
+
+				{/* リリース管理 */}
+				<section>
+					<h2 className="mb-3 font-semibold text-lg">リリース管理</h2>
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+						{releaseStats.map((stat) => (
 							<StatCard
 								key={stat.title}
 								title={stat.title}

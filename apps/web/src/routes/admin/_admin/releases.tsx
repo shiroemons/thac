@@ -90,7 +90,9 @@ function ReleasesPage() {
 	const [editForm, setEditForm] = useState<Partial<Release>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [createForm, setCreateForm] = useState<Partial<Release>>({});
+	const [createForm, setCreateForm] = useState<Partial<Release>>({
+		releaseType: "album",
+	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// ディスク編集用
@@ -134,7 +136,7 @@ function ReleasesPage() {
 				notes: createForm.notes || null,
 			});
 			setIsCreateDialogOpen(false);
-			setCreateForm({});
+			setCreateForm({ releaseType: "album" });
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "作成に失敗しました");
@@ -482,7 +484,7 @@ function ReleasesPage() {
 				onOpenChange={(open) => {
 					if (!open) {
 						setIsCreateDialogOpen(false);
-						setCreateForm({});
+						setCreateForm({ releaseType: "album" });
 						setMutationError(null);
 					}
 				}}
@@ -496,11 +498,18 @@ function ReleasesPage() {
 							<Label htmlFor="create-name">
 								リリース名 <span className="text-error">*</span>
 							</Label>
+							<p className="text-base-content/60 text-xs">
+								アルバム名、シングル名、EP名などを入力してください
+							</p>
 							<Input
 								id="create-name"
 								value={createForm.name || ""}
 								onChange={(e) =>
-									setCreateForm({ ...createForm, name: e.target.value })
+									setCreateForm({
+										...createForm,
+										name: e.target.value,
+										nameJa: e.target.value,
+									})
 								}
 								placeholder="例: 東方紅魔郷オリジナルサウンドトラック"
 							/>
@@ -514,6 +523,7 @@ function ReleasesPage() {
 									onChange={(e) =>
 										setCreateForm({ ...createForm, nameJa: e.target.value })
 									}
+									placeholder="例: 東方紅魔郷"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -524,6 +534,7 @@ function ReleasesPage() {
 									onChange={(e) =>
 										setCreateForm({ ...createForm, nameEn: e.target.value })
 									}
+									placeholder="例: Touhou Koumakyou"
 								/>
 							</div>
 						</div>
@@ -623,12 +634,16 @@ function ReleasesPage() {
 							<Label htmlFor="edit-name">
 								リリース名 <span className="text-error">*</span>
 							</Label>
+							<p className="text-base-content/60 text-xs">
+								アルバム名、シングル名、EP名などを入力してください
+							</p>
 							<Input
 								id="edit-name"
 								value={editForm.name || ""}
 								onChange={(e) =>
 									setEditForm({ ...editForm, name: e.target.value })
 								}
+								placeholder="例: 東方紅魔郷オリジナルサウンドトラック"
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -640,6 +655,7 @@ function ReleasesPage() {
 									onChange={(e) =>
 										setEditForm({ ...editForm, nameJa: e.target.value })
 									}
+									placeholder="例: 東方紅魔郷"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -650,6 +666,7 @@ function ReleasesPage() {
 									onChange={(e) =>
 										setEditForm({ ...editForm, nameEn: e.target.value })
 									}
+									placeholder="例: Touhou Koumakyou"
 								/>
 							</div>
 						</div>
@@ -662,6 +679,7 @@ function ReleasesPage() {
 									onChange={(e) =>
 										setEditForm({ ...editForm, catalogNumber: e.target.value })
 									}
+									placeholder="例: THCS-0001"
 								/>
 							</div>
 							<div className="grid gap-2">
