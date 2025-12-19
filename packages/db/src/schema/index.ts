@@ -7,3 +7,5 @@ export * from "./master";
 export * from "./master.validation";
 export * from "./official";
 export * from "./official.validation";
+export * from "./release";
+export * from "./release.validation";

@@ -784,3 +784,121 @@ export const eventDaysApi = {
 			},
 		),
 };
+
+// ===== リリース管理 =====
+
+export type ReleaseType =
+	| "album"
+	| "single"
+	| "ep"
+	| "digital_single"
+	| "video_single";
+
+export const RELEASE_TYPE_LABELS: Record<ReleaseType, string> = {
+	album: "アルバム",
+	single: "シングル",
+	ep: "EP",
+	digital_single: "配信シングル",
+	video_single: "映像シングル",
+};
+
+export interface Release {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	catalogNumber: string | null;
+	releaseDate: string | null;
+	releaseType: ReleaseType | null;
+	eventDayId: string | null;
+	notes: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface ReleaseWithDiscCount extends Release {
+	discCount: number;
+}
+
+export interface Disc {
+	id: string;
+	releaseId: string;
+	discNumber: number;
+	discName: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface ReleaseWithDiscs extends Release {
+	discs: Disc[];
+}
+
+// Releases
+export const releasesApi = {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		releaseType?: string;
+		search?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.releaseType)
+			searchParams.set("releaseType", params.releaseType);
+		if (params?.search) searchParams.set("search", params.search);
+		const query = searchParams.toString();
+		return fetchWithAuth<PaginatedResponse<ReleaseWithDiscCount>>(
+			`/api/admin/releases${query ? `?${query}` : ""}`,
+		);
+	},
+	get: (id: string) =>
+		fetchWithAuth<ReleaseWithDiscs>(`/api/admin/releases/${id}`),
+	create: (data: Omit<Release, "createdAt" | "updatedAt">) =>
+		fetchWithAuth<Release>("/api/admin/releases", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		id: string,
+		data: Partial<Omit<Release, "id" | "createdAt" | "updatedAt">>,
+	) =>
+		fetchWithAuth<Release>(`/api/admin/releases/${id}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (id: string) =>
+		fetchWithAuth<{ success: boolean }>(`/api/admin/releases/${id}`, {
+			method: "DELETE",
+		}),
+};
+
+// Discs
+export const discsApi = {
+	list: (releaseId: string) =>
+		fetchWithAuth<Disc[]>(`/api/admin/releases/${releaseId}/discs`),
+	create: (
+		releaseId: string,
+		data: Omit<Disc, "releaseId" | "createdAt" | "updatedAt">,
+	) =>
+		fetchWithAuth<Disc>(`/api/admin/releases/${releaseId}/discs`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		releaseId: string,
+		discId: string,
+		data: Partial<Omit<Disc, "id" | "releaseId" | "createdAt" | "updatedAt">>,
+	) =>
+		fetchWithAuth<Disc>(`/api/admin/releases/${releaseId}/discs/${discId}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (releaseId: string, discId: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/releases/${releaseId}/discs/${discId}`,
+			{
+				method: "DELETE",
+			},
+		),
+};
