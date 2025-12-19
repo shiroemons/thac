@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Trash2, Upload } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -26,6 +26,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
 	importApi,
@@ -39,6 +40,13 @@ export const Route = createFileRoute(
 	component: OfficialWorkCategoriesPage,
 });
 
+// カラム定義
+const COLUMN_CONFIGS = [
+	{ key: "code", label: "コード" },
+	{ key: "name", label: "名前" },
+	{ key: "description", label: "説明" },
+] as const;
+
 function OfficialWorkCategoriesPage() {
 	const queryClient = useQueryClient();
 
@@ -49,6 +57,13 @@ function OfficialWorkCategoriesPage() {
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
+
+	// カラム表示設定
+	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
+	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
+		"admin:master:official-work-categories",
+		columnConfigs,
+	);
 
 	const [editingItem, setEditingItem] = useState<OfficialWorkCategory | null>(
 		null,
@@ -138,6 +153,11 @@ function OfficialWorkCategoriesPage() {
 					searchPlaceholder="名前またはコードで検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					columnVisibility={{
+						columns: columnConfigs,
+						visibleColumns,
+						onToggle: toggleColumn,
+					}}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -169,9 +189,13 @@ function OfficialWorkCategoriesPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead className="w-[200px]">コード</TableHead>
-									<TableHead className="w-[200px]">名前</TableHead>
-									<TableHead>説明</TableHead>
+									{isVisible("code") && (
+										<TableHead className="w-[200px]">コード</TableHead>
+									)}
+									{isVisible("name") && (
+										<TableHead className="w-[200px]">名前</TableHead>
+									)}
+									{isVisible("description") && <TableHead>説明</TableHead>}
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -179,7 +203,7 @@ function OfficialWorkCategoriesPage() {
 								{items.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={4}
+											colSpan={visibleColumns.size + 1}
 											className="h-24 text-center text-base-content/50"
 										>
 											データがありません
@@ -188,13 +212,19 @@ function OfficialWorkCategoriesPage() {
 								) : (
 									items.map((c) => (
 										<TableRow key={c.code}>
-											<TableCell className="font-mono text-sm">
-												{c.code}
-											</TableCell>
-											<TableCell className="font-medium">{c.name}</TableCell>
-											<TableCell className="text-base-content/70">
-												{c.description || "-"}
-											</TableCell>
+											{isVisible("code") && (
+												<TableCell className="font-mono text-sm">
+													{c.code}
+												</TableCell>
+											)}
+											{isVisible("name") && (
+												<TableCell className="font-medium">{c.name}</TableCell>
+											)}
+											{isVisible("description") && (
+												<TableCell className="text-base-content/70">
+													{c.description || "-"}
+												</TableCell>
+											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button

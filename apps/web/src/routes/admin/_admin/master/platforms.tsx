@@ -1,5 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import {
 	ArrowDown,
 	ArrowUp,
@@ -8,7 +10,7 @@ import {
 	Trash2,
 	Upload,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -34,12 +36,23 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { importApi, type Platform, platformsApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/_admin/master/platforms")({
 	component: PlatformsPage,
 });
+
+// カラム定義
+const COLUMN_CONFIGS = [
+	{ key: "code", label: "コード" },
+	{ key: "name", label: "名前" },
+	{ key: "category", label: "カテゴリ" },
+	{ key: "urlPattern", label: "URLパターン" },
+	{ key: "createdAt", label: "作成日時", defaultVisible: false },
+	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
+] as const;
 
 const categoryColors: Record<string, string> = {
 	streaming: "bg-blue-500",
@@ -78,6 +91,13 @@ function PlatformsPage() {
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
+
+	// カラム表示設定
+	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
+	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
+		"admin:master:platforms",
+		columnConfigs,
+	);
 
 	const [editingPlatform, setEditingPlatform] = useState<Platform | null>(null);
 	const [editForm, setEditForm] = useState<Partial<Platform>>({});
@@ -210,6 +230,11 @@ function PlatformsPage() {
 					filterValue={category}
 					filterPlaceholder="カテゴリを選択"
 					onFilterChange={handleCategoryChange}
+					columnVisibility={{
+						columns: columnConfigs,
+						visibleColumns,
+						onToggle: toggleColumn,
+					}}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -241,28 +266,42 @@ function PlatformsPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead
-										className="w-[150px] cursor-pointer select-none hover:bg-base-200"
-										onClick={() => handleSort("code")}
-									>
-										コード
-										<SortIcon column="code" />
-									</TableHead>
-									<TableHead
-										className="cursor-pointer select-none hover:bg-base-200"
-										onClick={() => handleSort("name")}
-									>
-										名前
-										<SortIcon column="name" />
-									</TableHead>
-									<TableHead
-										className="w-[120px] cursor-pointer select-none hover:bg-base-200"
-										onClick={() => handleSort("category")}
-									>
-										カテゴリ
-										<SortIcon column="category" />
-									</TableHead>
-									<TableHead>URLパターン</TableHead>
+									{isVisible("code") && (
+										<TableHead
+											className="w-[150px] cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("code")}
+										>
+											コード
+											<SortIcon column="code" />
+										</TableHead>
+									)}
+									{isVisible("name") && (
+										<TableHead
+											className="cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("name")}
+										>
+											名前
+											<SortIcon column="name" />
+										</TableHead>
+									)}
+									{isVisible("category") && (
+										<TableHead
+											className="w-[120px] cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("category")}
+										>
+											カテゴリ
+											<SortIcon column="category" />
+										</TableHead>
+									)}
+									{isVisible("urlPattern") && (
+										<TableHead>URLパターン</TableHead>
+									)}
+									{isVisible("createdAt") && (
+										<TableHead className="w-[160px]">作成日時</TableHead>
+									)}
+									{isVisible("updatedAt") && (
+										<TableHead className="w-[160px]">更新日時</TableHead>
+									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -270,7 +309,7 @@ function PlatformsPage() {
 								{platforms.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={5}
+											colSpan={visibleColumns.size + 1}
 											className="h-24 text-center text-base-content/50"
 										>
 											データがありません
@@ -279,25 +318,55 @@ function PlatformsPage() {
 								) : (
 									platforms.map((p) => (
 										<TableRow key={p.code}>
-											<TableCell className="font-mono text-sm">
-												{p.code}
-											</TableCell>
-											<TableCell className="font-medium">{p.name}</TableCell>
-											<TableCell>
-												{p.category ? (
-													<Badge
-														variant="secondary"
-														className={`${categoryColors[p.category] || "bg-gray-500"} text-white`}
-													>
-														{categoryLabels[p.category] || p.category}
-													</Badge>
-												) : (
-													<span className="text-base-content/50">-</span>
-												)}
-											</TableCell>
-											<TableCell className="max-w-[300px] truncate font-mono text-base-content/70 text-xs">
-												{p.urlPattern || "-"}
-											</TableCell>
+											{isVisible("code") && (
+												<TableCell className="font-mono text-sm">
+													{p.code}
+												</TableCell>
+											)}
+											{isVisible("name") && (
+												<TableCell className="font-medium">{p.name}</TableCell>
+											)}
+											{isVisible("category") && (
+												<TableCell>
+													{p.category ? (
+														<Badge
+															variant="secondary"
+															className={`${categoryColors[p.category] || "bg-gray-500"} text-white`}
+														>
+															{categoryLabels[p.category] || p.category}
+														</Badge>
+													) : (
+														<span className="text-base-content/50">-</span>
+													)}
+												</TableCell>
+											)}
+											{isVisible("urlPattern") && (
+												<TableCell className="max-w-[300px] truncate font-mono text-base-content/70 text-xs">
+													{p.urlPattern || "-"}
+												</TableCell>
+											)}
+											{isVisible("createdAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(p.createdAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{
+															locale: ja,
+														},
+													)}
+												</TableCell>
+											)}
+											{isVisible("updatedAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(p.updatedAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{
+															locale: ja,
+														},
+													)}
+												</TableCell>
+											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button

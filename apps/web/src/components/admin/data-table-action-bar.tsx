@@ -1,5 +1,6 @@
 import { EllipsisVertical, Plus } from "lucide-react";
 import type * as React from "react";
+import { ColumnVisibilityToggle } from "@/components/admin/column-visibility-toggle";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SearchInput } from "@/components/ui/search-input";
 import { Select } from "@/components/ui/select";
+import type { ColumnConfig } from "@/hooks/use-column-visibility";
 import { cn } from "@/lib/utils";
 
 interface FilterOption {
@@ -20,6 +22,12 @@ interface SecondaryAction {
 	label: string;
 	icon?: React.ReactNode;
 	onClick: () => void;
+}
+
+interface ColumnVisibilityConfig {
+	columns: ColumnConfig[];
+	visibleColumns: Set<string>;
+	onToggle: (key: string) => void;
 }
 
 interface DataTableActionBarProps extends React.ComponentProps<"div"> {
@@ -35,6 +43,7 @@ interface DataTableActionBarProps extends React.ComponentProps<"div"> {
 		onClick: () => void;
 	};
 	secondaryActions?: SecondaryAction[];
+	columnVisibility?: ColumnVisibilityConfig;
 }
 
 function DataTableActionBar({
@@ -47,6 +56,7 @@ function DataTableActionBar({
 	onFilterChange,
 	primaryAction,
 	secondaryActions,
+	columnVisibility,
 	className,
 	children,
 	...props
@@ -88,6 +98,13 @@ function DataTableActionBar({
 				{children}
 			</div>
 			<div className="flex items-center gap-2">
+				{columnVisibility && (
+					<ColumnVisibilityToggle
+						columns={columnVisibility.columns}
+						visibleColumns={columnVisibility.visibleColumns}
+						onToggle={columnVisibility.onToggle}
+					/>
+				)}
 				{primaryAction && (
 					<Button
 						variant="primary"
@@ -122,4 +139,9 @@ function DataTableActionBar({
 }
 
 export { DataTableActionBar };
-export type { DataTableActionBarProps, FilterOption, SecondaryAction };
+export type {
+	ColumnVisibilityConfig,
+	DataTableActionBarProps,
+	FilterOption,
+	SecondaryAction,
+};

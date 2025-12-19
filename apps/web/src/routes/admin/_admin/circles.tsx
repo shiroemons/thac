@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { detectInitial } from "@thac/utils";
+import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import { ExternalLink, Link2, Pencil, Plus, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useMemo, useState } from "react";
@@ -31,6 +33,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
 	type Circle,
@@ -56,6 +59,20 @@ const initialScriptOptions = Object.entries(INITIAL_SCRIPT_LABELS).map(
 const requiresInitial = (initialScript: string) =>
 	["latin", "hiragana", "katakana"].includes(initialScript);
 
+// カラム定義
+const COLUMN_CONFIGS = [
+	{ key: "id", label: "ID", defaultVisible: false },
+	{ key: "name", label: "名前" },
+	{ key: "nameJa", label: "日本語名" },
+	{ key: "nameEn", label: "英語名" },
+	{ key: "sortName", label: "ソート用名", defaultVisible: false },
+	{ key: "initialScript", label: "文字種" },
+	{ key: "nameInitial", label: "頭文字" },
+	{ key: "notes", label: "備考", defaultVisible: false },
+	{ key: "createdAt", label: "作成日時", defaultVisible: false },
+	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
+] as const;
+
 function CirclesPage() {
 	const queryClient = useQueryClient();
 
@@ -65,6 +82,13 @@ function CirclesPage() {
 	const [initialScript, setInitialScript] = useState("");
 
 	const debouncedSearch = useDebounce(search, 300);
+
+	// カラム表示設定
+	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
+	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
+		"admin:circles",
+		columnConfigs,
+	);
 
 	const [editingCircle, setEditingCircle] = useState<CircleWithLinks | null>(
 		null,
@@ -386,6 +410,11 @@ function CirclesPage() {
 					filterValue={initialScript}
 					filterPlaceholder="頭文字の文字種"
 					onFilterChange={handleInitialScriptChange}
+					columnVisibility={{
+						columns: columnConfigs,
+						visibleColumns,
+						onToggle: toggleColumn,
+					}}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -410,11 +439,34 @@ function CirclesPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead>名前</TableHead>
-									<TableHead className="w-[150px]">日本語名</TableHead>
-									<TableHead className="w-[150px]">英語名</TableHead>
-									<TableHead className="w-[100px]">文字種</TableHead>
-									<TableHead className="w-[120px]">頭文字</TableHead>
+									{isVisible("id") && (
+										<TableHead className="w-[220px]">ID</TableHead>
+									)}
+									{isVisible("name") && <TableHead>名前</TableHead>}
+									{isVisible("nameJa") && (
+										<TableHead className="w-[150px]">日本語名</TableHead>
+									)}
+									{isVisible("nameEn") && (
+										<TableHead className="w-[150px]">英語名</TableHead>
+									)}
+									{isVisible("sortName") && (
+										<TableHead className="w-[150px]">ソート用名</TableHead>
+									)}
+									{isVisible("initialScript") && (
+										<TableHead className="w-[100px]">文字種</TableHead>
+									)}
+									{isVisible("nameInitial") && (
+										<TableHead className="w-[120px]">頭文字</TableHead>
+									)}
+									{isVisible("notes") && (
+										<TableHead className="w-[200px]">備考</TableHead>
+									)}
+									{isVisible("createdAt") && (
+										<TableHead className="w-[160px]">作成日時</TableHead>
+									)}
+									{isVisible("updatedAt") && (
+										<TableHead className="w-[160px]">更新日時</TableHead>
+									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -422,7 +474,7 @@ function CirclesPage() {
 								{circles.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={6}
+											colSpan={visibleColumns.size + 1}
 											className="h-24 text-center text-base-content/50"
 										>
 											該当するサークルが見つかりません
@@ -431,28 +483,72 @@ function CirclesPage() {
 								) : (
 									circles.map((circle) => (
 										<TableRow key={circle.id}>
-											<TableCell className="font-medium">
-												{circle.name}
-											</TableCell>
-											<TableCell className="text-base-content/70">
-												{circle.nameJa || "-"}
-											</TableCell>
-											<TableCell className="text-base-content/70">
-												{circle.nameEn || "-"}
-											</TableCell>
-											<TableCell>
-												<Badge
-													variant={
-														INITIAL_SCRIPT_BADGE_VARIANTS[circle.initialScript]
-													}
-												>
-													{INITIAL_SCRIPT_LABELS[circle.initialScript]}
-												</Badge>
-											</TableCell>
-											<TableCell className="font-mono">
-												{circle.nameInitial || "-"}
-											</TableCell>
-
+											{isVisible("id") && (
+												<TableCell className="font-mono text-base-content/50 text-xs">
+													{circle.id}
+												</TableCell>
+											)}
+											{isVisible("name") && (
+												<TableCell className="font-medium">
+													{circle.name}
+												</TableCell>
+											)}
+											{isVisible("nameJa") && (
+												<TableCell className="text-base-content/70">
+													{circle.nameJa || "-"}
+												</TableCell>
+											)}
+											{isVisible("nameEn") && (
+												<TableCell className="text-base-content/70">
+													{circle.nameEn || "-"}
+												</TableCell>
+											)}
+											{isVisible("sortName") && (
+												<TableCell className="text-base-content/70">
+													{circle.sortName || "-"}
+												</TableCell>
+											)}
+											{isVisible("initialScript") && (
+												<TableCell>
+													<Badge
+														variant={
+															INITIAL_SCRIPT_BADGE_VARIANTS[
+																circle.initialScript
+															]
+														}
+													>
+														{INITIAL_SCRIPT_LABELS[circle.initialScript]}
+													</Badge>
+												</TableCell>
+											)}
+											{isVisible("nameInitial") && (
+												<TableCell className="font-mono">
+													{circle.nameInitial || "-"}
+												</TableCell>
+											)}
+											{isVisible("notes") && (
+												<TableCell className="max-w-[200px] truncate text-base-content/70">
+													{circle.notes || "-"}
+												</TableCell>
+											)}
+											{isVisible("createdAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(circle.createdAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{ locale: ja },
+													)}
+												</TableCell>
+											)}
+											{isVisible("updatedAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(circle.updatedAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{ locale: ja },
+													)}
+												</TableCell>
+											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button

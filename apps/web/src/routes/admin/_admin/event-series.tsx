@@ -21,7 +21,7 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowUpDown, GripVertical, Pencil, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
@@ -43,6 +43,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { type EventSeries, eventSeriesApi } from "@/lib/api-client";
 
@@ -50,15 +51,26 @@ export const Route = createFileRoute("/admin/_admin/event-series")({
 	component: EventSeriesPage,
 });
 
+// カラム定義
+const COLUMN_CONFIGS = [
+	{ key: "id", label: "ID", defaultVisible: false },
+	{ key: "sortOrder", label: "順序" },
+	{ key: "name", label: "シリーズ名" },
+	{ key: "createdAt", label: "作成日時", defaultVisible: false },
+	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
+] as const;
+
 // ソート可能な行コンポーネント
 function SortableRow({
 	series,
 	onEdit,
 	onDelete,
+	isVisible,
 }: {
 	series: EventSeries;
 	onEdit: (series: EventSeries) => void;
 	onDelete: (series: EventSeries) => void;
+	isVisible: (key: string) => boolean;
 }) {
 	const {
 		attributes,
@@ -87,15 +99,33 @@ function SortableRow({
 					<GripVertical className="h-4 w-4" />
 				</button>
 			</TableCell>
-			<TableCell className="w-[80px] text-base-content/70">
-				{series.sortOrder}
-			</TableCell>
-			<TableCell className="font-medium">{series.name}</TableCell>
-			<TableCell className="whitespace-nowrap text-base-content/70">
-				{format(new Date(series.createdAt), "yyyy/MM/dd HH:mm:ss", {
-					locale: ja,
-				})}
-			</TableCell>
+			{isVisible("id") && (
+				<TableCell className="font-mono text-base-content/50 text-xs">
+					{series.id}
+				</TableCell>
+			)}
+			{isVisible("sortOrder") && (
+				<TableCell className="w-[80px] text-base-content/70">
+					{series.sortOrder}
+				</TableCell>
+			)}
+			{isVisible("name") && (
+				<TableCell className="font-medium">{series.name}</TableCell>
+			)}
+			{isVisible("createdAt") && (
+				<TableCell className="whitespace-nowrap text-base-content/70">
+					{format(new Date(series.createdAt), "yyyy/MM/dd HH:mm:ss", {
+						locale: ja,
+					})}
+				</TableCell>
+			)}
+			{isVisible("updatedAt") && (
+				<TableCell className="whitespace-nowrap text-base-content/70">
+					{format(new Date(series.updatedAt), "yyyy/MM/dd HH:mm:ss", {
+						locale: ja,
+					})}
+				</TableCell>
+			)}
 			<TableCell>
 				<div className="flex items-center gap-1">
 					<Button variant="ghost" size="icon" onClick={() => onEdit(series)}>
@@ -122,6 +152,13 @@ function EventSeriesPage() {
 
 	const [search, setSearch] = useState("");
 	const debouncedSearch = useDebounce(search, 300);
+
+	// カラム表示設定
+	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
+	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
+		"admin:event-series",
+		columnConfigs,
+	);
 
 	const [editingSeries, setEditingSeries] = useState<EventSeries | null>(null);
 	const [editForm, setEditForm] = useState<Partial<EventSeries>>({});
@@ -295,6 +332,11 @@ function EventSeriesPage() {
 					searchPlaceholder="シリーズ名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					columnVisibility={{
+						columns: columnConfigs,
+						visibleColumns,
+						onToggle: toggleColumn,
+					}}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -331,9 +373,19 @@ function EventSeriesPage() {
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
 									<TableHead className="w-[50px]" />
-									<TableHead className="w-[80px]">順序</TableHead>
-									<TableHead>シリーズ名</TableHead>
-									<TableHead className="w-[160px]">作成日時</TableHead>
+									{isVisible("id") && (
+										<TableHead className="w-[100px]">ID</TableHead>
+									)}
+									{isVisible("sortOrder") && (
+										<TableHead className="w-[80px]">順序</TableHead>
+									)}
+									{isVisible("name") && <TableHead>シリーズ名</TableHead>}
+									{isVisible("createdAt") && (
+										<TableHead className="w-[160px]">作成日時</TableHead>
+									)}
+									{isVisible("updatedAt") && (
+										<TableHead className="w-[160px]">更新日時</TableHead>
+									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -341,7 +393,7 @@ function EventSeriesPage() {
 								{seriesList.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={5}
+											colSpan={visibleColumns.size + 2}
 											className="h-24 text-center text-base-content/50"
 										>
 											該当するシリーズが見つかりません
@@ -356,21 +408,43 @@ function EventSeriesPage() {
 													<GripVertical className="h-4 w-4" />
 												</span>
 											</TableCell>
-											<TableCell className="text-base-content/70">
-												{series.sortOrder}
-											</TableCell>
-											<TableCell className="font-medium">
-												{series.name}
-											</TableCell>
-											<TableCell className="whitespace-nowrap text-base-content/70">
-												{format(
-													new Date(series.createdAt),
-													"yyyy/MM/dd HH:mm",
-													{
-														locale: ja,
-													},
-												)}
-											</TableCell>
+											{isVisible("id") && (
+												<TableCell className="font-mono text-base-content/50 text-xs">
+													{series.id}
+												</TableCell>
+											)}
+											{isVisible("sortOrder") && (
+												<TableCell className="text-base-content/70">
+													{series.sortOrder}
+												</TableCell>
+											)}
+											{isVisible("name") && (
+												<TableCell className="font-medium">
+													{series.name}
+												</TableCell>
+											)}
+											{isVisible("createdAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70">
+													{format(
+														new Date(series.createdAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{
+															locale: ja,
+														},
+													)}
+												</TableCell>
+											)}
+											{isVisible("updatedAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70">
+													{format(
+														new Date(series.updatedAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{
+															locale: ja,
+														},
+													)}
+												</TableCell>
+											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button
@@ -405,6 +479,7 @@ function EventSeriesPage() {
 												series={series}
 												onEdit={handleEdit}
 												onDelete={handleDelete}
+												isVisible={isVisible}
 											/>
 										))}
 									</SortableContext>

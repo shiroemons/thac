@@ -1,7 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import { Pencil, Trash2, Upload } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -27,6 +29,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
 	importApi,
@@ -39,6 +42,17 @@ export const Route = createFileRoute("/admin/_admin/official/works")({
 	component: OfficialWorksPage,
 });
 
+// カラム定義
+const COLUMN_CONFIGS = [
+	{ key: "id", label: "ID", defaultVisible: false },
+	{ key: "nameJa", label: "作品名" },
+	{ key: "categoryCode", label: "カテゴリ" },
+	{ key: "seriesCode", label: "シリーズ" },
+	{ key: "releaseDate", label: "発売日" },
+	{ key: "createdAt", label: "作成日時", defaultVisible: false },
+	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
+] as const;
+
 function OfficialWorksPage() {
 	const queryClient = useQueryClient();
 
@@ -50,6 +64,13 @@ function OfficialWorksPage() {
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
+
+	// カラム表示設定
+	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
+	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
+		"admin:official:works",
+		columnConfigs,
+	);
 
 	const [editingWork, setEditingWork] = useState<OfficialWork | null>(null);
 	const [editForm, setEditForm] = useState<Partial<OfficialWork>>({});
@@ -188,6 +209,11 @@ function OfficialWorksPage() {
 					filterValue={category}
 					filterPlaceholder="カテゴリを選択"
 					onFilterChange={handleCategoryChange}
+					columnVisibility={{
+						columns: columnConfigs,
+						visibleColumns,
+						onToggle: toggleColumn,
+					}}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -219,11 +245,25 @@ function OfficialWorksPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead className="w-[150px]">ID</TableHead>
-									<TableHead>作品名</TableHead>
-									<TableHead className="w-[120px]">カテゴリ</TableHead>
-									<TableHead className="w-[100px]">シリーズ</TableHead>
-									<TableHead className="w-[100px]">発売日</TableHead>
+									{isVisible("id") && (
+										<TableHead className="w-[150px]">ID</TableHead>
+									)}
+									{isVisible("nameJa") && <TableHead>作品名</TableHead>}
+									{isVisible("categoryCode") && (
+										<TableHead className="w-[120px]">カテゴリ</TableHead>
+									)}
+									{isVisible("seriesCode") && (
+										<TableHead className="w-[100px]">シリーズ</TableHead>
+									)}
+									{isVisible("releaseDate") && (
+										<TableHead className="w-[100px]">発売日</TableHead>
+									)}
+									{isVisible("createdAt") && (
+										<TableHead className="w-[160px]">作成日時</TableHead>
+									)}
+									{isVisible("updatedAt") && (
+										<TableHead className="w-[160px]">更新日時</TableHead>
+									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -231,7 +271,7 @@ function OfficialWorksPage() {
 								{works.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={6}
+											colSpan={visibleColumns.size + 1}
 											className="h-24 text-center text-base-content/50"
 										>
 											データがありません
@@ -240,21 +280,55 @@ function OfficialWorksPage() {
 								) : (
 									works.map((w) => (
 										<TableRow key={w.id}>
-											<TableCell className="font-mono text-sm">
-												{w.id}
-											</TableCell>
-											<TableCell className="font-medium">{w.nameJa}</TableCell>
-											<TableCell>
-												<Badge variant="secondary">
-													{getCategoryName(w.categoryCode)}
-												</Badge>
-											</TableCell>
-											<TableCell className="font-mono text-sm">
-												{w.seriesCode || "-"}
-											</TableCell>
-											<TableCell className="text-sm">
-												{w.releaseDate || "-"}
-											</TableCell>
+											{isVisible("id") && (
+												<TableCell className="font-mono text-sm">
+													{w.id}
+												</TableCell>
+											)}
+											{isVisible("nameJa") && (
+												<TableCell className="font-medium">
+													{w.nameJa}
+												</TableCell>
+											)}
+											{isVisible("categoryCode") && (
+												<TableCell>
+													<Badge variant="secondary">
+														{getCategoryName(w.categoryCode)}
+													</Badge>
+												</TableCell>
+											)}
+											{isVisible("seriesCode") && (
+												<TableCell className="font-mono text-sm">
+													{w.seriesCode || "-"}
+												</TableCell>
+											)}
+											{isVisible("releaseDate") && (
+												<TableCell className="text-sm">
+													{w.releaseDate || "-"}
+												</TableCell>
+											)}
+											{isVisible("createdAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(w.createdAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{
+															locale: ja,
+														},
+													)}
+												</TableCell>
+											)}
+											{isVisible("updatedAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(w.updatedAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{
+															locale: ja,
+														},
+													)}
+												</TableCell>
+											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button

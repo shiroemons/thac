@@ -1,7 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import { Pencil, Trash2, Upload } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -27,6 +29,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
 	importApi,
@@ -38,6 +41,17 @@ import {
 export const Route = createFileRoute("/admin/_admin/official/songs")({
 	component: OfficialSongsPage,
 });
+
+// カラム定義
+const COLUMN_CONFIGS = [
+	{ key: "id", label: "ID", defaultVisible: false },
+	{ key: "nameJa", label: "楽曲名" },
+	{ key: "workName", label: "作品" },
+	{ key: "themeType", label: "主題区分" },
+	{ key: "isOfficialArrangement", label: "アレンジ" },
+	{ key: "createdAt", label: "作成日時", defaultVisible: false },
+	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
+] as const;
 
 const themeTypeOptions = [
 	{ value: "character", label: "キャラクター" },
@@ -66,6 +80,13 @@ function OfficialSongsPage() {
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
+
+	// カラム表示設定
+	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
+	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
+		"admin:official:songs",
+		columnConfigs,
+	);
 
 	const [editingSong, setEditingSong] = useState<OfficialSong | null>(null);
 	const [editForm, setEditForm] = useState<Partial<OfficialSong>>({});
@@ -191,6 +212,11 @@ function OfficialSongsPage() {
 					filterValue={themeType}
 					filterPlaceholder="主題区分を選択"
 					onFilterChange={handleThemeTypeChange}
+					columnVisibility={{
+						columns: columnConfigs,
+						visibleColumns,
+						onToggle: toggleColumn,
+					}}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -222,11 +248,25 @@ function OfficialSongsPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead className="w-[200px]">ID</TableHead>
-									<TableHead>楽曲名</TableHead>
-									<TableHead className="w-[150px]">作品</TableHead>
-									<TableHead className="w-[120px]">主題区分</TableHead>
-									<TableHead className="w-[80px]">アレンジ</TableHead>
+									{isVisible("id") && (
+										<TableHead className="w-[200px]">ID</TableHead>
+									)}
+									{isVisible("nameJa") && <TableHead>楽曲名</TableHead>}
+									{isVisible("workName") && (
+										<TableHead className="w-[150px]">作品</TableHead>
+									)}
+									{isVisible("themeType") && (
+										<TableHead className="w-[120px]">主題区分</TableHead>
+									)}
+									{isVisible("isOfficialArrangement") && (
+										<TableHead className="w-[80px]">アレンジ</TableHead>
+									)}
+									{isVisible("createdAt") && (
+										<TableHead className="w-[160px]">作成日時</TableHead>
+									)}
+									{isVisible("updatedAt") && (
+										<TableHead className="w-[160px]">更新日時</TableHead>
+									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -234,7 +274,7 @@ function OfficialSongsPage() {
 								{songs.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={6}
+											colSpan={visibleColumns.size + 1}
 											className="h-24 text-center text-base-content/50"
 										>
 											データがありません
@@ -243,29 +283,63 @@ function OfficialSongsPage() {
 								) : (
 									songs.map((s) => (
 										<TableRow key={s.id}>
-											<TableCell className="font-mono text-sm">
-												{s.id}
-											</TableCell>
-											<TableCell className="font-medium">{s.nameJa}</TableCell>
-											<TableCell className="text-sm">
-												{s.workName || "-"}
-											</TableCell>
-											<TableCell>
-												{s.themeType ? (
-													<Badge variant="secondary">
-														{themeTypeLabels[s.themeType] || s.themeType}
-													</Badge>
-												) : (
-													<span className="text-base-content/50">-</span>
-												)}
-											</TableCell>
-											<TableCell>
-												{s.isOfficialArrangement ? (
-													<Badge variant="outline">Yes</Badge>
-												) : (
-													<span className="text-base-content/50">-</span>
-												)}
-											</TableCell>
+											{isVisible("id") && (
+												<TableCell className="font-mono text-sm">
+													{s.id}
+												</TableCell>
+											)}
+											{isVisible("nameJa") && (
+												<TableCell className="font-medium">
+													{s.nameJa}
+												</TableCell>
+											)}
+											{isVisible("workName") && (
+												<TableCell className="text-sm">
+													{s.workName || "-"}
+												</TableCell>
+											)}
+											{isVisible("themeType") && (
+												<TableCell>
+													{s.themeType ? (
+														<Badge variant="secondary">
+															{themeTypeLabels[s.themeType] || s.themeType}
+														</Badge>
+													) : (
+														<span className="text-base-content/50">-</span>
+													)}
+												</TableCell>
+											)}
+											{isVisible("isOfficialArrangement") && (
+												<TableCell>
+													{s.isOfficialArrangement ? (
+														<Badge variant="outline">Yes</Badge>
+													) : (
+														<span className="text-base-content/50">-</span>
+													)}
+												</TableCell>
+											)}
+											{isVisible("createdAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(s.createdAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{
+															locale: ja,
+														},
+													)}
+												</TableCell>
+											)}
+											{isVisible("updatedAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(s.updatedAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{
+															locale: ja,
+														},
+													)}
+												</TableCell>
+											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button

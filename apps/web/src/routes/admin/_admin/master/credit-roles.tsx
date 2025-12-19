@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Trash2, Upload } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -26,12 +26,20 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { type CreditRole, creditRolesApi, importApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/_admin/master/credit-roles")({
 	component: CreditRolesPage,
 });
+
+// カラム定義
+const COLUMN_CONFIGS = [
+	{ key: "code", label: "コード" },
+	{ key: "label", label: "ラベル" },
+	{ key: "description", label: "説明" },
+] as const;
 
 function CreditRolesPage() {
 	const queryClient = useQueryClient();
@@ -43,6 +51,13 @@ function CreditRolesPage() {
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
+
+	// カラム表示設定
+	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
+	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
+		"admin:master:credit-roles",
+		columnConfigs,
+	);
 
 	const [editingItem, setEditingItem] = useState<CreditRole | null>(null);
 	const [editForm, setEditForm] = useState<Partial<CreditRole>>({});
@@ -130,6 +145,11 @@ function CreditRolesPage() {
 					searchPlaceholder="ラベルまたはコードで検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					columnVisibility={{
+						columns: columnConfigs,
+						visibleColumns,
+						onToggle: toggleColumn,
+					}}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -161,9 +181,13 @@ function CreditRolesPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead className="w-[150px]">コード</TableHead>
-									<TableHead className="w-[200px]">ラベル</TableHead>
-									<TableHead>説明</TableHead>
+									{isVisible("code") && (
+										<TableHead className="w-[150px]">コード</TableHead>
+									)}
+									{isVisible("label") && (
+										<TableHead className="w-[200px]">ラベル</TableHead>
+									)}
+									{isVisible("description") && <TableHead>説明</TableHead>}
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -171,7 +195,7 @@ function CreditRolesPage() {
 								{items.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={4}
+											colSpan={visibleColumns.size + 1}
 											className="h-24 text-center text-base-content/50"
 										>
 											データがありません
@@ -180,13 +204,19 @@ function CreditRolesPage() {
 								) : (
 									items.map((c) => (
 										<TableRow key={c.code}>
-											<TableCell className="font-mono text-sm">
-												{c.code}
-											</TableCell>
-											<TableCell className="font-medium">{c.label}</TableCell>
-											<TableCell className="text-base-content/70">
-												{c.description || "-"}
-											</TableCell>
+											{isVisible("code") && (
+												<TableCell className="font-mono text-sm">
+													{c.code}
+												</TableCell>
+											)}
+											{isVisible("label") && (
+												<TableCell className="font-medium">{c.label}</TableCell>
+											)}
+											{isVisible("description") && (
+												<TableCell className="text-base-content/70">
+													{c.description || "-"}
+												</TableCell>
+											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button
