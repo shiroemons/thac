@@ -112,12 +112,12 @@ const navItems: NavEntry[] = [
 		],
 	},
 	{
-		label: "リリース管理",
+		label: "作品管理",
 		icon: Disc3,
 		items: [
 			{
 				to: "/admin/releases",
-				label: "リリース",
+				label: "作品",
 				icon: Disc3,
 			},
 		],

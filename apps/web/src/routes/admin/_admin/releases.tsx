@@ -50,7 +50,7 @@ export const Route = createFileRoute("/admin/_admin/releases")({
 // カラム定義
 const COLUMN_CONFIGS = [
 	{ key: "id", label: "ID", defaultVisible: false },
-	{ key: "name", label: "リリース名" },
+	{ key: "name", label: "作品名" },
 	{ key: "catalogNumber", label: "カタログ番号" },
 	{ key: "releaseType", label: "タイプ" },
 	{ key: "releaseDate", label: "発売日" },
@@ -59,7 +59,7 @@ const COLUMN_CONFIGS = [
 	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
 ] as const;
 
-// リリースタイプのオプション
+// 作品タイプのオプション
 const RELEASE_TYPE_OPTIONS = Object.entries(RELEASE_TYPE_LABELS).map(
 	([value, label]) => ({
 		value,
@@ -184,7 +184,7 @@ function ReleasesPage() {
 		}
 	};
 
-	// リリースを編集モードで開く（詳細取得）
+	// 作品を編集モードで開く（詳細取得）
 	const handleEdit = async (release: ReleaseWithDiscCount) => {
 		try {
 			const releaseWithDiscs = await releasesApi.get(release.id);
@@ -202,7 +202,7 @@ function ReleasesPage() {
 			setMutationError(null);
 		} catch (e) {
 			setMutationError(
-				e instanceof Error ? e.message : "リリース情報の取得に失敗しました",
+				e instanceof Error ? e.message : "作品情報の取得に失敗しました",
 			);
 		}
 	};
@@ -249,7 +249,7 @@ function ReleasesPage() {
 				});
 			}
 			setIsDiscDialogOpen(false);
-			// リリース詳細を再取得
+			// 作品詳細を再取得
 			const updated = await releasesApi.get(editingRelease.id);
 			setEditingRelease(updated);
 		} catch (e) {
@@ -300,15 +300,12 @@ function ReleasesPage() {
 
 	return (
 		<div className="container mx-auto py-6">
-			<AdminPageHeader
-				title="リリース管理"
-				breadcrumbs={[{ label: "リリース" }]}
-			/>
+			<AdminPageHeader title="作品管理" breadcrumbs={[{ label: "作品" }]} />
 
 			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
 				<DataTableActionBar
 					className="border-base-300 border-b p-4"
-					searchPlaceholder="リリース名で検索..."
+					searchPlaceholder="作品名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
 					filterOptions={RELEASE_TYPE_OPTIONS}
@@ -348,7 +345,7 @@ function ReleasesPage() {
 										<TableHead className="w-[220px]">ID</TableHead>
 									)}
 									{isVisible("name") && (
-										<TableHead className="min-w-[200px]">リリース名</TableHead>
+										<TableHead className="min-w-[200px]">作品名</TableHead>
 									)}
 									{isVisible("catalogNumber") && (
 										<TableHead className="w-[140px]">カタログ番号</TableHead>
@@ -378,7 +375,7 @@ function ReleasesPage() {
 											colSpan={visibleColumns.size + 1}
 											className="h-24 text-center text-base-content/50"
 										>
-											該当するリリースが見つかりません
+											該当する作品が見つかりません
 										</TableCell>
 									</TableRow>
 								) : (
@@ -491,12 +488,12 @@ function ReleasesPage() {
 			>
 				<DialogContent className="sm:max-w-[500px]">
 					<DialogHeader>
-						<DialogTitle>新規リリース</DialogTitle>
+						<DialogTitle>新規作品</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
 							<Label htmlFor="create-name">
-								リリース名 <span className="text-error">*</span>
+								作品名 <span className="text-error">*</span>
 							</Label>
 							<p className="text-base-content/60 text-xs">
 								アルバム名、シングル名、EP名などを入力してください
@@ -627,12 +624,12 @@ function ReleasesPage() {
 			>
 				<DialogContent className="sm:max-w-[600px]">
 					<DialogHeader>
-						<DialogTitle>リリースの編集</DialogTitle>
+						<DialogTitle>作品の編集</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
 							<Label htmlFor="edit-name">
-								リリース名 <span className="text-error">*</span>
+								作品名 <span className="text-error">*</span>
 							</Label>
 							<p className="text-base-content/60 text-xs">
 								アルバム名、シングル名、EP名などを入力してください

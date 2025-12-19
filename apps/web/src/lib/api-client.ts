@@ -786,7 +786,7 @@ export const eventDaysApi = {
 		),
 };
 
-// ===== リリース管理 =====
+// ===== 作品管理 =====
 
 export type ReleaseType = "album" | "single" | "ep" | "digital" | "video";
 

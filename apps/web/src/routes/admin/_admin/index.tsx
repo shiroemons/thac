@@ -123,7 +123,7 @@ function AdminDashboard() {
 
 	const releaseStats = [
 		{
-			title: "リリース",
+			title: "作品",
 			value: data?.releases,
 			icon: <Disc3 className="h-8 w-8" />,
 			href: "/admin/releases" as const,
@@ -243,9 +243,9 @@ function AdminDashboard() {
 					</div>
 				</section>
 
-				{/* リリース管理 */}
+				{/* 作品管理 */}
 				<section>
-					<h2 className="mb-3 font-semibold text-lg">リリース管理</h2>
+					<h2 className="mb-3 font-semibold text-lg">作品管理</h2>
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 						{releaseStats.map((stat) => (
 							<StatCard
