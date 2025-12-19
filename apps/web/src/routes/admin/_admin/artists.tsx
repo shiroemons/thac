@@ -1,9 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { detectInitial } from "@thac/utils";
+import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import { Pencil, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -29,6 +31,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
 	type Artist,
@@ -50,6 +53,20 @@ const initialScriptOptions = Object.entries(INITIAL_SCRIPT_LABELS).map(
 const requiresInitial = (initialScript: string) =>
 	["latin", "hiragana", "katakana"].includes(initialScript);
 
+// カラム定義
+const COLUMN_CONFIGS = [
+	{ key: "id", label: "ID", defaultVisible: false },
+	{ key: "name", label: "名前" },
+	{ key: "nameJa", label: "日本語名" },
+	{ key: "nameEn", label: "英語名" },
+	{ key: "sortName", label: "ソート用名" },
+	{ key: "initialScript", label: "文字種" },
+	{ key: "nameInitial", label: "頭文字" },
+	{ key: "notes", label: "備考" },
+	{ key: "createdAt", label: "作成日時", defaultVisible: false },
+	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
+] as const;
+
 function ArtistsPage() {
 	const queryClient = useQueryClient();
 
@@ -60,6 +77,13 @@ function ArtistsPage() {
 	const [initialScript, setInitialScript] = useState("");
 
 	const debouncedSearch = useDebounce(search, 300);
+
+	// カラム表示設定
+	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
+	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
+		"admin:artists",
+		columnConfigs,
+	);
 
 	const [editingArtist, setEditingArtist] = useState<Artist | null>(null);
 	const [editForm, setEditForm] = useState<Partial<Artist>>({});
@@ -191,6 +215,11 @@ function ArtistsPage() {
 					filterValue={initialScript}
 					filterPlaceholder="頭文字の文字種"
 					onFilterChange={handleInitialScriptChange}
+					columnVisibility={{
+						columns: columnConfigs,
+						visibleColumns,
+						onToggle: toggleColumn,
+					}}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -215,11 +244,34 @@ function ArtistsPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead>名前</TableHead>
-									<TableHead className="w-[150px]">日本語名</TableHead>
-									<TableHead className="w-[150px]">英語名</TableHead>
-									<TableHead className="w-[120px]">文字種</TableHead>
-									<TableHead className="w-[120px]">頭文字</TableHead>
+									{isVisible("id") && (
+										<TableHead className="w-[220px]">ID</TableHead>
+									)}
+									{isVisible("name") && <TableHead>名前</TableHead>}
+									{isVisible("nameJa") && (
+										<TableHead className="w-[150px]">日本語名</TableHead>
+									)}
+									{isVisible("nameEn") && (
+										<TableHead className="w-[150px]">英語名</TableHead>
+									)}
+									{isVisible("sortName") && (
+										<TableHead className="w-[150px]">ソート用名</TableHead>
+									)}
+									{isVisible("initialScript") && (
+										<TableHead className="w-[120px]">文字種</TableHead>
+									)}
+									{isVisible("nameInitial") && (
+										<TableHead className="w-[120px]">頭文字</TableHead>
+									)}
+									{isVisible("notes") && (
+										<TableHead className="w-[200px]">備考</TableHead>
+									)}
+									{isVisible("createdAt") && (
+										<TableHead className="w-[160px]">作成日時</TableHead>
+									)}
+									{isVisible("updatedAt") && (
+										<TableHead className="w-[160px]">更新日時</TableHead>
+									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -227,7 +279,7 @@ function ArtistsPage() {
 								{artists.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={6}
+											colSpan={visibleColumns.size + 1}
 											className="h-24 text-center text-base-content/50"
 										>
 											該当するアーティストが見つかりません
@@ -236,28 +288,72 @@ function ArtistsPage() {
 								) : (
 									artists.map((artist) => (
 										<TableRow key={artist.id}>
-											<TableCell className="font-medium">
-												{artist.name}
-											</TableCell>
-											<TableCell className="text-base-content/70">
-												{artist.nameJa || "-"}
-											</TableCell>
-											<TableCell className="text-base-content/70">
-												{artist.nameEn || "-"}
-											</TableCell>
-											<TableCell>
-												<Badge
-													variant={
-														INITIAL_SCRIPT_BADGE_VARIANTS[artist.initialScript]
-													}
-												>
-													{INITIAL_SCRIPT_LABELS[artist.initialScript]}
-												</Badge>
-											</TableCell>
-											<TableCell className="font-mono">
-												{artist.nameInitial || "-"}
-											</TableCell>
-
+											{isVisible("id") && (
+												<TableCell className="font-mono text-base-content/50 text-xs">
+													{artist.id}
+												</TableCell>
+											)}
+											{isVisible("name") && (
+												<TableCell className="font-medium">
+													{artist.name}
+												</TableCell>
+											)}
+											{isVisible("nameJa") && (
+												<TableCell className="text-base-content/70">
+													{artist.nameJa || "-"}
+												</TableCell>
+											)}
+											{isVisible("nameEn") && (
+												<TableCell className="text-base-content/70">
+													{artist.nameEn || "-"}
+												</TableCell>
+											)}
+											{isVisible("sortName") && (
+												<TableCell className="text-base-content/70">
+													{artist.sortName || "-"}
+												</TableCell>
+											)}
+											{isVisible("initialScript") && (
+												<TableCell>
+													<Badge
+														variant={
+															INITIAL_SCRIPT_BADGE_VARIANTS[
+																artist.initialScript
+															]
+														}
+													>
+														{INITIAL_SCRIPT_LABELS[artist.initialScript]}
+													</Badge>
+												</TableCell>
+											)}
+											{isVisible("nameInitial") && (
+												<TableCell className="font-mono">
+													{artist.nameInitial || "-"}
+												</TableCell>
+											)}
+											{isVisible("notes") && (
+												<TableCell className="max-w-[200px] truncate text-base-content/70">
+													{artist.notes || "-"}
+												</TableCell>
+											)}
+											{isVisible("createdAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(artist.createdAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{ locale: ja },
+													)}
+												</TableCell>
+											)}
+											{isVisible("updatedAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(artist.updatedAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{ locale: ja },
+													)}
+												</TableCell>
+											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button

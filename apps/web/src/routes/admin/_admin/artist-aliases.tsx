@@ -1,9 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { detectInitial } from "@thac/utils";
+import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -29,6 +31,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
 	type Artist,
@@ -87,6 +90,19 @@ const getInitialScriptBadgeVariant = (
 	}
 };
 
+// カラム定義
+const COLUMN_CONFIGS = [
+	{ key: "id", label: "ID", defaultVisible: false },
+	{ key: "name", label: "名義名" },
+	{ key: "artistName", label: "アーティスト" },
+	{ key: "aliasTypeCode", label: "種別" },
+	{ key: "initialScript", label: "文字種" },
+	{ key: "nameInitial", label: "頭文字" },
+	{ key: "period", label: "使用期間" },
+	{ key: "createdAt", label: "作成日時", defaultVisible: false },
+	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
+] as const;
+
 function ArtistAliasesPage() {
 	const queryClient = useQueryClient();
 
@@ -96,6 +112,13 @@ function ArtistAliasesPage() {
 	const [artistIdFilter, setArtistIdFilter] = useState("");
 
 	const debouncedSearch = useDebounce(search, 300);
+
+	// カラム表示設定
+	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
+	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
+		"admin:artist-aliases",
+		columnConfigs,
+	);
 
 	const [editingAlias, setEditingAlias] = useState<ArtistAlias | null>(null);
 	const [editForm, setEditForm] = useState<Partial<ArtistAlias>>({});
@@ -283,6 +306,11 @@ function ArtistAliasesPage() {
 					searchPlaceholder="名義名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					columnVisibility={{
+						columns: columnConfigs,
+						visibleColumns,
+						onToggle: toggleColumn,
+					}}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -317,12 +345,31 @@ function ArtistAliasesPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead>名義名</TableHead>
-									<TableHead className="w-[180px]">アーティスト</TableHead>
-									<TableHead className="w-[100px]">種別</TableHead>
-									<TableHead className="w-[80px]">文字種</TableHead>
-									<TableHead className="w-[70px]">頭文字</TableHead>
-									<TableHead className="w-[140px]">使用期間</TableHead>
+									{isVisible("id") && (
+										<TableHead className="w-[220px]">ID</TableHead>
+									)}
+									{isVisible("name") && <TableHead>名義名</TableHead>}
+									{isVisible("artistName") && (
+										<TableHead className="w-[180px]">アーティスト</TableHead>
+									)}
+									{isVisible("aliasTypeCode") && (
+										<TableHead className="w-[100px]">種別</TableHead>
+									)}
+									{isVisible("initialScript") && (
+										<TableHead className="w-[80px]">文字種</TableHead>
+									)}
+									{isVisible("nameInitial") && (
+										<TableHead className="w-[70px]">頭文字</TableHead>
+									)}
+									{isVisible("period") && (
+										<TableHead className="w-[140px]">使用期間</TableHead>
+									)}
+									{isVisible("createdAt") && (
+										<TableHead className="w-[160px]">作成日時</TableHead>
+									)}
+									{isVisible("updatedAt") && (
+										<TableHead className="w-[160px]">更新日時</TableHead>
+									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -330,7 +377,7 @@ function ArtistAliasesPage() {
 								{aliases.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={7}
+											colSpan={visibleColumns.size + 1}
 											className="h-24 text-center text-base-content/50"
 										>
 											該当する名義が見つかりません
@@ -339,46 +386,81 @@ function ArtistAliasesPage() {
 								) : (
 									aliases.map((alias) => (
 										<TableRow key={alias.id}>
-											<TableCell className="font-medium">
-												{alias.name}
-											</TableCell>
-											<TableCell className="text-base-content/70">
-												{alias.artistName || "-"}
-											</TableCell>
-											<TableCell>
-												{alias.aliasTypeCode ? (
+											{isVisible("id") && (
+												<TableCell className="font-mono text-base-content/50 text-xs">
+													{alias.id}
+												</TableCell>
+											)}
+											{isVisible("name") && (
+												<TableCell className="font-medium">
+													{alias.name}
+												</TableCell>
+											)}
+											{isVisible("artistName") && (
+												<TableCell className="text-base-content/70">
+													{alias.artistName || "-"}
+												</TableCell>
+											)}
+											{isVisible("aliasTypeCode") && (
+												<TableCell>
+													{alias.aliasTypeCode ? (
+														<Badge
+															variant={getAliasTypeBadgeVariant(
+																alias.aliasTypeCode,
+															)}
+														>
+															{aliasTypes.find(
+																(t) => t.code === alias.aliasTypeCode,
+															)?.label || alias.aliasTypeCode}
+														</Badge>
+													) : (
+														<span className="text-base-content/50">-</span>
+													)}
+												</TableCell>
+											)}
+											{isVisible("initialScript") && (
+												<TableCell>
 													<Badge
-														variant={getAliasTypeBadgeVariant(
-															alias.aliasTypeCode,
+														variant={getInitialScriptBadgeVariant(
+															alias.initialScript,
 														)}
 													>
-														{aliasTypes.find(
-															(t) => t.code === alias.aliasTypeCode,
-														)?.label || alias.aliasTypeCode}
+														{INITIAL_SCRIPT_LABELS[
+															alias.initialScript as InitialScript
+														] || alias.initialScript}
 													</Badge>
-												) : (
-													<span className="text-base-content/50">-</span>
-												)}
-											</TableCell>
-											<TableCell>
-												<Badge
-													variant={getInitialScriptBadgeVariant(
-														alias.initialScript,
+												</TableCell>
+											)}
+											{isVisible("nameInitial") && (
+												<TableCell className="font-mono">
+													{alias.nameInitial || "-"}
+												</TableCell>
+											)}
+											{isVisible("period") && (
+												<TableCell className="text-base-content/70 text-sm">
+													{alias.periodFrom || alias.periodTo
+														? `${alias.periodFrom || "?"} 〜 ${alias.periodTo || "現在"}`
+														: "-"}
+												</TableCell>
+											)}
+											{isVisible("createdAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(alias.createdAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{ locale: ja },
 													)}
-												>
-													{INITIAL_SCRIPT_LABELS[
-														alias.initialScript as InitialScript
-													] || alias.initialScript}
-												</Badge>
-											</TableCell>
-											<TableCell className="font-mono">
-												{alias.nameInitial || "-"}
-											</TableCell>
-											<TableCell className="text-base-content/70 text-sm">
-												{alias.periodFrom || alias.periodTo
-													? `${alias.periodFrom || "?"} 〜 ${alias.periodTo || "現在"}`
-													: "-"}
-											</TableCell>
+												</TableCell>
+											)}
+											{isVisible("updatedAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(alias.updatedAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{ locale: ja },
+													)}
+												</TableCell>
+											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button

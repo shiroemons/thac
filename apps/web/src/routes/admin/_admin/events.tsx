@@ -1,8 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import { Calendar, Pencil, Plus, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -27,6 +29,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
 	type Event,
@@ -42,6 +45,19 @@ export const Route = createFileRoute("/admin/_admin/events")({
 	component: EventsPage,
 });
 
+// カラム定義
+const COLUMN_CONFIGS = [
+	{ key: "id", label: "ID", defaultVisible: false },
+	{ key: "name", label: "イベント名" },
+	{ key: "seriesName", label: "シリーズ" },
+	{ key: "edition", label: "回次" },
+	{ key: "dateRange", label: "開催期間" },
+	{ key: "venue", label: "会場" },
+	{ key: "totalDays", label: "開催日数", defaultVisible: false },
+	{ key: "createdAt", label: "作成日時", defaultVisible: false },
+	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
+] as const;
+
 function EventsPage() {
 	const queryClient = useQueryClient();
 
@@ -51,6 +67,13 @@ function EventsPage() {
 	const [seriesFilter, setSeriesFilter] = useState("");
 
 	const debouncedSearch = useDebounce(search, 300);
+
+	// カラム表示設定
+	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
+	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
+		"admin:events",
+		columnConfigs,
+	);
 
 	const [editingEvent, setEditingEvent] = useState<EventWithDays | null>(null);
 	const [editForm, setEditForm] = useState<Partial<Event>>({});
@@ -339,6 +362,11 @@ function EventsPage() {
 					filterValue={seriesFilter}
 					filterPlaceholder="シリーズで絞り込み"
 					onFilterChange={handleSeriesFilterChange}
+					columnVisibility={{
+						columns: columnConfigs,
+						visibleColumns,
+						onToggle: toggleColumn,
+					}}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -363,11 +391,33 @@ function EventsPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead className="min-w-[200px]">イベント名</TableHead>
-									<TableHead className="w-[160px]">シリーズ</TableHead>
-									<TableHead className="w-[70px]">回次</TableHead>
-									<TableHead className="w-[180px]">開催期間</TableHead>
-									<TableHead className="w-[120px]">会場</TableHead>
+									{isVisible("id") && (
+										<TableHead className="w-[220px]">ID</TableHead>
+									)}
+									{isVisible("name") && (
+										<TableHead className="min-w-[200px]">イベント名</TableHead>
+									)}
+									{isVisible("seriesName") && (
+										<TableHead className="w-[160px]">シリーズ</TableHead>
+									)}
+									{isVisible("edition") && (
+										<TableHead className="w-[70px]">回次</TableHead>
+									)}
+									{isVisible("dateRange") && (
+										<TableHead className="w-[180px]">開催期間</TableHead>
+									)}
+									{isVisible("venue") && (
+										<TableHead className="w-[120px]">会場</TableHead>
+									)}
+									{isVisible("totalDays") && (
+										<TableHead className="w-[80px]">開催日数</TableHead>
+									)}
+									{isVisible("createdAt") && (
+										<TableHead className="w-[160px]">作成日時</TableHead>
+									)}
+									{isVisible("updatedAt") && (
+										<TableHead className="w-[160px]">更新日時</TableHead>
+									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -375,7 +425,7 @@ function EventsPage() {
 								{events.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={6}
+											colSpan={visibleColumns.size + 1}
 											className="h-24 text-center text-base-content/50"
 										>
 											該当するイベントが見つかりません
@@ -384,23 +434,61 @@ function EventsPage() {
 								) : (
 									events.map((event) => (
 										<TableRow key={event.id}>
-											<TableCell className="font-medium">
-												{event.name}
-											</TableCell>
-											<TableCell>
-												<Badge variant="outline">
-													{event.seriesName || "-"}
-												</Badge>
-											</TableCell>
-											<TableCell className="whitespace-nowrap text-base-content/70">
-												{event.edition ? `第${event.edition}回` : "-"}
-											</TableCell>
-											<TableCell className="whitespace-nowrap text-base-content/70">
-												{formatDateRange(event.startDate, event.endDate)}
-											</TableCell>
-											<TableCell className="text-base-content/70">
-												{event.venue || "-"}
-											</TableCell>
+											{isVisible("id") && (
+												<TableCell className="font-mono text-base-content/50 text-xs">
+													{event.id}
+												</TableCell>
+											)}
+											{isVisible("name") && (
+												<TableCell className="font-medium">
+													{event.name}
+												</TableCell>
+											)}
+											{isVisible("seriesName") && (
+												<TableCell>
+													<Badge variant="outline">
+														{event.seriesName || "-"}
+													</Badge>
+												</TableCell>
+											)}
+											{isVisible("edition") && (
+												<TableCell className="whitespace-nowrap text-base-content/70">
+													{event.edition ? `第${event.edition}回` : "-"}
+												</TableCell>
+											)}
+											{isVisible("dateRange") && (
+												<TableCell className="whitespace-nowrap text-base-content/70">
+													{formatDateRange(event.startDate, event.endDate)}
+												</TableCell>
+											)}
+											{isVisible("venue") && (
+												<TableCell className="text-base-content/70">
+													{event.venue || "-"}
+												</TableCell>
+											)}
+											{isVisible("totalDays") && (
+												<TableCell className="text-base-content/70">
+													{event.totalDays || "-"}
+												</TableCell>
+											)}
+											{isVisible("createdAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(event.createdAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{ locale: ja },
+													)}
+												</TableCell>
+											)}
+											{isVisible("updatedAt") && (
+												<TableCell className="whitespace-nowrap text-base-content/70 text-sm">
+													{format(
+														new Date(event.updatedAt),
+														"yyyy/MM/dd HH:mm:ss",
+														{ locale: ja },
+													)}
+												</TableCell>
+											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button

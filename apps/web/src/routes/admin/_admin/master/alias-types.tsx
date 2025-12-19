@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Trash2, Upload } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -26,12 +26,20 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { type AliasType, aliasTypesApi, importApi } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/_admin/master/alias-types")({
 	component: AliasTypesPage,
 });
+
+// カラム定義
+const COLUMN_CONFIGS = [
+	{ key: "code", label: "コード" },
+	{ key: "label", label: "ラベル" },
+	{ key: "description", label: "説明" },
+] as const;
 
 function AliasTypesPage() {
 	const queryClient = useQueryClient();
@@ -43,6 +51,13 @@ function AliasTypesPage() {
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
+
+	// カラム表示設定
+	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
+	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
+		"admin:master:alias-types",
+		columnConfigs,
+	);
 
 	const [editingItem, setEditingItem] = useState<AliasType | null>(null);
 	const [editForm, setEditForm] = useState<Partial<AliasType>>({});
@@ -130,6 +145,11 @@ function AliasTypesPage() {
 					searchPlaceholder="ラベルまたはコードで検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					columnVisibility={{
+						columns: columnConfigs,
+						visibleColumns,
+						onToggle: toggleColumn,
+					}}
 					primaryAction={{
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
@@ -161,9 +181,13 @@ function AliasTypesPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead className="w-[150px]">コード</TableHead>
-									<TableHead className="w-[200px]">ラベル</TableHead>
-									<TableHead>説明</TableHead>
+									{isVisible("code") && (
+										<TableHead className="w-[150px]">コード</TableHead>
+									)}
+									{isVisible("label") && (
+										<TableHead className="w-[200px]">ラベル</TableHead>
+									)}
+									{isVisible("description") && <TableHead>説明</TableHead>}
 									<TableHead className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
@@ -171,7 +195,7 @@ function AliasTypesPage() {
 								{items.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={4}
+											colSpan={visibleColumns.size + 1}
 											className="h-24 text-center text-base-content/50"
 										>
 											データがありません
@@ -180,13 +204,19 @@ function AliasTypesPage() {
 								) : (
 									items.map((a) => (
 										<TableRow key={a.code}>
-											<TableCell className="font-mono text-sm">
-												{a.code}
-											</TableCell>
-											<TableCell className="font-medium">{a.label}</TableCell>
-											<TableCell className="text-base-content/70">
-												{a.description || "-"}
-											</TableCell>
+											{isVisible("code") && (
+												<TableCell className="font-mono text-sm">
+													{a.code}
+												</TableCell>
+											)}
+											{isVisible("label") && (
+												<TableCell className="font-medium">{a.label}</TableCell>
+											)}
+											{isVisible("description") && (
+												<TableCell className="text-base-content/70">
+													{a.description || "-"}
+												</TableCell>
+											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Button
