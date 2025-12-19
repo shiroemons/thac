@@ -125,6 +125,7 @@ function ReleasesPage() {
 		setMutationError(null);
 		try {
 			const id = nanoid();
+			const releaseType = (createForm.releaseType as ReleaseType) || null;
 			await releasesApi.create({
 				id,
 				name: createForm.name || "",
@@ -132,10 +133,23 @@ function ReleasesPage() {
 				nameEn: createForm.nameEn || null,
 				catalogNumber: createForm.catalogNumber || null,
 				releaseDate: createForm.releaseDate || null,
-				releaseType: (createForm.releaseType as ReleaseType) || null,
+				releaseType,
 				eventDayId: createForm.eventDayId || null,
 				notes: createForm.notes || null,
 			});
+			// アルバム、シングル、EPの場合はデフォルトでDisc 1を作成
+			if (
+				releaseType === "album" ||
+				releaseType === "single" ||
+				releaseType === "ep"
+			) {
+				await discsApi.create(id, {
+					id: nanoid(),
+					releaseId: id,
+					discNumber: 1,
+					discName: createForm.name || null,
+				});
+			}
 			setIsCreateDialogOpen(false);
 			setCreateForm({ releaseType: "album" });
 			invalidateQuery();
