@@ -2,7 +2,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ArrowLeft, Disc3, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+	ArrowLeft,
+	ChevronDown,
+	ChevronUp,
+	Disc3,
+	Pencil,
+	Plus,
+	Trash2,
+} from "lucide-react";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -340,6 +348,57 @@ function TrackDetailPage() {
 		}
 	};
 
+	// クレジット順序変更（上へ）
+	const handleCreditMoveUp = async (credit: TrackCredit, index: number) => {
+		if (!track || index === 0) return;
+		const sortedCredits = [...track.credits].sort(
+			(a, b) => a.creditPosition - b.creditPosition,
+		);
+		const prevCredit = sortedCredits[index - 1];
+
+		try {
+			await Promise.all([
+				trackCreditsApi.update(track.releaseId, track.id, credit.id, {
+					creditPosition: prevCredit.creditPosition,
+				}),
+				trackCreditsApi.update(track.releaseId, track.id, prevCredit.id, {
+					creditPosition: credit.creditPosition,
+				}),
+			]);
+			await queryClient.invalidateQueries({ queryKey: ["track", trackId] });
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "順序変更に失敗しました",
+			);
+		}
+	};
+
+	// クレジット順序変更（下へ）
+	const handleCreditMoveDown = async (credit: TrackCredit, index: number) => {
+		if (!track) return;
+		const sortedCredits = [...track.credits].sort(
+			(a, b) => a.creditPosition - b.creditPosition,
+		);
+		if (index === sortedCredits.length - 1) return;
+		const nextCredit = sortedCredits[index + 1];
+
+		try {
+			await Promise.all([
+				trackCreditsApi.update(track.releaseId, track.id, credit.id, {
+					creditPosition: nextCredit.creditPosition,
+				}),
+				trackCreditsApi.update(track.releaseId, track.id, nextCredit.id, {
+					creditPosition: credit.creditPosition,
+				}),
+			]);
+			await queryClient.invalidateQueries({ queryKey: ["track", trackId] });
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "順序変更に失敗しました",
+			);
+		}
+	};
+
 	if (isLoading) {
 		return (
 			<div className="container mx-auto py-6">
@@ -564,7 +623,7 @@ function TrackDetailPage() {
 						<Table>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead className="w-[60px]">順序</TableHead>
+									<TableHead className="w-[100px]">並び替え</TableHead>
 									<TableHead>アーティスト</TableHead>
 									<TableHead>名義</TableHead>
 									<TableHead>盤面表記</TableHead>
@@ -575,10 +634,32 @@ function TrackDetailPage() {
 							<TableBody>
 								{track.credits
 									.sort((a, b) => a.creditPosition - b.creditPosition)
-									.map((credit) => (
+									.map((credit, index) => (
 										<TableRow key={credit.id}>
-											<TableCell className="text-base-content/70">
-												{credit.creditPosition}
+											<TableCell className="w-[100px]">
+												<div className="flex items-center gap-1">
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => handleCreditMoveUp(credit, index)}
+														disabled={index === 0}
+														title="上へ移動"
+													>
+														<ChevronUp className="h-4 w-4" />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => handleCreditMoveDown(credit, index)}
+														disabled={index === track.credits.length - 1}
+														title="下へ移動"
+													>
+														<ChevronDown className="h-4 w-4" />
+													</Button>
+													<span className="ml-1 text-base-content/70">
+														{credit.creditPosition}
+													</span>
+												</div>
 											</TableCell>
 											<TableCell>
 												{credit.artist ? (
