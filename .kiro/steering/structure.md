@@ -29,7 +29,40 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 ### Database Schema (`packages/db/src/schema/`)
 **Location**: `/packages/db/src/schema/`
 **Purpose**: Drizzle ORMスキーマ定義
-**Example**: `schema/auth.ts`（認証テーブル）
+**Pattern**: `{entity}.ts`（スキーマ）+ `{entity}.validation.ts`（Zodバリデーション）
+**Example**: `auth.ts`, `track.ts`, `release.ts`, `artist-circle.ts`
+
+### Custom Hooks (`apps/web/src/hooks/`)
+**Location**: `/apps/web/src/hooks/`
+**Purpose**: 再利用可能なReactカスタムフック
+**Naming**: `use-{name}.ts`（kebab-case）
+**Example**: `use-debounce.ts`, `use-column-visibility.ts`
+
+### Client Middleware (`apps/web/src/middleware/`)
+**Location**: `/apps/web/src/middleware/`
+**Purpose**: TanStack Startのルートミドルウェア
+**Example**: `auth.ts`（認証ガード）
+
+### Server Functions (`apps/web/src/functions/`)
+**Location**: `/apps/web/src/functions/`
+**Purpose**: TanStack Startのサーバーサイド関数
+**Example**: `get-user.ts`, `get-admin-user.ts`
+
+### Server Middleware (`apps/server/src/middleware/`)
+**Location**: `/apps/server/src/middleware/`
+**Purpose**: Honoミドルウェア
+**Example**: `admin-auth.ts`（管理者認証ガード）
+
+### API Routes (`apps/server/src/routes/`)
+**Location**: `/apps/server/src/routes/`
+**Purpose**: Honoルート定義
+**Pattern**: 機能別にディレクトリを分割、`index.ts`でルートをエクスポート
+**Example**: `routes/admin/`（管理API）
+
+### Utility Package (`packages/utils/`)
+**Location**: `/packages/utils/`
+**Purpose**: アプリ間で共有するユーティリティ関数
+**Example**: `initial-detector.ts`
 
 ## Naming Conventions
 
@@ -63,6 +96,7 @@ import { Button } from "./components/ui/button";
 apps/web → @thac/auth
 apps/server → @thac/auth, @thac/db
 packages/auth → @thac/db
+packages/utils → @thac/config
 packages/config → (standalone)
 ```
 
