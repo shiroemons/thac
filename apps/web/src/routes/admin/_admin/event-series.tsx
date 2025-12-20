@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import {
@@ -9,7 +10,6 @@ import {
 	Pencil,
 	Trash2,
 } from "lucide-react";
-import { nanoid } from "nanoid";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -151,7 +151,7 @@ function EventSeriesPage() {
 		setIsSubmitting(true);
 		setMutationError(null);
 		try {
-			const id = nanoid();
+			const id = createId.eventSeries();
 			await eventSeriesApi.create({
 				id,
 				name: createForm.name || "",

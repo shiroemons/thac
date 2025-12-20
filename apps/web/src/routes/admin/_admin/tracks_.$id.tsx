@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import {
@@ -11,7 +12,6 @@ import {
 	Plus,
 	Trash2,
 } from "lucide-react";
-import { nanoid } from "nanoid";
 import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Badge } from "@/components/ui/badge";
@@ -204,7 +204,7 @@ function TrackDetailPage() {
 			...(track?.credits.map((c) => c.creditPosition) ?? []),
 		);
 		setCreditForm({
-			id: nanoid(),
+			id: createId.trackCredit(),
 			artistId: "",
 			artistAliasId: "",
 			creditName: "",

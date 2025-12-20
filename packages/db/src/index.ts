@@ -53,3 +53,5 @@ export {
 } from "drizzle-orm";
 // Re-export all schemas and validation
 export * from "./schema";
+// Re-export ID generation utilities
+export { createId } from "./utils/id";
