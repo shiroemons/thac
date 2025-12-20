@@ -614,16 +614,37 @@ function ReleaseDetailPage() {
 							<table className="table">
 								<thead>
 									<tr>
-										<th className="w-20">順序</th>
+										<th className="w-[100px]">並び替え</th>
 										<th>サークル名</th>
 										<th>参加形態</th>
-										<th className="w-32">操作</th>
+										<th className="w-[70px]" />
 									</tr>
 								</thead>
 								<tbody>
 									{releaseCircles.map((rc, index) => (
 										<tr key={`${rc.circleId}-${rc.participationType}`}>
-											<td>{rc.position}</td>
+											<td className="w-[100px]">
+												<div className="flex items-center gap-1">
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => handleCircleMoveUp(rc, index)}
+														disabled={index === 0}
+														title="上へ移動"
+													>
+														<ChevronUp className="h-4 w-4" />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => handleCircleMoveDown(rc, index)}
+														disabled={index === releaseCircles.length - 1}
+														title="下へ移動"
+													>
+														<ChevronDown className="h-4 w-4" />
+													</Button>
+												</div>
+											</td>
 											<td>{rc.circle.name}</td>
 											<td>
 												<Badge
@@ -636,24 +657,6 @@ function ReleaseDetailPage() {
 											</td>
 											<td>
 												<div className="flex items-center gap-1">
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() => handleCircleMoveUp(rc, index)}
-														disabled={index === 0}
-													>
-														<ChevronUp className="h-4 w-4" />
-														<span className="sr-only">上へ移動</span>
-													</Button>
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() => handleCircleMoveDown(rc, index)}
-														disabled={index === releaseCircles.length - 1}
-													>
-														<ChevronDown className="h-4 w-4" />
-														<span className="sr-only">下へ移動</span>
-													</Button>
 													<Button
 														variant="ghost"
 														size="icon"
