@@ -29,8 +29,10 @@ import {
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { type AliasType, aliasTypesApi, importApi } from "@/lib/api-client";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/master/alias-types")({
+	head: () => createPageHead("名義種別"),
 	component: AliasTypesPage,
 });
 

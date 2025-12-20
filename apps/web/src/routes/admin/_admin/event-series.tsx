@@ -35,8 +35,10 @@ import {
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { type EventSeries, eventSeriesApi } from "@/lib/api-client";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/event-series")({
+	head: () => createPageHead("イベントシリーズ"),
 	component: EventSeriesPage,
 });
 

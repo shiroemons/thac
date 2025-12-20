@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { statsApi } from "@/lib/api-client";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/")({
+	head: () => createPageHead("管理ダッシュボード"),
 	component: AdminDashboard,
 });
 

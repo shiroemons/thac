@@ -37,8 +37,10 @@ import {
 	officialSongsApi,
 	officialWorksApi,
 } from "@/lib/api-client";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/official/songs")({
+	head: () => createPageHead("公式楽曲"),
 	component: OfficialSongsPage,
 });
 

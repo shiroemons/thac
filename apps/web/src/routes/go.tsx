@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, ArrowLeft, ExternalLink } from "lucide-react";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/go")({
+	head: () => createPageHead("外部リンク"),
 	validateSearch: (search: Record<string, unknown>) => ({
 		url: (search.url as string) || "",
 	}),

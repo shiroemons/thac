@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Toaster } from "@/components/ui/sonner";
+import { APP_NAME } from "@/lib/head";
 import { ThemeProvider } from "@/lib/theme";
 import Header from "../components/header";
 import appCss from "../index.css?url";
@@ -45,7 +46,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "My App",
+				title: APP_NAME,
 			},
 		],
 		links: [

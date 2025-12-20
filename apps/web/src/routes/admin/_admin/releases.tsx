@@ -42,8 +42,10 @@ import {
 	type ReleaseWithDiscs,
 	releasesApi,
 } from "@/lib/api-client";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/releases")({
+	head: () => createPageHead("作品"),
 	component: ReleasesPage,
 });
 

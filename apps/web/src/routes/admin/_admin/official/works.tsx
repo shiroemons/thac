@@ -37,8 +37,10 @@ import {
 	officialWorkCategoriesApi,
 	officialWorksApi,
 } from "@/lib/api-client";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/official/works")({
+	head: () => createPageHead("公式作品"),
 	component: OfficialWorksPage,
 });
 

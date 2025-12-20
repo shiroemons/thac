@@ -40,8 +40,10 @@ import {
 	eventsApi,
 } from "@/lib/api-client";
 import { suggestFromEventName } from "@/lib/event-name-parser";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/events")({
+	head: () => createPageHead("イベント"),
 	component: EventsPage,
 });
 

@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import AdminLoginForm from "@/components/admin-login-form";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/login")({
+	head: () => createPageHead("管理者ログイン"),
 	component: AdminLoginPage,
 });
 
