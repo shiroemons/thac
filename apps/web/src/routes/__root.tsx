@@ -11,7 +11,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { APP_NAME } from "@/lib/head";
 import { ThemeProvider } from "@/lib/theme";
 import Header from "../components/header";
-import appCss from "../index.css?url";
+import "../index.css";
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -49,12 +49,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 				title: APP_NAME,
 			},
 		],
-		links: [
-			{
-				rel: "stylesheet",
-				href: appCss,
-			},
-		],
+		links: [],
 	}),
 
 	component: RootDocument,
