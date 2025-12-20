@@ -566,3 +566,349 @@ const eventId = createId.event();         // ev_...
   )}
 </Button>
 ```
+
+---
+
+## フィードバック・通知（トースト）
+
+sonner ライブラリを使用。
+
+### 基本設定
+
+```tsx
+// routes/__root.tsx
+import { Toaster } from "~/components/ui/sonner";
+
+<Toaster richColors />
+```
+
+### 使用方法
+
+```tsx
+import { toast } from "sonner";
+
+// 成功
+toast.success("保存しました");
+
+// エラー
+toast.error("保存に失敗しました");
+
+// 情報
+toast.info("処理中です...");
+
+// カスタム
+toast("メッセージ", {
+  description: "詳細な説明",
+  duration: 5000,
+});
+```
+
+### 使い分け
+
+| 状況 | 種類 | メッセージ例 |
+|------|------|-------------|
+| 作成成功 | `success` | 「作成しました」 |
+| 更新成功 | `success` | 「保存しました」 |
+| 削除成功 | `success` | 「削除しました」 |
+| API エラー | `error` | 「保存に失敗しました」 |
+| バリデーションエラー | インライン表示 | フォーム内に表示 |
+
+### 注意点
+
+- 成功トースト: 操作完了後に表示
+- エラートースト: インラインエラーで対応できない場合のみ
+- 表示時間: デフォルト4秒、重要なメッセージは長めに
+
+---
+
+## 確認ダイアログ
+
+破壊的アクション前に確認を求める。
+
+### パターン1: ネイティブ confirm（シンプルな場合）
+
+```tsx
+const handleDelete = async (item: Item) => {
+  if (!confirm(`「${item.name}」を削除しますか？\n※関連データも削除されます。`)) {
+    return;
+  }
+  await deleteItem(item.id);
+  toast.success("削除しました");
+};
+```
+
+### パターン2: カスタムダイアログ（複雑な場合）
+
+```tsx
+const [deleteTarget, setDeleteTarget] = useState<Item | null>(null);
+
+// 削除ボタン
+<Button
+  variant="ghost"
+  size="icon"
+  className="text-error hover:text-error"
+  onClick={() => setDeleteTarget(item)}
+>
+  <Trash2 className="h-4 w-4" />
+</Button>
+
+// 確認ダイアログ
+<Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+  <DialogContent className="sm:max-w-[400px]">
+    <DialogHeader>
+      <DialogTitle>削除の確認</DialogTitle>
+      <DialogDescription>
+        「{deleteTarget?.name}」を削除しますか？
+        この操作は取り消せません。
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter>
+      <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
+        キャンセル
+      </Button>
+      <Button variant="destructive" onClick={handleConfirmDelete}>
+        削除
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
+
+### 使い分け
+
+| 操作 | パターン | 理由 |
+|------|---------|------|
+| 単一削除 | ネイティブ confirm | シンプルで十分 |
+| 一括削除 | カスタムダイアログ | 件数表示が必要 |
+| 重要データ削除 | カスタムダイアログ | 詳細説明が必要 |
+| 復元不可能な操作 | カスタムダイアログ | 警告を強調 |
+
+### 確認メッセージ規則
+
+- 対象を明示: 「{名前}を削除しますか？」
+- 影響を説明: 「関連データも削除されます」
+- 取り消し不可を明示: 「この操作は取り消せません」
+
+---
+
+## 空状態（Empty State）
+
+データがない場合の表示。
+
+### テーブル内の空状態
+
+```tsx
+{items.length === 0 ? (
+  <TableRow>
+    <TableCell
+      colSpan={columnCount}
+      className="h-24 text-center text-base-content/50"
+    >
+      該当するデータが見つかりません
+    </TableCell>
+  </TableRow>
+) : (
+  items.map((item) => <TableRow key={item.id}>...</TableRow>)
+)}
+```
+
+### メッセージパターン
+
+| 状況 | メッセージ |
+|------|-----------|
+| 初期状態（データなし） | 「まだデータがありません」 |
+| 検索結果なし | 「該当する{エンティティ}が見つかりません」 |
+| フィルター結果なし | 「条件に一致する{エンティティ}がありません」 |
+
+### スタイル
+
+- 高さ確保: `h-24`（96px）
+- テキスト色: `text-base-content/50`
+- 中央寄せ: `text-center`
+- colSpan: 全カラム数を指定
+
+### 初期状態での誘導（オプション）
+
+```tsx
+<TableCell colSpan={columnCount} className="h-32 text-center">
+  <div className="flex flex-col items-center gap-2 text-base-content/50">
+    <p>まだアーティストがありません</p>
+    <Button variant="primary" size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+      <Plus className="mr-1 h-4 w-4" />
+      新規作成
+    </Button>
+  </div>
+</TableCell>
+```
+
+---
+
+## 検索・フィルター
+
+### デバウンス
+
+入力から API 呼び出しまで 300ms の遅延を設ける。
+
+```tsx
+import { useDebounce } from "~/hooks/use-debounce";
+
+const [search, setSearch] = useState("");
+const debouncedSearch = useDebounce(search, 300);
+
+const { data } = useQuery({
+  queryKey: ["artists", page, pageSize, debouncedSearch],
+  queryFn: () => artistsApi.list({
+    page,
+    limit: pageSize,
+    search: debouncedSearch || undefined,
+  }),
+});
+```
+
+### 検索時のページリセット
+
+```tsx
+const handleSearchChange = (value: string) => {
+  setSearch(value);
+  setPage(1); // 1ページ目に戻す
+};
+```
+
+### フィルターのクリア
+
+```tsx
+<DataTableActionBar
+  searchValue={search}
+  onSearchChange={handleSearchChange}
+  filterValue={filter}
+  onFilterChange={handleFilterChange}
+  // クリアボタンは DataTableActionBar 内で自動表示
+/>
+```
+
+### 検索条件のURL同期（オプション）
+
+```tsx
+// TanStack Router の searchParams を使用
+const { search, filter } = Route.useSearch();
+
+const navigate = Route.useNavigate();
+
+const handleSearchChange = (value: string) => {
+  navigate({ search: { ...currentSearch, search: value, page: 1 } });
+};
+```
+
+---
+
+## キーボード操作
+
+### ダイアログのキーボード対応
+
+HTML `<dialog>` 要素の標準動作として以下をサポート:
+
+- `Escape`: ダイアログを閉じる
+- バックドロップクリック: ダイアログを閉じる
+
+```tsx
+// dialog.tsx で自動対応
+<dialog ref={dialogRef} className="modal">
+  <div className="modal-box">...</div>
+  <form method="dialog" className="modal-backdrop">
+    <button type="submit">close</button>
+  </form>
+</dialog>
+```
+
+### フォームのキーボード対応
+
+```tsx
+// Enter で送信（フォーム内）
+<form onSubmit={handleSubmit}>
+  <Input ... />
+  <Button type="submit">保存</Button>
+</form>
+
+// または onKeyDown で制御
+<Input
+  onKeyDown={(e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  }}
+/>
+```
+
+### 外側クリックでの閉じる
+
+```tsx
+// SearchableSelect などのドロップダウン
+useEffect(() => {
+  const handleClickOutside = (e: MouseEvent) => {
+    if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      setIsOpen(false);
+    }
+  };
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
+```
+
+### フォーカス管理
+
+```tsx
+// ダイアログ表示時に最初の入力にフォーカス
+useEffect(() => {
+  if (isOpen) {
+    inputRef.current?.focus();
+  }
+}, [isOpen]);
+```
+
+---
+
+## アクセシビリティ
+
+### フォーカスリング
+
+daisyUI のデフォルトスタイルを使用。カスタマイズが必要な場合:
+
+```tsx
+<Button className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+```
+
+### ラベルとフォーム要素の関連付け
+
+```tsx
+<div className="grid gap-2">
+  <Label htmlFor="name">名前</Label>
+  <Input id="name" ... />
+</div>
+```
+
+### アイコンボタンのラベル
+
+```tsx
+<Button variant="ghost" size="icon" aria-label="編集">
+  <Pencil className="h-4 w-4" />
+</Button>
+
+<Button variant="ghost" size="icon" aria-label="削除">
+  <Trash2 className="h-4 w-4" />
+</Button>
+```
+
+### テーブルのアクセシビリティ
+
+```tsx
+<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead scope="col">名前</TableHead>
+      ...
+    </TableRow>
+  </TableHeader>
+  <TableBody>...</TableBody>
+</Table>
+```
