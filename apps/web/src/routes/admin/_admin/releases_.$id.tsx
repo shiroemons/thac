@@ -1616,7 +1616,7 @@ function ReleaseDetailPage() {
 																			key={`${role.roleCode}-${role.rolePosition}`}
 																			variant="info"
 																		>
-																			{role.role?.name ?? role.roleCode}
+																			{role.role?.label ?? role.roleCode}
 																		</Badge>
 																	))
 															) : (
@@ -1773,7 +1773,7 @@ function ReleaseDetailPage() {
 											checked={creditForm.selectedRoles.includes(role.code)}
 											onChange={() => handleRoleToggle(role.code)}
 										/>
-										{role.name}
+										{role.label}
 									</label>
 								))}
 								{(!creditRolesData || creditRolesData.data.length === 0) && (

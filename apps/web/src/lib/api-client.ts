@@ -75,6 +75,7 @@ export interface DashboardStats {
 	events: number;
 	eventSeries: number;
 	releases: number;
+	tracks: number;
 }
 
 export interface PaginatedResponse<T> {
