@@ -198,12 +198,12 @@ function ReleaseDetailPage() {
 		enabled: isCreditEditDialogOpen,
 	});
 
-	// アーティスト別名義一覧取得（選択されたアーティストに対して）
-	const { data: aliasesData } = useQuery({
-		queryKey: ["artist-aliases", { artistId: creditForm.artistId }],
-		queryFn: () => artistAliasesApi.list({ artistId: creditForm.artistId }),
+	// 全アーティスト別名義一覧取得
+	const { data: allAliasesData } = useQuery({
+		queryKey: ["artist-aliases-all", { limit: 500 }],
+		queryFn: () => artistAliasesApi.list({ limit: 500 }),
 		staleTime: 60_000,
-		enabled: isCreditEditDialogOpen && !!creditForm.artistId,
+		enabled: isCreditEditDialogOpen,
 	});
 
 	// 役割マスター取得
@@ -213,6 +213,31 @@ function ReleaseDetailPage() {
 		staleTime: 300_000,
 		enabled: isCreditEditDialogOpen,
 	});
+
+	// アーティスト名義のオプションを構築（別名義のみ）
+	const creditNameOptions = (() => {
+		const options: Array<{
+			value: string;
+			label: string;
+			artistId: string;
+			artistAliasId: string;
+			creditName: string;
+		}> = [];
+
+		// 別名義のみを追加
+		for (const alias of allAliasesData?.data ?? []) {
+			options.push({
+				value: alias.id,
+				label: alias.name,
+				artistId: alias.artistId,
+				artistAliasId: alias.id,
+				creditName: alias.name,
+			});
+		}
+
+		// 名前でソート
+		return options.sort((a, b) => a.label.localeCompare(b.label, "ja"));
+	})();
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["releases", id] });
@@ -571,37 +596,30 @@ function ReleaseDetailPage() {
 		setMutationError(null);
 	};
 
-	// アーティスト選択時にクレジット名を自動設定
-	const handleArtistChange = (artistId: string) => {
-		const artist = artistsData?.data.find((a) => a.id === artistId);
-		setCreditForm({
-			...creditForm,
-			artistId,
-			artistAliasId: null, // アーティスト変更時は別名義をリセット
-			creditName: artist?.name ?? "",
-		});
-	};
-
-	// 別名義選択時にクレジット名を更新
-	const handleAliasChange = (aliasId: string | null) => {
-		if (aliasId) {
-			const alias = aliasesData?.data.find((a) => a.id === aliasId);
+	// アーティスト名義選択時
+	const handleCreditNameOptionChange = (optionValue: string) => {
+		const option = creditNameOptions.find((o) => o.value === optionValue);
+		if (option) {
 			setCreditForm({
 				...creditForm,
-				artistAliasId: aliasId,
-				creditName: alias?.name ?? creditForm.creditName,
+				artistId: option.artistId,
+				artistAliasId: option.artistAliasId,
+				creditName: option.creditName,
 			});
 		} else {
-			// 別名義をクリアしてアーティスト名に戻す
-			const artist = artistsData?.data.find(
-				(a) => a.id === creditForm.artistId,
-			);
+			// クリア時
 			setCreditForm({
 				...creditForm,
+				artistId: "",
 				artistAliasId: null,
-				creditName: artist?.name ?? creditForm.creditName,
+				creditName: "",
 			});
 		}
+	};
+
+	// 現在の選択値を取得（artistAliasIdをそのまま使用）
+	const getCurrentCreditNameOptionValue = () => {
+		return creditForm.artistAliasId || "";
 	};
 
 	// 役割のトグル
@@ -1618,7 +1636,7 @@ function ReleaseDetailPage() {
 															<p className="font-medium">{credit.creditName}</p>
 															{credit.artistAlias && (
 																<p className="text-base-content/60 text-xs">
-																	別名義
+																	名義
 																</p>
 															)}
 														</div>
@@ -1704,45 +1722,35 @@ function ReleaseDetailPage() {
 
 						<div className="grid gap-2">
 							<Label>
-								アーティスト <span className="text-error">*</span>
+								アーティスト名義 <span className="text-error">*</span>
 							</Label>
 							<SearchableSelect
-								value={creditForm.artistId}
-								onChange={(value) => handleArtistChange(value || "")}
-								options={
-									artistsData?.data.map((artist) => ({
-										value: artist.id,
-										label: artist.name,
-									})) ?? []
-								}
-								placeholder="アーティストを選択"
-								searchPlaceholder="アーティストを検索..."
-								emptyMessage="アーティストが見つかりません"
+								value={getCurrentCreditNameOptionValue()}
+								onChange={(value) => handleCreditNameOptionChange(value || "")}
+								options={creditNameOptions.map((opt) => ({
+									value: opt.value,
+									label: opt.label,
+								}))}
+								placeholder="アーティスト名義を選択"
+								searchPlaceholder="アーティスト名義を検索..."
+								emptyMessage="アーティスト名義が見つかりません"
 								clearable={false}
 							/>
-						</div>
-
-						<div className="grid gap-2">
-							<Label>別名義</Label>
-							<SearchableSelect
-								value={creditForm.artistAliasId || ""}
-								onChange={(value) => handleAliasChange(value || null)}
-								options={
-									aliasesData?.data.map((alias) => ({
-										value: alias.id,
-										label: alias.name,
-									})) ?? []
-								}
-								placeholder="別名義を選択（任意）"
-								searchPlaceholder="別名義を検索..."
-								emptyMessage={
-									creditForm.artistId
-										? "別名義が見つかりません"
-										: "先にアーティストを選択してください"
-								}
-								clearable={true}
-								disabled={!creditForm.artistId}
-							/>
+							{creditForm.artistId && (
+								<p className="text-base-content/60 text-xs">
+									アーティスト:{" "}
+									{artistsData?.data.find((a) => a.id === creditForm.artistId)
+										?.name ?? "-"}{" "}
+									/ 名義:{" "}
+									{creditForm.artistAliasId
+										? (allAliasesData?.data.find(
+												(a) => a.id === creditForm.artistAliasId,
+											)?.name ?? "-")
+										: (artistsData?.data.find(
+												(a) => a.id === creditForm.artistId,
+											)?.name ?? "-")}
+								</p>
+							)}
 						</div>
 
 						<div className="grid gap-2">
@@ -1757,7 +1765,7 @@ function ReleaseDetailPage() {
 								placeholder="盤面に表示される名前"
 							/>
 							<p className="text-base-content/60 text-xs">
-								アーティスト名または別名義名が自動入力されます。必要に応じて編集してください。
+								アーティスト名義から自動入力されます。必要に応じて編集してください。
 							</p>
 						</div>
 

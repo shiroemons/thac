@@ -104,13 +104,9 @@ function TrackDetailPage() {
 		staleTime: 60_000,
 	});
 
-	const { data: aliasesData } = useQuery({
-		queryKey: ["artist-aliases", creditForm.artistId],
-		queryFn: () =>
-			creditForm.artistId
-				? artistAliasesApi.listByArtist(creditForm.artistId)
-				: Promise.resolve([]),
-		enabled: !!creditForm.artistId,
+	const { data: allAliasesData } = useQuery({
+		queryKey: ["artist-aliases-all", { limit: 500 }],
+		queryFn: () => artistAliasesApi.list({ limit: 500 }),
 		staleTime: 60_000,
 	});
 
@@ -119,6 +115,31 @@ function TrackDetailPage() {
 		queryFn: () => creditRolesApi.list(),
 		staleTime: 60_000,
 	});
+
+	// アーティスト名義のオプションを構築（別名義のみ）
+	const creditNameOptions = (() => {
+		const options: Array<{
+			value: string;
+			label: string;
+			artistId: string;
+			artistAliasId: string;
+			creditName: string;
+		}> = [];
+
+		// 別名義のみを追加
+		for (const alias of allAliasesData?.data ?? []) {
+			options.push({
+				value: alias.id,
+				label: alias.name,
+				artistId: alias.artistId,
+				artistAliasId: alias.id,
+				creditName: alias.name,
+			});
+		}
+
+		// 名前でソート
+		return options.sort((a, b) => a.label.localeCompare(b.label, "ja"));
+	})();
 
 	// 編集開始
 	const startEditing = () => {
@@ -224,26 +245,30 @@ function TrackDetailPage() {
 		});
 	};
 
-	// アーティスト選択時
-	const handleArtistChange = (artistId: string) => {
-		const artist = artistsData?.data.find((a) => a.id === artistId);
-		setCreditForm({
-			...creditForm,
-			artistId,
-			artistAliasId: "",
-			creditName: artist?.name ?? "",
-		});
+	// アーティスト名義選択時
+	const handleCreditNameOptionChange = (optionValue: string) => {
+		const option = creditNameOptions.find((o) => o.value === optionValue);
+		if (option) {
+			setCreditForm({
+				...creditForm,
+				artistId: option.artistId,
+				artistAliasId: option.artistAliasId,
+				creditName: option.creditName,
+			});
+		} else {
+			// クリア時
+			setCreditForm({
+				...creditForm,
+				artistId: "",
+				artistAliasId: "",
+				creditName: "",
+			});
+		}
 	};
 
-	// 別名義選択時
-	const handleAliasChange = (aliasId: string) => {
-		const alias = aliasesData?.find((a) => a.id === aliasId);
-		const artist = artistsData?.data.find((a) => a.id === creditForm.artistId);
-		setCreditForm({
-			...creditForm,
-			artistAliasId: aliasId,
-			creditName: alias?.name ?? artist?.name ?? creditForm.creditName,
-		});
+	// 現在の選択値を取得（artistAliasIdをそのまま使用）
+	const getCurrentCreditNameOptionValue = () => {
+		return creditForm.artistAliasId || "";
 	};
 
 	// 役割トグル
@@ -541,7 +566,7 @@ function TrackDetailPage() {
 								<TableRow className="hover:bg-transparent">
 									<TableHead className="w-[60px]">順序</TableHead>
 									<TableHead>アーティスト</TableHead>
-									<TableHead>別名義</TableHead>
+									<TableHead>名義</TableHead>
 									<TableHead>盤面表記</TableHead>
 									<TableHead>役割</TableHead>
 									<TableHead className="w-[100px]" />
@@ -643,45 +668,35 @@ function TrackDetailPage() {
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
 							<Label>
-								アーティスト <span className="text-error">*</span>
+								アーティスト名義 <span className="text-error">*</span>
 							</Label>
 							<SearchableSelect
-								value={creditForm.artistId}
-								onChange={handleArtistChange}
-								options={
-									artistsData?.data.map((artist) => ({
-										value: artist.id,
-										label: artist.name,
-									})) ?? []
-								}
-								placeholder="アーティストを選択"
-								searchPlaceholder="アーティストを検索..."
-								emptyMessage="アーティストが見つかりません"
+								value={getCurrentCreditNameOptionValue()}
+								onChange={handleCreditNameOptionChange}
+								options={creditNameOptions.map((opt) => ({
+									value: opt.value,
+									label: opt.label,
+								}))}
+								placeholder="アーティスト名義を選択"
+								searchPlaceholder="アーティスト名義を検索..."
+								emptyMessage="アーティスト名義が見つかりません"
 								clearable={true}
 							/>
-						</div>
-
-						<div className="grid gap-2">
-							<Label>別名義</Label>
-							<SearchableSelect
-								value={creditForm.artistAliasId}
-								onChange={handleAliasChange}
-								options={
-									aliasesData?.map((alias) => ({
-										value: alias.id,
-										label: alias.name,
-									})) ?? []
-								}
-								placeholder="別名義を選択（任意）"
-								searchPlaceholder="別名義を検索..."
-								emptyMessage={
-									creditForm.artistId
-										? "別名義が見つかりません"
-										: "先にアーティストを選択してください"
-								}
-								clearable={true}
-								disabled={!creditForm.artistId}
-							/>
+							{creditForm.artistId && (
+								<p className="text-base-content/60 text-xs">
+									アーティスト:{" "}
+									{artistsData?.data.find((a) => a.id === creditForm.artistId)
+										?.name ?? "-"}{" "}
+									/ 名義:{" "}
+									{creditForm.artistAliasId
+										? (allAliasesData?.data.find(
+												(a) => a.id === creditForm.artistAliasId,
+											)?.name ?? "-")
+										: (artistsData?.data.find(
+												(a) => a.id === creditForm.artistId,
+											)?.name ?? "-")}
+								</p>
+							)}
 						</div>
 
 						<div className="grid gap-2">
@@ -755,45 +770,35 @@ function TrackDetailPage() {
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
 							<Label>
-								アーティスト <span className="text-error">*</span>
+								アーティスト名義 <span className="text-error">*</span>
 							</Label>
 							<SearchableSelect
-								value={creditForm.artistId}
-								onChange={handleArtistChange}
-								options={
-									artistsData?.data.map((artist) => ({
-										value: artist.id,
-										label: artist.name,
-									})) ?? []
-								}
-								placeholder="アーティストを選択"
-								searchPlaceholder="アーティストを検索..."
-								emptyMessage="アーティストが見つかりません"
+								value={getCurrentCreditNameOptionValue()}
+								onChange={handleCreditNameOptionChange}
+								options={creditNameOptions.map((opt) => ({
+									value: opt.value,
+									label: opt.label,
+								}))}
+								placeholder="アーティスト名義を選択"
+								searchPlaceholder="アーティスト名義を検索..."
+								emptyMessage="アーティスト名義が見つかりません"
 								clearable={true}
 							/>
-						</div>
-
-						<div className="grid gap-2">
-							<Label>別名義</Label>
-							<SearchableSelect
-								value={creditForm.artistAliasId}
-								onChange={handleAliasChange}
-								options={
-									aliasesData?.map((alias) => ({
-										value: alias.id,
-										label: alias.name,
-									})) ?? []
-								}
-								placeholder="別名義を選択（任意）"
-								searchPlaceholder="別名義を検索..."
-								emptyMessage={
-									creditForm.artistId
-										? "別名義が見つかりません"
-										: "先にアーティストを選択してください"
-								}
-								clearable={true}
-								disabled={!creditForm.artistId}
-							/>
+							{creditForm.artistId && (
+								<p className="text-base-content/60 text-xs">
+									アーティスト:{" "}
+									{artistsData?.data.find((a) => a.id === creditForm.artistId)
+										?.name ?? "-"}{" "}
+									/ 名義:{" "}
+									{creditForm.artistAliasId
+										? (allAliasesData?.data.find(
+												(a) => a.id === creditForm.artistAliasId,
+											)?.name ?? "-")
+										: (artistsData?.data.find(
+												(a) => a.id === creditForm.artistId,
+											)?.name ?? "-")}
+								</p>
+							)}
 						</div>
 
 						<div className="grid gap-2">
