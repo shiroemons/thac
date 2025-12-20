@@ -1017,6 +1017,12 @@ export interface TrackWithCreditCount extends Track {
 	creditCount: number;
 }
 
+export interface TrackDetail extends Track {
+	release: Release | null;
+	disc: Disc | null;
+	credits: TrackCredit[];
+}
+
 export interface TrackCreditRole {
 	trackCreditId: string;
 	roleCode: string;
@@ -1041,6 +1047,8 @@ export interface TrackCredit {
 
 // Tracks
 export const tracksApi = {
+	get: (trackId: string) =>
+		fetchWithAuth<TrackDetail>(`/api/admin/tracks/${trackId}`),
 	list: (releaseId: string) =>
 		fetchWithAuth<TrackWithCreditCount[]>(
 			`/api/admin/releases/${releaseId}/tracks`,

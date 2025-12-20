@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { ExternalLink, Eye, Pencil, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -465,12 +465,20 @@ function TracksPage() {
 											<TableCell>
 												<div className="flex items-center gap-1">
 													<Link
+														to="/admin/tracks/$id"
+														params={{ id: track.id }}
+														className="btn btn-ghost btn-xs"
+													>
+														<Eye className="h-4 w-4" />
+														<span className="sr-only">トラック詳細</span>
+													</Link>
+													<Link
 														to="/admin/releases/$id"
 														params={{ id: track.releaseId }}
 														className="btn btn-ghost btn-xs"
 													>
 														<ExternalLink className="h-4 w-4" />
-														<span className="sr-only">詳細</span>
+														<span className="sr-only">作品詳細</span>
 													</Link>
 													<Button
 														variant="ghost"
