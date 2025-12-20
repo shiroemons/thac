@@ -1,17 +1,22 @@
-import { nanoid } from "nanoid";
+import { customAlphabet } from "nanoid";
 
+// 英数字のみ（ダブルクリックで全選択可能）
+const ALPHABET =
+	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 const ID_LENGTH = 21;
 
+const nanoid = customAlphabet(ALPHABET, ID_LENGTH);
+
 export const createId = {
-	artist: () => `a_${nanoid(ID_LENGTH)}`,
-	artistAlias: () => `aa_${nanoid(ID_LENGTH)}`,
-	circle: () => `c_${nanoid(ID_LENGTH)}`,
-	circleLink: () => `cl_${nanoid(ID_LENGTH)}`,
-	track: () => `t_${nanoid(ID_LENGTH)}`,
-	trackCredit: () => `tc_${nanoid(ID_LENGTH)}`,
-	release: () => `r_${nanoid(ID_LENGTH)}`,
-	disc: () => `d_${nanoid(ID_LENGTH)}`,
-	eventSeries: () => `es_${nanoid(ID_LENGTH)}`,
-	event: () => `e_${nanoid(ID_LENGTH)}`,
-	eventDay: () => `ed_${nanoid(ID_LENGTH)}`,
+	artist: () => `ar_${nanoid()}`,
+	artistAlias: () => `aa_${nanoid()}`,
+	circle: () => `ci_${nanoid()}`,
+	circleLink: () => `cl_${nanoid()}`,
+	track: () => `tr_${nanoid()}`,
+	trackCredit: () => `tc_${nanoid()}`,
+	release: () => `re_${nanoid()}`,
+	disc: () => `di_${nanoid()}`,
+	eventSeries: () => `es_${nanoid()}`,
+	event: () => `ev_${nanoid()}`,
+	eventDay: () => `ed_${nanoid()}`,
 } as const;

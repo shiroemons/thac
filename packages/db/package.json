@@ -7,6 +7,9 @@
 		},
 		"./*": {
 			"default": "./src/*.ts"
+		},
+		"./utils/*": {
+			"default": "./src/utils/*.ts"
 		}
 	},
 	"scripts": {
@@ -30,6 +33,7 @@
 		"drizzle-orm": "^0.45.1",
 		"drizzle-zod": "^0.8.3",
 		"libsql": "catalog:",
+		"nanoid": "catalog:",
 		"zod": "catalog:"
 	}
 }
