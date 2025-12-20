@@ -7,6 +7,7 @@ import {
 	insertReleaseSchema,
 	like,
 	releases,
+	tracks,
 	updateReleaseSchema,
 } from "@thac/db";
 import { Hono } from "hono";
@@ -61,33 +62,47 @@ releasesRouter.get("/", async (c) => {
 		db.select({ count: count() }).from(releases).where(whereCondition),
 	]);
 
-	// ディスク数を取得
+	// ディスク数・トラック数を取得
 	const releaseIds = data.map((r) => r.id);
 	let discCounts: Record<string, number> = {};
+	let trackCounts: Record<string, number> = {};
 
 	if (releaseIds.length > 0) {
-		const discCountResults = await db
-			.select({
-				releaseId: discs.releaseId,
-				count: count(),
-			})
-			.from(discs)
-			.groupBy(discs.releaseId);
+		const [discCountResults, trackCountResults] = await Promise.all([
+			db
+				.select({
+					releaseId: discs.releaseId,
+					count: count(),
+				})
+				.from(discs)
+				.groupBy(discs.releaseId),
+			db
+				.select({
+					releaseId: tracks.releaseId,
+					count: count(),
+				})
+				.from(tracks)
+				.groupBy(tracks.releaseId),
+		]);
 
 		discCounts = Object.fromEntries(
 			discCountResults.map((r) => [r.releaseId, r.count]),
 		);
+		trackCounts = Object.fromEntries(
+			trackCountResults.map((r) => [r.releaseId, r.count]),
+		);
 	}
 
-	const dataWithDiscCount = data.map((release) => ({
+	const dataWithCounts = data.map((release) => ({
 		...release,
 		discCount: discCounts[release.id] ?? 0,
+		trackCount: trackCounts[release.id] ?? 0,
 	}));
 
 	const total = totalResult[0]?.count ?? 0;
 
 	return c.json({
-		data: dataWithDiscCount,
+		data: dataWithCounts,
 		total,
 		page,
 		limit,

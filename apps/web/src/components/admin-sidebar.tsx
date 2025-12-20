@@ -120,6 +120,11 @@ const navItems: NavEntry[] = [
 				label: "作品",
 				icon: Disc3,
 			},
+			{
+				to: "/admin/tracks",
+				label: "トラック",
+				icon: Music,
+			},
 		],
 	},
 ];

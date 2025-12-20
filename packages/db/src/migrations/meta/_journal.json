@@ -50,6 +50,20 @@
 			"when": 1766065517563,
 			"tag": "0006_stormy_blonde_phantom",
 			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "6",
+			"when": 1766217042142,
+			"tag": "0007_messy_lightspeed",
+			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "6",
+			"when": 1766217216055,
+			"tag": "0008_clean_black_queen",
+			"breakpoints": true
 		}
 	]
 }

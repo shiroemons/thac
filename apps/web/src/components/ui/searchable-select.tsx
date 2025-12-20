@@ -16,6 +16,7 @@ interface SearchableSelectProps {
 	searchPlaceholder?: string;
 	emptyMessage?: string;
 	clearable?: boolean;
+	disabled?: boolean;
 	className?: string;
 }
 
@@ -28,6 +29,7 @@ export function SearchableSelect({
 	searchPlaceholder = "検索...",
 	emptyMessage = "該当なし",
 	clearable = true,
+	disabled = false,
 	className,
 }: SearchableSelectProps) {
 	const [isOpen, setIsOpen] = useState(false);
@@ -89,10 +91,12 @@ export function SearchableSelect({
 			<button
 				type="button"
 				id={id}
-				onClick={() => setIsOpen(!isOpen)}
+				onClick={() => !disabled && setIsOpen(!isOpen)}
+				disabled={disabled}
 				className={cn(
 					"select select-bordered w-full text-left",
 					!selectedLabel && "text-base-content/50",
+					disabled && "cursor-not-allowed opacity-50",
 				)}
 			>
 				<span className="truncate pr-6">{selectedLabel || placeholder}</span>

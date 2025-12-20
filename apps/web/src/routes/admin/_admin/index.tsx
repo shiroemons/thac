@@ -128,6 +128,12 @@ function AdminDashboard() {
 			icon: <Disc3 className="h-8 w-8" />,
 			href: "/admin/releases" as const,
 		},
+		{
+			title: "トラック",
+			value: data?.tracks,
+			icon: <Music className="h-8 w-8" />,
+			href: "/admin/tracks" as const,
+		},
 	];
 
 	const masterStats = [

@@ -13,6 +13,7 @@ import {
 	officialWorks,
 	platforms,
 	releases,
+	tracks,
 	user,
 } from "@thac/db";
 import { Hono } from "hono";
@@ -36,6 +37,7 @@ statsRouter.get("/", async (c) => {
 		eventsResult,
 		eventSeriesResult,
 		releasesResult,
+		tracksResult,
 	] = await Promise.all([
 		db.select({ count: count() }).from(user),
 		db.select({ count: count() }).from(platforms),
@@ -50,6 +52,7 @@ statsRouter.get("/", async (c) => {
 		db.select({ count: count() }).from(events),
 		db.select({ count: count() }).from(eventSeries),
 		db.select({ count: count() }).from(releases),
+		db.select({ count: count() }).from(tracks),
 	]);
 
 	return c.json({
@@ -66,6 +69,7 @@ statsRouter.get("/", async (c) => {
 		events: eventsResult[0]?.count ?? 0,
 		eventSeries: eventSeriesResult[0]?.count ?? 0,
 		releases: releasesResult[0]?.count ?? 0,
+		tracks: tracksResult[0]?.count ?? 0,
 	});
 });
 

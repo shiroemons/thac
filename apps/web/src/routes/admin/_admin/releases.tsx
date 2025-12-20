@@ -39,7 +39,6 @@ import {
 	RELEASE_TYPE_LABELS,
 	type Release,
 	type ReleaseType,
-	type ReleaseWithDiscCount,
 	type ReleaseWithDiscs,
 	releasesApi,
 } from "@/lib/api-client";
@@ -56,6 +55,7 @@ const COLUMN_CONFIGS = [
 	{ key: "releaseType", label: "タイプ" },
 	{ key: "releaseDate", label: "発売日" },
 	{ key: "discCount", label: "ディスク数" },
+	{ key: "trackCount", label: "トラック数" },
 	{ key: "createdAt", label: "作成日時", defaultVisible: false },
 	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
 ] as const;
@@ -374,6 +374,9 @@ function ReleasesPage() {
 									{isVisible("discCount") && (
 										<TableHead className="w-[100px]">ディスク数</TableHead>
 									)}
+									{isVisible("trackCount") && (
+										<TableHead className="w-[100px]">トラック数</TableHead>
+									)}
 									{isVisible("createdAt") && (
 										<TableHead className="w-[160px]">作成日時</TableHead>
 									)}
@@ -438,6 +441,11 @@ function ReleasesPage() {
 											{isVisible("discCount") && (
 												<TableCell className="text-base-content/70">
 													{release.discCount}
+												</TableCell>
+											)}
+											{isVisible("trackCount") && (
+												<TableCell className="text-base-content/70">
+													{release.trackCount}
 												</TableCell>
 											)}
 											{isVisible("createdAt") && (

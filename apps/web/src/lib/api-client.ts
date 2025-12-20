@@ -75,6 +75,7 @@ export interface DashboardStats {
 	events: number;
 	eventSeries: number;
 	releases: number;
+	tracks: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -823,8 +824,9 @@ export interface Release {
 	updatedAt: string;
 }
 
-export interface ReleaseWithDiscCount extends Release {
+export interface ReleaseWithCounts extends Release {
 	discCount: number;
+	trackCount: number;
 }
 
 export interface Disc {
@@ -855,7 +857,7 @@ export const releasesApi = {
 			searchParams.set("releaseType", params.releaseType);
 		if (params?.search) searchParams.set("search", params.search);
 		const query = searchParams.toString();
-		return fetchWithAuth<PaginatedResponse<ReleaseWithDiscCount>>(
+		return fetchWithAuth<PaginatedResponse<ReleaseWithCounts>>(
 			`/api/admin/releases${query ? `?${query}` : ""}`,
 		);
 	},
@@ -992,6 +994,179 @@ export const releaseCirclesApi = {
 	) =>
 		fetchWithAuth<{ success: boolean }>(
 			`/api/admin/releases/${releaseId}/circles/${circleId}?participationType=${encodeURIComponent(participationType)}`,
+			{
+				method: "DELETE",
+			},
+		),
+};
+
+// ===== トラック管理 =====
+
+export interface Track {
+	id: string;
+	releaseId: string;
+	discId: string | null;
+	trackNumber: number;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface TrackWithCreditCount extends Track {
+	creditCount: number;
+}
+
+export interface TrackDetail extends Track {
+	release: Release | null;
+	disc: Disc | null;
+	credits: TrackCredit[];
+}
+
+export interface TrackCreditRole {
+	trackCreditId: string;
+	roleCode: string;
+	rolePosition: number;
+	role: CreditRole | null;
+}
+
+export interface TrackCredit {
+	id: string;
+	trackId: string;
+	artistId: string;
+	creditName: string;
+	aliasTypeCode: string | null;
+	creditPosition: number | null;
+	artistAliasId: string | null;
+	createdAt: string;
+	updatedAt: string;
+	artist: Artist | null;
+	artistAlias: ArtistAlias | null;
+	roles: TrackCreditRole[];
+}
+
+// Tracks
+export const tracksApi = {
+	get: (trackId: string) =>
+		fetchWithAuth<TrackDetail>(`/api/admin/tracks/${trackId}`),
+	list: (releaseId: string) =>
+		fetchWithAuth<TrackWithCreditCount[]>(
+			`/api/admin/releases/${releaseId}/tracks`,
+		),
+	create: (
+		releaseId: string,
+		data: Omit<Track, "releaseId" | "createdAt" | "updatedAt">,
+	) =>
+		fetchWithAuth<Track>(`/api/admin/releases/${releaseId}/tracks`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		releaseId: string,
+		trackId: string,
+		data: Partial<Omit<Track, "id" | "releaseId" | "createdAt" | "updatedAt">>,
+	) =>
+		fetchWithAuth<Track>(`/api/admin/releases/${releaseId}/tracks/${trackId}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (releaseId: string, trackId: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/releases/${releaseId}/tracks/${trackId}`,
+			{
+				method: "DELETE",
+			},
+		),
+	reorder: (releaseId: string, trackId: string, direction: "up" | "down") =>
+		fetchWithAuth<Track[]>(
+			`/api/admin/releases/${releaseId}/tracks/${trackId}/reorder`,
+			{
+				method: "PATCH",
+				body: JSON.stringify({ direction }),
+			},
+		),
+};
+
+// Track Credits
+export const trackCreditsApi = {
+	list: (releaseId: string, trackId: string) =>
+		fetchWithAuth<TrackCredit[]>(
+			`/api/admin/releases/${releaseId}/tracks/${trackId}/credits`,
+		),
+	create: (
+		releaseId: string,
+		trackId: string,
+		data: {
+			id: string;
+			artistId: string;
+			creditName: string;
+			aliasTypeCode?: string | null;
+			creditPosition?: number | null;
+			artistAliasId?: string | null;
+			rolesCodes?: string[];
+		},
+	) =>
+		fetchWithAuth<TrackCredit>(
+			`/api/admin/releases/${releaseId}/tracks/${trackId}/credits`,
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		),
+	update: (
+		releaseId: string,
+		trackId: string,
+		creditId: string,
+		data: {
+			artistId?: string;
+			creditName?: string;
+			aliasTypeCode?: string | null;
+			creditPosition?: number | null;
+			artistAliasId?: string | null;
+			rolesCodes?: string[];
+		},
+	) =>
+		fetchWithAuth<TrackCredit>(
+			`/api/admin/releases/${releaseId}/tracks/${trackId}/credits/${creditId}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(data),
+			},
+		),
+	delete: (releaseId: string, trackId: string, creditId: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/releases/${releaseId}/tracks/${trackId}/credits/${creditId}`,
+			{
+				method: "DELETE",
+			},
+		),
+};
+
+// Track Credit Roles
+export const trackCreditRolesApi = {
+	add: (
+		releaseId: string,
+		trackId: string,
+		creditId: string,
+		data: { roleCode: string; rolePosition?: number },
+	) =>
+		fetchWithAuth<TrackCreditRole>(
+			`/api/admin/releases/${releaseId}/tracks/${trackId}/credits/${creditId}/roles`,
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		),
+	remove: (
+		releaseId: string,
+		trackId: string,
+		creditId: string,
+		roleCode: string,
+		rolePosition: number,
+	) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/releases/${releaseId}/tracks/${trackId}/credits/${creditId}/roles/${roleCode}/${rolePosition}`,
 			{
 				method: "DELETE",
 			},

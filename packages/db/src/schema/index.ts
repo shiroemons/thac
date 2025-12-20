@@ -9,3 +9,5 @@ export * from "./official";
 export * from "./official.validation";
 export * from "./release";
 export * from "./release.validation";
+export * from "./track";
+export * from "./track.validation";

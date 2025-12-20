@@ -11,6 +11,7 @@ import { masterRouter } from "./master";
 import { officialRouter } from "./official";
 import { releasesAdminRouter } from "./releases";
 import { statsRouter } from "./stats";
+import { tracksAdminRouter } from "./tracks";
 
 const adminRouter = new Hono<AdminContext>();
 
@@ -43,5 +44,8 @@ adminRouter.route("/events", eventsAdminRouter);
 
 // リリース管理ルート
 adminRouter.route("/releases", releasesAdminRouter);
+
+// トラック管理ルート
+adminRouter.route("/tracks", tracksAdminRouter);
 
 export { adminRouter };

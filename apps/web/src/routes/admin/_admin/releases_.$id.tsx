@@ -7,6 +7,7 @@ import {
 	ChevronDown,
 	ChevronUp,
 	Disc3,
+	Music,
 	Pencil,
 	Plus,
 	Trash2,
@@ -29,7 +30,10 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+	artistAliasesApi,
+	artistsApi,
 	circlesApi,
+	creditRolesApi,
 	type Disc,
 	discsApi,
 	PARTICIPATION_TYPE_COLORS,
@@ -42,11 +46,39 @@ import {
 	type ReleaseType,
 	releaseCirclesApi,
 	releasesApi,
+	type Track,
+	type TrackCredit,
+	type TrackWithCreditCount,
+	trackCreditRolesApi,
+	trackCreditsApi,
+	tracksApi,
 } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/_admin/releases_/$id")({
 	component: ReleaseDetailPage,
 });
+
+// 役割コードに基づいて色を決定するヘルパー
+const ROLE_COLORS = [
+	"primary",
+	"secondary",
+	"accent",
+	"info",
+	"success",
+	"warning",
+] as const;
+
+function getRoleBadgeVariant(
+	roleCode: string,
+): "primary" | "secondary" | "accent" | "info" | "success" | "warning" {
+	// 役割コードのハッシュ値から色を決定
+	let hash = 0;
+	for (let i = 0; i < roleCode.length; i++) {
+		hash = roleCode.charCodeAt(i) + ((hash << 5) - hash);
+	}
+	const index = Math.abs(hash) % ROLE_COLORS.length;
+	return ROLE_COLORS[index];
+}
 
 // 作品タイプのオプション
 const RELEASE_TYPE_OPTIONS = Object.entries(RELEASE_TYPE_LABELS).map(
@@ -79,6 +111,33 @@ function ReleaseDetailPage() {
 	const [selectedParticipationType, setSelectedParticipationType] =
 		useState<ParticipationType>("host");
 
+	// トラック編集用
+	const [isTrackDialogOpen, setIsTrackDialogOpen] = useState(false);
+	const [editingTrack, setEditingTrack] = useState<TrackWithCreditCount | null>(
+		null,
+	);
+	const [trackForm, setTrackForm] = useState<Partial<Track>>({});
+
+	// クレジット管理用
+	const [isCreditDialogOpen, setIsCreditDialogOpen] = useState(false);
+	const [selectedTrackForCredits, setSelectedTrackForCredits] =
+		useState<TrackWithCreditCount | null>(null);
+	const [editingCredit, setEditingCredit] = useState<TrackCredit | null>(null);
+	const [isCreditEditDialogOpen, setIsCreditEditDialogOpen] = useState(false);
+	const [creditForm, setCreditForm] = useState<{
+		artistId: string;
+		artistAliasId: string | null;
+		creditName: string;
+		creditPosition: number | null;
+		selectedRoles: string[];
+	}>({
+		artistId: "",
+		artistAliasId: null,
+		creditName: "",
+		creditPosition: null,
+		selectedRoles: [],
+	});
+
 	// 作品データ取得
 	const {
 		data: release,
@@ -106,9 +165,84 @@ function ReleaseDetailPage() {
 		enabled: isCircleDialogOpen,
 	});
 
+	// トラック一覧取得
+	const { data: tracks = [] } = useQuery({
+		queryKey: ["releases", id, "tracks"],
+		queryFn: () => tracksApi.list(id),
+		staleTime: 30_000,
+		enabled: !!release,
+	});
+
+	// クレジット一覧取得（選択されたトラックに対して）
+	const { data: credits = [], refetch: refetchCredits } = useQuery({
+		queryKey: [
+			"releases",
+			id,
+			"tracks",
+			selectedTrackForCredits?.id,
+			"credits",
+		],
+		queryFn: () =>
+			selectedTrackForCredits
+				? trackCreditsApi.list(id, selectedTrackForCredits.id)
+				: Promise.resolve([]),
+		staleTime: 30_000,
+		enabled: !!selectedTrackForCredits,
+	});
+
+	// アーティスト一覧取得（クレジット編集ダイアログ用）
+	const { data: artistsData } = useQuery({
+		queryKey: ["artists", { limit: 200 }],
+		queryFn: () => artistsApi.list({ limit: 200 }),
+		staleTime: 60_000,
+		enabled: isCreditEditDialogOpen,
+	});
+
+	// 全アーティスト別名義一覧取得
+	const { data: allAliasesData } = useQuery({
+		queryKey: ["artist-aliases-all", { limit: 500 }],
+		queryFn: () => artistAliasesApi.list({ limit: 500 }),
+		staleTime: 60_000,
+		enabled: isCreditEditDialogOpen,
+	});
+
+	// 役割マスター取得
+	const { data: creditRolesData } = useQuery({
+		queryKey: ["credit-roles"],
+		queryFn: () => creditRolesApi.list(),
+		staleTime: 300_000,
+		enabled: isCreditEditDialogOpen,
+	});
+
+	// アーティスト名義のオプションを構築（別名義のみ）
+	const creditNameOptions = (() => {
+		const options: Array<{
+			value: string;
+			label: string;
+			artistId: string;
+			artistAliasId: string;
+			creditName: string;
+		}> = [];
+
+		// 別名義のみを追加
+		for (const alias of allAliasesData?.data ?? []) {
+			options.push({
+				value: alias.id,
+				label: alias.name,
+				artistId: alias.artistId,
+				artistAliasId: alias.id,
+				creditName: alias.name,
+			});
+		}
+
+		// 名前でソート
+		return options.sort((a, b) => a.label.localeCompare(b.label, "ja"));
+	})();
+
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["releases", id] });
 		queryClient.invalidateQueries({ queryKey: ["releases", id, "circles"] });
+		queryClient.invalidateQueries({ queryKey: ["releases", id, "tracks"] });
 	};
 
 	// 編集開始
@@ -307,6 +441,283 @@ function ReleaseDetailPage() {
 			invalidateQuery();
 		} catch (err) {
 			alert(err instanceof Error ? err.message : "順序変更に失敗しました");
+		}
+	};
+
+	// トラック関連
+	const openTrackDialog = (track?: TrackWithCreditCount) => {
+		if (track) {
+			setEditingTrack(track);
+			setTrackForm({
+				trackNumber: track.trackNumber,
+				name: track.name,
+				nameJa: track.nameJa,
+				nameEn: track.nameEn,
+				discId: track.discId,
+			});
+		} else {
+			setEditingTrack(null);
+			// 次のトラック番号を自動設定（ディスクなしトラックの最大値+1）
+			const tracksWithoutDisc = tracks.filter((t) => !t.discId);
+			const nextTrackNumber =
+				tracksWithoutDisc.length > 0
+					? Math.max(...tracksWithoutDisc.map((t) => t.trackNumber)) + 1
+					: 1;
+			setTrackForm({
+				trackNumber: nextTrackNumber,
+				name: "",
+				nameJa: null,
+				nameEn: null,
+				discId: null,
+			});
+		}
+		setIsTrackDialogOpen(true);
+	};
+
+	const handleTrackSubmit = async () => {
+		setIsSubmitting(true);
+		setMutationError(null);
+		try {
+			if (editingTrack) {
+				await tracksApi.update(id, editingTrack.id, {
+					trackNumber: trackForm.trackNumber,
+					name: trackForm.name,
+					nameJa: trackForm.nameJa || null,
+					nameEn: trackForm.nameEn || null,
+					discId: trackForm.discId || null,
+				});
+			} else {
+				await tracksApi.create(id, {
+					id: nanoid(),
+					trackNumber: trackForm.trackNumber ?? 1,
+					name: trackForm.name ?? "",
+					nameJa: trackForm.nameJa || null,
+					nameEn: trackForm.nameEn || null,
+					discId: trackForm.discId || null,
+				});
+			}
+			invalidateQuery();
+			setIsTrackDialogOpen(false);
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "保存に失敗しました",
+			);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const handleTrackDelete = async (track: TrackWithCreditCount) => {
+		if (
+			!confirm(
+				`トラック "${track.name}" を削除しますか？関連するクレジット情報も削除されます。`,
+			)
+		) {
+			return;
+		}
+		try {
+			await tracksApi.delete(id, track.id);
+			invalidateQuery();
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "削除に失敗しました");
+		}
+	};
+
+	const handleTrackMoveUp = async (
+		track: TrackWithCreditCount,
+		index: number,
+		_scopeTracks: TrackWithCreditCount[],
+	) => {
+		if (index === 0) return;
+		try {
+			await tracksApi.reorder(id, track.id, "up");
+			invalidateQuery();
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "順序変更に失敗しました");
+		}
+	};
+
+	const handleTrackMoveDown = async (
+		track: TrackWithCreditCount,
+		index: number,
+		scopeTracks: TrackWithCreditCount[],
+	) => {
+		if (index === scopeTracks.length - 1) return;
+		try {
+			await tracksApi.reorder(id, track.id, "down");
+			invalidateQuery();
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "順序変更に失敗しました");
+		}
+	};
+
+	// クレジット関連
+	const openCreditDialog = (track: TrackWithCreditCount) => {
+		setSelectedTrackForCredits(track);
+		setIsCreditDialogOpen(true);
+	};
+
+	const closeCreditDialog = () => {
+		setIsCreditDialogOpen(false);
+		setSelectedTrackForCredits(null);
+	};
+
+	const openCreditEditDialog = (credit?: TrackCredit) => {
+		if (credit) {
+			setEditingCredit(credit);
+			setCreditForm({
+				artistId: credit.artistId,
+				artistAliasId: credit.artistAliasId,
+				creditName: credit.creditName,
+				creditPosition: credit.creditPosition,
+				selectedRoles: credit.roles.map((r) => r.roleCode),
+			});
+		} else {
+			setEditingCredit(null);
+			// 次のポジションを自動計算
+			const nextPosition =
+				credits.length > 0
+					? Math.max(...credits.map((c) => c.creditPosition ?? 0), 0) + 1
+					: 1;
+			setCreditForm({
+				artistId: "",
+				artistAliasId: null,
+				creditName: "",
+				creditPosition: nextPosition,
+				selectedRoles: [],
+			});
+		}
+		setIsCreditEditDialogOpen(true);
+	};
+
+	const closeCreditEditDialog = () => {
+		setIsCreditEditDialogOpen(false);
+		setEditingCredit(null);
+		setMutationError(null);
+	};
+
+	// アーティスト名義選択時
+	const handleCreditNameOptionChange = (optionValue: string) => {
+		const option = creditNameOptions.find((o) => o.value === optionValue);
+		if (option) {
+			setCreditForm({
+				...creditForm,
+				artistId: option.artistId,
+				artistAliasId: option.artistAliasId,
+				creditName: option.creditName,
+			});
+		} else {
+			// クリア時
+			setCreditForm({
+				...creditForm,
+				artistId: "",
+				artistAliasId: null,
+				creditName: "",
+			});
+		}
+	};
+
+	// 現在の選択値を取得（artistAliasIdをそのまま使用）
+	const getCurrentCreditNameOptionValue = () => {
+		return creditForm.artistAliasId || "";
+	};
+
+	// 役割のトグル
+	const handleRoleToggle = (roleCode: string) => {
+		setCreditForm((prev) => ({
+			...prev,
+			selectedRoles: prev.selectedRoles.includes(roleCode)
+				? prev.selectedRoles.filter((r) => r !== roleCode)
+				: [...prev.selectedRoles, roleCode],
+		}));
+	};
+
+	const handleCreditSubmit = async () => {
+		if (!selectedTrackForCredits) return;
+
+		setIsSubmitting(true);
+		setMutationError(null);
+		try {
+			let creditId: string;
+
+			if (editingCredit) {
+				// 更新
+				await trackCreditsApi.update(
+					id,
+					selectedTrackForCredits.id,
+					editingCredit.id,
+					{
+						artistId: creditForm.artistId,
+						creditName: creditForm.creditName,
+						artistAliasId: creditForm.artistAliasId,
+						creditPosition: creditForm.creditPosition,
+					},
+				);
+				creditId = editingCredit.id;
+
+				// 既存の役割を削除
+				for (const role of editingCredit.roles) {
+					await trackCreditRolesApi.remove(
+						id,
+						selectedTrackForCredits.id,
+						creditId,
+						role.roleCode,
+						role.rolePosition,
+					);
+				}
+			} else {
+				// 新規作成
+				creditId = nanoid();
+				await trackCreditsApi.create(id, selectedTrackForCredits.id, {
+					id: creditId,
+					artistId: creditForm.artistId,
+					creditName: creditForm.creditName,
+					artistAliasId: creditForm.artistAliasId,
+					creditPosition: creditForm.creditPosition,
+				});
+			}
+
+			// 役割を追加
+			for (let i = 0; i < creditForm.selectedRoles.length; i++) {
+				await trackCreditRolesApi.add(
+					id,
+					selectedTrackForCredits.id,
+					creditId,
+					{
+						roleCode: creditForm.selectedRoles[i],
+						rolePosition: i + 1,
+					},
+				);
+			}
+
+			await refetchCredits();
+			invalidateQuery();
+			closeCreditEditDialog();
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "保存に失敗しました",
+			);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const handleCreditDelete = async (credit: TrackCredit) => {
+		if (!selectedTrackForCredits) return;
+
+		if (
+			!confirm(
+				`クレジット "${credit.creditName}" を削除しますか？関連する役割情報も削除されます。`,
+			)
+		) {
+			return;
+		}
+		try {
+			await trackCreditsApi.delete(id, selectedTrackForCredits.id, credit.id);
+			await refetchCredits();
+			invalidateQuery();
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "削除に失敗しました");
 		}
 	};
 
@@ -677,6 +1088,263 @@ function ReleaseDetailPage() {
 				</div>
 			</div>
 
+			{/* トラック一覧カード */}
+			<div className="card bg-base-100 shadow-xl">
+				<div className="card-body">
+					<div className="flex items-center justify-between">
+						<h2 className="card-title">
+							<Music className="h-5 w-5" />
+							トラック一覧
+						</h2>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => openTrackDialog()}
+						>
+							<Plus className="mr-2 h-4 w-4" />
+							トラック追加
+						</Button>
+					</div>
+
+					{tracks.length === 0 ? (
+						<p className="text-base-content/60">トラックが登録されていません</p>
+					) : (
+						<div className="space-y-6">
+							{/* ディスクごとにグループ化 */}
+							{release?.discs
+								.sort((a, b) => a.discNumber - b.discNumber)
+								.map((disc) => {
+									const discTracks = tracks
+										.filter((t) => t.discId === disc.id)
+										.sort((a, b) => a.trackNumber - b.trackNumber);
+									if (discTracks.length === 0) return null;
+									return (
+										<div key={disc.id}>
+											<h3 className="mb-2 font-medium text-base-content/80">
+												Disc {disc.discNumber}
+												{disc.discName && ` - ${disc.discName}`}
+											</h3>
+											<div className="overflow-x-auto">
+												<table className="table">
+													<thead>
+														<tr>
+															<th className="w-[100px]">並び替え</th>
+															<th className="w-[60px]">No.</th>
+															<th>トラック名</th>
+															<th className="w-[100px]">クレジット数</th>
+															<th className="w-[70px]" />
+														</tr>
+													</thead>
+													<tbody>
+														{discTracks.map((track, index) => (
+															<tr key={track.id}>
+																<td className="w-[100px]">
+																	<div className="flex items-center gap-1">
+																		<Button
+																			variant="ghost"
+																			size="icon"
+																			onClick={() =>
+																				handleTrackMoveUp(
+																					track,
+																					index,
+																					discTracks,
+																				)
+																			}
+																			disabled={index === 0}
+																			title="上へ移動"
+																		>
+																			<ChevronUp className="h-4 w-4" />
+																		</Button>
+																		<Button
+																			variant="ghost"
+																			size="icon"
+																			onClick={() =>
+																				handleTrackMoveDown(
+																					track,
+																					index,
+																					discTracks,
+																				)
+																			}
+																			disabled={index === discTracks.length - 1}
+																			title="下へ移動"
+																		>
+																			<ChevronDown className="h-4 w-4" />
+																		</Button>
+																	</div>
+																</td>
+																<td>{track.trackNumber}</td>
+																<td>
+																	<div>
+																		<Link
+																			to="/admin/tracks/$id"
+																			params={{ id: track.id }}
+																			className="text-primary hover:underline"
+																		>
+																			{track.name}
+																		</Link>
+																		{track.nameJa && (
+																			<p className="text-base-content/60 text-sm">
+																				{track.nameJa}
+																			</p>
+																		)}
+																	</div>
+																</td>
+																<td>
+																	<Badge variant="ghost">
+																		{track.creditCount}件
+																	</Badge>
+																</td>
+																<td>
+																	<div className="flex items-center gap-1">
+																		<Button
+																			variant="ghost"
+																			size="icon"
+																			onClick={() => openTrackDialog(track)}
+																		>
+																			<Pencil className="h-4 w-4" />
+																			<span className="sr-only">編集</span>
+																		</Button>
+																		<Button
+																			variant="ghost"
+																			size="icon"
+																			className="text-error hover:text-error"
+																			onClick={() => handleTrackDelete(track)}
+																		>
+																			<Trash2 className="h-4 w-4" />
+																			<span className="sr-only">削除</span>
+																		</Button>
+																	</div>
+																</td>
+															</tr>
+														))}
+													</tbody>
+												</table>
+											</div>
+										</div>
+									);
+								})}
+
+							{/* ディスクなしトラック */}
+							{(() => {
+								const tracksWithoutDisc = tracks
+									.filter((t) => !t.discId)
+									.sort((a, b) => a.trackNumber - b.trackNumber);
+								if (tracksWithoutDisc.length === 0) return null;
+								return (
+									<div>
+										<h3 className="mb-2 font-medium text-base-content/80">
+											単曲
+										</h3>
+										<div className="overflow-x-auto">
+											<table className="table">
+												<thead>
+													<tr>
+														<th className="w-[100px]">並び替え</th>
+														<th className="w-[60px]">No.</th>
+														<th>トラック名</th>
+														<th className="w-[100px]">クレジット数</th>
+														<th className="w-[70px]" />
+													</tr>
+												</thead>
+												<tbody>
+													{tracksWithoutDisc.map((track, index) => (
+														<tr key={track.id}>
+															<td className="w-[100px]">
+																<div className="flex items-center gap-1">
+																	<Button
+																		variant="ghost"
+																		size="icon"
+																		onClick={() =>
+																			handleTrackMoveUp(
+																				track,
+																				index,
+																				tracksWithoutDisc,
+																			)
+																		}
+																		disabled={index === 0}
+																		title="上へ移動"
+																	>
+																		<ChevronUp className="h-4 w-4" />
+																	</Button>
+																	<Button
+																		variant="ghost"
+																		size="icon"
+																		onClick={() =>
+																			handleTrackMoveDown(
+																				track,
+																				index,
+																				tracksWithoutDisc,
+																			)
+																		}
+																		disabled={
+																			index === tracksWithoutDisc.length - 1
+																		}
+																		title="下へ移動"
+																	>
+																		<ChevronDown className="h-4 w-4" />
+																	</Button>
+																</div>
+															</td>
+															<td>{track.trackNumber}</td>
+															<td>
+																<div>
+																	<Link
+																		to="/admin/tracks/$id"
+																		params={{ id: track.id }}
+																		className="text-primary hover:underline"
+																	>
+																		{track.name}
+																	</Link>
+																	{track.nameJa && (
+																		<p className="text-base-content/60 text-sm">
+																			{track.nameJa}
+																		</p>
+																	)}
+																</div>
+															</td>
+															<td>
+																<button
+																	type="button"
+																	onClick={() => openCreditDialog(track)}
+																	className="badge badge-ghost hover:badge-primary cursor-pointer transition-colors"
+																>
+																	{track.creditCount}件
+																</button>
+															</td>
+															<td>
+																<div className="flex items-center gap-1">
+																	<Button
+																		variant="ghost"
+																		size="icon"
+																		onClick={() => openTrackDialog(track)}
+																	>
+																		<Pencil className="h-4 w-4" />
+																		<span className="sr-only">編集</span>
+																	</Button>
+																	<Button
+																		variant="ghost"
+																		size="icon"
+																		className="text-error hover:text-error"
+																		onClick={() => handleTrackDelete(track)}
+																	>
+																		<Trash2 className="h-4 w-4" />
+																		<span className="sr-only">削除</span>
+																	</Button>
+																</div>
+															</td>
+														</tr>
+													))}
+												</tbody>
+											</table>
+										</div>
+									</div>
+								);
+							})()}
+						</div>
+					)}
+				</div>
+			</div>
+
 			{/* ディスク編集ダイアログ */}
 			<Dialog open={isDiscDialogOpen} onOpenChange={setIsDiscDialogOpen}>
 				<DialogContent className="sm:max-w-[500px]">
@@ -803,6 +1471,388 @@ function ReleaseDetailPage() {
 							disabled={isSubmitting || !selectedCircleId}
 						>
 							{isSubmitting ? "追加中..." : "追加"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* トラック編集ダイアログ */}
+			<Dialog open={isTrackDialogOpen} onOpenChange={setIsTrackDialogOpen}>
+				<DialogContent className="sm:max-w-[500px]">
+					<DialogHeader>
+						<DialogTitle>
+							{editingTrack ? "トラックの編集" : "トラックの追加"}
+						</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{mutationError && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{mutationError}
+							</div>
+						)}
+						<div className="grid gap-2">
+							<Label>
+								トラック名 <span className="text-error">*</span>
+							</Label>
+							<Input
+								value={trackForm.name || ""}
+								onChange={(e) => {
+									const newName = e.target.value;
+									setTrackForm({
+										...trackForm,
+										name: newName,
+										// 日本語名が空または以前のトラック名と同じ場合は連動
+										nameJa:
+											!trackForm.nameJa || trackForm.nameJa === trackForm.name
+												? newName
+												: trackForm.nameJa,
+									});
+								}}
+								placeholder="トラック名を入力"
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label>日本語名</Label>
+							<Input
+								value={trackForm.nameJa || ""}
+								onChange={(e) =>
+									setTrackForm({ ...trackForm, nameJa: e.target.value })
+								}
+								placeholder="日本語名を入力"
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label>英語名</Label>
+							<Input
+								value={trackForm.nameEn || ""}
+								onChange={(e) =>
+									setTrackForm({ ...trackForm, nameEn: e.target.value })
+								}
+								placeholder="英語名を入力"
+							/>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label>
+									トラック番号 <span className="text-error">*</span>
+								</Label>
+								<Input
+									type="number"
+									min={1}
+									value={trackForm.trackNumber ?? ""}
+									onChange={(e) =>
+										setTrackForm({
+											...trackForm,
+											trackNumber: Number(e.target.value),
+										})
+									}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label>ディスク</Label>
+								<Select
+									value={trackForm.discId || ""}
+									onChange={(e) =>
+										setTrackForm({
+											...trackForm,
+											discId: e.target.value || null,
+										})
+									}
+								>
+									<option value="">なし（単曲）</option>
+									{release?.discs
+										.sort((a, b) => a.discNumber - b.discNumber)
+										.map((disc) => (
+											<option key={disc.id} value={disc.id}>
+												Disc {disc.discNumber}
+												{disc.discName && ` - ${disc.discName}`}
+											</option>
+										))}
+								</Select>
+							</div>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							variant="ghost"
+							onClick={() => setIsTrackDialogOpen(false)}
+							disabled={isSubmitting}
+						>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={handleTrackSubmit}
+							disabled={isSubmitting || !trackForm.name}
+						>
+							{isSubmitting
+								? editingTrack
+									? "更新中..."
+									: "追加中..."
+								: editingTrack
+									? "更新"
+									: "追加"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* クレジット一覧ダイアログ */}
+			<Dialog open={isCreditDialogOpen} onOpenChange={setIsCreditDialogOpen}>
+				<DialogContent className="sm:max-w-[700px]">
+					<DialogHeader>
+						<DialogTitle>
+							クレジット管理: {selectedTrackForCredits?.name}
+						</DialogTitle>
+					</DialogHeader>
+					<div className="py-4">
+						<div className="mb-4 flex items-center justify-between">
+							<span className="text-base-content/60 text-sm">
+								{credits.length}件のクレジット
+							</span>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => openCreditEditDialog()}
+							>
+								<Plus className="mr-2 h-4 w-4" />
+								クレジット追加
+							</Button>
+						</div>
+
+						{credits.length === 0 ? (
+							<p className="py-8 text-center text-base-content/60">
+								クレジットが登録されていません
+							</p>
+						) : (
+							<div className="overflow-x-auto">
+								<table className="table">
+									<thead>
+										<tr>
+											<th>盤面表記</th>
+											<th>アーティスト</th>
+											<th>役割</th>
+											<th className="w-[70px]" />
+										</tr>
+									</thead>
+									<tbody>
+										{credits
+											.sort(
+												(a, b) =>
+													(a.creditPosition ?? 0) - (b.creditPosition ?? 0),
+											)
+											.map((credit) => (
+												<tr key={credit.id}>
+													<td>
+														<div>
+															<p className="font-medium">{credit.creditName}</p>
+															{credit.artistAlias && (
+																<p className="text-base-content/60 text-xs">
+																	名義
+																</p>
+															)}
+														</div>
+													</td>
+													<td>
+														<p>{credit.artist?.name ?? "-"}</p>
+													</td>
+													<td>
+														<div className="flex flex-wrap gap-1">
+															{credit.roles.length > 0 ? (
+																credit.roles
+																	.sort(
+																		(a, b) => a.rolePosition - b.rolePosition,
+																	)
+																	.map((role) => (
+																		<Badge
+																			key={`${role.roleCode}-${role.rolePosition}`}
+																			variant={getRoleBadgeVariant(
+																				role.roleCode,
+																			)}
+																		>
+																			{role.role?.label ?? role.roleCode}
+																		</Badge>
+																	))
+															) : (
+																<span className="text-base-content/40">-</span>
+															)}
+														</div>
+													</td>
+													<td>
+														<div className="flex items-center gap-1">
+															<Button
+																variant="ghost"
+																size="icon"
+																onClick={() => openCreditEditDialog(credit)}
+															>
+																<Pencil className="h-4 w-4" />
+																<span className="sr-only">編集</span>
+															</Button>
+															<Button
+																variant="ghost"
+																size="icon"
+																className="text-error hover:text-error"
+																onClick={() => handleCreditDelete(credit)}
+															>
+																<Trash2 className="h-4 w-4" />
+																<span className="sr-only">削除</span>
+															</Button>
+														</div>
+													</td>
+												</tr>
+											))}
+									</tbody>
+								</table>
+							</div>
+						)}
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={closeCreditDialog}>
+							閉じる
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* クレジット編集ダイアログ */}
+			<Dialog
+				open={isCreditEditDialogOpen}
+				onOpenChange={setIsCreditEditDialogOpen}
+			>
+				<DialogContent className="sm:max-w-[600px]">
+					<DialogHeader>
+						<DialogTitle>
+							{editingCredit ? "クレジットの編集" : "クレジットの追加"}
+						</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{mutationError && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{mutationError}
+							</div>
+						)}
+
+						<div className="grid gap-2">
+							<Label>
+								アーティスト名義 <span className="text-error">*</span>
+							</Label>
+							<SearchableSelect
+								value={getCurrentCreditNameOptionValue()}
+								onChange={(value) => handleCreditNameOptionChange(value || "")}
+								options={creditNameOptions.map((opt) => ({
+									value: opt.value,
+									label: opt.label,
+								}))}
+								placeholder="アーティスト名義を選択"
+								searchPlaceholder="アーティスト名義を検索..."
+								emptyMessage="アーティスト名義が見つかりません"
+								clearable={false}
+							/>
+							{creditForm.artistId && (
+								<p className="text-base-content/60 text-xs">
+									アーティスト:{" "}
+									{artistsData?.data.find((a) => a.id === creditForm.artistId)
+										?.name ?? "-"}{" "}
+									/ 名義:{" "}
+									{creditForm.artistAliasId
+										? (allAliasesData?.data.find(
+												(a) => a.id === creditForm.artistAliasId,
+											)?.name ?? "-")
+										: (artistsData?.data.find(
+												(a) => a.id === creditForm.artistId,
+											)?.name ?? "-")}
+								</p>
+							)}
+						</div>
+
+						<div className="grid gap-2">
+							<Label>
+								盤面表記 <span className="text-error">*</span>
+							</Label>
+							<Input
+								value={creditForm.creditName}
+								onChange={(e) =>
+									setCreditForm({ ...creditForm, creditName: e.target.value })
+								}
+								placeholder="盤面に表示される名前"
+							/>
+							<p className="text-base-content/60 text-xs">
+								アーティスト名義から自動入力されます。必要に応じて編集してください。
+							</p>
+						</div>
+
+						<div className="grid gap-2">
+							<Label>表示順</Label>
+							<Input
+								type="number"
+								min={1}
+								value={creditForm.creditPosition ?? ""}
+								onChange={(e) =>
+									setCreditForm({
+										...creditForm,
+										creditPosition: e.target.value
+											? Number(e.target.value)
+											: null,
+									})
+								}
+								placeholder="表示順（任意）"
+							/>
+						</div>
+
+						<div className="grid gap-2">
+							<Label>役割</Label>
+							<div className="flex flex-wrap gap-2 rounded-md border border-base-300 p-3">
+								{creditRolesData?.data.map((role) => (
+									<label
+										key={role.code}
+										className={`badge cursor-pointer transition-colors ${
+											creditForm.selectedRoles.includes(role.code)
+												? "badge-primary"
+												: "badge-ghost hover:badge-outline"
+										}`}
+									>
+										<input
+											type="checkbox"
+											className="sr-only"
+											checked={creditForm.selectedRoles.includes(role.code)}
+											onChange={() => handleRoleToggle(role.code)}
+										/>
+										{role.label}
+									</label>
+								))}
+								{(!creditRolesData || creditRolesData.data.length === 0) && (
+									<span className="text-base-content/40 text-sm">
+										役割マスターが登録されていません
+									</span>
+								)}
+							</div>
+							<p className="text-base-content/60 text-xs">
+								選択した順序で役割が表示されます。
+							</p>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							variant="ghost"
+							onClick={closeCreditEditDialog}
+							disabled={isSubmitting}
+						>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={handleCreditSubmit}
+							disabled={
+								isSubmitting || !creditForm.artistId || !creditForm.creditName
+							}
+						>
+							{isSubmitting
+								? editingCredit
+									? "更新中..."
+									: "追加中..."
+								: editingCredit
+									? "更新"
+									: "追加"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
