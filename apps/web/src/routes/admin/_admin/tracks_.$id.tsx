@@ -549,9 +549,9 @@ function TrackDetailPage() {
 			<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h2 className="font-bold text-lg">クレジット</h2>
-					<Button variant="primary" size="sm" onClick={openCreditDialog}>
-						<Plus className="mr-1 h-4 w-4" />
-						追加
+					<Button variant="outline" size="sm" onClick={openCreditDialog}>
+						<Plus className="mr-2 h-4 w-4" />
+						クレジット追加
 					</Button>
 				</div>
 

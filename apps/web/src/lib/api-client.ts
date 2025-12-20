@@ -824,8 +824,9 @@ export interface Release {
 	updatedAt: string;
 }
 
-export interface ReleaseWithDiscCount extends Release {
+export interface ReleaseWithCounts extends Release {
 	discCount: number;
+	trackCount: number;
 }
 
 export interface Disc {
@@ -856,7 +857,7 @@ export const releasesApi = {
 			searchParams.set("releaseType", params.releaseType);
 		if (params?.search) searchParams.set("search", params.search);
 		const query = searchParams.toString();
-		return fetchWithAuth<PaginatedResponse<ReleaseWithDiscCount>>(
+		return fetchWithAuth<PaginatedResponse<ReleaseWithCounts>>(
 			`/api/admin/releases${query ? `?${query}` : ""}`,
 		);
 	},

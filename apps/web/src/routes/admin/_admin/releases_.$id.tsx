@@ -1175,7 +1175,13 @@ function ReleaseDetailPage() {
 																<td>{track.trackNumber}</td>
 																<td>
 																	<div>
-																		<p>{track.name}</p>
+																		<Link
+																			to="/admin/tracks/$id"
+																			params={{ id: track.id }}
+																			className="text-primary hover:underline"
+																		>
+																			{track.name}
+																		</Link>
 																		{track.nameJa && (
 																			<p className="text-base-content/60 text-sm">
 																				{track.nameJa}
@@ -1282,7 +1288,13 @@ function ReleaseDetailPage() {
 															<td>{track.trackNumber}</td>
 															<td>
 																<div>
-																	<p>{track.name}</p>
+																	<Link
+																		to="/admin/tracks/$id"
+																		params={{ id: track.id }}
+																		className="text-primary hover:underline"
+																	>
+																		{track.name}
+																	</Link>
 																	{track.nameJa && (
 																		<p className="text-base-content/60 text-sm">
 																			{track.nameJa}
