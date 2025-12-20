@@ -45,10 +45,10 @@ export const Route = createFileRoute("/admin/_admin/tracks")({
 // カラム定義
 const COLUMN_CONFIGS = [
 	{ key: "id", label: "ID", defaultVisible: false },
-	{ key: "trackNumber", label: "No." },
-	{ key: "name", label: "トラック名" },
 	{ key: "releaseName", label: "作品" },
 	{ key: "discNumber", label: "ディスク" },
+	{ key: "name", label: "トラック名" },
+	{ key: "trackNumber", label: "No." },
 	{ key: "creditCount", label: "クレジット数" },
 	{ key: "createdAt", label: "作成日時", defaultVisible: false },
 	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
@@ -364,17 +364,17 @@ function TracksPage() {
 									{isVisible("id") && (
 										<TableHead className="w-[220px]">ID</TableHead>
 									)}
-									{isVisible("trackNumber") && (
-										<TableHead className="w-[60px]">No.</TableHead>
-									)}
-									{isVisible("name") && (
-										<TableHead className="min-w-[200px]">トラック名</TableHead>
-									)}
 									{isVisible("releaseName") && (
 										<TableHead className="min-w-[200px]">作品</TableHead>
 									)}
 									{isVisible("discNumber") && (
 										<TableHead className="w-[100px]">ディスク</TableHead>
+									)}
+									{isVisible("name") && (
+										<TableHead className="min-w-[200px]">トラック名</TableHead>
+									)}
+									{isVisible("trackNumber") && (
+										<TableHead className="w-[60px]">No.</TableHead>
 									)}
 									{isVisible("creditCount") && (
 										<TableHead className="w-[100px]">クレジット数</TableHead>
@@ -406,23 +406,6 @@ function TracksPage() {
 													{track.id}
 												</TableCell>
 											)}
-											{isVisible("trackNumber") && (
-												<TableCell className="text-base-content/70">
-													{track.trackNumber}
-												</TableCell>
-											)}
-											{isVisible("name") && (
-												<TableCell className="font-medium">
-													<div>
-														<p>{track.name}</p>
-														{track.nameJa && (
-															<p className="text-base-content/60 text-sm">
-																{track.nameJa}
-															</p>
-														)}
-													</div>
-												</TableCell>
-											)}
 											{isVisible("releaseName") && (
 												<TableCell>
 													<Link
@@ -437,6 +420,23 @@ function TracksPage() {
 											{isVisible("discNumber") && (
 												<TableCell className="text-base-content/70">
 													{track.discNumber ? `Disc ${track.discNumber}` : "-"}
+												</TableCell>
+											)}
+											{isVisible("name") && (
+												<TableCell className="font-medium">
+													<div>
+														<p>{track.name}</p>
+														{track.nameJa && (
+															<p className="text-base-content/60 text-sm">
+																{track.nameJa}
+															</p>
+														)}
+													</div>
+												</TableCell>
+											)}
+											{isVisible("trackNumber") && (
+												<TableCell className="text-base-content/70">
+													{track.trackNumber}
 												</TableCell>
 											)}
 											{isVisible("creditCount") && (
