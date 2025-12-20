@@ -1,25 +1,14 @@
-import {
-	closestCenter,
-	DndContext,
-	type DragEndEvent,
-	KeyboardSensor,
-	PointerSensor,
-	useSensor,
-	useSensors,
-} from "@dnd-kit/core";
-import {
-	arrayMove,
-	SortableContext,
-	sortableKeyboardCoordinates,
-	useSortable,
-	verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ArrowUpDown, GripVertical, Pencil, Trash2 } from "lucide-react";
+import {
+	ArrowUpDown,
+	ChevronDown,
+	ChevronUp,
+	Pencil,
+	Trash2,
+} from "lucide-react";
 import { nanoid } from "nanoid";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -60,93 +49,6 @@ const COLUMN_CONFIGS = [
 	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
 ] as const;
 
-// ソート可能な行コンポーネント
-function SortableRow({
-	series,
-	onEdit,
-	onDelete,
-	isVisible,
-}: {
-	series: EventSeries;
-	onEdit: (series: EventSeries) => void;
-	onDelete: (series: EventSeries) => void;
-	isVisible: (key: string) => boolean;
-}) {
-	const {
-		attributes,
-		listeners,
-		setNodeRef,
-		transform,
-		transition,
-		isDragging,
-	} = useSortable({ id: series.id });
-
-	const style = {
-		transform: CSS.Transform.toString(transform),
-		transition,
-		opacity: isDragging ? 0.5 : 1,
-	};
-
-	return (
-		<TableRow ref={setNodeRef} style={style}>
-			<TableCell className="w-[50px]">
-				<button
-					type="button"
-					className="cursor-grab touch-none p-1 text-base-content/50 hover:text-base-content"
-					{...attributes}
-					{...listeners}
-				>
-					<GripVertical className="h-4 w-4" />
-				</button>
-			</TableCell>
-			{isVisible("id") && (
-				<TableCell className="font-mono text-base-content/50 text-xs">
-					{series.id}
-				</TableCell>
-			)}
-			{isVisible("sortOrder") && (
-				<TableCell className="w-[80px] text-base-content/70">
-					{series.sortOrder}
-				</TableCell>
-			)}
-			{isVisible("name") && (
-				<TableCell className="font-medium">{series.name}</TableCell>
-			)}
-			{isVisible("createdAt") && (
-				<TableCell className="whitespace-nowrap text-base-content/70">
-					{format(new Date(series.createdAt), "yyyy/MM/dd HH:mm:ss", {
-						locale: ja,
-					})}
-				</TableCell>
-			)}
-			{isVisible("updatedAt") && (
-				<TableCell className="whitespace-nowrap text-base-content/70">
-					{format(new Date(series.updatedAt), "yyyy/MM/dd HH:mm:ss", {
-						locale: ja,
-					})}
-				</TableCell>
-			)}
-			<TableCell>
-				<div className="flex items-center gap-1">
-					<Button variant="ghost" size="icon" onClick={() => onEdit(series)}>
-						<Pencil className="h-4 w-4" />
-						<span className="sr-only">編集</span>
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="text-error hover:text-error"
-						onClick={() => onDelete(series)}
-					>
-						<Trash2 className="h-4 w-4" />
-						<span className="sr-only">削除</span>
-					</Button>
-				</div>
-			</TableCell>
-		</TableRow>
-	);
-}
-
 function EventSeriesPage() {
 	const queryClient = useQueryClient();
 
@@ -167,13 +69,6 @@ function EventSeriesPage() {
 	const [createForm, setCreateForm] = useState<Partial<EventSeries>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const sensors = useSensors(
-		useSensor(PointerSensor),
-		useSensor(KeyboardSensor, {
-			coordinateGetter: sortableKeyboardCoordinates,
-		}),
-	);
-
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["event-series", debouncedSearch],
 		queryFn: () => eventSeriesApi.list(debouncedSearch || undefined),
@@ -187,39 +82,45 @@ function EventSeriesPage() {
 		queryClient.invalidateQueries({ queryKey: ["event-series"] });
 	};
 
-	const handleDragEnd = async (event: DragEndEvent) => {
-		const { active, over } = event;
+	// 上へ移動
+	const handleMoveUp = async (series: EventSeries, index: number) => {
+		if (index === 0) return;
+		const prevSeries = seriesList[index - 1];
 
-		if (over && active.id !== over.id) {
-			const oldIndex = seriesList.findIndex((item) => item.id === active.id);
-			const newIndex = seriesList.findIndex((item) => item.id === over.id);
-
-			const newList = arrayMove(seriesList, oldIndex, newIndex);
-
-			// 楽観的UI更新
-			queryClient.setQueryData(
-				["event-series", debouncedSearch],
-				(old: typeof data) => {
-					if (!old) return old;
-					return { ...old, data: newList };
-				},
+		try {
+			// 現在のシリーズと前のシリーズのsortOrderを入れ替え
+			await eventSeriesApi.update(series.id, {
+				sortOrder: prevSeries.sortOrder,
+			});
+			await eventSeriesApi.update(prevSeries.id, {
+				sortOrder: series.sortOrder,
+			});
+			invalidateQuery();
+		} catch (e) {
+			setMutationError(
+				e instanceof Error ? e.message : "順序変更に失敗しました",
 			);
+		}
+	};
 
-			// APIに新しい順序を送信
-			try {
-				const items = newList.map((item, index) => ({
-					id: item.id,
-					sortOrder: index,
-				}));
-				await eventSeriesApi.reorder(items);
-				invalidateQuery();
-			} catch (e) {
-				// エラー時は元に戻す
-				invalidateQuery();
-				setMutationError(
-					e instanceof Error ? e.message : "並び替えに失敗しました",
-				);
-			}
+	// 下へ移動
+	const handleMoveDown = async (series: EventSeries, index: number) => {
+		if (index === seriesList.length - 1) return;
+		const nextSeries = seriesList[index + 1];
+
+		try {
+			// 現在のシリーズと次のシリーズのsortOrderを入れ替え
+			await eventSeriesApi.update(series.id, {
+				sortOrder: nextSeries.sortOrder,
+			});
+			await eventSeriesApi.update(nextSeries.id, {
+				sortOrder: series.sortOrder,
+			});
+			invalidateQuery();
+		} catch (e) {
+			setMutationError(
+				e instanceof Error ? e.message : "順序変更に失敗しました",
+			);
 		}
 	};
 
@@ -313,8 +214,8 @@ function EventSeriesPage() {
 	const displayError =
 		mutationError || (error instanceof Error ? error.message : null);
 
-	// 検索中はD&Dを無効化
-	const isDndDisabled = !!debouncedSearch;
+	// 検索中は並び替えを無効化
+	const isReorderDisabled = !!debouncedSearch;
 
 	return (
 		<div className="container mx-auto py-6">
@@ -364,134 +265,131 @@ function EventSeriesPage() {
 						showPagination={false}
 					/>
 				) : (
-					<DndContext
-						sensors={sensors}
-						collisionDetection={closestCenter}
-						onDragEnd={handleDragEnd}
-					>
-						<Table zebra>
-							<TableHeader>
-								<TableRow className="hover:bg-transparent">
-									<TableHead className="w-[50px]" />
-									{isVisible("id") && (
-										<TableHead className="w-[100px]">ID</TableHead>
-									)}
-									{isVisible("sortOrder") && (
-										<TableHead className="w-[80px]">順序</TableHead>
-									)}
-									{isVisible("name") && <TableHead>シリーズ名</TableHead>}
-									{isVisible("createdAt") && (
-										<TableHead className="w-[160px]">作成日時</TableHead>
-									)}
-									{isVisible("updatedAt") && (
-										<TableHead className="w-[160px]">更新日時</TableHead>
-									)}
-									<TableHead className="w-[70px]" />
+					<Table zebra>
+						<TableHeader>
+							<TableRow className="hover:bg-transparent">
+								<TableHead className="w-[100px]">並び替え</TableHead>
+								{isVisible("id") && (
+									<TableHead className="w-[100px]">ID</TableHead>
+								)}
+								{isVisible("sortOrder") && (
+									<TableHead className="w-[80px]">順序</TableHead>
+								)}
+								{isVisible("name") && <TableHead>シリーズ名</TableHead>}
+								{isVisible("createdAt") && (
+									<TableHead className="w-[160px]">作成日時</TableHead>
+								)}
+								{isVisible("updatedAt") && (
+									<TableHead className="w-[160px]">更新日時</TableHead>
+								)}
+								<TableHead className="w-[70px]" />
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{seriesList.length === 0 ? (
+								<TableRow>
+									<TableCell
+										colSpan={visibleColumns.size + 2}
+										className="h-24 text-center text-base-content/50"
+									>
+										該当するシリーズが見つかりません
+									</TableCell>
 								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{seriesList.length === 0 ? (
-									<TableRow>
-										<TableCell
-											colSpan={visibleColumns.size + 2}
-											className="h-24 text-center text-base-content/50"
-										>
-											該当するシリーズが見つかりません
+							) : (
+								seriesList.map((series, index) => (
+									<TableRow key={series.id}>
+										<TableCell className="w-[100px]">
+											<div className="flex items-center gap-1">
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => handleMoveUp(series, index)}
+													disabled={index === 0 || isReorderDisabled}
+													title="上へ移動"
+												>
+													<ChevronUp className="h-4 w-4" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => handleMoveDown(series, index)}
+													disabled={
+														index === seriesList.length - 1 || isReorderDisabled
+													}
+													title="下へ移動"
+												>
+													<ChevronDown className="h-4 w-4" />
+												</Button>
+											</div>
+										</TableCell>
+										{isVisible("id") && (
+											<TableCell className="font-mono text-base-content/50 text-xs">
+												{series.id}
+											</TableCell>
+										)}
+										{isVisible("sortOrder") && (
+											<TableCell className="text-base-content/70">
+												{series.sortOrder}
+											</TableCell>
+										)}
+										{isVisible("name") && (
+											<TableCell className="font-medium">
+												{series.name}
+											</TableCell>
+										)}
+										{isVisible("createdAt") && (
+											<TableCell className="whitespace-nowrap text-base-content/70">
+												{format(
+													new Date(series.createdAt),
+													"yyyy/MM/dd HH:mm:ss",
+													{
+														locale: ja,
+													},
+												)}
+											</TableCell>
+										)}
+										{isVisible("updatedAt") && (
+											<TableCell className="whitespace-nowrap text-base-content/70">
+												{format(
+													new Date(series.updatedAt),
+													"yyyy/MM/dd HH:mm:ss",
+													{
+														locale: ja,
+													},
+												)}
+											</TableCell>
+										)}
+										<TableCell>
+											<div className="flex items-center gap-1">
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => handleEdit(series)}
+												>
+													<Pencil className="h-4 w-4" />
+													<span className="sr-only">編集</span>
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon"
+													className="text-error hover:text-error"
+													onClick={() => handleDelete(series)}
+												>
+													<Trash2 className="h-4 w-4" />
+													<span className="sr-only">削除</span>
+												</Button>
+											</div>
 										</TableCell>
 									</TableRow>
-								) : isDndDisabled ? (
-									// 検索中は通常の行を表示
-									seriesList.map((series) => (
-										<TableRow key={series.id}>
-											<TableCell className="w-[50px]">
-												<span className="p-1 text-base-content/30">
-													<GripVertical className="h-4 w-4" />
-												</span>
-											</TableCell>
-											{isVisible("id") && (
-												<TableCell className="font-mono text-base-content/50 text-xs">
-													{series.id}
-												</TableCell>
-											)}
-											{isVisible("sortOrder") && (
-												<TableCell className="text-base-content/70">
-													{series.sortOrder}
-												</TableCell>
-											)}
-											{isVisible("name") && (
-												<TableCell className="font-medium">
-													{series.name}
-												</TableCell>
-											)}
-											{isVisible("createdAt") && (
-												<TableCell className="whitespace-nowrap text-base-content/70">
-													{format(
-														new Date(series.createdAt),
-														"yyyy/MM/dd HH:mm:ss",
-														{
-															locale: ja,
-														},
-													)}
-												</TableCell>
-											)}
-											{isVisible("updatedAt") && (
-												<TableCell className="whitespace-nowrap text-base-content/70">
-													{format(
-														new Date(series.updatedAt),
-														"yyyy/MM/dd HH:mm:ss",
-														{
-															locale: ja,
-														},
-													)}
-												</TableCell>
-											)}
-											<TableCell>
-												<div className="flex items-center gap-1">
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() => handleEdit(series)}
-													>
-														<Pencil className="h-4 w-4" />
-														<span className="sr-only">編集</span>
-													</Button>
-													<Button
-														variant="ghost"
-														size="icon"
-														className="text-error hover:text-error"
-														onClick={() => handleDelete(series)}
-													>
-														<Trash2 className="h-4 w-4" />
-														<span className="sr-only">削除</span>
-													</Button>
-												</div>
-											</TableCell>
-										</TableRow>
-									))
-								) : (
-									<SortableContext
-										items={seriesList.map((s) => s.id)}
-										strategy={verticalListSortingStrategy}
-									>
-										{seriesList.map((series) => (
-											<SortableRow
-												key={series.id}
-												series={series}
-												onEdit={handleEdit}
-												onDelete={handleDelete}
-												isVisible={isVisible}
-											/>
-										))}
-									</SortableContext>
-								)}
-							</TableBody>
-						</Table>
-					</DndContext>
+								))
+							)}
+						</TableBody>
+					</Table>
 				)}
 
 				<div className="border-base-300 border-t p-4 text-base-content/70 text-sm">
 					全 {total} 件
-					{isDndDisabled && (
+					{isReorderDisabled && (
 						<span className="ml-2 text-warning">
 							（検索中は並び替えできません）
 						</span>
@@ -594,7 +492,7 @@ function EventSeriesPage() {
 								}
 							/>
 							<p className="text-base-content/50 text-xs">
-								小さい値が先に表示されます（ドラッグ＆ドロップでも変更可能）
+								小さい値が先に表示されます
 							</p>
 						</div>
 						{mutationError && (
