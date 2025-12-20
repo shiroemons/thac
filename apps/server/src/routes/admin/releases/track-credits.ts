@@ -12,7 +12,7 @@ import {
 	tracks,
 	updateTrackCreditSchema,
 } from "@thac/db";
-import { isNull } from "drizzle-orm";
+import { inArray, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import type { AdminContext } from "../../../middleware/admin-auth";
 
@@ -189,6 +189,32 @@ trackCreditsRouter.post("/:releaseId/tracks/:trackId/credits", async (c) => {
 
 	// 作成
 	const result = await db.insert(trackCredits).values(parsed.data).returning();
+	const creditId = result[0]?.id;
+
+	// 役割の登録（rolesCodes が指定されている場合）
+	if (creditId && body.rolesCodes && Array.isArray(body.rolesCodes)) {
+		const rolesCodes = body.rolesCodes as string[];
+		if (rolesCodes.length > 0) {
+			// 役割マスター存在チェック
+			const existingRoles = await db
+				.select()
+				.from(creditRoles)
+				.where(inArray(creditRoles.code, rolesCodes));
+
+			const validRoleCodes = existingRoles.map((r) => r.code);
+
+			// 有効な役割のみ登録
+			const roleInserts = validRoleCodes.map((roleCode, index) => ({
+				trackCreditId: creditId,
+				roleCode,
+				rolePosition: index + 1,
+			}));
+
+			if (roleInserts.length > 0) {
+				await db.insert(trackCreditRoles).values(roleInserts);
+			}
+		}
+	}
 
 	return c.json(result[0], 201);
 });
@@ -321,6 +347,37 @@ trackCreditsRouter.put(
 			.set(parsed.data)
 			.where(eq(trackCredits.id, creditId))
 			.returning();
+
+		// 役割の更新（rolesCodes が指定されている場合）
+		if (body.rolesCodes !== undefined && Array.isArray(body.rolesCodes)) {
+			// 既存の役割を削除
+			await db
+				.delete(trackCreditRoles)
+				.where(eq(trackCreditRoles.trackCreditId, creditId));
+
+			// 新しい役割を登録
+			const rolesCodes = body.rolesCodes as string[];
+			if (rolesCodes.length > 0) {
+				// 役割マスター存在チェック
+				const existingRoles = await db
+					.select()
+					.from(creditRoles)
+					.where(inArray(creditRoles.code, rolesCodes));
+
+				const validRoleCodes = existingRoles.map((r) => r.code);
+
+				// 有効な役割のみ登録
+				const roleInserts = validRoleCodes.map((roleCode, index) => ({
+					trackCreditId: creditId,
+					roleCode,
+					rolePosition: index + 1,
+				}));
+
+				if (roleInserts.length > 0) {
+					await db.insert(trackCreditRoles).values(roleInserts);
+				}
+			}
+		}
 
 		return c.json(result[0]);
 	},

@@ -1103,6 +1103,7 @@ export const trackCreditsApi = {
 			aliasTypeCode?: string | null;
 			creditPosition?: number | null;
 			artistAliasId?: string | null;
+			rolesCodes?: string[];
 		},
 	) =>
 		fetchWithAuth<TrackCredit>(
@@ -1122,6 +1123,7 @@ export const trackCreditsApi = {
 			aliasTypeCode?: string | null;
 			creditPosition?: number | null;
 			artistAliasId?: string | null;
+			rolesCodes?: string[];
 		},
 	) =>
 		fetchWithAuth<TrackCredit>(

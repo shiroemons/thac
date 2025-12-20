@@ -58,6 +58,28 @@ export const Route = createFileRoute("/admin/_admin/releases_/$id")({
 	component: ReleaseDetailPage,
 });
 
+// 役割コードに基づいて色を決定するヘルパー
+const ROLE_COLORS = [
+	"primary",
+	"secondary",
+	"accent",
+	"info",
+	"success",
+	"warning",
+] as const;
+
+function getRoleBadgeVariant(
+	roleCode: string,
+): "primary" | "secondary" | "accent" | "info" | "success" | "warning" {
+	// 役割コードのハッシュ値から色を決定
+	let hash = 0;
+	for (let i = 0; i < roleCode.length; i++) {
+		hash = roleCode.charCodeAt(i) + ((hash << 5) - hash);
+	}
+	const index = Math.abs(hash) % ROLE_COLORS.length;
+	return ROLE_COLORS[index];
+}
+
 // 作品タイプのオプション
 const RELEASE_TYPE_OPTIONS = Object.entries(RELEASE_TYPE_LABELS).map(
 	([value, label]) => ({ value, label }),
@@ -1614,7 +1636,9 @@ function ReleaseDetailPage() {
 																	.map((role) => (
 																		<Badge
 																			key={`${role.roleCode}-${role.rolePosition}`}
-																			variant="info"
+																			variant={getRoleBadgeVariant(
+																				role.roleCode,
+																			)}
 																		>
 																			{role.role?.label ?? role.roleCode}
 																		</Badge>

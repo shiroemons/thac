@@ -40,6 +40,28 @@ export const Route = createFileRoute("/admin/_admin/tracks_/$id")({
 	component: TrackDetailPage,
 });
 
+// 役割コードに基づいて色を決定するヘルパー
+const ROLE_COLORS = [
+	"primary",
+	"secondary",
+	"accent",
+	"info",
+	"success",
+	"warning",
+] as const;
+
+function getRoleBadgeVariant(
+	roleCode: string,
+): "primary" | "secondary" | "accent" | "info" | "success" | "warning" {
+	// 役割コードのハッシュ値から色を決定
+	let hash = 0;
+	for (let i = 0; i < roleCode.length; i++) {
+		hash = roleCode.charCodeAt(i) + ((hash << 5) - hash);
+	}
+	const index = Math.abs(hash) % ROLE_COLORS.length;
+	return ROLE_COLORS[index];
+}
+
 function TrackDetailPage() {
 	const { id: trackId } = Route.useParams();
 	const queryClient = useQueryClient();
@@ -558,7 +580,7 @@ function TrackDetailPage() {
 															.map((role) => (
 																<Badge
 																	key={`${role.roleCode}-${role.rolePosition}`}
-																	variant="info"
+																	variant={getRoleBadgeVariant(role.roleCode)}
 																>
 																	{role.role?.label ?? role.roleCode}
 																</Badge>
