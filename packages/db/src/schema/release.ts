@@ -21,6 +21,17 @@ export const RELEASE_TYPES = [
 
 export type ReleaseType = (typeof RELEASE_TYPES)[number];
 
+// 参加形態の定義
+export const PARTICIPATION_TYPES = [
+	"host",
+	"co-host",
+	"participant",
+	"guest",
+	"split_partner",
+] as const;
+
+export type ParticipationType = (typeof PARTICIPATION_TYPES)[number];
+
 // リリーステーブル
 export const releases = sqliteTable(
 	"releases",
@@ -89,11 +100,13 @@ export const releaseCircles = sqliteTable(
 		circleId: text("circle_id")
 			.notNull()
 			.references(() => circles.id, { onDelete: "restrict" }),
-		role: text("role").notNull(),
+		participationType: text("participation_type").notNull(),
 		position: integer("position").default(1),
 	},
 	(table) => [
-		primaryKey({ columns: [table.releaseId, table.circleId, table.role] }),
+		primaryKey({
+			columns: [table.releaseId, table.circleId, table.participationType],
+		}),
 		index("idx_release_circles_circle").on(table.circleId),
 	],
 );

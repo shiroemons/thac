@@ -909,3 +909,91 @@ export const discsApi = {
 			},
 		),
 };
+
+// ===== 作品とサークルの関連付け =====
+
+export type ParticipationType =
+	| "host"
+	| "co-host"
+	| "participant"
+	| "guest"
+	| "split_partner";
+
+export const PARTICIPATION_TYPE_LABELS: Record<ParticipationType, string> = {
+	host: "主催",
+	"co-host": "共同主催",
+	participant: "参加",
+	guest: "ゲスト",
+	split_partner: "スプリット",
+};
+
+export const PARTICIPATION_TYPE_COLORS: Record<
+	ParticipationType,
+	"primary" | "secondary" | "accent" | "info" | "warning"
+> = {
+	host: "primary",
+	"co-host": "secondary",
+	participant: "accent",
+	guest: "info",
+	split_partner: "warning",
+};
+
+export interface ReleaseCircle {
+	releaseId: string;
+	circleId: string;
+	participationType: ParticipationType;
+	position: number | null;
+}
+
+export interface ReleaseCircleWithCircle extends ReleaseCircle {
+	circle: {
+		id: string;
+		name: string;
+		nameJa: string | null;
+		nameEn: string | null;
+	};
+}
+
+// Release Circles (作品とサークルの関連付け)
+export const releaseCirclesApi = {
+	list: (releaseId: string) =>
+		fetchWithAuth<ReleaseCircleWithCircle[]>(
+			`/api/admin/releases/${releaseId}/circles`,
+		),
+	add: (
+		releaseId: string,
+		data: {
+			circleId: string;
+			participationType?: ParticipationType;
+			position?: number;
+		},
+	) =>
+		fetchWithAuth<ReleaseCircle>(`/api/admin/releases/${releaseId}/circles`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		releaseId: string,
+		circleId: string,
+		participationType: ParticipationType,
+		data: { participationType?: ParticipationType; position?: number },
+	) =>
+		fetchWithAuth<ReleaseCircle>(
+			`/api/admin/releases/${releaseId}/circles/${circleId}?participationType=${encodeURIComponent(participationType)}`,
+			{
+				method: "PATCH",
+				body: JSON.stringify(data),
+			},
+		),
+	remove: (
+		releaseId: string,
+		circleId: string,
+		participationType: ParticipationType,
+	) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/releases/${releaseId}/circles/${circleId}?participationType=${encodeURIComponent(participationType)}`,
+			{
+				method: "DELETE",
+			},
+		),
+};

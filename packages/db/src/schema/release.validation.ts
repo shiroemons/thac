@@ -1,6 +1,14 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
-import { discs, RELEASE_TYPES, releaseCircles, releases } from "./release";
+import {
+	discs,
+	PARTICIPATION_TYPES,
+	RELEASE_TYPES,
+	releaseCircles,
+	releases,
+} from "./release";
+
+export { PARTICIPATION_TYPES };
 
 // Helper: 空文字列を拒否するスキーマ
 const nonEmptyString = z.string().trim().min(1, "必須項目です");
@@ -62,7 +70,12 @@ export const selectDiscSchema = createSelectSchema(discs);
 export const insertReleaseCircleSchema = createInsertSchema(releaseCircles, {
 	releaseId: nonEmptyString,
 	circleId: nonEmptyString,
-	role: nonEmptyString,
+	participationType: z.enum(PARTICIPATION_TYPES).default("host"),
+	position: z.number().int().min(1, "1以上の整数を入力してください").optional(),
+});
+
+export const updateReleaseCircleSchema = z.object({
+	participationType: z.enum(PARTICIPATION_TYPES).optional(),
 	position: z.number().int().min(1, "1以上の整数を入力してください").optional(),
 });
 
@@ -78,4 +91,5 @@ export type UpdateDisc = z.infer<typeof updateDiscSchema>;
 export type SelectDisc = z.infer<typeof selectDiscSchema>;
 
 export type InsertReleaseCircle = z.infer<typeof insertReleaseCircleSchema>;
+export type UpdateReleaseCircle = z.infer<typeof updateReleaseCircleSchema>;
 export type SelectReleaseCircle = z.infer<typeof selectReleaseCircleSchema>;
