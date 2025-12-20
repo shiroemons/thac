@@ -46,9 +46,11 @@ import {
 	type InitialScript,
 	platformsApi,
 } from "@/lib/api-client";
+import { createPageHead } from "@/lib/head";
 import { getExternalLinkUrl } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/_admin/circles")({
+	head: () => createPageHead("サークル"),
 	component: CirclesPage,
 });
 

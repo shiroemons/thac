@@ -29,8 +29,10 @@ import {
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { type CreditRole, creditRolesApi, importApi } from "@/lib/api-client";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/master/credit-roles")({
+	head: () => createPageHead("クレジット役割"),
 	component: CreditRolesPage,
 });
 

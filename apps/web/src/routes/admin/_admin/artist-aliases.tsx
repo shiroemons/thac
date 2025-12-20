@@ -42,8 +42,10 @@ import {
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
 } from "@/lib/api-client";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/artist-aliases")({
+	head: () => createPageHead("アーティスト名義"),
 	component: ArtistAliasesPage,
 });
 

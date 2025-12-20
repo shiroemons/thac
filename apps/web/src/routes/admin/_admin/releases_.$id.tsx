@@ -53,8 +53,11 @@ import {
 	trackCreditsApi,
 	tracksApi,
 } from "@/lib/api-client";
+import { createReleaseDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/releases_/$id")({
+	loader: ({ params }) => releasesApi.get(params.id),
+	head: ({ loaderData }) => createReleaseDetailHead(loaderData?.name),
 	component: ReleaseDetailPage,
 });
 

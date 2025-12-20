@@ -37,8 +37,10 @@ import {
 	type TrackWithCreditCount,
 	tracksApi,
 } from "@/lib/api-client";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/tracks")({
+	head: () => createPageHead("トラック"),
 	component: TracksPage,
 });
 

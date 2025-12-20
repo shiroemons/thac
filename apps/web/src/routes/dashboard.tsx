@@ -1,7 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { getUser } from "@/functions/get-user";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/dashboard")({
+	head: () => createPageHead("ダッシュボード"),
 	component: RouteComponent,
 	beforeLoad: async () => {
 		const session = await getUser();
