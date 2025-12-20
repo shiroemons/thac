@@ -66,7 +66,7 @@ function RootDocument() {
 
 	return (
 		<html lang="ja" suppressHydrationWarning>
-			<head>
+			<head suppressHydrationWarning>
 				<HeadContent />
 				<script
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: Required for SSR theme initialization to prevent FOUC

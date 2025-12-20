@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { createId } from "@thac/db/utils/id";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ExternalLink, Eye, Pencil, Trash2 } from "lucide-react";
-import { nanoid } from "nanoid";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -215,7 +215,7 @@ function TracksPage() {
 		setIsSubmitting(true);
 		setMutationError(null);
 		try {
-			const id = nanoid();
+			const id = createId.track();
 			await tracksApi.create(createForm.releaseId, {
 				id,
 				trackNumber: createForm.trackNumber ?? 1,

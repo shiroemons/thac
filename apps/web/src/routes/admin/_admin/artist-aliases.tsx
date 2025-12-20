@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { createId } from "@thac/db/utils/id";
 import { detectInitial } from "@thac/utils";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { nanoid } from "nanoid";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -189,7 +189,7 @@ function ArtistAliasesPage() {
 		setIsSubmitting(true);
 		setMutationError(null);
 		try {
-			const id = nanoid();
+			const id = createId.artist();
 			const newArtist = await artistsApi.create({
 				id,
 				name: artistCreateForm.name || "",
@@ -219,7 +219,7 @@ function ArtistAliasesPage() {
 		setIsSubmitting(true);
 		setMutationError(null);
 		try {
-			const id = nanoid();
+			const id = createId.artistAlias();
 			await artistAliasesApi.create({
 				id,
 				artistId: createForm.artistId || "",

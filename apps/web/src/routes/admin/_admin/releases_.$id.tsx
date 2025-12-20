@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { createId } from "@thac/db/utils/id";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import {
@@ -13,7 +14,6 @@ import {
 	Trash2,
 	Users,
 } from "lucide-react";
-import { nanoid } from "nanoid";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -325,7 +325,7 @@ function ReleaseDetailPage() {
 				});
 			} else {
 				await discsApi.create(id, {
-					id: nanoid(),
+					id: createId.disc(),
 					releaseId: id,
 					discNumber: discForm.discNumber ?? 1,
 					discName: discForm.discName || null,
@@ -491,7 +491,7 @@ function ReleaseDetailPage() {
 				});
 			} else {
 				await tracksApi.create(id, {
-					id: nanoid(),
+					id: createId.track(),
 					trackNumber: trackForm.trackNumber ?? 1,
 					name: trackForm.name ?? "",
 					nameJa: trackForm.nameJa || null,
@@ -670,7 +670,7 @@ function ReleaseDetailPage() {
 				}
 			} else {
 				// 新規作成
-				creditId = nanoid();
+				creditId = createId.trackCredit();
 				await trackCreditsApi.create(id, selectedTrackForCredits.id, {
 					id: creditId,
 					artistId: creditForm.artistId,
