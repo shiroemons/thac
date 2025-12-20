@@ -407,6 +407,8 @@ lucide-react を使用する。
 | 追加 | `Plus` | `h-4 w-4` |
 | 編集 | `Pencil` | `h-4 w-4` |
 | 削除 | `Trash2` | `h-4 w-4` |
+| 詳細画面へ | `Eye` | `h-4 w-4` |
+| 外部リンク | `ExternalLink` | `h-4 w-4` |
 | 検索 | `Search` | `h-4 w-4` |
 | 設定 | `Settings2` | `h-4 w-4` |
 | カレンダー | `Calendar` | `h-4 w-4` |
