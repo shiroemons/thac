@@ -38,6 +38,10 @@ interface DataTableActionBarProps extends React.ComponentProps<"div"> {
 	filterValue?: string;
 	filterPlaceholder?: string;
 	onFilterChange?: (value: string) => void;
+	secondFilterOptions?: FilterOption[];
+	secondFilterValue?: string;
+	secondFilterPlaceholder?: string;
+	onSecondFilterChange?: (value: string) => void;
 	primaryAction?: {
 		label: string;
 		onClick: () => void;
@@ -54,6 +58,10 @@ function DataTableActionBar({
 	filterValue,
 	filterPlaceholder = "すべて",
 	onFilterChange,
+	secondFilterOptions,
+	secondFilterValue,
+	secondFilterPlaceholder = "すべて",
+	onSecondFilterChange,
 	primaryAction,
 	secondaryActions,
 	columnVisibility,
@@ -95,6 +103,23 @@ function DataTableActionBar({
 						))}
 					</Select>
 				)}
+				{secondFilterOptions &&
+					secondFilterOptions.length > 0 &&
+					onSecondFilterChange && (
+						<Select
+							size="md"
+							value={secondFilterValue}
+							onChange={(e) => onSecondFilterChange(e.target.value)}
+							className="w-44"
+						>
+							<option value="">{secondFilterPlaceholder}</option>
+							{secondFilterOptions.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
+						</Select>
+					)}
 				{children}
 			</div>
 			<div className="flex items-center gap-2">

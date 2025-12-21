@@ -61,6 +61,7 @@ export interface OfficialSong {
 	createdAt: string;
 	updatedAt: string;
 	workName?: string | null;
+	sourceSongName?: string | null;
 }
 
 export interface DashboardStats {
@@ -386,6 +387,7 @@ export const officialSongsApi = {
 		workId?: string;
 		themeType?: string;
 		search?: string;
+		sourceSongId?: string;
 	}) => {
 		const searchParams = new URLSearchParams();
 		if (params?.page) searchParams.set("page", String(params.page));
@@ -393,6 +395,8 @@ export const officialSongsApi = {
 		if (params?.workId) searchParams.set("workId", params.workId);
 		if (params?.themeType) searchParams.set("themeType", params.themeType);
 		if (params?.search) searchParams.set("search", params.search);
+		if (params?.sourceSongId)
+			searchParams.set("sourceSongId", params.sourceSongId);
 		const query = searchParams.toString();
 		return fetchWithAuth<PaginatedResponse<OfficialSong>>(
 			`/api/admin/official/songs${query ? `?${query}` : ""}`,
