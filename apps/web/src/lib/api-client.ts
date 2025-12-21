@@ -48,17 +48,19 @@ export interface OfficialWork {
 export interface OfficialSong {
 	id: string;
 	officialWorkId: string | null;
+	trackNumber: number | null;
 	name: string;
 	nameJa: string;
 	nameEn: string | null;
-	themeType: string | null;
 	composerName: string | null;
-	isOfficialArrangement: boolean;
+	arrangerName: string | null;
+	isOriginal: boolean;
 	sourceSongId: string | null;
 	notes: string | null;
 	createdAt: string;
 	updatedAt: string;
 	workName?: string | null;
+	sourceSongName?: string | null;
 }
 
 export interface DashboardStats {
@@ -382,15 +384,16 @@ export const officialSongsApi = {
 		page?: number;
 		limit?: number;
 		workId?: string;
-		themeType?: string;
 		search?: string;
+		sourceSongId?: string;
 	}) => {
 		const searchParams = new URLSearchParams();
 		if (params?.page) searchParams.set("page", String(params.page));
 		if (params?.limit) searchParams.set("limit", String(params.limit));
 		if (params?.workId) searchParams.set("workId", params.workId);
-		if (params?.themeType) searchParams.set("themeType", params.themeType);
 		if (params?.search) searchParams.set("search", params.search);
+		if (params?.sourceSongId)
+			searchParams.set("sourceSongId", params.sourceSongId);
 		const query = searchParams.toString();
 		return fetchWithAuth<PaginatedResponse<OfficialSong>>(
 			`/api/admin/official/songs${query ? `?${query}` : ""}`,

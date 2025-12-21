@@ -53,15 +53,14 @@ export const officialSongs = sqliteTable(
 			() => officialWorks.id,
 			{ onDelete: "cascade" },
 		),
+		trackNumber: integer("track_number"),
 		name: text("name").notNull(),
 		nameJa: text("name_ja").notNull(),
 		nameEn: text("name_en"),
-		themeType: text("theme_type"),
 		composerName: text("composer_name"),
-		isOfficialArrangement: integer("is_official_arrangement", {
-			mode: "boolean",
-		})
-			.default(false)
+		arrangerName: text("arranger_name"),
+		isOriginal: integer("is_original", { mode: "boolean" })
+			.default(true)
 			.notNull(),
 		sourceSongId: text("source_song_id"),
 		notes: text("notes"),
@@ -75,7 +74,6 @@ export const officialSongs = sqliteTable(
 	},
 	(table) => [
 		index("idx_official_songs_work").on(table.officialWorkId),
-		index("idx_official_songs_theme").on(table.themeType),
 		index("idx_official_songs_source").on(table.sourceSongId),
 	],
 );

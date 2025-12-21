@@ -248,7 +248,7 @@ const officialWorkCategoriesData = [
 		description: "Windows向けに発売された作品",
 	},
 	{
-		code: "zun_collection",
+		code: "zuns_music_collection",
 		name: "ZUN's Music Collection",
 		description: "ZUNの音楽CD作品集",
 	},
@@ -258,7 +258,7 @@ const officialWorkCategoriesData = [
 		description: "東方旧作のサウンドトラック",
 	},
 	{
-		code: "commercial_book",
+		code: "commercial_books",
 		name: "商業書籍",
 		description: "書籍として発売された作品",
 	},

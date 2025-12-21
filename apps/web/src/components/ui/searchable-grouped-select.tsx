@@ -115,7 +115,7 @@ export function SearchableGroupedSelect({
 
 			{/* ドロップダウン */}
 			{isOpen && (
-				<div className="absolute z-50 mt-1 max-h-80 w-full overflow-hidden rounded-lg border border-base-300 bg-base-100 shadow-lg">
+				<div className="absolute z-50 mt-1 max-h-80 w-max min-w-full max-w-md overflow-hidden rounded-lg border border-base-300 bg-base-100 shadow-lg">
 					{/* 検索欄 */}
 					<div className="border-base-300 border-b p-2">
 						<div className="relative">

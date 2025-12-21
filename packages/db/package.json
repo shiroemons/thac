@@ -19,7 +19,9 @@
 		"db:generate": "drizzle-kit generate",
 		"db:studio": "drizzle-kit studio",
 		"db:migrate": "drizzle-kit migrate",
-		"db:seed": "bun run src/seed-master.ts",
+		"db:seed": "bun run src/seed-master.ts && bun run src/seed-official.ts",
+		"db:seed:master": "bun run src/seed-master.ts",
+		"db:seed:official": "bun run src/seed-official.ts",
 		"test": "bun test"
 	},
 	"devDependencies": {
