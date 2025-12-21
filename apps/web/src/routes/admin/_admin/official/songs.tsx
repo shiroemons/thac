@@ -172,14 +172,6 @@ function OfficialSongsPage() {
 			}));
 	}, [worksData, categoriesData]);
 
-	// フィルター用のフラットな作品選択肢
-	const workOptions = useMemo(() => {
-		return (worksData?.data ?? []).map((w) => ({
-			value: w.id,
-			label: w.nameJa || w.name,
-		}));
-	}, [worksData]);
-
 	// 原曲選択肢（自身を除外）
 	const sourceSongOptions = useMemo(() => {
 		const currentId = editingSong?.id || (createForm.id as string);
@@ -311,10 +303,6 @@ function OfficialSongsPage() {
 					searchPlaceholder="楽曲名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
-					filterOptions={workOptions}
-					filterValue={workId}
-					filterPlaceholder="作品を選択"
-					onFilterChange={handleWorkIdChange}
 					columnVisibility={{
 						columns: columnConfigs,
 						visibleColumns,
@@ -331,7 +319,16 @@ function OfficialSongsPage() {
 							onClick: () => setIsImportDialogOpen(true),
 						},
 					]}
-				/>
+				>
+					<SearchableGroupedSelect
+						value={workId}
+						onChange={handleWorkIdChange}
+						groups={workGroups}
+						placeholder="作品で絞り込み"
+						searchPlaceholder="作品を検索..."
+						className="w-80"
+					/>
+				</DataTableActionBar>
 
 				{displayError && (
 					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
