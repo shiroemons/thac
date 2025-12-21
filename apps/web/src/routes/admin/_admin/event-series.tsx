@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db/utils/id";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -7,6 +7,7 @@ import {
 	ArrowUpDown,
 	ChevronDown,
 	ChevronUp,
+	Eye,
 	Pencil,
 	Trash2,
 } from "lucide-react";
@@ -363,6 +364,14 @@ function EventSeriesPage() {
 										)}
 										<TableCell>
 											<div className="flex items-center gap-1">
+												<Link
+													to="/admin/event-series/$id"
+													params={{ id: series.id }}
+													className="btn btn-ghost btn-xs"
+												>
+													<Eye className="h-4 w-4" />
+													<span className="sr-only">詳細</span>
+												</Link>
 												<Button
 													variant="ghost"
 													size="icon"
