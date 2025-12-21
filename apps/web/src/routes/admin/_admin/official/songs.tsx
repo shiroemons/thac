@@ -624,28 +624,6 @@ function OfficialSongsPage() {
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="create-isOriginal">オリジナル</Label>
-								<Select
-									id="create-isOriginal"
-									value={createForm.isOriginal !== false ? "true" : "false"}
-									onChange={(e) => {
-										const isOrig = e.target.value === "true";
-										setCreateForm({
-											...createForm,
-											isOriginal: isOrig,
-											sourceSongId: isOrig
-												? ""
-												: (createForm.sourceSongId as string),
-										});
-									}}
-								>
-									<option value="true">はい</option>
-									<option value="false">いいえ</option>
-								</Select>
-							</div>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
 								<Label htmlFor="create-composerName">作曲者名</Label>
 								<Input
 									id="create-composerName"
@@ -672,6 +650,28 @@ function OfficialSongsPage() {
 									}
 									placeholder="例: ZUN"
 								/>
+							</div>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label htmlFor="create-isOriginal">オリジナル</Label>
+								<Select
+									id="create-isOriginal"
+									value={createForm.isOriginal !== false ? "true" : "false"}
+									onChange={(e) => {
+										const isOrig = e.target.value === "true";
+										setCreateForm({
+											...createForm,
+											isOriginal: isOrig,
+											sourceSongId: isOrig
+												? ""
+												: (createForm.sourceSongId as string),
+										});
+									}}
+								>
+									<option value="true">はい</option>
+									<option value="false">いいえ</option>
+								</Select>
 							</div>
 						</div>
 						{createForm.isOriginal === false && (
@@ -809,26 +809,6 @@ function OfficialSongsPage() {
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="edit-isOriginal">オリジナル</Label>
-								<Select
-									id="edit-isOriginal"
-									value={editForm.isOriginal ? "true" : "false"}
-									onChange={(e) => {
-										const isOrig = e.target.value === "true";
-										setEditForm({
-											...editForm,
-											isOriginal: isOrig,
-											sourceSongId: isOrig ? null : editForm.sourceSongId,
-										});
-									}}
-								>
-									<option value="true">はい</option>
-									<option value="false">いいえ</option>
-								</Select>
-							</div>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
 								<Label htmlFor="edit-composerName">作曲者名</Label>
 								<Input
 									id="edit-composerName"
@@ -849,6 +829,26 @@ function OfficialSongsPage() {
 									}
 									placeholder="例: ZUN"
 								/>
+							</div>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label htmlFor="edit-isOriginal">オリジナル</Label>
+								<Select
+									id="edit-isOriginal"
+									value={editForm.isOriginal ? "true" : "false"}
+									onChange={(e) => {
+										const isOrig = e.target.value === "true";
+										setEditForm({
+											...editForm,
+											isOriginal: isOrig,
+											sourceSongId: isOrig ? null : editForm.sourceSongId,
+										});
+									}}
+								>
+									<option value="true">はい</option>
+									<option value="false">いいえ</option>
+								</Select>
 							</div>
 						</div>
 						{editForm.isOriginal === false && (

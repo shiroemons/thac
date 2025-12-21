@@ -432,6 +432,14 @@ function OfficialSongDetailPage() {
 								<p>{song.nameEn || "-"}</p>
 							</div>
 							<div>
+								<Label className="text-base-content/60">作曲者名</Label>
+								<p>{song.composerName || "-"}</p>
+							</div>
+							<div>
+								<Label className="text-base-content/60">編曲者名</Label>
+								<p>{song.arrangerName || "-"}</p>
+							</div>
+							<div>
 								<Label className="text-base-content/60">オリジナル</Label>
 								<p>
 									{song.isOriginal ? (
@@ -440,14 +448,6 @@ function OfficialSongDetailPage() {
 										<Badge variant="secondary">いいえ</Badge>
 									)}
 								</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">作曲者名</Label>
-								<p>{song.composerName || "-"}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">編曲者名</Label>
-								<p>{song.arrangerName || "-"}</p>
 							</div>
 							{!song.isOriginal && (
 								<div>
