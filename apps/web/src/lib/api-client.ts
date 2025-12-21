@@ -52,7 +52,6 @@ export interface OfficialSong {
 	name: string;
 	nameJa: string;
 	nameEn: string | null;
-	themeType: string | null;
 	composerName: string | null;
 	arrangerName: string | null;
 	isOriginal: boolean;
@@ -385,7 +384,6 @@ export const officialSongsApi = {
 		page?: number;
 		limit?: number;
 		workId?: string;
-		themeType?: string;
 		search?: string;
 		sourceSongId?: string;
 	}) => {
@@ -393,7 +391,6 @@ export const officialSongsApi = {
 		if (params?.page) searchParams.set("page", String(params.page));
 		if (params?.limit) searchParams.set("limit", String(params.limit));
 		if (params?.workId) searchParams.set("workId", params.workId);
-		if (params?.themeType) searchParams.set("themeType", params.themeType);
 		if (params?.search) searchParams.set("search", params.search);
 		if (params?.sourceSongId)
 			searchParams.set("sourceSongId", params.sourceSongId);

@@ -470,7 +470,6 @@ function OfficialWorkDetailPage() {
 									<tr>
 										<th className="w-[60px]">No.</th>
 										<th>楽曲名</th>
-										<th className="w-[120px]">主題区分</th>
 										<th className="w-[100px]">オリジナル</th>
 									</tr>
 								</thead>
@@ -488,13 +487,6 @@ function OfficialWorkDetailPage() {
 													>
 														{song.nameJa || song.name}
 													</Link>
-												</td>
-												<td>
-													{song.themeType ? (
-														<Badge variant="secondary">{song.themeType}</Badge>
-													) : (
-														"-"
-													)}
 												</td>
 												<td>
 													{song.isOriginal ? (

@@ -27,22 +27,6 @@ export const Route = createFileRoute("/admin/_admin/official/songs_/$id")({
 	component: OfficialSongDetailPage,
 });
 
-const themeTypeLabels: Record<string, string> = {
-	character: "キャラクター",
-	stage: "ステージ",
-	event: "イベント",
-	bgm: "BGM",
-	other: "その他",
-};
-
-const themeTypeOptions = [
-	{ value: "character", label: "キャラクター" },
-	{ value: "stage", label: "ステージ" },
-	{ value: "event", label: "イベント" },
-	{ value: "bgm", label: "BGM" },
-	{ value: "other", label: "その他" },
-];
-
 function OfficialSongDetailPage() {
 	const { id } = Route.useParams();
 	const queryClient = useQueryClient();
@@ -148,7 +132,6 @@ function OfficialSongDetailPage() {
 				name: song.name,
 				nameJa: song.nameJa,
 				nameEn: song.nameEn,
-				themeType: song.themeType,
 				composerName: song.composerName,
 				arrangerName: song.arrangerName,
 				isOriginal: song.isOriginal,
@@ -183,7 +166,6 @@ function OfficialSongDetailPage() {
 				name: editForm.name,
 				nameJa: editForm.nameJa,
 				nameEn: editForm.nameEn,
-				themeType: editForm.themeType,
 				composerName: editForm.composerName,
 				arrangerName: editForm.arrangerName,
 				isOriginal: editForm.isOriginal,
@@ -333,25 +315,6 @@ function OfficialSongDetailPage() {
 								/>
 							</div>
 							<div className="form-control">
-								<Label>主題区分</Label>
-								<Select
-									value={editForm.themeType || ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											themeType: e.target.value || null,
-										})
-									}
-								>
-									<option value="">選択なし</option>
-									{themeTypeOptions.map((opt) => (
-										<option key={opt.value} value={opt.value}>
-											{opt.label}
-										</option>
-									))}
-								</Select>
-							</div>
-							<div className="form-control">
 								<Label>作曲者名</Label>
 								<Input
 									value={editForm.composerName || ""}
@@ -467,18 +430,6 @@ function OfficialSongDetailPage() {
 							<div>
 								<Label className="text-base-content/60">英語名</Label>
 								<p>{song.nameEn || "-"}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">主題区分</Label>
-								<p>
-									{song.themeType ? (
-										<Badge variant="secondary">
-											{themeTypeLabels[song.themeType] || song.themeType}
-										</Badge>
-									) : (
-										"-"
-									)}
-								</p>
 							</div>
 							<div>
 								<Label className="text-base-content/60">オリジナル</Label>

@@ -54,7 +54,6 @@ const COLUMN_CONFIGS = [
 	{ key: "nameJa", label: "楽曲名" },
 	{ key: "workName", label: "作品" },
 	{ key: "trackNumber", label: "トラック", defaultVisible: false },
-	{ key: "themeType", label: "主題区分" },
 	{ key: "composerName", label: "作曲者", defaultVisible: false },
 	{ key: "arrangerName", label: "編曲者", defaultVisible: false },
 	{ key: "isOriginal", label: "オリジナル" },
@@ -63,22 +62,6 @@ const COLUMN_CONFIGS = [
 	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
 ] as const;
 
-const themeTypeOptions = [
-	{ value: "character", label: "キャラクター" },
-	{ value: "stage", label: "ステージ" },
-	{ value: "event", label: "イベント" },
-	{ value: "bgm", label: "BGM" },
-	{ value: "other", label: "その他" },
-];
-
-const themeTypeLabels: Record<string, string> = {
-	character: "キャラクター",
-	stage: "ステージ",
-	event: "イベント",
-	bgm: "BGM",
-	other: "その他",
-};
-
 function OfficialSongsPage() {
 	const queryClient = useQueryClient();
 
@@ -86,7 +69,6 @@ function OfficialSongsPage() {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(20);
 	const [search, setSearch] = useState("");
-	const [themeType, setThemeType] = useState("");
 	const [workId, setWorkId] = useState("");
 
 	// API呼び出し用にデバウンス（300ms）
@@ -131,20 +113,12 @@ function OfficialSongsPage() {
 	});
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: [
-			"officialSongs",
-			page,
-			pageSize,
-			debouncedSearch,
-			themeType,
-			workId,
-		],
+		queryKey: ["officialSongs", page, pageSize, debouncedSearch, workId],
 		queryFn: () =>
 			officialSongsApi.list({
 				page,
 				limit: pageSize,
 				search: debouncedSearch || undefined,
-				themeType: themeType || undefined,
 				workId: workId || undefined,
 			}),
 		staleTime: 30_000,
@@ -241,7 +215,6 @@ function OfficialSongsPage() {
 				name: createForm.name as string,
 				nameJa: createForm.nameJa as string,
 				nameEn: (createForm.nameEn as string) || null,
-				themeType: (createForm.themeType as string) || null,
 				composerName: (createForm.composerName as string) || null,
 				arrangerName: (createForm.arrangerName as string) || null,
 				isOriginal: createForm.isOriginal !== false,
@@ -278,7 +251,6 @@ function OfficialSongsPage() {
 				name: editForm.name,
 				nameJa: editForm.nameJa,
 				nameEn: editForm.nameEn,
-				themeType: editForm.themeType,
 				composerName: editForm.composerName,
 				arrangerName: editForm.arrangerName,
 				isOriginal: editForm.isOriginal,
@@ -318,11 +290,6 @@ function OfficialSongsPage() {
 		setPage(1);
 	};
 
-	const handleThemeTypeChange = (value: string) => {
-		setThemeType(value);
-		setPage(1);
-	};
-
 	const handleWorkIdChange = (value: string) => {
 		setWorkId(value);
 		setPage(1);
@@ -344,14 +311,10 @@ function OfficialSongsPage() {
 					searchPlaceholder="楽曲名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
-					filterOptions={themeTypeOptions}
-					filterValue={themeType}
-					filterPlaceholder="主題区分を選択"
-					onFilterChange={handleThemeTypeChange}
-					secondFilterOptions={workOptions}
-					secondFilterValue={workId}
-					secondFilterPlaceholder="作品を選択"
-					onSecondFilterChange={handleWorkIdChange}
+					filterOptions={workOptions}
+					filterValue={workId}
+					filterPlaceholder="作品を選択"
+					onFilterChange={handleWorkIdChange}
 					columnVisibility={{
 						columns: columnConfigs,
 						visibleColumns,
@@ -397,9 +360,6 @@ function OfficialSongsPage() {
 									)}
 									{isVisible("trackNumber") && (
 										<TableHead className="w-[80px]">トラック</TableHead>
-									)}
-									{isVisible("themeType") && (
-										<TableHead className="w-[120px]">主題区分</TableHead>
 									)}
 									{isVisible("composerName") && (
 										<TableHead className="w-[100px]">作曲者</TableHead>
@@ -462,17 +422,6 @@ function OfficialSongsPage() {
 											{isVisible("trackNumber") && (
 												<TableCell className="text-sm">
 													{s.trackNumber ?? "-"}
-												</TableCell>
-											)}
-											{isVisible("themeType") && (
-												<TableCell>
-													{s.themeType ? (
-														<Badge variant="secondary">
-															{themeTypeLabels[s.themeType] || s.themeType}
-														</Badge>
-													) : (
-														<span className="text-base-content/50">-</span>
-													)}
 												</TableCell>
 											)}
 											{isVisible("composerName") && (
@@ -546,7 +495,6 @@ function OfficialSongsPage() {
 																name: s.name,
 																nameJa: s.nameJa,
 																nameEn: s.nameEn,
-																themeType: s.themeType,
 																composerName: s.composerName,
 																arrangerName: s.arrangerName,
 																isOriginal: s.isOriginal,
@@ -678,23 +626,6 @@ function OfficialSongsPage() {
 							</div>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-themeType">主題区分</Label>
-								<Select
-									id="create-themeType"
-									value={(createForm.themeType as string) || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, themeType: e.target.value })
-									}
-								>
-									<option value="">選択なし</option>
-									{themeTypeOptions.map((opt) => (
-										<option key={opt.value} value={opt.value}>
-											{opt.label}
-										</option>
-									))}
-								</Select>
-							</div>
 							<div className="grid gap-2">
 								<Label htmlFor="create-isOriginal">オリジナル</Label>
 								<Select
@@ -880,26 +811,6 @@ function OfficialSongsPage() {
 							</div>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-themeType">主題区分</Label>
-								<Select
-									id="edit-themeType"
-									value={editForm.themeType || ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											themeType: e.target.value || null,
-										})
-									}
-								>
-									<option value="">選択なし</option>
-									{themeTypeOptions.map((opt) => (
-										<option key={opt.value} value={opt.value}>
-											{opt.label}
-										</option>
-									))}
-								</Select>
-							</div>
 							<div className="grid gap-2">
 								<Label htmlFor="edit-isOriginal">オリジナル</Label>
 								<Select

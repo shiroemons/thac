@@ -57,7 +57,6 @@ export const officialSongs = sqliteTable(
 		name: text("name").notNull(),
 		nameJa: text("name_ja").notNull(),
 		nameEn: text("name_en"),
-		themeType: text("theme_type"),
 		composerName: text("composer_name"),
 		arrangerName: text("arranger_name"),
 		isOriginal: integer("is_original", { mode: "boolean" })
@@ -75,7 +74,6 @@ export const officialSongs = sqliteTable(
 	},
 	(table) => [
 		index("idx_official_songs_work").on(table.officialWorkId),
-		index("idx_official_songs_theme").on(table.themeType),
 		index("idx_official_songs_source").on(table.sourceSongId),
 	],
 );

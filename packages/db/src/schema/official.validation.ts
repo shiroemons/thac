@@ -37,7 +37,6 @@ export const insertOfficialSongSchema = createInsertSchema(officialSongs, {
 	name: nonEmptyString,
 	nameJa: nonEmptyString,
 	nameEn: optionalString,
-	themeType: optionalString,
 	composerName: optionalString,
 	arrangerName: optionalString,
 	isOriginal: z.boolean().default(true),

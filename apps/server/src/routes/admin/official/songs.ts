@@ -16,12 +16,11 @@ import { parseAndValidate } from "../../../utils/import-parser";
 
 const songsRouter = new Hono<AdminContext>();
 
-// 一覧取得（ページネーション、作品フィルタ、themeTypeフィルタ、検索対応）
+// 一覧取得（ページネーション、作品フィルタ、検索対応）
 songsRouter.get("/", async (c) => {
 	const page = Number(c.req.query("page")) || 1;
 	const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 	const workId = c.req.query("workId");
-	const themeType = c.req.query("themeType");
 	const search = c.req.query("search");
 
 	const offset = (page - 1) * limit;
@@ -31,10 +30,6 @@ songsRouter.get("/", async (c) => {
 
 	if (workId) {
 		conditions.push(eq(officialSongs.officialWorkId, workId));
-	}
-
-	if (themeType) {
-		conditions.push(eq(officialSongs.themeType, themeType));
 	}
 
 	if (search) {
@@ -60,7 +55,6 @@ songsRouter.get("/", async (c) => {
 				name: officialSongs.name,
 				nameJa: officialSongs.nameJa,
 				nameEn: officialSongs.nameEn,
-				themeType: officialSongs.themeType,
 				composerName: officialSongs.composerName,
 				arrangerName: officialSongs.arrangerName,
 				isOriginal: officialSongs.isOriginal,
@@ -104,7 +98,6 @@ songsRouter.get("/:id", async (c) => {
 			name: officialSongs.name,
 			nameJa: officialSongs.nameJa,
 			nameEn: officialSongs.nameEn,
-			themeType: officialSongs.themeType,
 			composerName: officialSongs.composerName,
 			arrangerName: officialSongs.arrangerName,
 			isOriginal: officialSongs.isOriginal,
@@ -293,7 +286,6 @@ songsRouter.post("/import", async (c) => {
 						name: item.name,
 						nameJa: item.nameJa,
 						nameEn: item.nameEn,
-						themeType: item.themeType,
 						composerName: item.composerName,
 						arrangerName: item.arrangerName,
 						isOriginal: item.isOriginal,
