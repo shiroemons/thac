@@ -1,4 +1,6 @@
-.PHONY: help dev up down logs ps build clean rebuild shell-server shell-web db-local db-push db-generate db-migrate db-seed db-setup db-studio db-push-local db-generate-local db-migrate-local db-seed-local db-setup-local test test-local
+.PHONY: help dev up down logs ps build clean rebuild shell-server shell-web \
+	db-push db-generate db-migrate db-seed db-setup db-studio \
+	test test-local
 
 # デフォルトターゲット
 help: ## ヘルプを表示
@@ -69,9 +71,6 @@ shell-web: ## Webコンテナにシェル接続
 # データベース（Docker）
 # =============================================================================
 
-db-local: ## ローカルSQLiteサーバーを起動（ローカル）
-	cd packages/db && bun run db:local
-
 db-push: ## スキーマをDBにプッシュ（Docker）
 	docker compose exec server bun run --cwd /app db:push
 
@@ -90,26 +89,6 @@ db-setup: ## DBセットアップ（push + seed）（Docker）
 
 db-studio: ## Drizzle Studioを起動（ローカル）
 	bun run db:studio
-
-# =============================================================================
-# データベース（ローカル）
-# =============================================================================
-
-db-push-local: ## スキーマをDBにプッシュ（ローカル）
-	bun run db:push
-
-db-generate-local: ## マイグレーションを生成（ローカル）
-	bun run db:generate
-
-db-migrate-local: ## マイグレーションを実行（ローカル）
-	bun run db:migrate
-
-db-seed-local: ## シードデータを投入（ローカル）
-	bun run db:seed
-
-db-setup-local: ## DBセットアップ（push + seed）（ローカル）
-	bun run db:push
-	bun run db:seed
 
 # =============================================================================
 # ユーティリティ

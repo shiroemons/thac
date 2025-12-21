@@ -26,9 +26,6 @@ bun run check
 ## データベースコマンド（Docker）
 
 ```bash
-# ローカルSQLiteサーバーを起動（ローカル）
-make db-local
-
 # スキーマをDBにプッシュ
 make db-push
 
@@ -44,25 +41,6 @@ make db-seed
 # DBセットアップ（push + seed）
 make db-setup
 
-# Drizzle Studioを起動（ローカル）
+# Drizzle Studioを起動
 make db-studio
-```
-
-## データベースコマンド（ローカル）
-
-```bash
-# スキーマをDBにプッシュ
-make db-push-local
-
-# マイグレーションを生成
-make db-generate-local
-
-# マイグレーションを実行
-make db-migrate-local
-
-# シードデータを投入
-make db-seed-local
-
-# DBセットアップ（push + seed）
-make db-setup-local
 ```
