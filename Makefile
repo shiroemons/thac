@@ -1,4 +1,4 @@
-.PHONY: help dev up down logs ps build clean rebuild shell-server shell-web \
+.PHONY: help dev up down logs ps build clean rebuild reset reset-deps prune shell-server shell-web \
 	db-push db-generate db-migrate db-seed db-setup db-studio \
 	test test-local
 
@@ -60,6 +60,21 @@ rebuild: ## イメージを再ビルドして起動
 	docker compose down
 	docker compose build --no-cache
 	docker compose up -d
+
+reset: ## 完全リセット（ボリューム削除→再ビルド→起動）
+	docker compose down -v --remove-orphans
+	docker compose build --no-cache
+	docker compose up -d
+
+reset-deps: ## コンテナ内のnode_modulesを再インストール
+	docker compose exec server rm -rf node_modules
+	docker compose exec web rm -rf node_modules
+	docker compose exec server bun install
+	docker compose exec web bun install
+
+prune: ## Docker不要リソースを削除（キャッシュ・未使用イメージ等）
+	docker system prune -f
+	docker builder prune -f
 
 shell-server: ## Serverコンテナにシェル接続
 	docker compose exec server sh
