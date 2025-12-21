@@ -35,6 +35,7 @@ export const insertPlatformSchema = createInsertSchema(platforms, {
 	name: nonEmptyString,
 	category: z.string().trim().optional().nullable(),
 	urlPattern: validRegex,
+	sortOrder: z.number().int().optional(),
 }).omit({ createdAt: true, updatedAt: true });
 
 export const updatePlatformSchema = createInsertSchema(platforms, {
@@ -42,6 +43,7 @@ export const updatePlatformSchema = createInsertSchema(platforms, {
 	name: nonEmptyString.optional(),
 	category: z.string().trim().optional().nullable(),
 	urlPattern: validRegex,
+	sortOrder: z.number().int().optional(),
 })
 	.omit({ createdAt: true, updatedAt: true, code: true })
 	.partial();
@@ -53,12 +55,14 @@ export const insertAliasTypeSchema = createInsertSchema(aliasTypes, {
 	code: nonEmptyString,
 	label: nonEmptyString,
 	description: z.string().trim().optional().nullable(),
+	sortOrder: z.number().int().optional(),
 });
 
 export const updateAliasTypeSchema = createInsertSchema(aliasTypes, {
 	code: nonEmptyString.optional(),
 	label: nonEmptyString.optional(),
 	description: z.string().trim().optional().nullable(),
+	sortOrder: z.number().int().optional(),
 })
 	.omit({ code: true })
 	.partial();
@@ -70,12 +74,14 @@ export const insertCreditRoleSchema = createInsertSchema(creditRoles, {
 	code: nonEmptyString,
 	label: nonEmptyString,
 	description: z.string().trim().optional().nullable(),
+	sortOrder: z.number().int().optional(),
 });
 
 export const updateCreditRoleSchema = createInsertSchema(creditRoles, {
 	code: nonEmptyString.optional(),
 	label: nonEmptyString.optional(),
 	description: z.string().trim().optional().nullable(),
+	sortOrder: z.number().int().optional(),
 })
 	.omit({ code: true })
 	.partial();
@@ -89,6 +95,7 @@ export const insertOfficialWorkCategorySchema = createInsertSchema(
 		code: nonEmptyString,
 		name: nonEmptyString,
 		description: z.string().trim().optional().nullable(),
+		sortOrder: z.number().int().optional(),
 	},
 );
 
@@ -98,6 +105,7 @@ export const updateOfficialWorkCategorySchema = createInsertSchema(
 		code: nonEmptyString.optional(),
 		name: nonEmptyString.optional(),
 		description: z.string().trim().optional().nullable(),
+		sortOrder: z.number().int().optional(),
 	},
 )
 	.omit({ code: true })
