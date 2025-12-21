@@ -23,3 +23,31 @@ export function createReleaseDetailHead(releaseName?: string) {
 		meta: [{ title: `作品詳細：${subtitle} | ${APP_NAME}` }],
 	};
 }
+
+export function createArtistDetailHead(artistName?: string) {
+	const subtitle = artistName || "読み込み中";
+	return {
+		meta: [{ title: `アーティスト詳細：${subtitle} | ${APP_NAME}` }],
+	};
+}
+
+export function createCircleDetailHead(circleName?: string) {
+	const subtitle = circleName || "読み込み中";
+	return {
+		meta: [{ title: `サークル詳細：${subtitle} | ${APP_NAME}` }],
+	};
+}
+
+export function createEventDetailHead(eventName?: string) {
+	const subtitle = eventName || "読み込み中";
+	return {
+		meta: [{ title: `イベント詳細：${subtitle} | ${APP_NAME}` }],
+	};
+}
+
+export function createEventSeriesDetailHead(seriesName?: string) {
+	const subtitle = seriesName || "読み込み中";
+	return {
+		meta: [{ title: `イベントシリーズ詳細：${subtitle} | ${APP_NAME}` }],
+	};
+}

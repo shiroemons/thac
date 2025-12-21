@@ -124,6 +124,34 @@ eventSeriesRouter.put("/reorder", async (c) => {
 	return c.json({ success: true });
 });
 
+// イベントシリーズ詳細取得（所属イベント一覧を含む）
+eventSeriesRouter.get("/:id", async (c) => {
+	const id = c.req.param("id");
+
+	// イベントシリーズ取得
+	const series = await db
+		.select()
+		.from(eventSeries)
+		.where(eq(eventSeries.id, id))
+		.limit(1);
+
+	if (series.length === 0) {
+		return c.json({ error: "Not found" }, 404);
+	}
+
+	// 所属イベント一覧取得（回次順）
+	const seriesEvents = await db
+		.select()
+		.from(events)
+		.where(eq(events.eventSeriesId, id))
+		.orderBy(asc(events.edition));
+
+	return c.json({
+		...series[0],
+		events: seriesEvents,
+	});
+});
+
 // イベントシリーズ更新
 eventSeriesRouter.put("/:id", async (c) => {
 	const id = c.req.param("id");

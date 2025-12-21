@@ -456,6 +456,10 @@ export interface ArtistAlias {
 	artistName?: string | null;
 }
 
+export interface ArtistWithAliases extends Artist {
+	aliases: ArtistAlias[];
+}
+
 export interface Circle {
 	id: string;
 	name: string;
@@ -506,7 +510,8 @@ export const artistsApi = {
 			`/api/admin/artists${query ? `?${query}` : ""}`,
 		);
 	},
-	get: (id: string) => fetchWithAuth<Artist>(`/api/admin/artists/${id}`),
+	get: (id: string) =>
+		fetchWithAuth<ArtistWithAliases>(`/api/admin/artists/${id}`),
 	create: (data: Omit<Artist, "createdAt" | "updatedAt">) =>
 		fetchWithAuth<Artist>("/api/admin/artists", {
 			method: "POST",
@@ -685,8 +690,14 @@ export interface EventWithDays extends Event {
 	days: EventDay[];
 }
 
+export interface EventSeriesWithEvents extends EventSeries {
+	events: Event[];
+}
+
 // Event Series
 export const eventSeriesApi = {
+	get: (id: string) =>
+		fetchWithAuth<EventSeriesWithEvents>(`/api/admin/event-series/${id}`),
 	list: (params?: { search?: string }) => {
 		const searchParams = new URLSearchParams();
 		if (params?.search) searchParams.set("search", params.search);

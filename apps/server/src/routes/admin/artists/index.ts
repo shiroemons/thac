@@ -1,6 +1,8 @@
 import {
 	and,
+	artistAliases,
 	artists,
+	asc,
 	count,
 	db,
 	eq,
@@ -67,10 +69,11 @@ artistsRouter.get("/", async (c) => {
 	});
 });
 
-// 個別取得
+// 個別取得（別名義一覧を含む）
 artistsRouter.get("/:id", async (c) => {
 	const id = c.req.param("id");
 
+	// アーティスト取得
 	const result = await db
 		.select()
 		.from(artists)
@@ -81,7 +84,17 @@ artistsRouter.get("/:id", async (c) => {
 		return c.json({ error: "Not found" }, 404);
 	}
 
-	return c.json(result[0]);
+	// 別名義一覧取得
+	const aliases = await db
+		.select()
+		.from(artistAliases)
+		.where(eq(artistAliases.artistId, id))
+		.orderBy(asc(artistAliases.name));
+
+	return c.json({
+		...result[0],
+		aliases,
+	});
 });
 
 // 新規作成

@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db/utils/id";
 import { detectInitial } from "@thac/utils";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ExternalLink, Link2, Pencil, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Eye, Link2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -553,6 +553,14 @@ function CirclesPage() {
 											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
+													<Link
+														to="/admin/circles/$id"
+														params={{ id: circle.id }}
+														className="btn btn-ghost btn-xs"
+													>
+														<Eye className="h-4 w-4" />
+														<span className="sr-only">詳細</span>
+													</Link>
 													<Button
 														variant="ghost"
 														size="icon"
