@@ -26,6 +26,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -60,6 +61,7 @@ import {
 	trackCreditsApi,
 	tracksApi,
 } from "@/lib/api-client";
+import { COUNTRY_CODE_OPTIONS } from "@/lib/constants";
 import { createReleaseDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/releases_/$id")({
@@ -820,7 +822,7 @@ function ReleaseDetailPage() {
 				platformCode: "",
 				url: "",
 				platformItemId: "",
-				countryCode: "",
+				countryCode: "JP",
 				visibility: "public",
 				publishedAt: "",
 				removedAt: "",
@@ -899,7 +901,7 @@ function ReleaseDetailPage() {
 			setJanCodeForm({
 				janCode: "",
 				label: "",
-				countryCode: "",
+				countryCode: "JP",
 				isPrimary: !hasPrimary,
 			});
 		}
@@ -2279,22 +2281,24 @@ function ReleaseDetailPage() {
 							<Label>
 								プラットフォーム <span className="text-error">*</span>
 							</Label>
-							<Select
+							<GroupedSearchableSelect
 								value={publicationForm.platformCode}
-								onChange={(e) =>
+								onChange={(val) =>
 									setPublicationForm({
 										...publicationForm,
-										platformCode: e.target.value,
+										platformCode: val,
 									})
 								}
-							>
-								<option value="">選択してください</option>
-								{platformsData?.data.map((platform) => (
-									<option key={platform.code} value={platform.code}>
-										{platform.name}
-									</option>
-								))}
-							</Select>
+								options={(platformsData?.data ?? []).map((p) => ({
+									value: p.code,
+									label: p.name,
+									group: p.category || undefined,
+								}))}
+								placeholder="プラットフォームを選択"
+								searchPlaceholder="プラットフォームを検索..."
+								emptyMessage="プラットフォームが見つかりません"
+								ungroupedLabel="その他"
+							/>
 						</div>
 
 						<div className="grid gap-2">
@@ -2330,17 +2334,23 @@ function ReleaseDetailPage() {
 							</div>
 							<div className="grid gap-2">
 								<Label>国コード</Label>
-								<Input
+								<select
 									value={publicationForm.countryCode}
 									onChange={(e) =>
 										setPublicationForm({
 											...publicationForm,
-											countryCode: e.target.value.toUpperCase(),
+											countryCode: e.target.value,
 										})
 									}
-									placeholder="JP"
-									maxLength={2}
-								/>
+									className="select select-bordered w-full"
+								>
+									<option value="">選択してください</option>
+									{COUNTRY_CODE_OPTIONS.map((opt) => (
+										<option key={opt.value} value={opt.value}>
+											{opt.label}
+										</option>
+									))}
+								</select>
 							</div>
 						</div>
 
@@ -2492,17 +2502,23 @@ function ReleaseDetailPage() {
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
 								<Label>国コード</Label>
-								<Input
+								<select
 									value={janCodeForm.countryCode}
 									onChange={(e) =>
 										setJanCodeForm({
 											...janCodeForm,
-											countryCode: e.target.value.toUpperCase(),
+											countryCode: e.target.value,
 										})
 									}
-									placeholder="JP"
-									maxLength={2}
-								/>
+									className="select select-bordered w-full"
+								>
+									<option value="">選択してください</option>
+									{COUNTRY_CODE_OPTIONS.map((opt) => (
+										<option key={opt.value} value={opt.value}>
+											{opt.label}
+										</option>
+									))}
+								</select>
 							</div>
 							<div className="grid gap-2">
 								<Label>プライマリ</Label>

@@ -30,19 +30,6 @@ import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-sele
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-
-// 国コード一覧
-const COUNTRY_CODE_OPTIONS = [
-	{ value: "JP", label: "JP - 日本" },
-	{ value: "US", label: "US - アメリカ" },
-	{ value: "GB", label: "GB - イギリス" },
-	{ value: "DE", label: "DE - ドイツ" },
-	{ value: "FR", label: "FR - フランス" },
-	{ value: "CN", label: "CN - 中国" },
-	{ value: "KR", label: "KR - 韓国" },
-	{ value: "TW", label: "TW - 台湾" },
-] as const;
-
 import {
 	Table,
 	TableBody,
@@ -70,6 +57,7 @@ import {
 	trackPublicationsApi,
 	tracksApi,
 } from "@/lib/api-client";
+import { COUNTRY_CODE_OPTIONS } from "@/lib/constants";
 import { createTrackDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/tracks_/$id")({
@@ -618,6 +606,22 @@ function TrackDetailPage() {
 		} catch (err) {
 			setMutationError(
 				err instanceof Error ? err.message : "原曲紐付けの削除に失敗しました",
+			);
+		}
+	};
+
+	const handleOfficialSongReorder = async (
+		relationId: string,
+		direction: "up" | "down",
+	) => {
+		try {
+			await trackOfficialSongsApi.reorder(trackId, relationId, direction);
+			await queryClient.invalidateQueries({
+				queryKey: ["track-official-songs", trackId],
+			});
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "並べ替えに失敗しました",
 			);
 		}
 	};
@@ -1204,23 +1208,48 @@ function TrackDetailPage() {
 						<Table>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
+									<TableHead className="w-[60px]">順序</TableHead>
 									<TableHead>公式楽曲</TableHead>
-									<TableHead className="w-[80px]">順序</TableHead>
 									<TableHead className="w-[120px]">時間範囲</TableHead>
 									<TableHead className="w-[80px]">確度</TableHead>
 									<TableHead>備考</TableHead>
-									<TableHead className="w-[100px]" />
+									<TableHead className="w-[120px]" />
 								</TableRow>
 							</TableHeader>
 							<TableBody>
 								{officialSongsRelations
 									.sort((a, b) => (a.partPosition ?? 0) - (b.partPosition ?? 0))
-									.map((relation) => (
+									.map((relation, index, arr) => (
 										<TableRow key={relation.id}>
+											<TableCell>
+												<div className="flex items-center gap-0.5">
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-6 w-6"
+														disabled={index === 0}
+														onClick={() =>
+															handleOfficialSongReorder(relation.id, "up")
+														}
+													>
+														<ChevronUp className="h-4 w-4" />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-6 w-6"
+														disabled={index === arr.length - 1}
+														onClick={() =>
+															handleOfficialSongReorder(relation.id, "down")
+														}
+													>
+														<ChevronDown className="h-4 w-4" />
+													</Button>
+												</div>
+											</TableCell>
 											<TableCell className="font-medium">
 												{relation.officialSong?.name ?? relation.officialSongId}
 											</TableCell>
-											<TableCell>{relation.partPosition ?? "-"}</TableCell>
 											<TableCell>
 												{relation.startSecond != null ||
 												relation.endSecond != null
@@ -1744,45 +1773,26 @@ function TrackDetailPage() {
 								/>
 							</div>
 						)}
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label>順序（part_position）</Label>
-								<Input
-									type="number"
-									min="1"
-									value={officialSongForm.partPosition ?? ""}
-									onChange={(e) =>
-										setOfficialSongForm({
-											...officialSongForm,
-											partPosition: e.target.value
-												? Number.parseInt(e.target.value, 10)
-												: null,
-										})
-									}
-									placeholder="1, 2, ..."
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label>確度: {officialSongForm.confidence ?? 0}%</Label>
-								<input
-									type="range"
-									min="0"
-									max="100"
-									step="10"
-									value={officialSongForm.confidence ?? 0}
-									onChange={(e) =>
-										setOfficialSongForm({
-											...officialSongForm,
-											confidence: Number.parseInt(e.target.value, 10),
-										})
-									}
-									className="range range-primary range-sm"
-								/>
-								<div className="flex w-full justify-between px-1 text-base-content/50 text-xs">
-									<span>0</span>
-									<span>50</span>
-									<span>100</span>
-								</div>
+						<div className="grid gap-2">
+							<Label>確度: {officialSongForm.confidence ?? 0}%</Label>
+							<input
+								type="range"
+								min="0"
+								max="100"
+								step="10"
+								value={officialSongForm.confidence ?? 0}
+								onChange={(e) =>
+									setOfficialSongForm({
+										...officialSongForm,
+										confidence: Number.parseInt(e.target.value, 10),
+									})
+								}
+								className="range range-primary range-sm"
+							/>
+							<div className="flex w-full justify-between px-1 text-base-content/50 text-xs">
+								<span>0</span>
+								<span>50</span>
+								<span>100</span>
 							</div>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -1825,7 +1835,7 @@ function TrackDetailPage() {
 						</div>
 						<div className="grid gap-2">
 							<Label>備考</Label>
-							<Input
+							<textarea
 								value={officialSongForm.notes}
 								onChange={(e) =>
 									setOfficialSongForm({
@@ -1833,7 +1843,9 @@ function TrackDetailPage() {
 										notes: e.target.value,
 									})
 								}
-								placeholder="備考"
+								placeholder="備考を入力..."
+								className="textarea textarea-bordered w-full"
+								rows={3}
 							/>
 						</div>
 					</div>

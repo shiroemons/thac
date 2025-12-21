@@ -1289,6 +1289,14 @@ export const trackOfficialSongsApi = {
 				method: "DELETE",
 			},
 		),
+	reorder: (trackId: string, id: string, direction: "up" | "down") =>
+		fetchWithAuth<TrackOfficialSong[]>(
+			`/api/admin/tracks/${trackId}/official-songs/${id}/reorder`,
+			{
+				method: "PATCH",
+				body: JSON.stringify({ direction }),
+			},
+		),
 };
 
 // Track Derivations (派生関係)

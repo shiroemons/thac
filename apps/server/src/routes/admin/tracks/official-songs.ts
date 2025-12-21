@@ -3,6 +3,7 @@ import {
 	db,
 	eq,
 	insertTrackOfficialSongSchema,
+	max,
 	officialSongs,
 	trackOfficialSongs,
 	tracks,
@@ -77,10 +78,21 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 		return c.json({ error: "Official song not found" }, 404);
 	}
 
+	// partPositionが未指定の場合は自動付与（現在の最大値 + 1）
+	let autoPartPosition = body.partPosition;
+	if (autoPartPosition == null) {
+		const maxResult = await db
+			.select({ maxPos: max(trackOfficialSongs.partPosition) })
+			.from(trackOfficialSongs)
+			.where(eq(trackOfficialSongs.trackId, trackId));
+		autoPartPosition = (maxResult[0]?.maxPos ?? 0) + 1;
+	}
+
 	// バリデーション
 	const parsed = insertTrackOfficialSongSchema.safeParse({
 		...body,
 		trackId,
+		partPosition: autoPartPosition,
 	});
 	if (!parsed.success) {
 		return c.json(
@@ -242,5 +254,72 @@ trackOfficialSongsRouter.delete("/:trackId/official-songs/:id", async (c) => {
 
 	return c.json({ success: true });
 });
+
+// 原曲紐付け並べ替え
+trackOfficialSongsRouter.patch(
+	"/:trackId/official-songs/:id/reorder",
+	async (c) => {
+		const trackId = c.req.param("trackId");
+		const id = c.req.param("id");
+		const body = await c.req.json<{ direction: "up" | "down" }>();
+
+		// 現在の紐付け一覧を取得（順序順）
+		const relations = await db
+			.select()
+			.from(trackOfficialSongs)
+			.where(eq(trackOfficialSongs.trackId, trackId))
+			.orderBy(trackOfficialSongs.partPosition);
+
+		const currentIndex = relations.findIndex((r) => r.id === id);
+		if (currentIndex === -1) {
+			return c.json({ error: "Not found" }, 404);
+		}
+
+		const swapIndex =
+			body.direction === "up" ? currentIndex - 1 : currentIndex + 1;
+		if (swapIndex < 0 || swapIndex >= relations.length) {
+			return c.json({ error: "Cannot move further" }, 400);
+		}
+
+		const currentItem = relations[currentIndex];
+		const swapItem = relations[swapIndex];
+
+		if (!currentItem || !swapItem) {
+			return c.json({ error: "Invalid state" }, 500);
+		}
+
+		// 順序を入れ替え
+		await db
+			.update(trackOfficialSongs)
+			.set({ partPosition: swapItem.partPosition })
+			.where(eq(trackOfficialSongs.id, currentItem.id));
+
+		await db
+			.update(trackOfficialSongs)
+			.set({ partPosition: currentItem.partPosition })
+			.where(eq(trackOfficialSongs.id, swapItem.id));
+
+		// 更新後の一覧を返す
+		const updatedRelations = await db
+			.select({
+				relation: trackOfficialSongs,
+				officialSong: officialSongs,
+			})
+			.from(trackOfficialSongs)
+			.leftJoin(
+				officialSongs,
+				eq(trackOfficialSongs.officialSongId, officialSongs.id),
+			)
+			.where(eq(trackOfficialSongs.trackId, trackId))
+			.orderBy(trackOfficialSongs.partPosition);
+
+		return c.json(
+			updatedRelations.map((row) => ({
+				...row.relation,
+				officialSong: row.officialSong,
+			})),
+		);
+	},
+);
 
 export { trackOfficialSongsRouter };
