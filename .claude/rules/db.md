@@ -25,23 +25,12 @@ packages/db/
 ## コマンド（Docker）
 
 ```bash
-make db-local      # ローカルSQLiteサーバーを起動
 make db-push       # スキーマをDBにプッシュ
 make db-generate   # マイグレーションを生成
 make db-migrate    # マイグレーションを実行
 make db-seed       # シードデータを投入
 make db-setup      # DBセットアップ（push + seed）
 make db-studio     # Drizzle Studioを起動
-```
-
-## コマンド（ローカル）
-
-```bash
-make db-push-local       # スキーマをDBにプッシュ
-make db-generate-local   # マイグレーションを生成
-make db-migrate-local    # マイグレーションを実行
-make db-seed-local       # シードデータを投入
-make db-setup-local      # DBセットアップ（push + seed）
 ```
 
 ## 開発ガイドライン

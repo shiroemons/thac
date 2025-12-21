@@ -26,9 +26,6 @@ bun run check
 ## データベースコマンド（Docker）
 
 ```bash
-# ローカルSQLiteサーバーを起動（ローカル）
-make db-local
-
 # スキーマをDBにプッシュ
 make db-push
 
@@ -44,25 +41,45 @@ make db-seed
 # DBセットアップ（push + seed）
 make db-setup
 
-# Drizzle Studioを起動（ローカル）
+# Drizzle Studioを起動
 make db-studio
 ```
 
-## データベースコマンド（ローカル）
+## トラブルシューティング
+
+### 症状別コマンド一覧
+
+| 症状 | コマンド | 説明 |
+|------|----------|------|
+| コンテナが正常に動作しない | `make restart` | コンテナを再起動 |
+| node_modulesが壊れた | `make reset-deps` | コンテナ内の依存関係を再インストール |
+| イメージ自体がおかしい | `make rebuild` | イメージを再ビルドして起動 |
+| 完全にリセットしたい | `make reset` | ボリューム削除→再ビルド→起動 |
+| ディスク容量が不足 | `make prune` | 不要なDockerリソースを削除 |
+| コンテナを完全削除 | `make clean` | ボリューム・イメージごと削除 |
+
+### 復旧手順
 
 ```bash
-# スキーマをDBにプッシュ
-make db-push-local
+# 1. まずコンテナ再起動を試す
+make restart
 
-# マイグレーションを生成
-make db-generate-local
+# 2. それでもダメならnode_modulesを再インストール
+make reset-deps
 
-# マイグレーションを実行
-make db-migrate-local
+# 3. まだダメならイメージを再ビルド
+make rebuild
 
-# シードデータを投入
-make db-seed-local
+# 4. 最終手段：完全リセット
+make reset
+```
 
-# DBセットアップ（push + seed）
-make db-setup-local
+### ディスク容量の確保
+
+```bash
+# 不要なDockerリソースを削除
+make prune
+
+# より積極的に削除（未使用イメージも含む）
+docker system prune -a
 ```
