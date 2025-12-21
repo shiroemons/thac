@@ -50,7 +50,7 @@ const COLUMN_CONFIGS = [
 	{ key: "nameJa", label: "楽曲名" },
 	{ key: "workName", label: "作品" },
 	{ key: "themeType", label: "主題区分" },
-	{ key: "isOfficialArrangement", label: "アレンジ" },
+	{ key: "isOriginal", label: "オリジナル" },
 	{ key: "createdAt", label: "作成日時", defaultVisible: false },
 	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
 ] as const;
@@ -126,12 +126,16 @@ function OfficialSongsPage() {
 		await officialSongsApi.create({
 			id: formData.id,
 			officialWorkId: formData.officialWorkId || null,
+			trackNumber: formData.trackNumber
+				? Number.parseInt(formData.trackNumber, 10)
+				: null,
 			name: formData.name,
 			nameJa: formData.nameJa,
 			nameEn: formData.nameEn || null,
 			themeType: formData.themeType || null,
 			composerName: formData.composerName || null,
-			isOfficialArrangement: formData.isOfficialArrangement === "true",
+			arrangerName: formData.arrangerName || null,
+			isOriginal: formData.isOriginal !== "false",
 			sourceSongId: formData.sourceSongId || null,
 			notes: formData.notes || null,
 		});
@@ -149,12 +153,14 @@ function OfficialSongsPage() {
 		try {
 			await officialSongsApi.update(editingSong.id, {
 				officialWorkId: editForm.officialWorkId,
+				trackNumber: editForm.trackNumber,
 				name: editForm.name,
 				nameJa: editForm.nameJa,
 				nameEn: editForm.nameEn,
 				themeType: editForm.themeType,
 				composerName: editForm.composerName,
-				isOfficialArrangement: editForm.isOfficialArrangement,
+				arrangerName: editForm.arrangerName,
+				isOriginal: editForm.isOriginal,
 				sourceSongId: editForm.sourceSongId,
 				notes: editForm.notes,
 			});
@@ -260,8 +266,8 @@ function OfficialSongsPage() {
 									{isVisible("themeType") && (
 										<TableHead className="w-[120px]">主題区分</TableHead>
 									)}
-									{isVisible("isOfficialArrangement") && (
-										<TableHead className="w-[80px]">アレンジ</TableHead>
+									{isVisible("isOriginal") && (
+										<TableHead className="w-[100px]">オリジナル</TableHead>
 									)}
 									{isVisible("createdAt") && (
 										<TableHead className="w-[160px]">作成日時</TableHead>
@@ -311,12 +317,12 @@ function OfficialSongsPage() {
 													)}
 												</TableCell>
 											)}
-											{isVisible("isOfficialArrangement") && (
+											{isVisible("isOriginal") && (
 												<TableCell>
-													{s.isOfficialArrangement ? (
+													{s.isOriginal ? (
 														<Badge variant="outline">Yes</Badge>
 													) : (
-														<span className="text-base-content/50">-</span>
+														<Badge variant="secondary">No</Badge>
 													)}
 												</TableCell>
 											)}
@@ -351,12 +357,14 @@ function OfficialSongsPage() {
 															setEditingSong(s);
 															setEditForm({
 																officialWorkId: s.officialWorkId,
+																trackNumber: s.trackNumber,
 																name: s.name,
 																nameJa: s.nameJa,
 																nameEn: s.nameEn,
 																themeType: s.themeType,
 																composerName: s.composerName,
-																isOfficialArrangement: s.isOfficialArrangement,
+																arrangerName: s.arrangerName,
+																isOriginal: s.isOriginal,
 																sourceSongId: s.sourceSongId,
 																notes: s.notes,
 															});
@@ -412,6 +420,11 @@ function OfficialSongsPage() {
 						placeholder: "例: th06",
 					},
 					{
+						name: "trackNumber",
+						label: "トラック番号",
+						placeholder: "例: 1",
+					},
+					{
 						name: "name",
 						label: "名前",
 						placeholder: "例: A Soul as Red as a Ground Cherry",
@@ -439,8 +452,13 @@ function OfficialSongsPage() {
 						placeholder: "例: ZUN",
 					},
 					{
-						name: "isOfficialArrangement",
-						label: "公式アレンジ",
+						name: "arrangerName",
+						label: "編曲者名",
+						placeholder: "例: ZUN",
+					},
+					{
+						name: "isOriginal",
+						label: "オリジナル",
 						placeholder: "true または false",
 					},
 					{
@@ -562,35 +580,45 @@ function OfficialSongsPage() {
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="edit-isOfficialArrangement">公式アレンジ</Label>
-								<select
-									id="edit-isOfficialArrangement"
-									className="select select-bordered w-full"
-									value={editForm.isOfficialArrangement ? "true" : "false"}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											isOfficialArrangement: e.target.value === "true",
-										})
-									}
-								>
-									<option value="false">いいえ</option>
-									<option value="true">はい</option>
-								</select>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-sourceSongId">原曲ID</Label>
+								<Label htmlFor="edit-arrangerName">編曲者名</Label>
 								<Input
-									id="edit-sourceSongId"
-									value={editForm.sourceSongId || ""}
+									id="edit-arrangerName"
+									value={editForm.arrangerName || ""}
 									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											sourceSongId: e.target.value || null,
-										})
+										setEditForm({ ...editForm, arrangerName: e.target.value })
 									}
 								/>
 							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-isOriginal">オリジナル</Label>
+								<select
+									id="edit-isOriginal"
+									className="select select-bordered w-full"
+									value={editForm.isOriginal ? "true" : "false"}
+									onChange={(e) =>
+										setEditForm({
+											...editForm,
+											isOriginal: e.target.value === "true",
+										})
+									}
+								>
+									<option value="true">はい</option>
+									<option value="false">いいえ</option>
+								</select>
+							</div>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="edit-sourceSongId">原曲ID</Label>
+							<Input
+								id="edit-sourceSongId"
+								value={editForm.sourceSongId || ""}
+								onChange={(e) =>
+									setEditForm({
+										...editForm,
+										sourceSongId: e.target.value || null,
+									})
+								}
+							/>
 						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="edit-notes">備考</Label>

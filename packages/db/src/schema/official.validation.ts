@@ -33,12 +33,14 @@ export const selectOfficialWorkSchema = createSelectSchema(officialWorks);
 export const insertOfficialSongSchema = createInsertSchema(officialSongs, {
 	id: nonEmptyString,
 	officialWorkId: optionalString,
+	trackNumber: z.number().int().optional().nullable(),
 	name: nonEmptyString,
 	nameJa: nonEmptyString,
 	nameEn: optionalString,
 	themeType: optionalString,
 	composerName: optionalString,
-	isOfficialArrangement: z.boolean().default(false),
+	arrangerName: optionalString,
+	isOriginal: z.boolean().default(true),
 	sourceSongId: optionalString,
 	notes: optionalString,
 }).omit({ createdAt: true, updatedAt: true });

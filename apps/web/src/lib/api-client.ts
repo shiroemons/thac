@@ -48,12 +48,14 @@ export interface OfficialWork {
 export interface OfficialSong {
 	id: string;
 	officialWorkId: string | null;
+	trackNumber: number | null;
 	name: string;
 	nameJa: string;
 	nameEn: string | null;
 	themeType: string | null;
 	composerName: string | null;
-	isOfficialArrangement: boolean;
+	arrangerName: string | null;
+	isOriginal: boolean;
 	sourceSongId: string | null;
 	notes: string | null;
 	createdAt: string;
