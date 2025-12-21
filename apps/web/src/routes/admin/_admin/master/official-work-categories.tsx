@@ -297,6 +297,9 @@ function OfficialWorkCategoriesPage() {
 										<TableRow key={c.code}>
 											<TableCell>
 												<div className="flex items-center gap-1">
+													<span className="w-8 text-center text-base-content/50 text-sm">
+														{c.sortOrder}
+													</span>
 													<Button
 														variant="ghost"
 														size="icon"

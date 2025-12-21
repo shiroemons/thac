@@ -279,16 +279,18 @@ async function seed() {
 
 	// Upsert platforms
 	console.log("Seeding platforms...");
-	for (const data of platformsData) {
+	for (let i = 0; i < platformsData.length; i++) {
+		const data = platformsData[i];
 		await db
 			.insert(platforms)
-			.values(data)
+			.values({ ...data, sortOrder: i })
 			.onConflictDoUpdate({
 				target: platforms.code,
 				set: {
 					name: data.name,
 					category: data.category,
 					urlPattern: data.urlPattern,
+					sortOrder: i,
 				},
 			});
 	}
@@ -296,15 +298,17 @@ async function seed() {
 
 	// Upsert alias_types
 	console.log("Seeding alias_types...");
-	for (const data of aliasTypesData) {
+	for (let i = 0; i < aliasTypesData.length; i++) {
+		const data = aliasTypesData[i];
 		await db
 			.insert(aliasTypes)
-			.values(data)
+			.values({ ...data, sortOrder: i })
 			.onConflictDoUpdate({
 				target: aliasTypes.code,
 				set: {
 					label: data.label,
 					description: data.description,
+					sortOrder: i,
 				},
 			});
 	}
@@ -312,15 +316,17 @@ async function seed() {
 
 	// Upsert credit_roles
 	console.log("Seeding credit_roles...");
-	for (const data of creditRolesData) {
+	for (let i = 0; i < creditRolesData.length; i++) {
+		const data = creditRolesData[i];
 		await db
 			.insert(creditRoles)
-			.values(data)
+			.values({ ...data, sortOrder: i })
 			.onConflictDoUpdate({
 				target: creditRoles.code,
 				set: {
 					label: data.label,
 					description: data.description,
+					sortOrder: i,
 				},
 			});
 	}
@@ -328,15 +334,17 @@ async function seed() {
 
 	// Upsert official_work_categories
 	console.log("Seeding official_work_categories...");
-	for (const data of officialWorkCategoriesData) {
+	for (let i = 0; i < officialWorkCategoriesData.length; i++) {
+		const data = officialWorkCategoriesData[i];
 		await db
 			.insert(officialWorkCategories)
-			.values(data)
+			.values({ ...data, sortOrder: i })
 			.onConflictDoUpdate({
 				target: officialWorkCategories.code,
 				set: {
 					name: data.name,
 					description: data.description,
+					sortOrder: i,
 				},
 			});
 	}

@@ -281,6 +281,9 @@ function AliasTypesPage() {
 										<TableRow key={a.code}>
 											<TableCell>
 												<div className="flex items-center gap-1">
+													<span className="w-8 text-center text-base-content/50 text-sm">
+														{a.sortOrder}
+													</span>
 													<Button
 														variant="ghost"
 														size="icon"
