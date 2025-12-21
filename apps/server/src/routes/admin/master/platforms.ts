@@ -7,6 +7,7 @@ import {
 	eq,
 	insertPlatformSchema,
 	like,
+	max,
 	or,
 	platforms,
 	updatePlatformSchema,
@@ -48,11 +49,13 @@ platformsRouter.get("/", async (c) => {
 
 	// ソート条件を構築
 	const sortColumn =
-		sortBy === "category"
-			? platforms.category
-			: sortBy === "name"
-				? platforms.name
-				: platforms.code;
+		sortBy === "sortOrder"
+			? platforms.sortOrder
+			: sortBy === "category"
+				? platforms.category
+				: sortBy === "name"
+					? platforms.name
+					: platforms.code;
 	const orderByClause =
 		sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
 
@@ -76,6 +79,27 @@ platformsRouter.get("/", async (c) => {
 		page,
 		limit,
 	});
+});
+
+// 並べ替え（一括更新）
+platformsRouter.put("/reorder", async (c) => {
+	const body = await c.req.json();
+
+	if (!body.items || !Array.isArray(body.items)) {
+		return c.json({ error: "items array is required" }, 400);
+	}
+
+	for (const item of body.items) {
+		if (!item.code || typeof item.sortOrder !== "number") {
+			return c.json({ error: "Each item must have code and sortOrder" }, 400);
+		}
+		await db
+			.update(platforms)
+			.set({ sortOrder: item.sortOrder })
+			.where(eq(platforms.code, item.code));
+	}
+
+	return c.json({ success: true });
 });
 
 // 個別取得
@@ -122,8 +146,20 @@ platformsRouter.post("/", async (c) => {
 		return c.json({ error: "Code already exists" }, 409);
 	}
 
+	// sortOrder が未指定の場合は最大値 + 1 を設定
+	let sortOrder = parsed.data.sortOrder;
+	if (sortOrder === undefined || sortOrder === null) {
+		const maxResult = await db
+			.select({ maxOrder: max(platforms.sortOrder) })
+			.from(platforms);
+		sortOrder = (maxResult[0]?.maxOrder ?? -1) + 1;
+	}
+
 	// 作成
-	const result = await db.insert(platforms).values(parsed.data).returning();
+	const result = await db
+		.insert(platforms)
+		.values({ ...parsed.data, sortOrder })
+		.returning();
 
 	return c.json(result[0], 201);
 });

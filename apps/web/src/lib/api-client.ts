@@ -147,6 +147,11 @@ export const platformsApi = {
 		fetchWithAuth<{ success: boolean }>(`/api/admin/master/platforms/${code}`, {
 			method: "DELETE",
 		}),
+	reorder: (items: { code: string; sortOrder: number }[]) =>
+		fetchWithAuth<{ success: boolean }>("/api/admin/master/platforms/reorder", {
+			method: "PUT",
+			body: JSON.stringify({ items }),
+		}),
 };
 
 // Alias Types
@@ -180,6 +185,14 @@ export const aliasTypesApi = {
 				method: "DELETE",
 			},
 		),
+	reorder: (items: { code: string; sortOrder: number }[]) =>
+		fetchWithAuth<{ success: boolean }>(
+			"/api/admin/master/alias-types/reorder",
+			{
+				method: "PUT",
+				body: JSON.stringify({ items }),
+			},
+		),
 };
 
 // Credit Roles
@@ -211,6 +224,14 @@ export const creditRolesApi = {
 			`/api/admin/master/credit-roles/${code}`,
 			{
 				method: "DELETE",
+			},
+		),
+	reorder: (items: { code: string; sortOrder: number }[]) =>
+		fetchWithAuth<{ success: boolean }>(
+			"/api/admin/master/credit-roles/reorder",
+			{
+				method: "PUT",
+				body: JSON.stringify({ items }),
 			},
 		),
 };
@@ -304,6 +325,14 @@ export const officialWorkCategoriesApi = {
 			`/api/admin/master/official-work-categories/${code}`,
 			{
 				method: "DELETE",
+			},
+		),
+	reorder: (items: { code: string; sortOrder: number }[]) =>
+		fetchWithAuth<{ success: boolean }>(
+			"/api/admin/master/official-work-categories/reorder",
+			{
+				method: "PUT",
+				body: JSON.stringify({ items }),
 			},
 		),
 };

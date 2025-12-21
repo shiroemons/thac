@@ -1,6 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Trash2, Upload } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+	ArrowUpDown,
+	ChevronDown,
+	ChevronUp,
+	Eye,
+	Pencil,
+	Trash2,
+	Upload,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -38,6 +46,7 @@ export const Route = createFileRoute("/admin/_admin/master/credit-roles")({
 
 // カラム定義
 const COLUMN_CONFIGS = [
+	{ key: "sortOrder", label: "順序", defaultVisible: false },
 	{ key: "code", label: "コード" },
 	{ key: "label", label: "ラベル" },
 	{ key: "description", label: "説明" },
@@ -46,10 +55,11 @@ const COLUMN_CONFIGS = [
 function CreditRolesPage() {
 	const queryClient = useQueryClient();
 
-	// ページネーション・フィルタ状態
+	// ページネーション・フィルタ・ソート状態
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(20);
 	const [search, setSearch] = useState("");
+	const [isReordering, setIsReordering] = useState(false);
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
@@ -83,6 +93,59 @@ function CreditRolesPage() {
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["credit-roles"] });
+	};
+
+	// 並べ替えが無効な条件
+	const isReorderDisabled = !!debouncedSearch;
+
+	// 上へ移動
+	const handleMoveUp = async (item: CreditRole, index: number) => {
+		if (index === 0 || isReorderDisabled) return;
+		const prevItem = items[index - 1];
+		try {
+			await creditRolesApi.update(item.code, { sortOrder: prevItem.sortOrder });
+			await creditRolesApi.update(prevItem.code, { sortOrder: item.sortOrder });
+			invalidateQuery();
+		} catch (e) {
+			setMutationError(
+				e instanceof Error ? e.message : "順序変更に失敗しました",
+			);
+		}
+	};
+
+	// 下へ移動
+	const handleMoveDown = async (item: CreditRole, index: number) => {
+		if (index === items.length - 1 || isReorderDisabled) return;
+		const nextItem = items[index + 1];
+		try {
+			await creditRolesApi.update(item.code, { sortOrder: nextItem.sortOrder });
+			await creditRolesApi.update(nextItem.code, { sortOrder: item.sortOrder });
+			invalidateQuery();
+		} catch (e) {
+			setMutationError(
+				e instanceof Error ? e.message : "順序変更に失敗しました",
+			);
+		}
+	};
+
+	// 順序を整理
+	const handleReorder = async () => {
+		if (items.length === 0) return;
+		setIsReordering(true);
+		try {
+			const reorderItems = items.map((item, index) => ({
+				code: item.code,
+				sortOrder: index,
+			}));
+			await creditRolesApi.reorder(reorderItems);
+			invalidateQuery();
+		} catch (e) {
+			setMutationError(
+				e instanceof Error ? e.message : "順序の整理に失敗しました",
+			);
+		} finally {
+			setIsReordering(false);
+		}
 	};
 
 	const handleCreate = async (formData: Record<string, string>) => {
@@ -158,6 +221,12 @@ function CreditRolesPage() {
 					}}
 					secondaryActions={[
 						{
+							label: isReordering ? "整理中..." : "順序を整理",
+							icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
+							onClick: handleReorder,
+							disabled: isReordering || items.length === 0,
+						},
+						{
 							label: "インポート",
 							icon: <Upload className="mr-2 h-4 w-4" />,
 							onClick: () => setIsImportDialogOpen(true),
@@ -183,6 +252,10 @@ function CreditRolesPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
+									<TableHead className="w-[100px]">並び替え</TableHead>
+									{isVisible("sortOrder") && (
+										<TableHead className="w-[80px]">順序</TableHead>
+									)}
 									{isVisible("code") && (
 										<TableHead className="w-[150px]">コード</TableHead>
 									)}
@@ -190,7 +263,7 @@ function CreditRolesPage() {
 										<TableHead className="w-[200px]">ラベル</TableHead>
 									)}
 									{isVisible("description") && <TableHead>説明</TableHead>}
-									<TableHead className="w-[70px]" />
+									<TableHead className="w-[100px]" />
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -204,8 +277,39 @@ function CreditRolesPage() {
 										</TableCell>
 									</TableRow>
 								) : (
-									items.map((c) => (
+									items.map((c, index) => (
 										<TableRow key={c.code}>
+											<TableCell>
+												<div className="flex items-center gap-1">
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => handleMoveUp(c, index)}
+														disabled={index === 0 || isReorderDisabled}
+														title="上へ移動"
+													>
+														<ChevronUp className="h-4 w-4" />
+														<span className="sr-only">上へ移動</span>
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => handleMoveDown(c, index)}
+														disabled={
+															index === items.length - 1 || isReorderDisabled
+														}
+														title="下へ移動"
+													>
+														<ChevronDown className="h-4 w-4" />
+														<span className="sr-only">下へ移動</span>
+													</Button>
+												</div>
+											</TableCell>
+											{isVisible("sortOrder") && (
+												<TableCell className="text-base-content/50 text-sm">
+													{c.sortOrder}
+												</TableCell>
+											)}
 											{isVisible("code") && (
 												<TableCell className="font-mono text-sm">
 													{c.code}
@@ -221,6 +325,14 @@ function CreditRolesPage() {
 											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
+													<Link
+														to="/admin/master/credit-roles/$code"
+														params={{ code: c.code }}
+														className="btn btn-ghost btn-xs"
+													>
+														<Eye className="h-4 w-4" />
+														<span className="sr-only">詳細</span>
+													</Link>
 													<Button
 														variant="ghost"
 														size="icon"

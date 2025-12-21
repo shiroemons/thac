@@ -51,3 +51,10 @@ export function createEventSeriesDetailHead(seriesName?: string) {
 		meta: [{ title: `イベントシリーズ詳細：${subtitle} | ${APP_NAME}` }],
 	};
 }
+
+export function createMasterDetailHead(masterType: string, itemName?: string) {
+	const subtitle = itemName || "読み込み中";
+	return {
+		meta: [{ title: `${masterType}詳細：${subtitle} | ${APP_NAME}` }],
+	};
+}

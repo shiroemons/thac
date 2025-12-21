@@ -1,9 +1,12 @@
 import {
+	asc,
 	count,
 	db,
+	desc,
 	eq,
 	insertOfficialWorkCategorySchema,
 	like,
+	max,
 	officialWorkCategories,
 	or,
 	updateOfficialWorkCategorySchema,
@@ -13,11 +16,13 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 
 const officialWorkCategoriesRouter = new Hono<AdminContext>();
 
-// 一覧取得（ページネーション、検索対応）
+// 一覧取得（ページネーション、検索、ソート対応）
 officialWorkCategoriesRouter.get("/", async (c) => {
 	const page = Number(c.req.query("page")) || 1;
 	const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 	const search = c.req.query("search");
+	const sortBy = c.req.query("sortBy") || "sortOrder";
+	const sortOrder = c.req.query("sortOrder") || "asc";
 
 	const offset = (page - 1) * limit;
 
@@ -29,6 +34,16 @@ officialWorkCategoriesRouter.get("/", async (c) => {
 			)
 		: undefined;
 
+	// ソート条件を構築
+	const sortColumn =
+		sortBy === "sortOrder"
+			? officialWorkCategories.sortOrder
+			: sortBy === "name"
+				? officialWorkCategories.name
+				: officialWorkCategories.code;
+	const orderByClause =
+		sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
+
 	// データ取得
 	const [data, totalResult] = await Promise.all([
 		db
@@ -37,7 +52,7 @@ officialWorkCategoriesRouter.get("/", async (c) => {
 			.where(whereCondition)
 			.limit(limit)
 			.offset(offset)
-			.orderBy(officialWorkCategories.code),
+			.orderBy(orderByClause),
 		db
 			.select({ count: count() })
 			.from(officialWorkCategories)
@@ -52,6 +67,27 @@ officialWorkCategoriesRouter.get("/", async (c) => {
 		page,
 		limit,
 	});
+});
+
+// 並べ替え（一括更新）
+officialWorkCategoriesRouter.put("/reorder", async (c) => {
+	const body = await c.req.json();
+
+	if (!body.items || !Array.isArray(body.items)) {
+		return c.json({ error: "items array is required" }, 400);
+	}
+
+	for (const item of body.items) {
+		if (!item.code || typeof item.sortOrder !== "number") {
+			return c.json({ error: "Each item must have code and sortOrder" }, 400);
+		}
+		await db
+			.update(officialWorkCategories)
+			.set({ sortOrder: item.sortOrder })
+			.where(eq(officialWorkCategories.code, item.code));
+	}
+
+	return c.json({ success: true });
 });
 
 // 個別取得
@@ -98,10 +134,19 @@ officialWorkCategoriesRouter.post("/", async (c) => {
 		return c.json({ error: "Code already exists" }, 409);
 	}
 
+	// sortOrder が未指定の場合は最大値 + 1 を設定
+	let sortOrder = parsed.data.sortOrder;
+	if (sortOrder === undefined || sortOrder === null) {
+		const maxResult = await db
+			.select({ maxOrder: max(officialWorkCategories.sortOrder) })
+			.from(officialWorkCategories);
+		sortOrder = (maxResult[0]?.maxOrder ?? -1) + 1;
+	}
+
 	// 作成
 	const result = await db
 		.insert(officialWorkCategories)
-		.values(parsed.data)
+		.values({ ...parsed.data, sortOrder })
 		.returning();
 
 	return c.json(result[0], 201);
