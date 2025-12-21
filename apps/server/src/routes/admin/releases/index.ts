@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { discsRouter } from "./discs";
+import { releaseJanCodesRouter } from "./jan-codes";
+import { releasePublicationsRouter } from "./publications";
 import { releaseCirclesRouter } from "./release-circles";
 import { releasesRouter } from "./releases";
 import { trackCreditRolesRouter } from "./track-credit-roles";
@@ -17,5 +19,9 @@ releasesAdminRouter.route("/", releaseCirclesRouter);
 releasesAdminRouter.route("/", tracksRouter);
 releasesAdminRouter.route("/", trackCreditsRouter);
 releasesAdminRouter.route("/", trackCreditRolesRouter);
+
+// 公開リンク・JANコードルートをマウント
+releasesAdminRouter.route("/", releasePublicationsRouter);
+releasesAdminRouter.route("/", releaseJanCodesRouter);
 
 export { releasesAdminRouter };

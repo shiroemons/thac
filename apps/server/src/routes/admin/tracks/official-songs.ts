@@ -1,0 +1,246 @@
+import {
+	and,
+	db,
+	eq,
+	insertTrackOfficialSongSchema,
+	officialSongs,
+	trackOfficialSongs,
+	tracks,
+	updateTrackOfficialSongSchema,
+} from "@thac/db";
+import { Hono } from "hono";
+import type { AdminContext } from "../../../middleware/admin-auth";
+
+const trackOfficialSongsRouter = new Hono<AdminContext>();
+
+// トラックの原曲紐付け一覧取得
+trackOfficialSongsRouter.get("/:trackId/official-songs", async (c) => {
+	const trackId = c.req.param("trackId");
+
+	// トラック存在チェック
+	const existingTrack = await db
+		.select()
+		.from(tracks)
+		.where(eq(tracks.id, trackId))
+		.limit(1);
+
+	if (existingTrack.length === 0) {
+		return c.json({ error: "Track not found" }, 404);
+	}
+
+	// 原曲紐付け一覧取得（公式楽曲情報を結合）
+	const relations = await db
+		.select({
+			relation: trackOfficialSongs,
+			officialSong: officialSongs,
+		})
+		.from(trackOfficialSongs)
+		.leftJoin(
+			officialSongs,
+			eq(trackOfficialSongs.officialSongId, officialSongs.id),
+		)
+		.where(eq(trackOfficialSongs.trackId, trackId))
+		.orderBy(trackOfficialSongs.partPosition);
+
+	return c.json(
+		relations.map((row) => ({
+			...row.relation,
+			officialSong: row.officialSong,
+		})),
+	);
+});
+
+// 原曲紐付け追加
+trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
+	const trackId = c.req.param("trackId");
+	const body = await c.req.json();
+
+	// トラック存在チェック
+	const existingTrack = await db
+		.select()
+		.from(tracks)
+		.where(eq(tracks.id, trackId))
+		.limit(1);
+
+	if (existingTrack.length === 0) {
+		return c.json({ error: "Track not found" }, 404);
+	}
+
+	// 公式楽曲存在チェック
+	const existingOfficialSong = await db
+		.select()
+		.from(officialSongs)
+		.where(eq(officialSongs.id, body.officialSongId))
+		.limit(1);
+
+	if (existingOfficialSong.length === 0) {
+		return c.json({ error: "Official song not found" }, 404);
+	}
+
+	// バリデーション
+	const parsed = insertTrackOfficialSongSchema.safeParse({
+		...body,
+		trackId,
+	});
+	if (!parsed.success) {
+		return c.json(
+			{
+				error: "Validation failed",
+				details: parsed.error.flatten().fieldErrors,
+			},
+			400,
+		);
+	}
+
+	// ID重複チェック
+	const existingId = await db
+		.select()
+		.from(trackOfficialSongs)
+		.where(eq(trackOfficialSongs.id, parsed.data.id))
+		.limit(1);
+
+	if (existingId.length > 0) {
+		return c.json({ error: "ID already exists" }, 409);
+	}
+
+	// 一意性チェック（トラック × 公式楽曲 × 順序）
+	const duplicateCheck = await db
+		.select()
+		.from(trackOfficialSongs)
+		.where(
+			and(
+				eq(trackOfficialSongs.trackId, trackId),
+				eq(trackOfficialSongs.officialSongId, parsed.data.officialSongId),
+				parsed.data.partPosition != null
+					? eq(trackOfficialSongs.partPosition, parsed.data.partPosition)
+					: undefined,
+			),
+		)
+		.limit(1);
+
+	if (duplicateCheck.length > 0) {
+		return c.json(
+			{
+				error:
+					"This official song is already linked to the track with the same part position",
+			},
+			409,
+		);
+	}
+
+	// 作成
+	const result = await db
+		.insert(trackOfficialSongs)
+		.values(parsed.data)
+		.returning();
+
+	return c.json(result[0], 201);
+});
+
+// 原曲紐付け更新
+trackOfficialSongsRouter.put("/:trackId/official-songs/:id", async (c) => {
+	const trackId = c.req.param("trackId");
+	const id = c.req.param("id");
+	const body = await c.req.json();
+
+	// 紐付け存在チェック
+	const existingRelation = await db
+		.select()
+		.from(trackOfficialSongs)
+		.where(
+			and(
+				eq(trackOfficialSongs.id, id),
+				eq(trackOfficialSongs.trackId, trackId),
+			),
+		)
+		.limit(1);
+
+	if (existingRelation.length === 0) {
+		return c.json({ error: "Not found" }, 404);
+	}
+
+	// バリデーション
+	const parsed = updateTrackOfficialSongSchema.safeParse(body);
+	if (!parsed.success) {
+		return c.json(
+			{
+				error: "Validation failed",
+				details: parsed.error.flatten().fieldErrors,
+			},
+			400,
+		);
+	}
+
+	// 一意性チェック（partPositionを変更する場合）
+	const currentRelation = existingRelation[0];
+	const newPartPosition =
+		parsed.data.partPosition ?? currentRelation?.partPosition;
+
+	if (
+		newPartPosition !== currentRelation?.partPosition &&
+		newPartPosition != null
+	) {
+		const duplicateCheck = await db
+			.select()
+			.from(trackOfficialSongs)
+			.where(
+				and(
+					eq(trackOfficialSongs.trackId, trackId),
+					eq(
+						trackOfficialSongs.officialSongId,
+						currentRelation?.officialSongId ?? "",
+					),
+					eq(trackOfficialSongs.partPosition, newPartPosition),
+				),
+			)
+			.limit(1);
+
+		if (duplicateCheck.length > 0 && duplicateCheck[0]?.id !== id) {
+			return c.json(
+				{
+					error:
+						"This official song is already linked to the track with the same part position",
+				},
+				409,
+			);
+		}
+	}
+
+	// 更新
+	const result = await db
+		.update(trackOfficialSongs)
+		.set(parsed.data)
+		.where(eq(trackOfficialSongs.id, id))
+		.returning();
+
+	return c.json(result[0]);
+});
+
+// 原曲紐付け削除
+trackOfficialSongsRouter.delete("/:trackId/official-songs/:id", async (c) => {
+	const trackId = c.req.param("trackId");
+	const id = c.req.param("id");
+
+	// 紐付け存在チェック
+	const existingRelation = await db
+		.select()
+		.from(trackOfficialSongs)
+		.where(
+			and(
+				eq(trackOfficialSongs.id, id),
+				eq(trackOfficialSongs.trackId, trackId),
+			),
+		)
+		.limit(1);
+
+	if (existingRelation.length === 0) {
+		return c.json({ error: "Not found" }, 404);
+	}
+
+	// 削除
+	await db.delete(trackOfficialSongs).where(eq(trackOfficialSongs.id, id));
+
+	return c.json({ success: true });
+});
+
+export { trackOfficialSongsRouter };

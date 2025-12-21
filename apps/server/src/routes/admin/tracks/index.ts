@@ -12,8 +12,44 @@ import {
 } from "@thac/db";
 import { Hono } from "hono";
 import type { AdminContext } from "../../../middleware/admin-auth";
+import { trackDerivationsRouter } from "./derivations";
+import { trackIsrcsRouter } from "./isrcs";
+import { trackOfficialSongsRouter } from "./official-songs";
+import { trackPublicationsRouter } from "./publications";
 
 const tracksAdminRouter = new Hono<AdminContext>();
+
+// 原曲紐付けルートをマウント
+tracksAdminRouter.route("/", trackOfficialSongsRouter);
+
+// 派生関係ルートをマウント
+tracksAdminRouter.route("/", trackDerivationsRouter);
+
+// 公開リンク・ISRCルートをマウント
+tracksAdminRouter.route("/", trackPublicationsRouter);
+tracksAdminRouter.route("/", trackIsrcsRouter);
+
+// トラック一覧取得（派生関係などで使用）
+tracksAdminRouter.get("/", async (c) => {
+	const limit = Number.parseInt(c.req.query("limit") ?? "100", 10);
+
+	const result = await db
+		.select({
+			track: tracks,
+			release: releases,
+		})
+		.from(tracks)
+		.leftJoin(releases, eq(tracks.releaseId, releases.id))
+		.orderBy(tracks.name)
+		.limit(limit);
+
+	return c.json({
+		data: result.map((row) => ({
+			...row.track,
+			releaseName: row.release?.name ?? null,
+		})),
+	});
+});
 
 // トラック単体取得（詳細情報を含む）
 tracksAdminRouter.get("/:trackId", async (c) => {

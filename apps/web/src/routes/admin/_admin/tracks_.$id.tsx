@@ -8,6 +8,9 @@ import {
 	ChevronDown,
 	ChevronUp,
 	Disc3,
+	ExternalLink,
+	GitFork,
+	Music,
 	Pencil,
 	Plus,
 	Trash2,
@@ -23,9 +26,23 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+
+// 国コード一覧
+const COUNTRY_CODE_OPTIONS = [
+	{ value: "JP", label: "JP - 日本" },
+	{ value: "US", label: "US - アメリカ" },
+	{ value: "GB", label: "GB - イギリス" },
+	{ value: "DE", label: "DE - ドイツ" },
+	{ value: "FR", label: "FR - フランス" },
+	{ value: "CN", label: "CN - 中国" },
+	{ value: "KR", label: "KR - 韓国" },
+	{ value: "TW", label: "TW - 台湾" },
+] as const;
+
 import {
 	Table,
 	TableBody,
@@ -38,9 +55,19 @@ import {
 	artistAliasesApi,
 	artistsApi,
 	creditRolesApi,
+	officialSongsApi,
+	platformsApi,
 	type Track,
 	type TrackCredit,
+	type TrackDerivation,
+	type TrackIsrc,
+	type TrackOfficialSong,
+	type TrackPublication,
 	trackCreditsApi,
+	trackDerivationsApi,
+	trackIsrcsApi,
+	trackOfficialSongsApi,
+	trackPublicationsApi,
 	tracksApi,
 } from "@/lib/api-client";
 import { createTrackDetailHead } from "@/lib/head";
@@ -109,6 +136,55 @@ function TrackDetailPage() {
 	const [editingCredit, setEditingCredit] = useState<TrackCredit | null>(null);
 	const [isCreditEditDialogOpen, setIsCreditEditDialogOpen] = useState(false);
 
+	// 原曲紐付けダイアログ
+	const [isOfficialSongDialogOpen, setIsOfficialSongDialogOpen] =
+		useState(false);
+	const [officialSongForm, setOfficialSongForm] = useState({
+		id: "",
+		officialSongId: "",
+		partPosition: null as number | null,
+		startSecond: null as number | null,
+		endSecond: null as number | null,
+		confidence: null as number | null,
+		notes: "",
+	});
+	const [editingOfficialSong, setEditingOfficialSong] =
+		useState<TrackOfficialSong | null>(null);
+
+	// 派生関係ダイアログ
+	const [isDerivationDialogOpen, setIsDerivationDialogOpen] = useState(false);
+	const [derivationForm, setDerivationForm] = useState({
+		id: "",
+		parentTrackId: "",
+		notes: "",
+	});
+
+	// 公開リンクダイアログ
+	const [isPublicationDialogOpen, setIsPublicationDialogOpen] = useState(false);
+	const [publicationForm, setPublicationForm] = useState({
+		id: "",
+		platformCode: "",
+		platformItemId: "",
+		url: "",
+		visibility: "public" as "public" | "unlisted" | "private",
+		publishedAt: "",
+		isOfficial: false,
+		countryCode: "",
+	});
+	const [editingPublication, setEditingPublication] =
+		useState<TrackPublication | null>(null);
+
+	// ISRCダイアログ
+	const [isIsrcDialogOpen, setIsIsrcDialogOpen] = useState(false);
+	const [isrcForm, setIsrcForm] = useState({
+		id: "",
+		isrc: "",
+		assignedAt: "",
+		isPrimary: true,
+		source: "",
+	});
+	const [editingIsrc, setEditingIsrc] = useState<TrackIsrc | null>(null);
+
 	// アーティスト・別名義・役割データ取得
 	const { data: artistsData } = useQuery({
 		queryKey: ["artists", { limit: 200 }],
@@ -125,6 +201,55 @@ function TrackDetailPage() {
 	const { data: creditRolesData } = useQuery({
 		queryKey: ["credit-roles"],
 		queryFn: () => creditRolesApi.list(),
+		staleTime: 60_000,
+	});
+
+	// 原曲紐付け一覧
+	const { data: officialSongsRelations } = useQuery({
+		queryKey: ["track-official-songs", trackId],
+		queryFn: () => trackOfficialSongsApi.list(trackId),
+		staleTime: 30_000,
+	});
+
+	// 派生関係一覧
+	const { data: derivations } = useQuery({
+		queryKey: ["track-derivations", trackId],
+		queryFn: () => trackDerivationsApi.list(trackId),
+		staleTime: 30_000,
+	});
+
+	// 公開リンク一覧
+	const { data: publications } = useQuery({
+		queryKey: ["track-publications", trackId],
+		queryFn: () => trackPublicationsApi.list(trackId),
+		staleTime: 30_000,
+	});
+
+	// ISRC一覧
+	const { data: isrcs } = useQuery({
+		queryKey: ["track-isrcs", trackId],
+		queryFn: () => trackIsrcsApi.list(trackId),
+		staleTime: 30_000,
+	});
+
+	// 公式楽曲マスター
+	const { data: officialSongsData } = useQuery({
+		queryKey: ["official-songs", { limit: 500 }],
+		queryFn: () => officialSongsApi.list({ limit: 500 }),
+		staleTime: 60_000,
+	});
+
+	// プラットフォームマスター
+	const { data: platformsData } = useQuery({
+		queryKey: ["platforms"],
+		queryFn: () => platformsApi.list(),
+		staleTime: 60_000,
+	});
+
+	// トラック一覧（派生関係用）
+	const { data: allTracksData } = useQuery({
+		queryKey: ["tracks-all", { limit: 500 }],
+		queryFn: () => tracksApi.listAll({ limit: 500 }),
 		staleTime: 60_000,
 	});
 
@@ -399,6 +524,337 @@ function TrackDetailPage() {
 		} catch (err) {
 			setMutationError(
 				err instanceof Error ? err.message : "順序変更に失敗しました",
+			);
+		}
+	};
+
+	// === 原曲紐付け関連ハンドラー ===
+	const openOfficialSongDialog = () => {
+		setOfficialSongForm({
+			id: createId.trackOfficialSong(),
+			officialSongId: "",
+			partPosition: null,
+			startSecond: null,
+			endSecond: null,
+			confidence: null,
+			notes: "",
+		});
+		setEditingOfficialSong(null);
+		setIsOfficialSongDialogOpen(true);
+		setMutationError(null);
+	};
+
+	const openOfficialSongEditDialog = (relation: TrackOfficialSong) => {
+		setOfficialSongForm({
+			id: relation.id,
+			officialSongId: relation.officialSongId,
+			partPosition: relation.partPosition,
+			startSecond: relation.startSecond,
+			endSecond: relation.endSecond,
+			confidence: relation.confidence,
+			notes: relation.notes ?? "",
+		});
+		setEditingOfficialSong(relation);
+		setIsOfficialSongDialogOpen(true);
+		setMutationError(null);
+	};
+
+	const closeOfficialSongDialog = () => {
+		setIsOfficialSongDialogOpen(false);
+		setEditingOfficialSong(null);
+	};
+
+	const handleOfficialSongSubmit = async () => {
+		setIsSubmitting(true);
+		setMutationError(null);
+
+		try {
+			if (editingOfficialSong) {
+				await trackOfficialSongsApi.update(trackId, editingOfficialSong.id, {
+					partPosition: officialSongForm.partPosition,
+					startSecond: officialSongForm.startSecond,
+					endSecond: officialSongForm.endSecond,
+					confidence: officialSongForm.confidence,
+					notes: officialSongForm.notes || null,
+				});
+			} else {
+				await trackOfficialSongsApi.create(trackId, {
+					id: officialSongForm.id,
+					officialSongId: officialSongForm.officialSongId,
+					partPosition: officialSongForm.partPosition,
+					startSecond: officialSongForm.startSecond,
+					endSecond: officialSongForm.endSecond,
+					confidence: officialSongForm.confidence,
+					notes: officialSongForm.notes || null,
+				});
+			}
+			await queryClient.invalidateQueries({
+				queryKey: ["track-official-songs", trackId],
+			});
+			closeOfficialSongDialog();
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "原曲紐付けの保存に失敗しました",
+			);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const handleOfficialSongDelete = async (relation: TrackOfficialSong) => {
+		if (
+			!confirm(
+				`原曲紐付け "${relation.officialSong?.name ?? relation.officialSongId}" を削除しますか？`,
+			)
+		) {
+			return;
+		}
+
+		try {
+			await trackOfficialSongsApi.delete(trackId, relation.id);
+			await queryClient.invalidateQueries({
+				queryKey: ["track-official-songs", trackId],
+			});
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "原曲紐付けの削除に失敗しました",
+			);
+		}
+	};
+
+	// === 派生関係ハンドラー ===
+	const openDerivationDialog = () => {
+		setDerivationForm({
+			id: createId.trackDerivation(),
+			parentTrackId: "",
+			notes: "",
+		});
+		setIsDerivationDialogOpen(true);
+		setMutationError(null);
+	};
+
+	const closeDerivationDialog = () => {
+		setIsDerivationDialogOpen(false);
+	};
+
+	const handleDerivationSubmit = async () => {
+		setIsSubmitting(true);
+		setMutationError(null);
+
+		try {
+			await trackDerivationsApi.create(trackId, {
+				id: derivationForm.id,
+				parentTrackId: derivationForm.parentTrackId,
+				notes: derivationForm.notes || null,
+			});
+			await queryClient.invalidateQueries({
+				queryKey: ["track-derivations", trackId],
+			});
+			closeDerivationDialog();
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "派生関係の追加に失敗しました",
+			);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const handleDerivationDelete = async (derivation: TrackDerivation) => {
+		if (
+			!confirm(
+				`派生関係 "${derivation.parentTrack?.name ?? derivation.parentTrackId}" を削除しますか？`,
+			)
+		) {
+			return;
+		}
+
+		try {
+			await trackDerivationsApi.delete(trackId, derivation.id);
+			await queryClient.invalidateQueries({
+				queryKey: ["track-derivations", trackId],
+			});
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "派生関係の削除に失敗しました",
+			);
+		}
+	};
+
+	// === 公開リンクハンドラー ===
+	const openPublicationDialog = () => {
+		setPublicationForm({
+			id: createId.trackPublication(),
+			platformCode: "",
+			platformItemId: "",
+			url: "",
+			visibility: "public",
+			publishedAt: "",
+			isOfficial: false,
+			countryCode: "JP",
+		});
+		setEditingPublication(null);
+		setIsPublicationDialogOpen(true);
+		setMutationError(null);
+	};
+
+	const openPublicationEditDialog = (publication: TrackPublication) => {
+		setPublicationForm({
+			id: publication.id,
+			platformCode: publication.platformCode,
+			platformItemId: publication.platformItemId ?? "",
+			url: publication.url,
+			visibility: publication.visibility ?? "public",
+			publishedAt: publication.publishedAt
+				? format(new Date(publication.publishedAt), "yyyy-MM-dd")
+				: "",
+			isOfficial: publication.isOfficial,
+			countryCode: publication.countryCode ?? "",
+		});
+		setEditingPublication(publication);
+		setIsPublicationDialogOpen(true);
+		setMutationError(null);
+	};
+
+	const closePublicationDialog = () => {
+		setIsPublicationDialogOpen(false);
+		setEditingPublication(null);
+	};
+
+	const handlePublicationSubmit = async () => {
+		setIsSubmitting(true);
+		setMutationError(null);
+
+		try {
+			if (editingPublication) {
+				await trackPublicationsApi.update(trackId, editingPublication.id, {
+					platformItemId: publicationForm.platformItemId || null,
+					url: publicationForm.url,
+					visibility: publicationForm.visibility,
+					publishedAt: publicationForm.publishedAt || null,
+					isOfficial: publicationForm.isOfficial,
+					countryCode: publicationForm.countryCode || null,
+				});
+			} else {
+				await trackPublicationsApi.create(trackId, {
+					id: publicationForm.id,
+					platformCode: publicationForm.platformCode,
+					url: publicationForm.url,
+					platformItemId: publicationForm.platformItemId || null,
+					visibility: publicationForm.visibility,
+					publishedAt: publicationForm.publishedAt || null,
+					isOfficial: publicationForm.isOfficial,
+					countryCode: publicationForm.countryCode || null,
+				});
+			}
+			await queryClient.invalidateQueries({
+				queryKey: ["track-publications", trackId],
+			});
+			closePublicationDialog();
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "公開リンクの保存に失敗しました",
+			);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const handlePublicationDelete = async (publication: TrackPublication) => {
+		if (!confirm(`公開リンク "${publication.url}" を削除しますか？`)) {
+			return;
+		}
+
+		try {
+			await trackPublicationsApi.delete(trackId, publication.id);
+			await queryClient.invalidateQueries({
+				queryKey: ["track-publications", trackId],
+			});
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "公開リンクの削除に失敗しました",
+			);
+		}
+	};
+
+	// === ISRCハンドラー ===
+	const openIsrcDialog = () => {
+		setIsrcForm({
+			id: createId.trackIsrc(),
+			isrc: "",
+			assignedAt: "",
+			isPrimary: (isrcs?.length ?? 0) === 0,
+			source: "",
+		});
+		setEditingIsrc(null);
+		setIsIsrcDialogOpen(true);
+		setMutationError(null);
+	};
+
+	const openIsrcEditDialog = (isrc: TrackIsrc) => {
+		setIsrcForm({
+			id: isrc.id,
+			isrc: isrc.isrc,
+			assignedAt: isrc.assignedAt ?? "",
+			isPrimary: isrc.isPrimary,
+			source: isrc.source ?? "",
+		});
+		setEditingIsrc(isrc);
+		setIsIsrcDialogOpen(true);
+		setMutationError(null);
+	};
+
+	const closeIsrcDialog = () => {
+		setIsIsrcDialogOpen(false);
+		setEditingIsrc(null);
+	};
+
+	const handleIsrcSubmit = async () => {
+		setIsSubmitting(true);
+		setMutationError(null);
+
+		try {
+			if (editingIsrc) {
+				await trackIsrcsApi.update(trackId, editingIsrc.id, {
+					assignedAt: isrcForm.assignedAt || null,
+					isPrimary: isrcForm.isPrimary,
+					source: isrcForm.source || null,
+				});
+			} else {
+				await trackIsrcsApi.create(trackId, {
+					id: isrcForm.id,
+					isrc: isrcForm.isrc,
+					assignedAt: isrcForm.assignedAt || null,
+					isPrimary: isrcForm.isPrimary,
+					source: isrcForm.source || null,
+				});
+			}
+			await queryClient.invalidateQueries({
+				queryKey: ["track-isrcs", trackId],
+			});
+			closeIsrcDialog();
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "ISRCの保存に失敗しました",
+			);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const handleIsrcDelete = async (isrc: TrackIsrc) => {
+		if (!confirm(`ISRC "${isrc.isrc}" を削除しますか？`)) {
+			return;
+		}
+
+		try {
+			await trackIsrcsApi.delete(trackId, isrc.id);
+			await queryClient.invalidateQueries({
+				queryKey: ["track-isrcs", trackId],
+			});
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "ISRCの削除に失敗しました",
 			);
 		}
 	};
@@ -726,6 +1182,312 @@ function TrackDetailPage() {
 				</div>
 			</div>
 
+			{/* 原曲紐付け一覧 */}
+			<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
+				<div className="flex items-center justify-between border-base-300 border-b p-4">
+					<h2 className="font-bold text-lg">
+						<Music className="mr-2 inline-block h-5 w-5" />
+						原曲紐付け
+					</h2>
+					<Button variant="outline" size="sm" onClick={openOfficialSongDialog}>
+						<Plus className="mr-2 h-4 w-4" />
+						原曲追加
+					</Button>
+				</div>
+
+				<div className="p-4">
+					{!officialSongsRelations || officialSongsRelations.length === 0 ? (
+						<p className="py-8 text-center text-base-content/50">
+							原曲紐付けが登録されていません
+						</p>
+					) : (
+						<Table>
+							<TableHeader>
+								<TableRow className="hover:bg-transparent">
+									<TableHead>公式楽曲</TableHead>
+									<TableHead className="w-[80px]">順序</TableHead>
+									<TableHead className="w-[120px]">時間範囲</TableHead>
+									<TableHead className="w-[80px]">確度</TableHead>
+									<TableHead>備考</TableHead>
+									<TableHead className="w-[100px]" />
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{officialSongsRelations
+									.sort((a, b) => (a.partPosition ?? 0) - (b.partPosition ?? 0))
+									.map((relation) => (
+										<TableRow key={relation.id}>
+											<TableCell className="font-medium">
+												{relation.officialSong?.name ?? relation.officialSongId}
+											</TableCell>
+											<TableCell>{relation.partPosition ?? "-"}</TableCell>
+											<TableCell>
+												{relation.startSecond != null ||
+												relation.endSecond != null
+													? `${relation.startSecond ?? "?"}s〜${relation.endSecond ?? "?"}s`
+													: "-"}
+											</TableCell>
+											<TableCell>
+												{relation.confidence != null
+													? `${relation.confidence}%`
+													: "-"}
+											</TableCell>
+											<TableCell className="max-w-[200px] truncate text-sm">
+												{relation.notes || "-"}
+											</TableCell>
+											<TableCell>
+												<div className="flex items-center gap-1">
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => openOfficialSongEditDialog(relation)}
+													>
+														<Pencil className="h-4 w-4" />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => handleOfficialSongDelete(relation)}
+													>
+														<Trash2 className="h-4 w-4 text-error" />
+													</Button>
+												</div>
+											</TableCell>
+										</TableRow>
+									))}
+							</TableBody>
+						</Table>
+					)}
+				</div>
+			</div>
+
+			{/* 派生関係一覧 */}
+			<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
+				<div className="flex items-center justify-between border-base-300 border-b p-4">
+					<h2 className="font-bold text-lg">
+						<GitFork className="mr-2 inline-block h-5 w-5" />
+						派生関係
+					</h2>
+					<Button variant="outline" size="sm" onClick={openDerivationDialog}>
+						<Plus className="mr-2 h-4 w-4" />
+						派生元追加
+					</Button>
+				</div>
+
+				<div className="p-4">
+					{!derivations || derivations.length === 0 ? (
+						<p className="py-8 text-center text-base-content/50">
+							派生関係が登録されていません
+						</p>
+					) : (
+						<Table>
+							<TableHeader>
+								<TableRow className="hover:bg-transparent">
+									<TableHead>派生元トラック</TableHead>
+									<TableHead>備考</TableHead>
+									<TableHead className="w-[100px]" />
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{derivations.map((derivation) => (
+									<TableRow key={derivation.id}>
+										<TableCell className="font-medium">
+											{derivation.parentTrack ? (
+												<Link
+													to="/admin/tracks/$id"
+													params={{ id: derivation.parentTrackId }}
+													className="text-primary hover:underline"
+												>
+													{derivation.parentTrack.name}
+												</Link>
+											) : (
+												derivation.parentTrackId
+											)}
+										</TableCell>
+										<TableCell className="max-w-[300px] truncate text-sm">
+											{derivation.notes || "-"}
+										</TableCell>
+										<TableCell>
+											<Button
+												variant="ghost"
+												size="icon"
+												onClick={() => handleDerivationDelete(derivation)}
+											>
+												<Trash2 className="h-4 w-4 text-error" />
+											</Button>
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					)}
+				</div>
+			</div>
+
+			{/* 公開リンク一覧 */}
+			<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
+				<div className="flex items-center justify-between border-base-300 border-b p-4">
+					<h2 className="font-bold text-lg">
+						<ExternalLink className="mr-2 inline-block h-5 w-5" />
+						公開リンク
+					</h2>
+					<Button variant="outline" size="sm" onClick={openPublicationDialog}>
+						<Plus className="mr-2 h-4 w-4" />
+						公開リンク追加
+					</Button>
+				</div>
+
+				<div className="p-4">
+					{!publications || publications.length === 0 ? (
+						<p className="py-8 text-center text-base-content/50">
+							公開リンクが登録されていません
+						</p>
+					) : (
+						<Table>
+							<TableHeader>
+								<TableRow className="hover:bg-transparent">
+									<TableHead>プラットフォーム</TableHead>
+									<TableHead>URL</TableHead>
+									<TableHead className="w-[80px]">状態</TableHead>
+									<TableHead className="w-[80px]">公式</TableHead>
+									<TableHead className="w-[100px]" />
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{publications.map((pub) => (
+									<TableRow key={pub.id}>
+										<TableCell>
+											{pub.platform?.name ?? pub.platformCode}
+										</TableCell>
+										<TableCell className="max-w-[300px] truncate">
+											<a
+												href={pub.url}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-primary hover:underline"
+											>
+												{pub.url}
+											</a>
+										</TableCell>
+										<TableCell>
+											<Badge
+												variant={
+													pub.visibility === "public"
+														? "success"
+														: pub.visibility === "unlisted"
+															? "warning"
+															: "ghost"
+												}
+											>
+												{pub.visibility === "public"
+													? "公開"
+													: pub.visibility === "unlisted"
+														? "限定"
+														: "非公開"}
+											</Badge>
+										</TableCell>
+										<TableCell>
+											{pub.isOfficial ? (
+												<Badge variant="primary">公式</Badge>
+											) : (
+												"-"
+											)}
+										</TableCell>
+										<TableCell>
+											<div className="flex items-center gap-1">
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => openPublicationEditDialog(pub)}
+												>
+													<Pencil className="h-4 w-4" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => handlePublicationDelete(pub)}
+												>
+													<Trash2 className="h-4 w-4 text-error" />
+												</Button>
+											</div>
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					)}
+				</div>
+			</div>
+
+			{/* ISRC一覧 */}
+			<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
+				<div className="flex items-center justify-between border-base-300 border-b p-4">
+					<h2 className="font-bold text-lg">ISRC</h2>
+					<Button variant="outline" size="sm" onClick={openIsrcDialog}>
+						<Plus className="mr-2 h-4 w-4" />
+						ISRC追加
+					</Button>
+				</div>
+
+				<div className="p-4">
+					{!isrcs || isrcs.length === 0 ? (
+						<p className="py-8 text-center text-base-content/50">
+							ISRCが登録されていません
+						</p>
+					) : (
+						<Table>
+							<TableHeader>
+								<TableRow className="hover:bg-transparent">
+									<TableHead>ISRC</TableHead>
+									<TableHead className="w-[80px]">主要</TableHead>
+									<TableHead>付与日</TableHead>
+									<TableHead>取得元</TableHead>
+									<TableHead className="w-[100px]" />
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{isrcs.map((isrc) => (
+									<TableRow key={isrc.id}>
+										<TableCell className="font-medium font-mono">
+											{isrc.isrc}
+										</TableCell>
+										<TableCell>
+											{isrc.isPrimary ? (
+												<Badge variant="primary">主要</Badge>
+											) : (
+												"-"
+											)}
+										</TableCell>
+										<TableCell>{isrc.assignedAt || "-"}</TableCell>
+										<TableCell className="max-w-[200px] truncate text-sm">
+											{isrc.source || "-"}
+										</TableCell>
+										<TableCell>
+											<div className="flex items-center gap-1">
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => openIsrcEditDialog(isrc)}
+												>
+													<Pencil className="h-4 w-4" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => handleIsrcDelete(isrc)}
+												>
+													<Trash2 className="h-4 w-4 text-error" />
+												</Button>
+											</div>
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					)}
+				</div>
+			</div>
+
 			{/* 関連リンク */}
 			<div className="mt-6 flex items-center gap-4">
 				<Link to="/admin/tracks" className="btn btn-outline btn-sm">
@@ -940,6 +1702,466 @@ function TrackDetailPage() {
 							}
 						>
 							{isSubmitting ? "更新中..." : "更新"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* 原曲紐付けダイアログ */}
+			<Dialog
+				open={isOfficialSongDialogOpen}
+				onOpenChange={setIsOfficialSongDialogOpen}
+			>
+				<DialogContent className="sm:max-w-[500px]">
+					<DialogHeader>
+						<DialogTitle>
+							{editingOfficialSong ? "原曲紐付けの編集" : "原曲紐付けの追加"}
+						</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{!editingOfficialSong && (
+							<div className="grid gap-2">
+								<Label>
+									公式楽曲 <span className="text-error">*</span>
+								</Label>
+								<GroupedSearchableSelect
+									value={officialSongForm.officialSongId}
+									onChange={(val) =>
+										setOfficialSongForm({
+											...officialSongForm,
+											officialSongId: val,
+										})
+									}
+									options={(officialSongsData?.data ?? []).map((song) => ({
+										value: song.id,
+										label: song.name,
+										group: song.workName || undefined,
+									}))}
+									placeholder="公式楽曲を選択"
+									searchPlaceholder="公式楽曲を検索..."
+									emptyMessage="公式楽曲が見つかりません"
+									ungroupedLabel="作品未設定"
+								/>
+							</div>
+						)}
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label>順序（part_position）</Label>
+								<Input
+									type="number"
+									min="1"
+									value={officialSongForm.partPosition ?? ""}
+									onChange={(e) =>
+										setOfficialSongForm({
+											...officialSongForm,
+											partPosition: e.target.value
+												? Number.parseInt(e.target.value, 10)
+												: null,
+										})
+									}
+									placeholder="1, 2, ..."
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label>確度: {officialSongForm.confidence ?? 0}%</Label>
+								<input
+									type="range"
+									min="0"
+									max="100"
+									step="10"
+									value={officialSongForm.confidence ?? 0}
+									onChange={(e) =>
+										setOfficialSongForm({
+											...officialSongForm,
+											confidence: Number.parseInt(e.target.value, 10),
+										})
+									}
+									className="range range-primary range-sm"
+								/>
+								<div className="flex w-full justify-between px-1 text-base-content/50 text-xs">
+									<span>0</span>
+									<span>50</span>
+									<span>100</span>
+								</div>
+							</div>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label>開始秒</Label>
+								<Input
+									type="number"
+									min="0"
+									step="0.1"
+									value={officialSongForm.startSecond ?? ""}
+									onChange={(e) =>
+										setOfficialSongForm({
+											...officialSongForm,
+											startSecond: e.target.value
+												? Number.parseFloat(e.target.value)
+												: null,
+										})
+									}
+									placeholder="0.0"
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label>終了秒</Label>
+								<Input
+									type="number"
+									min="0"
+									step="0.1"
+									value={officialSongForm.endSecond ?? ""}
+									onChange={(e) =>
+										setOfficialSongForm({
+											...officialSongForm,
+											endSecond: e.target.value
+												? Number.parseFloat(e.target.value)
+												: null,
+										})
+									}
+									placeholder="0.0"
+								/>
+							</div>
+						</div>
+						<div className="grid gap-2">
+							<Label>備考</Label>
+							<Input
+								value={officialSongForm.notes}
+								onChange={(e) =>
+									setOfficialSongForm({
+										...officialSongForm,
+										notes: e.target.value,
+									})
+								}
+								placeholder="備考"
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={closeOfficialSongDialog}>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={handleOfficialSongSubmit}
+							disabled={
+								isSubmitting ||
+								(!editingOfficialSong && !officialSongForm.officialSongId)
+							}
+						>
+							{isSubmitting
+								? editingOfficialSong
+									? "更新中..."
+									: "追加中..."
+								: editingOfficialSong
+									? "更新"
+									: "追加"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* 派生関係ダイアログ */}
+			<Dialog
+				open={isDerivationDialogOpen}
+				onOpenChange={setIsDerivationDialogOpen}
+			>
+				<DialogContent className="sm:max-w-[500px]">
+					<DialogHeader>
+						<DialogTitle>派生元トラックの追加</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						<div className="grid gap-2">
+							<Label>
+								派生元トラック <span className="text-error">*</span>
+							</Label>
+							<SearchableSelect
+								value={derivationForm.parentTrackId}
+								onChange={(val) =>
+									setDerivationForm({ ...derivationForm, parentTrackId: val })
+								}
+								options={(allTracksData?.data ?? [])
+									.filter((t) => t.id !== trackId)
+									.map((t) => ({
+										value: t.id,
+										label: t.name,
+									}))}
+								placeholder="トラックを選択"
+								searchPlaceholder="トラックを検索..."
+								emptyMessage="トラックが見つかりません"
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label>備考</Label>
+							<Input
+								value={derivationForm.notes}
+								onChange={(e) =>
+									setDerivationForm({
+										...derivationForm,
+										notes: e.target.value,
+									})
+								}
+								placeholder="備考"
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={closeDerivationDialog}>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={handleDerivationSubmit}
+							disabled={isSubmitting || !derivationForm.parentTrackId}
+						>
+							{isSubmitting ? "追加中..." : "追加"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* 公開リンクダイアログ */}
+			<Dialog
+				open={isPublicationDialogOpen}
+				onOpenChange={setIsPublicationDialogOpen}
+			>
+				<DialogContent className="sm:max-w-[500px]">
+					<DialogHeader>
+						<DialogTitle>
+							{editingPublication ? "公開リンクの編集" : "公開リンクの追加"}
+						</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{!editingPublication && (
+							<div className="grid gap-2">
+								<Label>
+									プラットフォーム <span className="text-error">*</span>
+								</Label>
+								<GroupedSearchableSelect
+									value={publicationForm.platformCode}
+									onChange={(val) =>
+										setPublicationForm({
+											...publicationForm,
+											platformCode: val,
+										})
+									}
+									options={(platformsData?.data ?? []).map((p) => ({
+										value: p.code,
+										label: p.name,
+										group: p.category || undefined,
+									}))}
+									placeholder="プラットフォームを選択"
+									searchPlaceholder="プラットフォームを検索..."
+									emptyMessage="プラットフォームが見つかりません"
+									ungroupedLabel="その他"
+								/>
+							</div>
+						)}
+						<div className="grid gap-2">
+							<Label>
+								URL <span className="text-error">*</span>
+							</Label>
+							<Input
+								type="url"
+								value={publicationForm.url}
+								onChange={(e) =>
+									setPublicationForm({
+										...publicationForm,
+										url: e.target.value,
+									})
+								}
+								placeholder="https://..."
+							/>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label>プラットフォームID</Label>
+								<Input
+									value={publicationForm.platformItemId}
+									onChange={(e) =>
+										setPublicationForm({
+											...publicationForm,
+											platformItemId: e.target.value,
+										})
+									}
+									placeholder="例: sm12345678"
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label>公開状態</Label>
+								<select
+									className="select select-bordered w-full"
+									value={publicationForm.visibility}
+									onChange={(e) =>
+										setPublicationForm({
+											...publicationForm,
+											visibility: e.target.value as
+												| "public"
+												| "unlisted"
+												| "private",
+										})
+									}
+								>
+									<option value="public">公開</option>
+									<option value="unlisted">限定公開</option>
+									<option value="private">非公開</option>
+								</select>
+							</div>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label>公開日</Label>
+								<Input
+									type="date"
+									value={publicationForm.publishedAt}
+									onChange={(e) =>
+										setPublicationForm({
+											...publicationForm,
+											publishedAt: e.target.value,
+										})
+									}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label>国コード</Label>
+								<select
+									className="select select-bordered w-full"
+									value={publicationForm.countryCode}
+									onChange={(e) =>
+										setPublicationForm({
+											...publicationForm,
+											countryCode: e.target.value,
+										})
+									}
+								>
+									<option value="">選択してください</option>
+									{COUNTRY_CODE_OPTIONS.map((opt) => (
+										<option key={opt.value} value={opt.value}>
+											{opt.label}
+										</option>
+									))}
+								</select>
+							</div>
+						</div>
+						<label className="flex cursor-pointer items-center gap-2">
+							<input
+								type="checkbox"
+								className="checkbox"
+								checked={publicationForm.isOfficial}
+								onChange={(e) =>
+									setPublicationForm({
+										...publicationForm,
+										isOfficial: e.target.checked,
+									})
+								}
+							/>
+							<span>公式アップロード</span>
+						</label>
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={closePublicationDialog}>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={handlePublicationSubmit}
+							disabled={
+								isSubmitting ||
+								!publicationForm.url ||
+								(!editingPublication && !publicationForm.platformCode)
+							}
+						>
+							{isSubmitting
+								? editingPublication
+									? "更新中..."
+									: "追加中..."
+								: editingPublication
+									? "更新"
+									: "追加"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* ISRCダイアログ */}
+			<Dialog open={isIsrcDialogOpen} onOpenChange={setIsIsrcDialogOpen}>
+				<DialogContent className="sm:max-w-[400px]">
+					<DialogHeader>
+						<DialogTitle>
+							{editingIsrc ? "ISRCの編集" : "ISRCの追加"}
+						</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{!editingIsrc && (
+							<div className="grid gap-2">
+								<Label>
+									ISRC <span className="text-error">*</span>
+								</Label>
+								<Input
+									value={isrcForm.isrc}
+									onChange={(e) =>
+										setIsrcForm({
+											...isrcForm,
+											isrc: e.target.value.toUpperCase(),
+										})
+									}
+									placeholder="JPXX01234567"
+									maxLength={12}
+									className="font-mono"
+								/>
+								<p className="text-base-content/60 text-xs">
+									12桁：国コード(2) + 登録者コード(3) + 年(2) + コード(5)
+								</p>
+							</div>
+						)}
+						<div className="grid gap-2">
+							<Label>付与日</Label>
+							<Input
+								value={isrcForm.assignedAt}
+								onChange={(e) =>
+									setIsrcForm({ ...isrcForm, assignedAt: e.target.value })
+								}
+								placeholder="YYYY-MM-DD"
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label>取得元</Label>
+							<Input
+								value={isrcForm.source}
+								onChange={(e) =>
+									setIsrcForm({ ...isrcForm, source: e.target.value })
+								}
+								placeholder="例: Spotify, Apple Music"
+							/>
+						</div>
+						<label className="flex cursor-pointer items-center gap-2">
+							<input
+								type="checkbox"
+								className="checkbox"
+								checked={isrcForm.isPrimary}
+								onChange={(e) =>
+									setIsrcForm({ ...isrcForm, isPrimary: e.target.checked })
+								}
+							/>
+							<span>主要ISRCとして設定</span>
+						</label>
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={closeIsrcDialog}>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={handleIsrcSubmit}
+							disabled={isSubmitting || (!editingIsrc && !isrcForm.isrc)}
+						>
+							{isSubmitting
+								? editingIsrc
+									? "更新中..."
+									: "追加中..."
+								: editingIsrc
+									? "更新"
+									: "追加"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
