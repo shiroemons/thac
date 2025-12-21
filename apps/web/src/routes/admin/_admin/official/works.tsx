@@ -51,6 +51,17 @@ const CATEGORY_COLORS: Record<string, BadgeVariant> = {
 	other: "ghost",
 };
 
+// カテゴリコード（ID生成用）
+const CATEGORY_CODES: Record<string, string> = {
+	pc98: "01",
+	windows: "02",
+	zuns_music_collection: "03",
+	akyus_untouched_score: "04",
+	commercial_books: "05",
+	tasofro: "06",
+	other: "07",
+};
+
 export const Route = createFileRoute("/admin/_admin/official/works")({
 	head: () => createPageHead("公式作品"),
 	component: OfficialWorksPage,
@@ -110,6 +121,36 @@ function OfficialWorksPage() {
 			value: c.code,
 			label: c.name,
 		})) ?? [];
+
+	// 全作品を取得（ID生成用）
+	const { data: allWorksData } = useQuery({
+		queryKey: ["officialWorks", "all"],
+		queryFn: () => officialWorksApi.list({ limit: 1000 }),
+		staleTime: 60_000,
+	});
+
+	// 次のIDを生成
+	const generateNextId = (categoryKey: string): string => {
+		const categoryCode = CATEGORY_CODES[categoryKey];
+		if (!categoryCode) return "";
+
+		const allWorks = allWorksData?.data ?? [];
+		const categoryWorks = allWorks.filter((w) => w.id.startsWith(categoryCode));
+
+		if (categoryWorks.length === 0) {
+			return `${categoryCode}01`;
+		}
+
+		const maxNumber = Math.max(
+			...categoryWorks.map((w) => {
+				const num = Number.parseInt(w.id.slice(2), 10);
+				return Number.isNaN(num) ? 0 : num;
+			}),
+		);
+
+		const nextNumber = (maxNumber + 1).toString().padStart(2, "0");
+		return `${categoryCode}${nextNumber}`;
+	};
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["officialWorks", page, pageSize, debouncedSearch, category],
@@ -499,6 +540,9 @@ function OfficialWorksPage() {
 							<div className="grid gap-2">
 								<Label htmlFor="create-id">
 									ID <span className="text-error">*</span>
+									<span className="ml-2 font-normal text-base-content/50 text-xs">
+										（カテゴリ選択で自動生成）
+									</span>
 								</Label>
 								<Input
 									id="create-id"
@@ -506,7 +550,8 @@ function OfficialWorksPage() {
 									onChange={(e) =>
 										setCreateForm({ ...createForm, id: e.target.value })
 									}
-									placeholder="例: th06"
+									placeholder="カテゴリを選択してください"
+									className={createForm.id ? "bg-base-200" : ""}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -516,12 +561,17 @@ function OfficialWorksPage() {
 								<Select
 									id="create-categoryCode"
 									value={createForm.categoryCode || ""}
-									onChange={(e) =>
+									onChange={(e) => {
+										const newCategoryCode = e.target.value;
+										const newId = newCategoryCode
+											? generateNextId(newCategoryCode)
+											: "";
 										setCreateForm({
 											...createForm,
-											categoryCode: e.target.value,
-										})
-									}
+											categoryCode: newCategoryCode,
+											id: newId,
+										});
+									}}
 								>
 									<option value="">選択してください</option>
 									{categoryOptions.map((opt) => (

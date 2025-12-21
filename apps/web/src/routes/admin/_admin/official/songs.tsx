@@ -105,12 +105,35 @@ function OfficialSongsPage() {
 		staleTime: 300_000,
 	});
 
-	// 楽曲一覧を取得（原曲選択用）
+	// 楽曲一覧を取得（原曲選択用・ID生成用）
 	const { data: allSongsData } = useQuery({
 		queryKey: ["officialSongs", "all"],
 		queryFn: () => officialSongsApi.list({ limit: 5000 }),
 		staleTime: 60_000,
 	});
+
+	// 次の楽曲IDを生成
+	const generateNextSongId = (workId: string): string => {
+		if (!workId) return "";
+
+		const allSongs = allSongsData?.data ?? [];
+		const workSongs = allSongs.filter((s) => s.officialWorkId === workId);
+
+		if (workSongs.length === 0) {
+			return `${workId}0001`;
+		}
+
+		const maxTrackNumber = Math.max(
+			...workSongs.map((s) => {
+				const trackPart = s.id.slice(4);
+				const num = Number.parseInt(trackPart, 10);
+				return Number.isNaN(num) ? 0 : num;
+			}),
+		);
+
+		const nextNumber = (maxTrackNumber + 1).toString().padStart(4, "0");
+		return `${workId}${nextNumber}`;
+	};
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["officialSongs", page, pageSize, debouncedSearch, workId],
@@ -546,16 +569,44 @@ function OfficialSongsPage() {
 						</div>
 					)}
 					<div className="grid gap-4 py-4">
+						<div className="grid gap-2">
+							<Label htmlFor="create-officialWorkId">作品</Label>
+							<SearchableGroupedSelect
+								id="create-officialWorkId"
+								value={(createForm.officialWorkId as string) || ""}
+								onChange={(value) => {
+									const newId = value ? generateNextSongId(value) : "";
+									const trackNumber = newId
+										? Number.parseInt(newId.slice(4), 10)
+										: "";
+									setCreateForm({
+										...createForm,
+										officialWorkId: value,
+										id: newId,
+										trackNumber: trackNumber.toString(),
+									});
+								}}
+								groups={workGroups}
+								placeholder="作品を選択"
+								searchPlaceholder="作品名で検索..."
+							/>
+						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="create-id">ID *</Label>
+								<Label htmlFor="create-id">
+									ID *
+									<span className="ml-2 font-normal text-base-content/50 text-xs">
+										（作品選択で自動生成）
+									</span>
+								</Label>
 								<Input
 									id="create-id"
 									value={(createForm.id as string) || ""}
 									onChange={(e) =>
 										setCreateForm({ ...createForm, id: e.target.value })
 									}
-									placeholder="例: th06-01"
+									placeholder="作品を選択してください"
+									className={createForm.id ? "bg-base-200" : ""}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -573,19 +624,6 @@ function OfficialSongsPage() {
 									placeholder="例: 1"
 								/>
 							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-officialWorkId">作品</Label>
-							<SearchableGroupedSelect
-								id="create-officialWorkId"
-								value={(createForm.officialWorkId as string) || ""}
-								onChange={(value) =>
-									setCreateForm({ ...createForm, officialWorkId: value })
-								}
-								groups={workGroups}
-								placeholder="作品を選択"
-								searchPlaceholder="作品名で検索..."
-							/>
 						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="create-name">名前 *</Label>
