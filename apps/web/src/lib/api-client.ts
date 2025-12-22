@@ -14,18 +14,21 @@ export interface AliasType {
 	code: string;
 	label: string;
 	description: string | null;
+	sortOrder: number;
 }
 
 export interface CreditRole {
 	code: string;
 	label: string;
 	description: string | null;
+	sortOrder: number;
 }
 
 export interface OfficialWorkCategory {
 	code: string;
 	name: string;
 	description: string | null;
+	sortOrder: number;
 }
 
 export interface OfficialWork {
@@ -159,11 +162,19 @@ export const platformsApi = {
 
 // Alias Types
 export const aliasTypesApi = {
-	list: (params?: { page?: number; limit?: number; search?: string }) => {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		search?: string;
+		sortBy?: string;
+		sortOrder?: "asc" | "desc";
+	}) => {
 		const searchParams = new URLSearchParams();
 		if (params?.page) searchParams.set("page", String(params.page));
 		if (params?.limit) searchParams.set("limit", String(params.limit));
 		if (params?.search) searchParams.set("search", params.search);
+		if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+		if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 		const query = searchParams.toString();
 		return fetchWithAuth<PaginatedResponse<AliasType>>(
 			`/api/admin/master/alias-types${query ? `?${query}` : ""}`,
@@ -171,7 +182,7 @@ export const aliasTypesApi = {
 	},
 	get: (code: string) =>
 		fetchWithAuth<AliasType>(`/api/admin/master/alias-types/${code}`),
-	create: (data: AliasType) =>
+	create: (data: Omit<AliasType, "sortOrder">) =>
 		fetchWithAuth<AliasType>("/api/admin/master/alias-types", {
 			method: "POST",
 			body: JSON.stringify(data),
@@ -200,11 +211,19 @@ export const aliasTypesApi = {
 
 // Credit Roles
 export const creditRolesApi = {
-	list: (params?: { page?: number; limit?: number; search?: string }) => {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		search?: string;
+		sortBy?: string;
+		sortOrder?: "asc" | "desc";
+	}) => {
 		const searchParams = new URLSearchParams();
 		if (params?.page) searchParams.set("page", String(params.page));
 		if (params?.limit) searchParams.set("limit", String(params.limit));
 		if (params?.search) searchParams.set("search", params.search);
+		if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+		if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 		const query = searchParams.toString();
 		return fetchWithAuth<PaginatedResponse<CreditRole>>(
 			`/api/admin/master/credit-roles${query ? `?${query}` : ""}`,
@@ -212,7 +231,7 @@ export const creditRolesApi = {
 	},
 	get: (code: string) =>
 		fetchWithAuth<CreditRole>(`/api/admin/master/credit-roles/${code}`),
-	create: (data: CreditRole) =>
+	create: (data: Omit<CreditRole, "sortOrder">) =>
 		fetchWithAuth<CreditRole>("/api/admin/master/credit-roles", {
 			method: "POST",
 			body: JSON.stringify(data),
@@ -293,11 +312,19 @@ export const importApi = {
 };
 
 export const officialWorkCategoriesApi = {
-	list: (params?: { page?: number; limit?: number; search?: string }) => {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		search?: string;
+		sortBy?: string;
+		sortOrder?: "asc" | "desc";
+	}) => {
 		const searchParams = new URLSearchParams();
 		if (params?.page) searchParams.set("page", String(params.page));
 		if (params?.limit) searchParams.set("limit", String(params.limit));
 		if (params?.search) searchParams.set("search", params.search);
+		if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+		if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 		const query = searchParams.toString();
 		return fetchWithAuth<PaginatedResponse<OfficialWorkCategory>>(
 			`/api/admin/master/official-work-categories${query ? `?${query}` : ""}`,
@@ -307,7 +334,7 @@ export const officialWorkCategoriesApi = {
 		fetchWithAuth<OfficialWorkCategory>(
 			`/api/admin/master/official-work-categories/${code}`,
 		),
-	create: (data: OfficialWorkCategory) =>
+	create: (data: Omit<OfficialWorkCategory, "sortOrder">) =>
 		fetchWithAuth<OfficialWorkCategory>(
 			"/api/admin/master/official-work-categories",
 			{
@@ -731,9 +758,15 @@ export interface EventSeriesWithEvents extends EventSeries {
 export const eventSeriesApi = {
 	get: (id: string) =>
 		fetchWithAuth<EventSeriesWithEvents>(`/api/admin/event-series/${id}`),
-	list: (params?: { search?: string }) => {
+	list: (params?: {
+		search?: string;
+		sortBy?: string;
+		sortOrder?: "asc" | "desc";
+	}) => {
 		const searchParams = new URLSearchParams();
 		if (params?.search) searchParams.set("search", params.search);
+		if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+		if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 		const query = searchParams.toString();
 		return fetchWithAuth<{ data: EventSeries[]; total: number }>(
 			`/api/admin/event-series${query ? `?${query}` : ""}`,

@@ -2,6 +2,7 @@ import {
 	asc,
 	count,
 	db,
+	desc,
 	eq,
 	eventSeries,
 	events,
@@ -19,11 +20,24 @@ const eventSeriesRouter = new Hono<AdminContext>();
 // イベントシリーズ一覧取得（検索対応）
 eventSeriesRouter.get("/", async (c) => {
 	const search = c.req.query("search");
+	const sortBy = c.req.query("sortBy") || "sortOrder";
+	const sortOrderParam = c.req.query("sortOrder") || "asc";
 
 	// 条件を構築
 	const whereCondition = search
 		? like(eventSeries.name, `%${search}%`)
 		: undefined;
+
+	// ソート列のマッピング
+	const sortColumnMap: Record<
+		string,
+		typeof eventSeries.sortOrder | typeof eventSeries.name
+	> = {
+		sortOrder: eventSeries.sortOrder,
+		name: eventSeries.name,
+	};
+	const sortColumn = sortColumnMap[sortBy] || eventSeries.sortOrder;
+	const orderFn = sortOrderParam === "desc" ? desc : asc;
 
 	// データ取得
 	const [data, totalResult] = await Promise.all([
@@ -31,7 +45,7 @@ eventSeriesRouter.get("/", async (c) => {
 			.select()
 			.from(eventSeries)
 			.where(whereCondition)
-			.orderBy(asc(eventSeries.sortOrder), asc(eventSeries.name)),
+			.orderBy(orderFn(sortColumn), asc(eventSeries.name)),
 		db.select({ count: count() }).from(eventSeries).where(whereCondition),
 	]);
 

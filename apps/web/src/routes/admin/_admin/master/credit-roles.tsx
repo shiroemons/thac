@@ -1,19 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-	ArrowUpDown,
-	ChevronDown,
-	ChevronUp,
-	Eye,
-	Pencil,
-	Trash2,
-	Upload,
-} from "lucide-react";
+import { ArrowUpDown, Eye, Pencil, Trash2, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
+import { SortIcon } from "@/components/admin/sort-icon";
 import { CreateDialog } from "@/components/create-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
@@ -36,6 +30,7 @@ import {
 } from "@/components/ui/table";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useSortableTable } from "@/hooks/use-sortable-table";
 import { type CreditRole, creditRolesApi, importApi } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 
@@ -46,7 +41,6 @@ export const Route = createFileRoute("/admin/_admin/master/credit-roles")({
 
 // カラム定義
 const COLUMN_CONFIGS = [
-	{ key: "sortOrder", label: "順序", defaultVisible: false },
 	{ key: "code", label: "コード" },
 	{ key: "label", label: "ラベル" },
 	{ key: "description", label: "説明" },
@@ -64,6 +58,11 @@ function CreditRolesPage() {
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
 
+	// ソート状態管理
+	const { sortBy, sortOrder, handleSort } = useSortableTable({
+		onSortChange: () => setPage(1),
+	});
+
 	// カラム表示設定
 	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
 	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
@@ -78,12 +77,21 @@ function CreditRolesPage() {
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["credit-roles", page, pageSize, debouncedSearch],
+		queryKey: [
+			"credit-roles",
+			page,
+			pageSize,
+			debouncedSearch,
+			sortBy,
+			sortOrder,
+		],
 		queryFn: () =>
 			creditRolesApi.list({
 				page,
 				limit: pageSize,
 				search: debouncedSearch || undefined,
+				sortBy,
+				sortOrder,
 			}),
 		staleTime: 30_000,
 	});
@@ -96,7 +104,7 @@ function CreditRolesPage() {
 	};
 
 	// 並べ替えが無効な条件
-	const isReorderDisabled = !!debouncedSearch;
+	const isReorderDisabled = !!debouncedSearch || sortBy !== "sortOrder";
 
 	// 上へ移動
 	const handleMoveUp = async (item: CreditRole, index: number) => {
@@ -252,15 +260,42 @@ function CreditRolesPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
-									<TableHead className="w-[100px]">並び替え</TableHead>
-									{isVisible("sortOrder") && (
-										<TableHead className="w-[80px]">順序</TableHead>
-									)}
+									<TableHead
+										className="w-[120px] cursor-pointer select-none hover:bg-base-200"
+										onClick={() => handleSort("sortOrder")}
+									>
+										並び替え
+										<SortIcon
+											column="sortOrder"
+											sortBy={sortBy}
+											sortOrder={sortOrder}
+										/>
+									</TableHead>
 									{isVisible("code") && (
-										<TableHead className="w-[150px]">コード</TableHead>
+										<TableHead
+											className="w-[150px] cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("code")}
+										>
+											コード
+											<SortIcon
+												column="code"
+												sortBy={sortBy}
+												sortOrder={sortOrder}
+											/>
+										</TableHead>
 									)}
 									{isVisible("label") && (
-										<TableHead className="w-[200px]">ラベル</TableHead>
+										<TableHead
+											className="w-[200px] cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("label")}
+										>
+											ラベル
+											<SortIcon
+												column="label"
+												sortBy={sortBy}
+												sortOrder={sortOrder}
+											/>
+										</TableHead>
 									)}
 									{isVisible("description") && <TableHead>説明</TableHead>}
 									<TableHead className="w-[100px]" />
@@ -280,39 +315,15 @@ function CreditRolesPage() {
 									items.map((c, index) => (
 										<TableRow key={c.code}>
 											<TableCell>
-												<div className="flex items-center gap-1">
-													<span className="w-8 text-center text-base-content/50 text-sm">
-														{c.sortOrder}
-													</span>
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() => handleMoveUp(c, index)}
-														disabled={index === 0 || isReorderDisabled}
-														title="上へ移動"
-													>
-														<ChevronUp className="h-4 w-4" />
-														<span className="sr-only">上へ移動</span>
-													</Button>
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() => handleMoveDown(c, index)}
-														disabled={
-															index === items.length - 1 || isReorderDisabled
-														}
-														title="下へ移動"
-													>
-														<ChevronDown className="h-4 w-4" />
-														<span className="sr-only">下へ移動</span>
-													</Button>
-												</div>
+												<ReorderButtons
+													sortOrder={c.sortOrder}
+													onMoveUp={() => handleMoveUp(c, index)}
+													onMoveDown={() => handleMoveDown(c, index)}
+													isFirst={index === 0}
+													isLast={index === items.length - 1}
+													disabled={isReorderDisabled}
+												/>
 											</TableCell>
-											{isVisible("sortOrder") && (
-												<TableCell className="text-base-content/50 text-sm">
-													{c.sortOrder}
-												</TableCell>
-											)}
 											{isVisible("code") && (
 												<TableCell className="font-mono text-sm">
 													{c.code}

@@ -5,8 +5,6 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import {
 	ArrowLeft,
-	ChevronDown,
-	ChevronUp,
 	Disc3,
 	ExternalLink,
 	GitFork,
@@ -17,6 +15,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -1237,33 +1236,19 @@ function TrackDetailPage() {
 							</TableHeader>
 							<TableBody>
 								{track.credits
-									.sort((a, b) => a.creditPosition - b.creditPosition)
+									.sort(
+										(a, b) => (a.creditPosition ?? 0) - (b.creditPosition ?? 0),
+									)
 									.map((credit, index) => (
 										<TableRow key={credit.id}>
-											<TableCell className="w-[100px]">
-												<div className="flex items-center gap-1">
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() => handleCreditMoveUp(credit, index)}
-														disabled={index === 0}
-														title="上へ移動"
-													>
-														<ChevronUp className="h-4 w-4" />
-													</Button>
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() => handleCreditMoveDown(credit, index)}
-														disabled={index === track.credits.length - 1}
-														title="下へ移動"
-													>
-														<ChevronDown className="h-4 w-4" />
-													</Button>
-													<span className="ml-1 text-base-content/70">
-														{credit.creditPosition}
-													</span>
-												</div>
+											<TableCell>
+												<ReorderButtons
+													sortOrder={credit.creditPosition ?? 0}
+													onMoveUp={() => handleCreditMoveUp(credit, index)}
+													onMoveDown={() => handleCreditMoveDown(credit, index)}
+													isFirst={index === 0}
+													isLast={index === track.credits.length - 1}
+												/>
 											</TableCell>
 											<TableCell>
 												{credit.artist ? (
@@ -1361,30 +1346,17 @@ function TrackDetailPage() {
 									.map((relation, index, arr) => (
 										<TableRow key={relation.id}>
 											<TableCell>
-												<div className="flex items-center gap-0.5">
-													<Button
-														variant="ghost"
-														size="icon"
-														className="h-6 w-6"
-														disabled={index === 0}
-														onClick={() =>
-															handleOfficialSongReorder(relation.id, "up")
-														}
-													>
-														<ChevronUp className="h-4 w-4" />
-													</Button>
-													<Button
-														variant="ghost"
-														size="icon"
-														className="h-6 w-6"
-														disabled={index === arr.length - 1}
-														onClick={() =>
-															handleOfficialSongReorder(relation.id, "down")
-														}
-													>
-														<ChevronDown className="h-4 w-4" />
-													</Button>
-												</div>
+												<ReorderButtons
+													sortOrder={relation.partPosition ?? 0}
+													onMoveUp={() =>
+														handleOfficialSongReorder(relation.id, "up")
+													}
+													onMoveDown={() =>
+														handleOfficialSongReorder(relation.id, "down")
+													}
+													isFirst={index === 0}
+													isLast={index === arr.length - 1}
+												/>
 											</TableCell>
 											<TableCell className="font-medium">
 												{relation.officialSong?.name ??

@@ -3,18 +3,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db/utils/id";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import {
-	ArrowUpDown,
-	ChevronDown,
-	ChevronUp,
-	Eye,
-	Pencil,
-	Trash2,
-} from "lucide-react";
+import { ArrowUpDown, Eye, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
+import { SortIcon } from "@/components/admin/sort-icon";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -35,6 +30,7 @@ import {
 } from "@/components/ui/table";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useSortableTable } from "@/hooks/use-sortable-table";
 import { type EventSeries, eventSeriesApi } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 
@@ -46,7 +42,6 @@ export const Route = createFileRoute("/admin/_admin/event-series")({
 // カラム定義
 const COLUMN_CONFIGS = [
 	{ key: "id", label: "ID", defaultVisible: false },
-	{ key: "sortOrder", label: "順序" },
 	{ key: "name", label: "シリーズ名" },
 	{ key: "createdAt", label: "作成日時", defaultVisible: false },
 	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
@@ -57,6 +52,11 @@ function EventSeriesPage() {
 
 	const [search, setSearch] = useState("");
 	const debouncedSearch = useDebounce(search, 300);
+
+	// ソート状態管理
+	const { sortBy, sortOrder, handleSort } = useSortableTable({
+		onSortChange: () => {},
+	});
 
 	// カラム表示設定
 	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
@@ -73,13 +73,21 @@ function EventSeriesPage() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["event-series", debouncedSearch],
-		queryFn: () => eventSeriesApi.list(debouncedSearch || undefined),
+		queryKey: ["event-series", debouncedSearch, sortBy, sortOrder],
+		queryFn: () =>
+			eventSeriesApi.list({
+				search: debouncedSearch || undefined,
+				sortBy,
+				sortOrder,
+			}),
 		staleTime: 30_000,
 	});
 
 	const seriesList = data?.data ?? [];
 	const total = data?.total ?? 0;
+
+	// 並べ替えが無効な条件
+	const isReorderDisabled = !!debouncedSearch || sortBy !== "sortOrder";
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["event-series"] });
@@ -87,7 +95,7 @@ function EventSeriesPage() {
 
 	// 上へ移動
 	const handleMoveUp = async (series: EventSeries, index: number) => {
-		if (index === 0) return;
+		if (index === 0 || isReorderDisabled) return;
 		const prevSeries = seriesList[index - 1];
 
 		try {
@@ -108,7 +116,7 @@ function EventSeriesPage() {
 
 	// 下へ移動
 	const handleMoveDown = async (series: EventSeries, index: number) => {
-		if (index === seriesList.length - 1) return;
+		if (index === seriesList.length - 1 || isReorderDisabled) return;
 		const nextSeries = seriesList[index + 1];
 
 		try {
@@ -217,9 +225,6 @@ function EventSeriesPage() {
 	const displayError =
 		mutationError || (error instanceof Error ? error.message : null);
 
-	// 検索中は並び替えを無効化
-	const isReorderDisabled = !!debouncedSearch;
-
 	return (
 		<div className="container mx-auto py-6">
 			<AdminPageHeader
@@ -247,9 +252,10 @@ function EventSeriesPage() {
 					}}
 					secondaryActions={[
 						{
-							label: "順序を整理",
-							icon: <ArrowUpDown className="h-4 w-4" />,
+							label: isSubmitting ? "整理中..." : "順序を整理",
+							icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
 							onClick: handleReorder,
+							disabled: isSubmitting || seriesList.length === 0,
 						},
 					]}
 				/>
@@ -271,21 +277,40 @@ function EventSeriesPage() {
 					<Table zebra>
 						<TableHeader>
 							<TableRow className="hover:bg-transparent">
-								<TableHead className="w-[100px]">並び替え</TableHead>
+								<TableHead
+									className="w-[120px] cursor-pointer select-none hover:bg-base-200"
+									onClick={() => handleSort("sortOrder")}
+								>
+									並び替え
+									<SortIcon
+										column="sortOrder"
+										sortBy={sortBy}
+										sortOrder={sortOrder}
+									/>
+								</TableHead>
 								{isVisible("id") && (
 									<TableHead className="w-[100px]">ID</TableHead>
 								)}
-								{isVisible("sortOrder") && (
-									<TableHead className="w-[80px]">順序</TableHead>
+								{isVisible("name") && (
+									<TableHead
+										className="cursor-pointer select-none hover:bg-base-200"
+										onClick={() => handleSort("name")}
+									>
+										シリーズ名
+										<SortIcon
+											column="name"
+											sortBy={sortBy}
+											sortOrder={sortOrder}
+										/>
+									</TableHead>
 								)}
-								{isVisible("name") && <TableHead>シリーズ名</TableHead>}
 								{isVisible("createdAt") && (
 									<TableHead className="w-[160px]">作成日時</TableHead>
 								)}
 								{isVisible("updatedAt") && (
 									<TableHead className="w-[160px]">更新日時</TableHead>
 								)}
-								<TableHead className="w-[70px]" />
+								<TableHead className="w-[100px]" />
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -301,38 +326,19 @@ function EventSeriesPage() {
 							) : (
 								seriesList.map((series, index) => (
 									<TableRow key={series.id}>
-										<TableCell className="w-[100px]">
-											<div className="flex items-center gap-1">
-												<Button
-													variant="ghost"
-													size="icon"
-													onClick={() => handleMoveUp(series, index)}
-													disabled={index === 0 || isReorderDisabled}
-													title="上へ移動"
-												>
-													<ChevronUp className="h-4 w-4" />
-												</Button>
-												<Button
-													variant="ghost"
-													size="icon"
-													onClick={() => handleMoveDown(series, index)}
-													disabled={
-														index === seriesList.length - 1 || isReorderDisabled
-													}
-													title="下へ移動"
-												>
-													<ChevronDown className="h-4 w-4" />
-												</Button>
-											</div>
+										<TableCell>
+											<ReorderButtons
+												sortOrder={series.sortOrder}
+												onMoveUp={() => handleMoveUp(series, index)}
+												onMoveDown={() => handleMoveDown(series, index)}
+												isFirst={index === 0}
+												isLast={index === seriesList.length - 1}
+												disabled={isReorderDisabled}
+											/>
 										</TableCell>
 										{isVisible("id") && (
 											<TableCell className="font-mono text-base-content/50 text-xs">
 												{series.id}
-											</TableCell>
-										)}
-										{isVisible("sortOrder") && (
-											<TableCell className="text-base-content/70">
-												{series.sortOrder}
 											</TableCell>
 										)}
 										{isVisible("name") && (
@@ -400,9 +406,14 @@ function EventSeriesPage() {
 
 				<div className="border-base-300 border-t p-4 text-base-content/70 text-sm">
 					全 {total} 件
-					{isReorderDisabled && (
+					{isReorderDisabled && debouncedSearch && (
 						<span className="ml-2 text-warning">
 							（検索中は並び替えできません）
+						</span>
+					)}
+					{isReorderDisabled && !debouncedSearch && sortBy !== "sortOrder" && (
+						<span className="ml-2 text-warning">
+							（並び替えでソート中は移動できません）
 						</span>
 					)}
 				</div>
