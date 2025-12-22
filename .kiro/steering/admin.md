@@ -291,6 +291,126 @@ const COLUMN_CONFIGS = [
 
 ---
 
+## 並べ替えUI
+
+マスタ管理ページなど、手動で順序を変更するテーブルで使用する統一パターン。
+
+### コンポーネント構成
+
+| コンポーネント | ファイル | 役割 |
+|--------------|---------|------|
+| `SortIcon` | `components/admin/sort-icon.tsx` | ヘッダーのソート状態表示 |
+| `ReorderButtons` | `components/admin/reorder-buttons.tsx` | 順序値表示 + 上下移動ボタン |
+| `useSortableTable` | `hooks/use-sortable-table.ts` | ソート状態管理フック |
+
+### SortIcon
+
+テーブルヘッダーに表示するソート状態アイコン。
+
+```tsx
+import { SortIcon } from "@/components/admin/sort-icon";
+
+<TableHead
+  className="cursor-pointer select-none hover:bg-base-200"
+  onClick={() => handleSort("name")}
+>
+  名前
+  <SortIcon column="name" sortBy={sortBy} sortOrder={sortOrder} />
+</TableHead>
+```
+
+| 状態 | アイコン |
+|------|---------|
+| 未ソート（他の列でソート中） | `ArrowUpDown`（薄い色） |
+| 昇順 | `ArrowUp` |
+| 降順 | `ArrowDown` |
+
+### ReorderButtons
+
+順序値の表示と上下移動ボタンを一体化したコンポーネント。
+
+```tsx
+import { ReorderButtons } from "@/components/admin/reorder-buttons";
+
+<TableCell>
+  <ReorderButtons
+    sortOrder={item.sortOrder}
+    onMoveUp={() => handleMoveUp(item, index)}
+    onMoveDown={() => handleMoveDown(item, index)}
+    isFirst={index === 0}
+    isLast={index === items.length - 1}
+    disabled={isReorderDisabled}
+  />
+</TableCell>
+```
+
+**注意:** `ReorderButtons`で`sortOrder`を表示するため、テーブルに別途「順序」カラムは不要。
+
+### useSortableTable
+
+ソート状態を管理するフック。
+
+```tsx
+import { useSortableTable } from "@/hooks/use-sortable-table";
+
+const { sortBy, sortOrder, handleSort } = useSortableTable({
+  defaultSortBy: "sortOrder",  // デフォルト: "sortOrder"
+  defaultSortOrder: "asc",     // デフォルト: "asc"
+  onSortChange: () => {},      // ソート変更時のコールバック
+});
+```
+
+### isReorderDisabled ルール
+
+並べ替え操作を無効化する条件を統一する。
+
+```tsx
+const isReorderDisabled =
+  !!debouncedSearch ||    // 検索中
+  !!filterValue ||        // フィルター中（該当ページのみ）
+  sortBy !== "sortOrder"; // sortOrder以外でソート中
+```
+
+**理由:**
+- 検索やフィルター中は表示順が実際の順序と異なる可能性がある
+- `sortOrder`以外でソート中に移動すると意図しない結果になる
+
+### フッターメッセージ
+
+並べ替えが無効な理由をユーザーに伝える。
+
+```tsx
+<div className="border-base-300 border-t p-4 text-base-content/70 text-sm">
+  全 {total} 件
+  {isReorderDisabled && debouncedSearch && (
+    <span className="ml-2 text-warning">
+      （検索中は並び替えできません）
+    </span>
+  )}
+  {isReorderDisabled && !debouncedSearch && sortBy !== "sortOrder" && (
+    <span className="ml-2 text-warning">
+      （並び替えでソート中は移動できません）
+    </span>
+  )}
+</div>
+```
+
+### 基準実装
+
+`platforms.tsx`が最も完成度の高い実装。新規ページ作成時はこれを参照する。
+
+### 適用ページ
+
+| ページ | ソート可能カラム |
+|--------|------------------|
+| `platforms.tsx` | sortOrder, code, name |
+| `credit-roles.tsx` | sortOrder, code, label |
+| `alias-types.tsx` | sortOrder, code, label |
+| `official-work-categories.tsx` | sortOrder, code, name |
+| `event-series.tsx` | sortOrder, name |
+
+---
+
 ## フォームパターン
 
 ### 基本構成
