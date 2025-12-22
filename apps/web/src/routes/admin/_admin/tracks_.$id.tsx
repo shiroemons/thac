@@ -30,6 +30,7 @@ import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-sele
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { Select } from "@/components/ui/select";
 import {
 	Table,
 	TableBody,
@@ -160,6 +161,7 @@ function TrackDetailPage() {
 		url: "",
 		visibility: "public" as "public" | "unlisted" | "private",
 		publishedAt: "",
+		removedAt: "",
 		isOfficial: false,
 		countryCode: "",
 	});
@@ -764,6 +766,7 @@ function TrackDetailPage() {
 			url: "",
 			visibility: "public",
 			publishedAt: "",
+			removedAt: "",
 			isOfficial: false,
 			countryCode: "JP",
 		});
@@ -781,6 +784,9 @@ function TrackDetailPage() {
 			visibility: publication.visibility ?? "public",
 			publishedAt: publication.publishedAt
 				? format(new Date(publication.publishedAt), "yyyy-MM-dd")
+				: "",
+			removedAt: publication.removedAt
+				? format(new Date(publication.removedAt), "yyyy-MM-dd")
 				: "",
 			isOfficial: publication.isOfficial,
 			countryCode: publication.countryCode ?? "",
@@ -806,6 +812,7 @@ function TrackDetailPage() {
 					url: publicationForm.url,
 					visibility: publicationForm.visibility,
 					publishedAt: publicationForm.publishedAt || null,
+					removedAt: publicationForm.removedAt || null,
 					isOfficial: publicationForm.isOfficial,
 					countryCode: publicationForm.countryCode || null,
 				});
@@ -817,6 +824,7 @@ function TrackDetailPage() {
 					platformItemId: publicationForm.platformItemId || null,
 					visibility: publicationForm.visibility,
 					publishedAt: publicationForm.publishedAt || null,
+					removedAt: publicationForm.removedAt || null,
 					isOfficial: publicationForm.isOfficial,
 					countryCode: publicationForm.countryCode || null,
 				});
@@ -2022,35 +2030,40 @@ function TrackDetailPage() {
 				open={isPublicationDialogOpen}
 				onOpenChange={setIsPublicationDialogOpen}
 			>
-				<DialogContent className="sm:max-w-[500px]">
+				<DialogContent className="sm:max-w-[600px]">
 					<DialogHeader>
 						<DialogTitle>
 							{editingPublication ? "公開リンクの編集" : "公開リンクの追加"}
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{!editingPublication && (
-							<div className="grid gap-2">
-								<Label>
-									プラットフォーム <span className="text-error">*</span>
-								</Label>
-								<GroupedSearchableSelect
-									value={publicationForm.platformCode}
-									onChange={(val) =>
-										setPublicationForm({
-											...publicationForm,
-											platformCode: val,
-										})
-									}
-									options={platformOptions}
-									groupOrder={platformGroupOrder}
-									placeholder="プラットフォームを選択"
-									searchPlaceholder="プラットフォームを検索..."
-									emptyMessage="プラットフォームが見つかりません"
-									ungroupedLabel="その他"
-								/>
+						{mutationError && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{mutationError}
 							</div>
 						)}
+
+						<div className="grid gap-2">
+							<Label>
+								プラットフォーム <span className="text-error">*</span>
+							</Label>
+							<GroupedSearchableSelect
+								value={publicationForm.platformCode}
+								onChange={(val) =>
+									setPublicationForm({
+										...publicationForm,
+										platformCode: val,
+									})
+								}
+								options={platformOptions}
+								groupOrder={platformGroupOrder}
+								placeholder="プラットフォームを選択"
+								searchPlaceholder="プラットフォームを検索..."
+								emptyMessage="プラットフォームが見つかりません"
+								ungroupedLabel="その他"
+							/>
+						</div>
+
 						<div className="grid gap-2">
 							<Label>
 								URL <span className="text-error">*</span>
@@ -2067,9 +2080,10 @@ function TrackDetailPage() {
 								placeholder="https://..."
 							/>
 						</div>
+
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label>プラットフォームID</Label>
+								<Label>プラットフォーム内ID</Label>
 								<Input
 									value={publicationForm.platformItemId}
 									onChange={(e) =>
@@ -2078,13 +2092,35 @@ function TrackDetailPage() {
 											platformItemId: e.target.value,
 										})
 									}
-									placeholder="例: sm12345678"
+									placeholder="プラットフォーム固有のID"
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label>公開状態</Label>
+								<Label>国コード</Label>
 								<select
+									value={publicationForm.countryCode}
+									onChange={(e) =>
+										setPublicationForm({
+											...publicationForm,
+											countryCode: e.target.value,
+										})
+									}
 									className="select select-bordered w-full"
+								>
+									<option value="">選択してください</option>
+									{COUNTRY_CODE_OPTIONS.map((opt) => (
+										<option key={opt.value} value={opt.value}>
+											{opt.label}
+										</option>
+									))}
+								</select>
+							</div>
+						</div>
+
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label>公開状態</Label>
+								<Select
 									value={publicationForm.visibility}
 									onChange={(e) =>
 										setPublicationForm({
@@ -2099,9 +2135,27 @@ function TrackDetailPage() {
 									<option value="public">公開</option>
 									<option value="unlisted">限定公開</option>
 									<option value="private">非公開</option>
-								</select>
+								</Select>
+							</div>
+							<div className="grid gap-2">
+								<Label>公式アップロード</Label>
+								<div className="flex h-12 items-center gap-2">
+									<input
+										type="checkbox"
+										className="checkbox"
+										checked={publicationForm.isOfficial}
+										onChange={(e) =>
+											setPublicationForm({
+												...publicationForm,
+												isOfficial: e.target.checked,
+											})
+										}
+									/>
+									<span className="text-sm">公式</span>
+								</div>
 							</div>
 						</div>
+
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
 								<Label>公開日</Label>
@@ -2117,43 +2171,26 @@ function TrackDetailPage() {
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label>国コード</Label>
-								<select
-									className="select select-bordered w-full"
-									value={publicationForm.countryCode}
+								<Label>取り下げ日</Label>
+								<Input
+									type="date"
+									value={publicationForm.removedAt}
 									onChange={(e) =>
 										setPublicationForm({
 											...publicationForm,
-											countryCode: e.target.value,
+											removedAt: e.target.value,
 										})
 									}
-								>
-									<option value="">選択してください</option>
-									{COUNTRY_CODE_OPTIONS.map((opt) => (
-										<option key={opt.value} value={opt.value}>
-											{opt.label}
-										</option>
-									))}
-								</select>
+								/>
 							</div>
 						</div>
-						<label className="flex cursor-pointer items-center gap-2">
-							<input
-								type="checkbox"
-								className="checkbox"
-								checked={publicationForm.isOfficial}
-								onChange={(e) =>
-									setPublicationForm({
-										...publicationForm,
-										isOfficial: e.target.checked,
-									})
-								}
-							/>
-							<span>公式アップロード</span>
-						</label>
 					</div>
 					<DialogFooter>
-						<Button variant="ghost" onClick={closePublicationDialog}>
+						<Button
+							variant="ghost"
+							onClick={closePublicationDialog}
+							disabled={isSubmitting}
+						>
 							キャンセル
 						</Button>
 						<Button
@@ -2161,8 +2198,8 @@ function TrackDetailPage() {
 							onClick={handlePublicationSubmit}
 							disabled={
 								isSubmitting ||
-								!publicationForm.url ||
-								(!editingPublication && !publicationForm.platformCode)
+								!publicationForm.platformCode ||
+								!publicationForm.url
 							}
 						>
 							{isSubmitting
