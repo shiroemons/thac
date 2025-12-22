@@ -31,6 +31,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -41,11 +42,19 @@ import {
 	artistsApi,
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
+	type PaginatedResponse,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 20;
+
 export const Route = createFileRoute("/admin/_admin/artist-aliases")({
 	head: () => createPageHead("アーティスト名義"),
+	loader: () =>
+		ssrFetch<PaginatedResponse<ArtistAlias>>(
+			`/api/admin/artist-aliases?page=${DEFAULT_PAGE}&limit=${DEFAULT_PAGE_SIZE}`,
+		),
 	component: ArtistAliasesPage,
 });
 
@@ -106,10 +115,11 @@ const COLUMN_CONFIGS = [
 ] as const;
 
 function ArtistAliasesPage() {
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(20);
+	const [page, setPage] = useState(DEFAULT_PAGE);
+	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [search, setSearch] = useState("");
 	const [artistIdFilter, setArtistIdFilter] = useState("");
 
@@ -155,7 +165,13 @@ function ArtistAliasesPage() {
 	});
 	const aliasTypes = aliasTypesData?.data ?? [];
 
-	const { data, isLoading, error } = useQuery({
+	const isInitialQuery =
+		page === DEFAULT_PAGE &&
+		pageSize === DEFAULT_PAGE_SIZE &&
+		!debouncedSearch &&
+		!artistIdFilter;
+
+	const { data, isPending, error } = useQuery({
 		queryKey: [
 			"artistAliases",
 			page,
@@ -171,6 +187,7 @@ function ArtistAliasesPage() {
 				artistId: artistIdFilter || undefined,
 			}),
 		staleTime: 30_000,
+		initialData: isInitialQuery ? loaderData : undefined,
 	});
 
 	const aliases = data?.data ?? [];
@@ -335,7 +352,7 @@ function ArtistAliasesPage() {
 					</div>
 				)}
 
-				{isLoading ? (
+				{isPending && !data ? (
 					<DataTableSkeleton
 						rows={5}
 						columns={6}

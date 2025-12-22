@@ -30,6 +30,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -37,8 +38,13 @@ import {
 	type OfficialWork,
 	officialWorkCategoriesApi,
 	officialWorksApi,
+	type PaginatedResponse,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+
+// 初期表示用のデフォルト値
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 20;
 
 // カテゴリごとの色分け
 const CATEGORY_COLORS: Record<string, BadgeVariant> = {
@@ -64,6 +70,10 @@ const CATEGORY_CODES: Record<string, string> = {
 
 export const Route = createFileRoute("/admin/_admin/official/works")({
 	head: () => createPageHead("公式作品"),
+	loader: () =>
+		ssrFetch<PaginatedResponse<OfficialWork>>(
+			`/api/admin/official/works?page=${DEFAULT_PAGE}&limit=${DEFAULT_PAGE_SIZE}`,
+		),
 	component: OfficialWorksPage,
 });
 
@@ -83,11 +93,12 @@ const COLUMN_CONFIGS = [
 ] as const;
 
 function OfficialWorksPage() {
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// ページネーション・フィルタ状態
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(20);
+	const [page, setPage] = useState(DEFAULT_PAGE);
+	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [search, setSearch] = useState("");
 	const [category, setCategory] = useState("");
 
@@ -152,7 +163,14 @@ function OfficialWorksPage() {
 		return `${categoryCode}${nextNumber}`;
 	};
 
-	const { data, isLoading, error } = useQuery({
+	// 初期状態かどうかを判定
+	const isInitialQuery =
+		page === DEFAULT_PAGE &&
+		pageSize === DEFAULT_PAGE_SIZE &&
+		!debouncedSearch &&
+		!category;
+
+	const { data, isPending, error } = useQuery({
 		queryKey: ["officialWorks", page, pageSize, debouncedSearch, category],
 		queryFn: () =>
 			officialWorksApi.list({
@@ -162,6 +180,8 @@ function OfficialWorksPage() {
 				category: category || undefined,
 			}),
 		staleTime: 30_000,
+		// 初期状態の場合のみSSRデータをキャッシュとして使用
+		initialData: isInitialQuery ? loaderData : undefined,
 	});
 
 	const works = data?.data ?? [];
@@ -325,7 +345,7 @@ function OfficialWorksPage() {
 					</div>
 				)}
 
-				{isLoading ? (
+				{isPending && !data ? (
 					<DataTableSkeleton
 						rows={5}
 						columns={5}

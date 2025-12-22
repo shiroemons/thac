@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowLeft, Music, Pencil } from "lucide-react";
 import { useState } from "react";
+import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { OfficialLinksCard } from "@/components/admin/official-links-card";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ function getCategoryColor(categoryCode: string | null): BadgeVariant {
 
 function OfficialWorkDetailPage() {
 	const { id } = Route.useParams();
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// 編集モード
@@ -53,15 +55,16 @@ function OfficialWorkDetailPage() {
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	// 作品データ取得
+	// 作品データ取得（SSRデータをキャッシュとして活用）
 	const {
 		data: work,
-		isLoading,
+		isPending,
 		error,
 	} = useQuery({
 		queryKey: ["officialWorks", id],
 		queryFn: () => officialWorksApi.get(id),
 		staleTime: 30_000,
+		initialData: loaderData,
 	});
 
 	// カテゴリ一覧取得（編集用）
@@ -147,16 +150,9 @@ function OfficialWorkDetailPage() {
 		}
 	};
 
-	// ローディング
-	if (isLoading) {
-		return (
-			<div className="container mx-auto p-6">
-				<div className="animate-pulse space-y-4">
-					<div className="h-8 w-1/4 rounded bg-base-300" />
-					<div className="h-64 rounded bg-base-300" />
-				</div>
-			</div>
-		);
+	// ローディング（キャッシュがない場合のみスケルトンを表示）
+	if (isPending && !work) {
+		return <DetailPageSkeleton showBadge cardCount={3} fieldsPerCard={8} />;
 	}
 
 	// エラー・未存在

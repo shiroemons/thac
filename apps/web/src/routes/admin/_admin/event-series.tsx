@@ -28,14 +28,21 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useSortableTable } from "@/hooks/use-sortable-table";
-import { type EventSeries, eventSeriesApi } from "@/lib/api-client";
+import {
+	type EventSeries,
+	eventSeriesApi,
+	type PaginatedResponse,
+} from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/event-series")({
 	head: () => createPageHead("イベントシリーズ"),
+	loader: () =>
+		ssrFetch<PaginatedResponse<EventSeries>>("/api/admin/event-series"),
 	component: EventSeriesPage,
 });
 
@@ -48,6 +55,7 @@ const COLUMN_CONFIGS = [
 ] as const;
 
 function EventSeriesPage() {
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	const [search, setSearch] = useState("");
@@ -72,7 +80,9 @@ function EventSeriesPage() {
 	const [createForm, setCreateForm] = useState<Partial<EventSeries>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const { data, isLoading, error } = useQuery({
+	const isInitialQuery = !debouncedSearch && !sortBy;
+
+	const { data, isPending, error } = useQuery({
 		queryKey: ["event-series", debouncedSearch, sortBy, sortOrder],
 		queryFn: () =>
 			eventSeriesApi.list({
@@ -81,6 +91,7 @@ function EventSeriesPage() {
 				sortOrder,
 			}),
 		staleTime: 30_000,
+		initialData: isInitialQuery ? loaderData : undefined,
 	});
 
 	const seriesList = data?.data ?? [];
@@ -266,7 +277,7 @@ function EventSeriesPage() {
 					</div>
 				)}
 
-				{isLoading ? (
+				{isPending && !data ? (
 					<DataTableSkeleton
 						rows={5}
 						columns={5}

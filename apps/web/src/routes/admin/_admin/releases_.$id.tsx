@@ -17,6 +17,7 @@ import {
 	Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -109,6 +110,7 @@ const PARTICIPATION_TYPE_OPTIONS = Object.entries(
 
 function ReleaseDetailPage() {
 	const { id } = Route.useParams();
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// 編集モード
@@ -184,15 +186,16 @@ function ReleaseDetailPage() {
 		isPrimary: false,
 	});
 
-	// 作品データ取得
+	// 作品データ取得（SSRデータをキャッシュとして活用）
 	const {
 		data: release,
-		isLoading,
+		isPending,
 		error,
 	} = useQuery({
 		queryKey: ["releases", id],
 		queryFn: () => releasesApi.get(id),
 		staleTime: 30_000,
+		initialData: loaderData,
 	});
 
 	// 関連サークル取得
@@ -936,16 +939,9 @@ function ReleaseDetailPage() {
 		}
 	};
 
-	// ローディング
-	if (isLoading) {
-		return (
-			<div className="container mx-auto p-6">
-				<div className="animate-pulse space-y-4">
-					<div className="h-8 w-1/4 rounded bg-base-300" />
-					<div className="h-64 rounded bg-base-300" />
-				</div>
-			</div>
-		);
+	// ローディング（キャッシュがない場合のみスケルトンを表示）
+	if (isPending && !release) {
+		return <DetailPageSkeleton showBadge cardCount={3} fieldsPerCard={6} />;
 	}
 
 	// エラー・未存在

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -96,16 +97,19 @@ function getRoleBadgeVariant(
 
 function TrackDetailPage() {
 	const { id: trackId } = Route.useParams();
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
-	// トラック詳細取得
+	// トラック詳細取得（SSRデータをキャッシュとして活用）
 	const {
 		data: track,
-		isLoading,
+		isPending,
 		error,
 	} = useQuery({
 		queryKey: ["track", trackId],
 		queryFn: () => tracksApi.get(trackId),
+		staleTime: 30_000,
+		initialData: loaderData,
 	});
 
 	// 編集関連の状態
@@ -911,14 +915,9 @@ function TrackDetailPage() {
 		}
 	};
 
-	if (isLoading) {
-		return (
-			<div className="container mx-auto py-6">
-				<div className="flex items-center justify-center py-12">
-					<span className="loading loading-spinner loading-lg" />
-				</div>
-			</div>
-		);
+	// ローディング（キャッシュがない場合のみスケルトンを表示）
+	if (isPending && !track) {
+		return <DetailPageSkeleton cardCount={5} fieldsPerCard={4} />;
 	}
 
 	if (error || !track) {

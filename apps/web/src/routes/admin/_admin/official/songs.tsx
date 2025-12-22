@@ -32,6 +32,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -40,11 +41,20 @@ import {
 	officialSongsApi,
 	officialWorkCategoriesApi,
 	officialWorksApi,
+	type PaginatedResponse,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 
+// 初期表示用のデフォルト値
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 20;
+
 export const Route = createFileRoute("/admin/_admin/official/songs")({
 	head: () => createPageHead("公式楽曲"),
+	loader: () =>
+		ssrFetch<PaginatedResponse<OfficialSong>>(
+			`/api/admin/official/songs?page=${DEFAULT_PAGE}&limit=${DEFAULT_PAGE_SIZE}`,
+		),
 	component: OfficialSongsPage,
 });
 
@@ -63,11 +73,12 @@ const COLUMN_CONFIGS = [
 ] as const;
 
 function OfficialSongsPage() {
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// ページネーション・フィルタ状態
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(20);
+	const [page, setPage] = useState(DEFAULT_PAGE);
+	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [search, setSearch] = useState("");
 	const [workId, setWorkId] = useState("");
 
@@ -135,7 +146,14 @@ function OfficialSongsPage() {
 		return `${workId}${nextNumber}`;
 	};
 
-	const { data, isLoading, error } = useQuery({
+	// 初期状態かどうかを判定
+	const isInitialQuery =
+		page === DEFAULT_PAGE &&
+		pageSize === DEFAULT_PAGE_SIZE &&
+		!debouncedSearch &&
+		!workId;
+
+	const { data, isPending, error } = useQuery({
 		queryKey: ["officialSongs", page, pageSize, debouncedSearch, workId],
 		queryFn: () =>
 			officialSongsApi.list({
@@ -145,6 +163,8 @@ function OfficialSongsPage() {
 				workId: workId || undefined,
 			}),
 		staleTime: 30_000,
+		// 初期状態の場合のみSSRデータをキャッシュとして使用
+		initialData: isInitialQuery ? loaderData : undefined,
 	});
 
 	const songs = data?.data ?? [];
@@ -359,7 +379,7 @@ function OfficialSongsPage() {
 					</div>
 				)}
 
-				{isLoading ? (
+				{isPending && !data ? (
 					<DataTableSkeleton
 						rows={5}
 						columns={5}

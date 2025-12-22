@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { useMemo, useState } from "react";
+import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { OfficialLinksCard } from "@/components/admin/official-links-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/admin/_admin/official/songs_/$id")({
 
 function OfficialSongDetailPage() {
 	const { id } = Route.useParams();
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// 編集モード
@@ -39,15 +41,16 @@ function OfficialSongDetailPage() {
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	// 楽曲データ取得
+	// 楽曲データ取得（SSRデータをキャッシュとして活用）
 	const {
 		data: song,
-		isLoading,
+		isPending,
 		error,
 	} = useQuery({
 		queryKey: ["officialSongs", id],
 		queryFn: () => officialSongsApi.get(id),
 		staleTime: 30_000,
+		initialData: loaderData,
 	});
 
 	// 作品一覧取得（編集用）
@@ -185,16 +188,9 @@ function OfficialSongDetailPage() {
 		}
 	};
 
-	// ローディング
-	if (isLoading) {
-		return (
-			<div className="container mx-auto p-6">
-				<div className="animate-pulse space-y-4">
-					<div className="h-8 w-1/4 rounded bg-base-300" />
-					<div className="h-64 rounded bg-base-300" />
-				</div>
-			</div>
-		);
+	// ローディング（キャッシュがない場合のみスケルトンを表示）
+	if (isPending && !song) {
+		return <DetailPageSkeleton showBadge cardCount={2} fieldsPerCard={8} />;
 	}
 
 	// エラー・未存在

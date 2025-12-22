@@ -31,6 +31,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -39,11 +40,19 @@ import {
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
+	type PaginatedResponse,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 20;
+
 export const Route = createFileRoute("/admin/_admin/artists")({
 	head: () => createPageHead("アーティスト"),
+	loader: () =>
+		ssrFetch<PaginatedResponse<Artist>>(
+			`/api/admin/artists?page=${DEFAULT_PAGE}&limit=${DEFAULT_PAGE_SIZE}`,
+		),
 	component: ArtistsPage,
 });
 
@@ -70,11 +79,12 @@ const COLUMN_CONFIGS = [
 ] as const;
 
 function ArtistsPage() {
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// ページネーション・フィルタ状態
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(20);
+	const [page, setPage] = useState(DEFAULT_PAGE);
+	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [search, setSearch] = useState("");
 	const [initialScript, setInitialScript] = useState("");
 
@@ -96,7 +106,13 @@ function ArtistsPage() {
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const { data, isLoading, error } = useQuery({
+	const isInitialQuery =
+		page === DEFAULT_PAGE &&
+		pageSize === DEFAULT_PAGE_SIZE &&
+		!debouncedSearch &&
+		!initialScript;
+
+	const { data, isPending, error } = useQuery({
 		queryKey: ["artists", page, pageSize, debouncedSearch, initialScript],
 		queryFn: () =>
 			artistsApi.list({
@@ -106,6 +122,7 @@ function ArtistsPage() {
 				initialScript: initialScript || undefined,
 			}),
 		staleTime: 30_000,
+		initialData: isInitialQuery ? loaderData : undefined,
 	});
 
 	const artists = data?.data ?? [];
@@ -234,7 +251,7 @@ function ArtistsPage() {
 					</div>
 				)}
 
-				{isLoading ? (
+				{isPending && !data ? (
 					<DataTableSkeleton
 						rows={5}
 						columns={6}

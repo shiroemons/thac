@@ -29,6 +29,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -38,12 +39,20 @@ import {
 	eventDaysApi,
 	eventSeriesApi,
 	eventsApi,
+	type PaginatedResponse,
 } from "@/lib/api-client";
 import { suggestFromEventName } from "@/lib/event-name-parser";
 import { createPageHead } from "@/lib/head";
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 20;
+
 export const Route = createFileRoute("/admin/_admin/events")({
 	head: () => createPageHead("イベント"),
+	loader: () =>
+		ssrFetch<PaginatedResponse<Event>>(
+			`/api/admin/events?page=${DEFAULT_PAGE}&limit=${DEFAULT_PAGE_SIZE}`,
+		),
 	component: EventsPage,
 });
 
@@ -61,10 +70,11 @@ const COLUMN_CONFIGS = [
 ] as const;
 
 function EventsPage() {
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(20);
+	const [page, setPage] = useState(DEFAULT_PAGE);
+	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [search, setSearch] = useState("");
 	const [seriesFilter, setSeriesFilter] = useState("");
 
@@ -112,7 +122,13 @@ function EventsPage() {
 		[seriesList],
 	);
 
-	const { data, isLoading, error } = useQuery({
+	const isInitialQuery =
+		page === DEFAULT_PAGE &&
+		pageSize === DEFAULT_PAGE_SIZE &&
+		!debouncedSearch &&
+		!seriesFilter;
+
+	const { data, isPending, error } = useQuery({
 		queryKey: ["events", page, pageSize, debouncedSearch, seriesFilter],
 		queryFn: () =>
 			eventsApi.list({
@@ -122,6 +138,7 @@ function EventsPage() {
 				seriesId: seriesFilter || undefined,
 			}),
 		staleTime: 30_000,
+		initialData: isInitialQuery ? loaderData : undefined,
 	});
 
 	const events = data?.data ?? [];
@@ -382,7 +399,7 @@ function EventsPage() {
 					</div>
 				)}
 
-				{isLoading ? (
+				{isPending && !data ? (
 					<DataTableSkeleton
 						rows={5}
 						columns={6}

@@ -76,7 +76,7 @@ function AliasTypesPage() {
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
-	const { data, isLoading, error } = useQuery({
+	const { data, isPending, error } = useQuery({
 		queryKey: [
 			"alias-types",
 			page,
@@ -248,7 +248,7 @@ function AliasTypesPage() {
 					</div>
 				)}
 
-				{isLoading ? (
+				{isPending && !data ? (
 					<DataTableSkeleton
 						rows={5}
 						columns={4}

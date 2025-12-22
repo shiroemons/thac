@@ -66,7 +66,7 @@ function StatCard({ title, value, icon, href, isLoading }: StatCardProps) {
 }
 
 function AdminDashboard() {
-	const { data, isLoading } = useQuery({
+	const { data, isPending: isLoading } = useQuery({
 		queryKey: ["admin-stats"],
 		queryFn: statsApi.get,
 		staleTime: 60_000,
