@@ -67,15 +67,17 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 		return c.json({ error: "Track not found" }, 404);
 	}
 
-	// 公式楽曲存在チェック
-	const existingOfficialSong = await db
-		.select()
-		.from(officialSongs)
-		.where(eq(officialSongs.id, body.officialSongId))
-		.limit(1);
+	// 公式楽曲存在チェック（officialSongIdが指定されている場合のみ）
+	if (body.officialSongId) {
+		const existingOfficialSong = await db
+			.select()
+			.from(officialSongs)
+			.where(eq(officialSongs.id, body.officialSongId))
+			.limit(1);
 
-	if (existingOfficialSong.length === 0) {
-		return c.json({ error: "Official song not found" }, 404);
+		if (existingOfficialSong.length === 0) {
+			return c.json({ error: "Official song not found" }, 404);
+		}
 	}
 
 	// partPositionが未指定の場合は自動付与（現在の最大値 + 1）
@@ -115,29 +117,31 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 		return c.json({ error: "ID already exists" }, 409);
 	}
 
-	// 一意性チェック（トラック × 公式楽曲 × 順序）
-	const duplicateCheck = await db
-		.select()
-		.from(trackOfficialSongs)
-		.where(
-			and(
-				eq(trackOfficialSongs.trackId, trackId),
-				eq(trackOfficialSongs.officialSongId, parsed.data.officialSongId),
-				parsed.data.partPosition != null
-					? eq(trackOfficialSongs.partPosition, parsed.data.partPosition)
-					: undefined,
-			),
-		)
-		.limit(1);
+	// 一意性チェック（トラック × 公式楽曲 × 順序、公式楽曲が指定されている場合のみ）
+	if (parsed.data.officialSongId) {
+		const duplicateCheck = await db
+			.select()
+			.from(trackOfficialSongs)
+			.where(
+				and(
+					eq(trackOfficialSongs.trackId, trackId),
+					eq(trackOfficialSongs.officialSongId, parsed.data.officialSongId),
+					parsed.data.partPosition != null
+						? eq(trackOfficialSongs.partPosition, parsed.data.partPosition)
+						: undefined,
+				),
+			)
+			.limit(1);
 
-	if (duplicateCheck.length > 0) {
-		return c.json(
-			{
-				error:
-					"This official song is already linked to the track with the same part position",
-			},
-			409,
-		);
+		if (duplicateCheck.length > 0) {
+			return c.json(
+				{
+					error:
+						"This official song is already linked to the track with the same part position",
+				},
+				409,
+			);
+		}
 	}
 
 	// 作成

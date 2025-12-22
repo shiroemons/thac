@@ -15,7 +15,7 @@ import {
 	Plus,
 	Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,7 +57,11 @@ import {
 	trackPublicationsApi,
 	tracksApi,
 } from "@/lib/api-client";
-import { COUNTRY_CODE_OPTIONS } from "@/lib/constants";
+import {
+	COUNTRY_CODE_OPTIONS,
+	PLATFORM_CATEGORY_LABELS,
+	PLATFORM_CATEGORY_ORDER,
+} from "@/lib/constants";
 import { createTrackDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/tracks_/$id")({
@@ -130,10 +134,10 @@ function TrackDetailPage() {
 	const [officialSongForm, setOfficialSongForm] = useState({
 		id: "",
 		officialSongId: "",
+		customSongName: "",
 		partPosition: null as number | null,
 		startSecond: null as number | null,
 		endSecond: null as number | null,
-		confidence: null as number | null,
 		notes: "",
 	});
 	const [editingOfficialSong, setEditingOfficialSong] =
@@ -227,12 +231,75 @@ function TrackDetailPage() {
 		staleTime: 60_000,
 	});
 
+	// 公式楽曲のグループ化オプション（カテゴリ名・ID順）
+	const officialSongOptions = useMemo(() => {
+		const songs = officialSongsData?.data ?? [];
+		// カテゴリのsortOrder、楽曲のIDでソート
+		const sorted = [...songs].sort((a, b) => {
+			const aSortOrder = a.workCategorySortOrder ?? 999;
+			const bSortOrder = b.workCategorySortOrder ?? 999;
+			if (aSortOrder !== bSortOrder) return aSortOrder - bSortOrder;
+			return a.id.localeCompare(b.id);
+		});
+		const songOptions = sorted.map((song) => ({
+			value: song.id,
+			label: song.name,
+			group: song.workCategoryName || "その他",
+		}));
+		// カスタム楽曲オプションを追加
+		songOptions.push({
+			value: "__custom__",
+			label: "その他（カスタム楽曲名を入力）",
+			group: "カスタム",
+		});
+		return songOptions;
+	}, [officialSongsData?.data]);
+
+	// 公式楽曲のグループ順序（カテゴリのsortOrder順）
+	const officialSongGroupOrder = useMemo(() => {
+		const songs = officialSongsData?.data ?? [];
+		const categories = new Map<string, number>();
+		for (const song of songs) {
+			const name = song.workCategoryName || "その他";
+			const order = song.workCategorySortOrder ?? 999;
+			if (!categories.has(name)) {
+				categories.set(name, order);
+			}
+		}
+		const order = Array.from(categories.entries())
+			.sort((a, b) => a[1] - b[1])
+			.map(([name]) => name);
+		// カスタムを最後に追加
+		order.push("カスタム");
+		return order;
+	}, [officialSongsData?.data]);
+
 	// プラットフォームマスター
 	const { data: platformsData } = useQuery({
 		queryKey: ["platforms"],
-		queryFn: () => platformsApi.list(),
+		queryFn: () => platformsApi.list({ limit: 100 }),
 		staleTime: 60_000,
 	});
+
+	// プラットフォームのグループ化オプション（日本語ラベル・順序付き）
+	const platformOptions = useMemo(() => {
+		const platforms = platformsData?.data ?? [];
+		// sortOrder でソート
+		const sorted = [...platforms].sort(
+			(a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999),
+		);
+		return sorted.map((p) => ({
+			value: p.code,
+			label: p.name,
+			group: PLATFORM_CATEGORY_LABELS[p.category || "other"] || "その他",
+		}));
+	}, [platformsData?.data]);
+
+	// プラットフォームのグループ順序（日本語ラベル）
+	const platformGroupOrder = useMemo(
+		() => PLATFORM_CATEGORY_ORDER.map((key) => PLATFORM_CATEGORY_LABELS[key]),
+		[],
+	);
 
 	// トラック一覧（派生関係用）
 	const { data: allTracksData } = useQuery({
@@ -521,10 +588,10 @@ function TrackDetailPage() {
 		setOfficialSongForm({
 			id: createId.trackOfficialSong(),
 			officialSongId: "",
+			customSongName: "",
 			partPosition: null,
 			startSecond: null,
 			endSecond: null,
-			confidence: null,
 			notes: "",
 		});
 		setEditingOfficialSong(null);
@@ -535,11 +602,11 @@ function TrackDetailPage() {
 	const openOfficialSongEditDialog = (relation: TrackOfficialSong) => {
 		setOfficialSongForm({
 			id: relation.id,
-			officialSongId: relation.officialSongId,
+			officialSongId: relation.officialSongId ?? "",
+			customSongName: relation.customSongName ?? "",
 			partPosition: relation.partPosition,
 			startSecond: relation.startSecond,
 			endSecond: relation.endSecond,
-			confidence: relation.confidence,
 			notes: relation.notes ?? "",
 		});
 		setEditingOfficialSong(relation);
@@ -557,22 +624,24 @@ function TrackDetailPage() {
 		setMutationError(null);
 
 		try {
+			// 「その他」が選択されている場合はcustomSongNameを使用
+			const isCustom = officialSongForm.officialSongId === "__custom__";
+
 			if (editingOfficialSong) {
 				await trackOfficialSongsApi.update(trackId, editingOfficialSong.id, {
 					partPosition: officialSongForm.partPosition,
 					startSecond: officialSongForm.startSecond,
 					endSecond: officialSongForm.endSecond,
-					confidence: officialSongForm.confidence,
 					notes: officialSongForm.notes || null,
 				});
 			} else {
 				await trackOfficialSongsApi.create(trackId, {
 					id: officialSongForm.id,
-					officialSongId: officialSongForm.officialSongId,
+					officialSongId: isCustom ? null : officialSongForm.officialSongId,
+					customSongName: isCustom
+						? officialSongForm.customSongName || null
+						: null,
 					partPosition: officialSongForm.partPosition,
-					startSecond: officialSongForm.startSecond,
-					endSecond: officialSongForm.endSecond,
-					confidence: officialSongForm.confidence,
 					notes: officialSongForm.notes || null,
 				});
 			}
@@ -590,11 +659,12 @@ function TrackDetailPage() {
 	};
 
 	const handleOfficialSongDelete = async (relation: TrackOfficialSong) => {
-		if (
-			!confirm(
-				`原曲紐付け "${relation.officialSong?.name ?? relation.officialSongId}" を削除しますか？`,
-			)
-		) {
+		const songName =
+			relation.officialSong?.name ??
+			relation.customSongName ??
+			relation.officialSongId ??
+			"不明";
+		if (!confirm(`原曲紐付け "${songName}" を削除しますか？`)) {
 			return;
 		}
 
@@ -1211,7 +1281,6 @@ function TrackDetailPage() {
 									<TableHead className="w-[60px]">順序</TableHead>
 									<TableHead>公式楽曲</TableHead>
 									<TableHead className="w-[120px]">時間範囲</TableHead>
-									<TableHead className="w-[80px]">確度</TableHead>
 									<TableHead>備考</TableHead>
 									<TableHead className="w-[120px]" />
 								</TableRow>
@@ -1248,17 +1317,20 @@ function TrackDetailPage() {
 												</div>
 											</TableCell>
 											<TableCell className="font-medium">
-												{relation.officialSong?.name ?? relation.officialSongId}
+												{relation.officialSong?.name ??
+													relation.customSongName ??
+													relation.officialSongId ??
+													"-"}
+												{relation.customSongName && (
+													<span className="ml-2 text-base-content/50 text-xs">
+														（カスタム）
+													</span>
+												)}
 											</TableCell>
 											<TableCell>
 												{relation.startSecond != null ||
 												relation.endSecond != null
 													? `${relation.startSecond ?? "?"}s〜${relation.endSecond ?? "?"}s`
-													: "-"}
-											</TableCell>
-											<TableCell>
-												{relation.confidence != null
-													? `${relation.confidence}%`
 													: "-"}
 											</TableCell>
 											<TableCell className="max-w-[200px] truncate text-sm">
@@ -1328,6 +1400,11 @@ function TrackDetailPage() {
 													className="text-primary hover:underline"
 												>
 													{derivation.parentTrack.name}
+													{derivation.parentTrack.releaseName && (
+														<span className="ml-1 text-base-content/60 text-sm">
+															（{derivation.parentTrack.releaseName}）
+														</span>
+													)}
 												</Link>
 											) : (
 												derivation.parentTrackId
@@ -1749,90 +1826,91 @@ function TrackDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{!editingOfficialSong && (
-							<div className="grid gap-2">
-								<Label>
-									公式楽曲 <span className="text-error">*</span>
-								</Label>
-								<GroupedSearchableSelect
-									value={officialSongForm.officialSongId}
-									onChange={(val) =>
-										setOfficialSongForm({
-											...officialSongForm,
-											officialSongId: val,
-										})
-									}
-									options={(officialSongsData?.data ?? []).map((song) => ({
-										value: song.id,
-										label: song.name,
-										group: song.workName || undefined,
-									}))}
-									placeholder="公式楽曲を選択"
-									searchPlaceholder="公式楽曲を検索..."
-									emptyMessage="公式楽曲が見つかりません"
-									ungroupedLabel="作品未設定"
-								/>
+							<>
+								<div className="grid gap-2">
+									<Label>
+										公式楽曲 <span className="text-error">*</span>
+									</Label>
+									<GroupedSearchableSelect
+										value={officialSongForm.officialSongId}
+										onChange={(val) =>
+											setOfficialSongForm({
+												...officialSongForm,
+												officialSongId: val,
+												// カスタム以外を選択した場合はcustomSongNameをクリア
+												customSongName:
+													val === "__custom__"
+														? officialSongForm.customSongName
+														: "",
+											})
+										}
+										options={officialSongOptions}
+										groupOrder={officialSongGroupOrder}
+										placeholder="公式楽曲を選択"
+										searchPlaceholder="公式楽曲を検索..."
+										emptyMessage="公式楽曲が見つかりません"
+										ungroupedLabel="その他"
+									/>
+								</div>
+								{officialSongForm.officialSongId === "__custom__" && (
+									<div className="grid gap-2">
+										<Label>
+											カスタム楽曲名 <span className="text-error">*</span>
+										</Label>
+										<Input
+											value={officialSongForm.customSongName}
+											onChange={(e) =>
+												setOfficialSongForm({
+													...officialSongForm,
+													customSongName: e.target.value,
+												})
+											}
+											placeholder="楽曲名を入力..."
+										/>
+									</div>
+								)}
+							</>
+						)}
+						{editingOfficialSong && (
+							<div className="grid grid-cols-2 gap-4">
+								<div className="grid gap-2">
+									<Label>開始秒</Label>
+									<Input
+										type="number"
+										min="0"
+										step="0.1"
+										value={officialSongForm.startSecond ?? ""}
+										onChange={(e) =>
+											setOfficialSongForm({
+												...officialSongForm,
+												startSecond: e.target.value
+													? Number.parseFloat(e.target.value)
+													: null,
+											})
+										}
+										placeholder="0.0"
+									/>
+								</div>
+								<div className="grid gap-2">
+									<Label>終了秒</Label>
+									<Input
+										type="number"
+										min="0"
+										step="0.1"
+										value={officialSongForm.endSecond ?? ""}
+										onChange={(e) =>
+											setOfficialSongForm({
+												...officialSongForm,
+												endSecond: e.target.value
+													? Number.parseFloat(e.target.value)
+													: null,
+											})
+										}
+										placeholder="0.0"
+									/>
+								</div>
 							</div>
 						)}
-						<div className="grid gap-2">
-							<Label>確度: {officialSongForm.confidence ?? 0}%</Label>
-							<input
-								type="range"
-								min="0"
-								max="100"
-								step="10"
-								value={officialSongForm.confidence ?? 0}
-								onChange={(e) =>
-									setOfficialSongForm({
-										...officialSongForm,
-										confidence: Number.parseInt(e.target.value, 10),
-									})
-								}
-								className="range range-primary range-sm"
-							/>
-							<div className="flex w-full justify-between px-1 text-base-content/50 text-xs">
-								<span>0</span>
-								<span>50</span>
-								<span>100</span>
-							</div>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label>開始秒</Label>
-								<Input
-									type="number"
-									min="0"
-									step="0.1"
-									value={officialSongForm.startSecond ?? ""}
-									onChange={(e) =>
-										setOfficialSongForm({
-											...officialSongForm,
-											startSecond: e.target.value
-												? Number.parseFloat(e.target.value)
-												: null,
-										})
-									}
-									placeholder="0.0"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label>終了秒</Label>
-								<Input
-									type="number"
-									min="0"
-									step="0.1"
-									value={officialSongForm.endSecond ?? ""}
-									onChange={(e) =>
-										setOfficialSongForm({
-											...officialSongForm,
-											endSecond: e.target.value
-												? Number.parseFloat(e.target.value)
-												: null,
-										})
-									}
-									placeholder="0.0"
-								/>
-							</div>
-						</div>
 						<div className="grid gap-2">
 							<Label>備考</Label>
 							<textarea
@@ -1858,7 +1936,10 @@ function TrackDetailPage() {
 							onClick={handleOfficialSongSubmit}
 							disabled={
 								isSubmitting ||
-								(!editingOfficialSong && !officialSongForm.officialSongId)
+								(!editingOfficialSong &&
+									(!officialSongForm.officialSongId ||
+										(officialSongForm.officialSongId === "__custom__" &&
+											!officialSongForm.customSongName.trim())))
 							}
 						>
 							{isSubmitting
@@ -1896,7 +1977,9 @@ function TrackDetailPage() {
 									.filter((t) => t.id !== trackId)
 									.map((t) => ({
 										value: t.id,
-										label: t.name,
+										label: t.releaseName
+											? `${t.name}（${t.releaseName}）`
+											: t.name,
 									}))}
 								placeholder="トラックを選択"
 								searchPlaceholder="トラックを検索..."
@@ -1905,7 +1988,7 @@ function TrackDetailPage() {
 						</div>
 						<div className="grid gap-2">
 							<Label>備考</Label>
-							<Input
+							<textarea
 								value={derivationForm.notes}
 								onChange={(e) =>
 									setDerivationForm({
@@ -1913,7 +1996,9 @@ function TrackDetailPage() {
 										notes: e.target.value,
 									})
 								}
-								placeholder="備考"
+								placeholder="備考を入力..."
+								className="textarea textarea-bordered w-full"
+								rows={3}
 							/>
 						</div>
 					</div>
@@ -1957,11 +2042,8 @@ function TrackDetailPage() {
 											platformCode: val,
 										})
 									}
-									options={(platformsData?.data ?? []).map((p) => ({
-										value: p.code,
-										label: p.name,
-										group: p.category || undefined,
-									}))}
+									options={platformOptions}
+									groupOrder={platformGroupOrder}
 									placeholder="プラットフォームを選択"
 									searchPlaceholder="プラットフォームを検索..."
 									emptyMessage="プラットフォームが見つかりません"

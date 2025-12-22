@@ -20,6 +20,7 @@ interface GroupedSearchableSelectProps {
 	disabled?: boolean;
 	className?: string;
 	ungroupedLabel?: string;
+	groupOrder?: readonly string[];
 }
 
 export function GroupedSearchableSelect({
@@ -34,6 +35,7 @@ export function GroupedSearchableSelect({
 	disabled = false,
 	className,
 	ungroupedLabel = "その他",
+	groupOrder,
 }: GroupedSearchableSelectProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [search, setSearch] = useState("");
@@ -69,15 +71,22 @@ export function GroupedSearchableSelect({
 			groups.get(groupName)?.push(option);
 		}
 
-		// グループ名でソート（ungroupedLabelは最後に）
+		// グループ名でソート（groupOrderが指定されていればその順序、ungroupedLabelは最後に）
 		const sortedGroups = Array.from(groups.entries()).sort(([a], [b]) => {
 			if (a === ungroupedLabel) return 1;
 			if (b === ungroupedLabel) return -1;
+			if (groupOrder) {
+				const aIndex = groupOrder.indexOf(a);
+				const bIndex = groupOrder.indexOf(b);
+				if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+				if (aIndex !== -1) return -1;
+				if (bIndex !== -1) return 1;
+			}
 			return a.localeCompare(b, "ja");
 		});
 
 		return sortedGroups;
-	}, [filteredOptions, ungroupedLabel]);
+	}, [filteredOptions, ungroupedLabel, groupOrder]);
 
 	// 外側クリックで閉じる
 	useEffect(() => {

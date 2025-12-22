@@ -6,6 +6,7 @@ import {
 	insertOfficialSongSchema,
 	like,
 	officialSongs,
+	officialWorkCategories,
 	officialWorks,
 	or,
 	updateOfficialSongSchema,
@@ -45,7 +46,7 @@ songsRouter.get("/", async (c) => {
 
 	const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
 
-	// データ取得（作品情報を結合）
+	// データ取得（作品情報・カテゴリ情報を結合）
 	const [data, totalResult] = await Promise.all([
 		db
 			.select({
@@ -63,11 +64,18 @@ songsRouter.get("/", async (c) => {
 				createdAt: officialSongs.createdAt,
 				updatedAt: officialSongs.updatedAt,
 				workName: officialWorks.nameJa,
+				workCategoryCode: officialWorks.categoryCode,
+				workCategoryName: officialWorkCategories.name,
+				workCategorySortOrder: officialWorkCategories.sortOrder,
 			})
 			.from(officialSongs)
 			.leftJoin(
 				officialWorks,
 				eq(officialSongs.officialWorkId, officialWorks.id),
+			)
+			.leftJoin(
+				officialWorkCategories,
+				eq(officialWorks.categoryCode, officialWorkCategories.code),
 			)
 			.where(whereCondition)
 			.limit(limit)

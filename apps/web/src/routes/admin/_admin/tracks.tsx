@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db/utils/id";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ExternalLink, Eye, Pencil, Trash2 } from "lucide-react";
+import { Disc3, Eye, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -478,9 +478,10 @@ function TracksPage() {
 														to="/admin/releases/$id"
 														params={{ id: track.releaseId }}
 														className="btn btn-ghost btn-xs"
+														title="リリース詳細"
 													>
-														<ExternalLink className="h-4 w-4" />
-														<span className="sr-only">作品詳細</span>
+														<Disc3 className="h-4 w-4" />
+														<span className="sr-only">リリース詳細</span>
 													</Link>
 													<Button
 														variant="ghost"

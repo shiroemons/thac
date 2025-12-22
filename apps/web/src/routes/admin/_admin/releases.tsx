@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db/utils/id";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Disc3, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
+import { Disc3, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -475,7 +475,7 @@ function ReleasesPage() {
 														params={{ id: release.id }}
 														className="btn btn-ghost btn-xs"
 													>
-														<ExternalLink className="h-4 w-4" />
+														<Eye className="h-4 w-4" />
 														<span className="sr-only">詳細</span>
 													</Link>
 													<Button

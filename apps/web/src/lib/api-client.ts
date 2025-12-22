@@ -5,6 +5,7 @@ export interface Platform {
 	name: string;
 	category: string | null;
 	urlPattern: string | null;
+	sortOrder: number;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -1229,11 +1230,11 @@ export const trackCreditRolesApi = {
 export interface TrackOfficialSong {
 	id: string;
 	trackId: string;
-	officialSongId: string;
+	officialSongId: string | null;
+	customSongName: string | null;
 	partPosition: number | null;
 	startSecond: number | null;
 	endSecond: number | null;
-	confidence: number | null;
 	notes: string | null;
 	createdAt: Date | null;
 	updatedAt: Date | null;
@@ -1249,11 +1250,11 @@ export const trackOfficialSongsApi = {
 		trackId: string,
 		data: {
 			id: string;
-			officialSongId: string;
+			officialSongId?: string | null;
+			customSongName?: string | null;
 			partPosition?: number | null;
 			startSecond?: number | null;
 			endSecond?: number | null;
-			confidence?: number | null;
 			notes?: string | null;
 		},
 	) =>
@@ -1271,7 +1272,6 @@ export const trackOfficialSongsApi = {
 			partPosition?: number | null;
 			startSecond?: number | null;
 			endSecond?: number | null;
-			confidence?: number | null;
 			notes?: string | null;
 		},
 	) =>

@@ -16,7 +16,7 @@ import {
 	Trash2,
 	Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,7 +61,11 @@ import {
 	trackCreditsApi,
 	tracksApi,
 } from "@/lib/api-client";
-import { COUNTRY_CODE_OPTIONS } from "@/lib/constants";
+import {
+	COUNTRY_CODE_OPTIONS,
+	PLATFORM_CATEGORY_LABELS,
+	PLATFORM_CATEGORY_ORDER,
+} from "@/lib/constants";
 import { createReleaseDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/releases_/$id")({
@@ -286,10 +290,30 @@ function ReleaseDetailPage() {
 	// プラットフォーム一覧取得
 	const { data: platformsData } = useQuery({
 		queryKey: ["platforms"],
-		queryFn: () => platformsApi.list(),
+		queryFn: () => platformsApi.list({ limit: 100 }),
 		staleTime: 300_000,
 		enabled: isPublicationDialogOpen,
 	});
+
+	// プラットフォームのグループ化オプション（日本語ラベル・順序付き）
+	const platformOptions = useMemo(() => {
+		const platforms = platformsData?.data ?? [];
+		// sortOrder でソート
+		const sorted = [...platforms].sort(
+			(a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999),
+		);
+		return sorted.map((p) => ({
+			value: p.code,
+			label: p.name,
+			group: PLATFORM_CATEGORY_LABELS[p.category || "other"] || "その他",
+		}));
+	}, [platformsData?.data]);
+
+	// プラットフォームのグループ順序（日本語ラベル）
+	const platformGroupOrder = useMemo(
+		() => PLATFORM_CATEGORY_ORDER.map((key) => PLATFORM_CATEGORY_LABELS[key]),
+		[],
+	);
 
 	// アーティスト名義のオプションを構築（別名義のみ）
 	const creditNameOptions = (() => {
@@ -896,7 +920,7 @@ function ReleaseDetailPage() {
 			});
 		} else {
 			setEditingJanCode(null);
-			// 既存にプライマリがなければデフォルトでプライマリにする
+			// 既存に主要がなければデフォルトで主要にする
 			const hasPrimary = janCodes.some((jc) => jc.isPrimary);
 			setJanCodeForm({
 				janCode: "",
@@ -1444,7 +1468,7 @@ function ReleaseDetailPage() {
 										<th>JANコード</th>
 										<th>ラベル</th>
 										<th>国コード</th>
-										<th>プライマリ</th>
+										<th>主要</th>
 										<th className="w-24">操作</th>
 									</tr>
 								</thead>
@@ -1455,9 +1479,7 @@ function ReleaseDetailPage() {
 											<td>{jc.label || "-"}</td>
 											<td>{jc.countryCode || "-"}</td>
 											<td>
-												{jc.isPrimary && (
-													<Badge variant="primary">プライマリ</Badge>
-												)}
+												{jc.isPrimary && <Badge variant="primary">主要</Badge>}
 											</td>
 											<td>
 												<div className="flex items-center gap-1">
@@ -2289,11 +2311,8 @@ function ReleaseDetailPage() {
 										platformCode: val,
 									})
 								}
-								options={(platformsData?.data ?? []).map((p) => ({
-									value: p.code,
-									label: p.name,
-									group: p.category || undefined,
-								}))}
+								options={platformOptions}
+								groupOrder={platformGroupOrder}
 								placeholder="プラットフォームを選択"
 								searchPlaceholder="プラットフォームを検索..."
 								emptyMessage="プラットフォームが見つかりません"
@@ -2499,7 +2518,7 @@ function ReleaseDetailPage() {
 							/>
 						</div>
 
-						<div className="grid grid-cols-2 gap-4">
+						<div className="grid grid-cols-2 items-end gap-4">
 							<div className="grid gap-2">
 								<Label>国コード</Label>
 								<select
@@ -2520,22 +2539,19 @@ function ReleaseDetailPage() {
 									))}
 								</select>
 							</div>
-							<div className="grid gap-2">
-								<Label>プライマリ</Label>
-								<div className="flex items-center gap-2">
-									<input
-										type="checkbox"
-										className="checkbox"
-										checked={janCodeForm.isPrimary}
-										onChange={(e) =>
-											setJanCodeForm({
-												...janCodeForm,
-												isPrimary: e.target.checked,
-											})
-										}
-									/>
-									<span className="text-sm">プライマリとして設定</span>
-								</div>
+							<div className="flex h-12 items-center gap-2">
+								<input
+									type="checkbox"
+									className="checkbox"
+									checked={janCodeForm.isPrimary}
+									onChange={(e) =>
+										setJanCodeForm({
+											...janCodeForm,
+											isPrimary: e.target.checked,
+										})
+									}
+								/>
+								<span className="text-sm">主要JANとして設定</span>
 							</div>
 						</div>
 					</div>

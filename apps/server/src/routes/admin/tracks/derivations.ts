@@ -3,6 +3,7 @@ import {
 	db,
 	eq,
 	insertTrackDerivationSchema,
+	releases,
 	trackDerivations,
 	tracks,
 } from "@thac/db";
@@ -26,20 +27,27 @@ trackDerivationsRouter.get("/:trackId/derivations", async (c) => {
 		return c.json({ error: "Track not found" }, 404);
 	}
 
-	// 派生関係一覧取得（派生元トラック情報を結合）
+	// 派生関係一覧取得（派生元トラック情報・リリース情報を結合）
 	const derivations = await db
 		.select({
 			derivation: trackDerivations,
 			parentTrack: tracks,
+			parentRelease: releases,
 		})
 		.from(trackDerivations)
 		.leftJoin(tracks, eq(trackDerivations.parentTrackId, tracks.id))
+		.leftJoin(releases, eq(tracks.releaseId, releases.id))
 		.where(eq(trackDerivations.childTrackId, trackId));
 
 	return c.json(
 		derivations.map((row) => ({
 			...row.derivation,
-			parentTrack: row.parentTrack,
+			parentTrack: row.parentTrack
+				? {
+						...row.parentTrack,
+						releaseName: row.parentRelease?.name ?? null,
+					}
+				: null,
 		})),
 	);
 });

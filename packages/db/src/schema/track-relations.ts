@@ -21,13 +21,14 @@ export const trackOfficialSongs = sqliteTable(
 		trackId: text("track_id")
 			.notNull()
 			.references(() => tracks.id, { onDelete: "cascade" }),
-		officialSongId: text("official_song_id")
-			.notNull()
-			.references(() => officialSongs.id, { onDelete: "restrict" }),
+		officialSongId: text("official_song_id").references(
+			() => officialSongs.id,
+			{ onDelete: "restrict" },
+		),
+		customSongName: text("custom_song_name"),
 		partPosition: integer("part_position"),
 		startSecond: real("start_second"),
 		endSecond: real("end_second"),
-		confidence: integer("confidence"),
 		notes: text("notes"),
 		createdAt: integer("created_at", { mode: "timestamp_ms" })
 			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
