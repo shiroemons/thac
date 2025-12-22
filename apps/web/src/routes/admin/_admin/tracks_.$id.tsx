@@ -38,6 +38,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { getTrack } from "@/functions/get-track";
 import {
 	artistAliasesApi,
 	artistsApi,
@@ -64,7 +65,8 @@ import {
 import { createTrackDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/tracks_/$id")({
-	loader: ({ params }) => tracksApi.get(params.id),
+	// SSR時にCookieを転送するためサーバー関数を使用
+	loader: ({ params }) => getTrack(params.id),
 	head: ({ loaderData }) =>
 		createTrackDetailHead(loaderData?.name, loaderData?.release?.name),
 	component: TrackDetailPage,
