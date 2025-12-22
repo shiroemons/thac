@@ -5,6 +5,7 @@ export interface Platform {
 	name: string;
 	category: string | null;
 	urlPattern: string | null;
+	sortOrder: number;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -1059,6 +1060,10 @@ export interface Track {
 
 export interface TrackWithCreditCount extends Track {
 	creditCount: number;
+	vocalists: string | null;
+	arrangers: string | null;
+	lyricists: string | null;
+	originalSongs: string | null;
 }
 
 export interface TrackDetail extends Track {
@@ -1089,10 +1094,19 @@ export interface TrackCredit {
 	roles: TrackCreditRole[];
 }
 
+// Track list item with release name
+interface TrackListItem extends Track {
+	releaseName: string | null;
+}
+
 // Tracks
 export const tracksApi = {
 	get: (trackId: string) =>
 		fetchWithAuth<TrackDetail>(`/api/admin/tracks/${trackId}`),
+	listAll: (params?: { limit?: number }) =>
+		fetchWithAuth<{ data: TrackListItem[] }>(
+			`/api/admin/tracks${params?.limit ? `?limit=${params.limit}` : ""}`,
+		),
 	list: (releaseId: string) =>
 		fetchWithAuth<TrackWithCreditCount[]>(
 			`/api/admin/releases/${releaseId}/tracks`,
@@ -1210,6 +1224,364 @@ export const trackCreditRolesApi = {
 	) =>
 		fetchWithAuth<{ success: boolean }>(
 			`/api/admin/releases/${releaseId}/tracks/${trackId}/credits/${creditId}/roles/${roleCode}/${rolePosition}`,
+			{
+				method: "DELETE",
+			},
+		),
+};
+
+// Track Official Songs (原曲紐付け)
+export interface TrackOfficialSong {
+	id: string;
+	trackId: string;
+	officialSongId: string | null;
+	customSongName: string | null;
+	partPosition: number | null;
+	startSecond: number | null;
+	endSecond: number | null;
+	notes: string | null;
+	createdAt: Date | null;
+	updatedAt: Date | null;
+	officialSong?: OfficialSong | null;
+}
+
+export const trackOfficialSongsApi = {
+	list: (trackId: string) =>
+		fetchWithAuth<TrackOfficialSong[]>(
+			`/api/admin/tracks/${trackId}/official-songs`,
+		),
+	create: (
+		trackId: string,
+		data: {
+			id: string;
+			officialSongId?: string | null;
+			customSongName?: string | null;
+			partPosition?: number | null;
+			startSecond?: number | null;
+			endSecond?: number | null;
+			notes?: string | null;
+		},
+	) =>
+		fetchWithAuth<TrackOfficialSong>(
+			`/api/admin/tracks/${trackId}/official-songs`,
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		),
+	update: (
+		trackId: string,
+		id: string,
+		data: {
+			partPosition?: number | null;
+			startSecond?: number | null;
+			endSecond?: number | null;
+			notes?: string | null;
+		},
+	) =>
+		fetchWithAuth<TrackOfficialSong>(
+			`/api/admin/tracks/${trackId}/official-songs/${id}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(data),
+			},
+		),
+	delete: (trackId: string, id: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/tracks/${trackId}/official-songs/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
+	reorder: (trackId: string, id: string, direction: "up" | "down") =>
+		fetchWithAuth<TrackOfficialSong[]>(
+			`/api/admin/tracks/${trackId}/official-songs/${id}/reorder`,
+			{
+				method: "PATCH",
+				body: JSON.stringify({ direction }),
+			},
+		),
+};
+
+// Track Derivations (派生関係)
+export interface TrackDerivation {
+	id: string;
+	childTrackId: string;
+	parentTrackId: string;
+	notes: string | null;
+	createdAt: Date | null;
+	updatedAt: Date | null;
+	parentTrack?: Track | null;
+}
+
+export const trackDerivationsApi = {
+	list: (trackId: string) =>
+		fetchWithAuth<TrackDerivation[]>(
+			`/api/admin/tracks/${trackId}/derivations`,
+		),
+	create: (
+		trackId: string,
+		data: {
+			id: string;
+			parentTrackId: string;
+			notes?: string | null;
+		},
+	) =>
+		fetchWithAuth<TrackDerivation>(`/api/admin/tracks/${trackId}/derivations`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	delete: (trackId: string, id: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/tracks/${trackId}/derivations/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
+};
+
+// Track Publications (トラック公開リンク)
+export interface TrackPublication {
+	id: string;
+	trackId: string;
+	platformCode: string;
+	platformItemId: string | null;
+	url: string;
+	visibility: "public" | "unlisted" | "private" | null;
+	publishedAt: Date | null;
+	removedAt: Date | null;
+	isOfficial: boolean;
+	countryCode: string | null;
+	createdAt: Date | null;
+	updatedAt: Date | null;
+	platform?: Platform | null;
+}
+
+export const trackPublicationsApi = {
+	list: (trackId: string) =>
+		fetchWithAuth<TrackPublication[]>(
+			`/api/admin/tracks/${trackId}/publications`,
+		),
+	create: (
+		trackId: string,
+		data: {
+			id: string;
+			platformCode: string;
+			url: string;
+			platformItemId?: string | null;
+			visibility?: "public" | "unlisted" | "private" | null;
+			publishedAt?: string | null;
+			removedAt?: string | null;
+			isOfficial?: boolean;
+			countryCode?: string | null;
+		},
+	) =>
+		fetchWithAuth<TrackPublication>(
+			`/api/admin/tracks/${trackId}/publications`,
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		),
+	update: (
+		trackId: string,
+		id: string,
+		data: {
+			platformItemId?: string | null;
+			url?: string;
+			visibility?: "public" | "unlisted" | "private" | null;
+			publishedAt?: string | null;
+			removedAt?: string | null;
+			isOfficial?: boolean;
+			countryCode?: string | null;
+		},
+	) =>
+		fetchWithAuth<TrackPublication>(
+			`/api/admin/tracks/${trackId}/publications/${id}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(data),
+			},
+		),
+	delete: (trackId: string, id: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/tracks/${trackId}/publications/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
+};
+
+// Track ISRCs
+export interface TrackIsrc {
+	id: string;
+	trackId: string;
+	isrc: string;
+	isPrimary: boolean;
+	createdAt: Date | null;
+	updatedAt: Date | null;
+}
+
+export const trackIsrcsApi = {
+	list: (trackId: string) =>
+		fetchWithAuth<TrackIsrc[]>(`/api/admin/tracks/${trackId}/isrcs`),
+	create: (
+		trackId: string,
+		data: {
+			id: string;
+			isrc: string;
+			isPrimary?: boolean;
+		},
+	) =>
+		fetchWithAuth<TrackIsrc>(`/api/admin/tracks/${trackId}/isrcs`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		trackId: string,
+		id: string,
+		data: {
+			isPrimary?: boolean;
+		},
+	) =>
+		fetchWithAuth<TrackIsrc>(`/api/admin/tracks/${trackId}/isrcs/${id}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (trackId: string, id: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/tracks/${trackId}/isrcs/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
+};
+
+// Release Publications (リリース公開リンク)
+export interface ReleasePublication {
+	id: string;
+	releaseId: string;
+	platformCode: string;
+	platformItemId: string | null;
+	url: string;
+	visibility: "public" | "unlisted" | "private" | null;
+	publishedAt: Date | null;
+	removedAt: Date | null;
+	isOfficial: boolean;
+	countryCode: string | null;
+	createdAt: Date | null;
+	updatedAt: Date | null;
+	platform?: Platform | null;
+}
+
+export const releasePublicationsApi = {
+	list: (releaseId: string) =>
+		fetchWithAuth<ReleasePublication[]>(
+			`/api/admin/releases/${releaseId}/publications`,
+		),
+	create: (
+		releaseId: string,
+		data: {
+			id: string;
+			platformCode: string;
+			url: string;
+			platformItemId?: string | null;
+			visibility?: "public" | "unlisted" | "private" | null;
+			publishedAt?: string | null;
+			removedAt?: string | null;
+			isOfficial?: boolean;
+			countryCode?: string | null;
+		},
+	) =>
+		fetchWithAuth<ReleasePublication>(
+			`/api/admin/releases/${releaseId}/publications`,
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		),
+	update: (
+		releaseId: string,
+		id: string,
+		data: {
+			platformItemId?: string | null;
+			url?: string;
+			visibility?: "public" | "unlisted" | "private" | null;
+			publishedAt?: string | null;
+			removedAt?: string | null;
+			isOfficial?: boolean;
+			countryCode?: string | null;
+		},
+	) =>
+		fetchWithAuth<ReleasePublication>(
+			`/api/admin/releases/${releaseId}/publications/${id}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(data),
+			},
+		),
+	delete: (releaseId: string, id: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/releases/${releaseId}/publications/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
+};
+
+// Release JAN Codes
+export interface ReleaseJanCode {
+	id: string;
+	releaseId: string;
+	janCode: string;
+	label: string | null;
+	isPrimary: boolean;
+	countryCode: string | null;
+	createdAt: Date | null;
+	updatedAt: Date | null;
+}
+
+export const releaseJanCodesApi = {
+	list: (releaseId: string) =>
+		fetchWithAuth<ReleaseJanCode[]>(
+			`/api/admin/releases/${releaseId}/jan-codes`,
+		),
+	create: (
+		releaseId: string,
+		data: {
+			id: string;
+			janCode: string;
+			label?: string | null;
+			isPrimary?: boolean;
+			countryCode?: string | null;
+		},
+	) =>
+		fetchWithAuth<ReleaseJanCode>(
+			`/api/admin/releases/${releaseId}/jan-codes`,
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		),
+	update: (
+		releaseId: string,
+		id: string,
+		data: {
+			label?: string | null;
+			isPrimary?: boolean;
+			countryCode?: string | null;
+		},
+	) =>
+		fetchWithAuth<ReleaseJanCode>(
+			`/api/admin/releases/${releaseId}/jan-codes/${id}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(data),
+			},
+		),
+	delete: (releaseId: string, id: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/releases/${releaseId}/jan-codes/${id}`,
 			{
 				method: "DELETE",
 			},

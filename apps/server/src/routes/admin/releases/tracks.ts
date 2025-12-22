@@ -3,11 +3,15 @@ import {
 	db,
 	discs,
 	eq,
+	inArray,
 	insertTrackSchema,
 	isNull,
+	officialSongs,
 	releases,
 	type Track,
+	trackCreditRoles,
 	trackCredits,
+	trackOfficialSongs,
 	tracks,
 	updateTrackSchema,
 } from "@thac/db";
@@ -41,10 +45,87 @@ tracksRouter.get("/:releaseId/tracks", async (c) => {
 		.where(eq(tracks.releaseId, releaseId))
 		.orderBy(tracks.discId, tracks.trackNumber);
 
+	// 全トラックIDを取得
+	const trackIds = releaseTracks.map((row) => row.track.id);
+
+	// 役割別クレジット取得用のヘルパー
+	const getCreditsByRole = async (roleCode: string) => {
+		if (trackIds.length === 0) return new Map<string, string[]>();
+
+		const credits = await db
+			.select({
+				trackId: trackCredits.trackId,
+				creditName: trackCredits.creditName,
+			})
+			.from(trackCredits)
+			.innerJoin(
+				trackCreditRoles,
+				eq(trackCredits.id, trackCreditRoles.trackCreditId),
+			)
+			.where(
+				and(
+					inArray(trackCredits.trackId, trackIds),
+					eq(trackCreditRoles.roleCode, roleCode),
+				),
+			)
+			.orderBy(trackCredits.creditPosition);
+
+		const map = new Map<string, string[]>();
+		for (const c of credits) {
+			const existing = map.get(c.trackId) ?? [];
+			existing.push(c.creditName);
+			map.set(c.trackId, existing);
+		}
+		return map;
+	};
+
+	// 原曲取得
+	const getOriginalSongs = async () => {
+		if (trackIds.length === 0) return new Map<string, string[]>();
+
+		const songs = await db
+			.select({
+				trackId: trackOfficialSongs.trackId,
+				songName: officialSongs.name,
+				customSongName: trackOfficialSongs.customSongName,
+			})
+			.from(trackOfficialSongs)
+			.leftJoin(
+				officialSongs,
+				eq(trackOfficialSongs.officialSongId, officialSongs.id),
+			)
+			.where(inArray(trackOfficialSongs.trackId, trackIds))
+			.orderBy(trackOfficialSongs.partPosition);
+
+		const map = new Map<string, string[]>();
+		for (const s of songs) {
+			const name = s.songName ?? s.customSongName ?? "";
+			if (name) {
+				const existing = map.get(s.trackId) ?? [];
+				existing.push(name);
+				map.set(s.trackId, existing);
+			}
+		}
+		return map;
+	};
+
+	// 並列で取得
+	const [vocalistsMap, arrangersMap, lyricistsMap, originalSongsMap] =
+		await Promise.all([
+			getCreditsByRole("vocalist"),
+			getCreditsByRole("arranger"),
+			getCreditsByRole("lyricist"),
+			getOriginalSongs(),
+		]);
+
 	// レスポンス形式に変換
 	const result = releaseTracks.map((row) => ({
 		...row.track,
 		creditCount: row.creditCount,
+		vocalists: vocalistsMap.get(row.track.id)?.join(" / ") ?? null,
+		arrangers: arrangersMap.get(row.track.id)?.join(" / ") ?? null,
+		lyricists: lyricistsMap.get(row.track.id)?.join(" / ") ?? null,
+		originalSongs: originalSongsMap.get(row.track.id)?.join(" / ") ?? null,
 	}));
 
 	return c.json(result);

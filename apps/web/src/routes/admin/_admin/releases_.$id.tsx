@@ -5,16 +5,18 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import {
 	ArrowLeft,
+	Barcode,
 	ChevronDown,
 	ChevronUp,
 	Disc3,
+	ExternalLink,
 	Music,
 	Pencil,
 	Plus,
 	Trash2,
 	Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +26,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -39,12 +42,17 @@ import {
 	PARTICIPATION_TYPE_COLORS,
 	PARTICIPATION_TYPE_LABELS,
 	type ParticipationType,
+	platformsApi,
 	RELEASE_TYPE_COLORS,
 	RELEASE_TYPE_LABELS,
 	type Release,
 	type ReleaseCircleWithCircle,
+	type ReleaseJanCode,
+	type ReleasePublication,
 	type ReleaseType,
 	releaseCirclesApi,
+	releaseJanCodesApi,
+	releasePublicationsApi,
 	releasesApi,
 	type Track,
 	type TrackCredit,
@@ -53,6 +61,11 @@ import {
 	trackCreditsApi,
 	tracksApi,
 } from "@/lib/api-client";
+import {
+	COUNTRY_CODE_OPTIONS,
+	PLATFORM_CATEGORY_LABELS,
+	PLATFORM_CATEGORY_ORDER,
+} from "@/lib/constants";
 import { createReleaseDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/releases_/$id")({
@@ -141,6 +154,47 @@ function ReleaseDetailPage() {
 		selectedRoles: [],
 	});
 
+	// 公開リンク管理用
+	const [isPublicationDialogOpen, setIsPublicationDialogOpen] = useState(false);
+	const [editingPublication, setEditingPublication] =
+		useState<ReleasePublication | null>(null);
+	const [publicationForm, setPublicationForm] = useState<{
+		platformCode: string;
+		url: string;
+		platformItemId: string;
+		countryCode: string;
+		visibility: string;
+		publishedAt: string;
+		removedAt: string;
+		isOfficial: boolean;
+	}>({
+		platformCode: "",
+		url: "",
+		platformItemId: "",
+		countryCode: "",
+		visibility: "public",
+		publishedAt: "",
+		removedAt: "",
+		isOfficial: false,
+	});
+
+	// JANコード管理用
+	const [isJanCodeDialogOpen, setIsJanCodeDialogOpen] = useState(false);
+	const [editingJanCode, setEditingJanCode] = useState<ReleaseJanCode | null>(
+		null,
+	);
+	const [janCodeForm, setJanCodeForm] = useState<{
+		janCode: string;
+		label: string;
+		countryCode: string;
+		isPrimary: boolean;
+	}>({
+		janCode: "",
+		label: "",
+		countryCode: "",
+		isPrimary: false,
+	});
+
 	// 作品データ取得
 	const {
 		data: release,
@@ -217,6 +271,50 @@ function ReleaseDetailPage() {
 		enabled: isCreditEditDialogOpen,
 	});
 
+	// 公開リンク一覧取得
+	const { data: publications = [] } = useQuery({
+		queryKey: ["releases", id, "publications"],
+		queryFn: () => releasePublicationsApi.list(id),
+		staleTime: 30_000,
+		enabled: !!release,
+	});
+
+	// JANコード一覧取得
+	const { data: janCodes = [] } = useQuery({
+		queryKey: ["releases", id, "jan-codes"],
+		queryFn: () => releaseJanCodesApi.list(id),
+		staleTime: 30_000,
+		enabled: !!release,
+	});
+
+	// プラットフォーム一覧取得
+	const { data: platformsData } = useQuery({
+		queryKey: ["platforms"],
+		queryFn: () => platformsApi.list({ limit: 100 }),
+		staleTime: 300_000,
+		enabled: isPublicationDialogOpen,
+	});
+
+	// プラットフォームのグループ化オプション（日本語ラベル・順序付き）
+	const platformOptions = useMemo(() => {
+		const platforms = platformsData?.data ?? [];
+		// sortOrder でソート
+		const sorted = [...platforms].sort(
+			(a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999),
+		);
+		return sorted.map((p) => ({
+			value: p.code,
+			label: p.name,
+			group: PLATFORM_CATEGORY_LABELS[p.category || "other"] || "その他",
+		}));
+	}, [platformsData?.data]);
+
+	// プラットフォームのグループ順序（日本語ラベル）
+	const platformGroupOrder = useMemo(
+		() => PLATFORM_CATEGORY_ORDER.map((key) => PLATFORM_CATEGORY_LABELS[key]),
+		[],
+	);
+
 	// アーティスト名義のオプションを構築（別名義のみ）
 	const creditNameOptions = (() => {
 		const options: Array<{
@@ -246,6 +344,10 @@ function ReleaseDetailPage() {
 		queryClient.invalidateQueries({ queryKey: ["releases", id] });
 		queryClient.invalidateQueries({ queryKey: ["releases", id, "circles"] });
 		queryClient.invalidateQueries({ queryKey: ["releases", id, "tracks"] });
+		queryClient.invalidateQueries({
+			queryKey: ["releases", id, "publications"],
+		});
+		queryClient.invalidateQueries({ queryKey: ["releases", id, "jan-codes"] });
 	};
 
 	// 編集開始
@@ -724,6 +826,155 @@ function ReleaseDetailPage() {
 		}
 	};
 
+	// 公開リンク関連
+	const openPublicationDialog = (publication?: ReleasePublication) => {
+		if (publication) {
+			setEditingPublication(publication);
+			setPublicationForm({
+				platformCode: publication.platformCode,
+				url: publication.url,
+				platformItemId: publication.platformItemId || "",
+				countryCode: publication.countryCode || "",
+				visibility: publication.visibility || "public",
+				publishedAt: publication.publishedAt || "",
+				removedAt: publication.removedAt || "",
+				isOfficial: publication.isOfficial || false,
+			});
+		} else {
+			setEditingPublication(null);
+			setPublicationForm({
+				platformCode: "",
+				url: "",
+				platformItemId: "",
+				countryCode: "JP",
+				visibility: "public",
+				publishedAt: "",
+				removedAt: "",
+				isOfficial: false,
+			});
+		}
+		setIsPublicationDialogOpen(true);
+	};
+
+	const handlePublicationSubmit = async () => {
+		setIsSubmitting(true);
+		setMutationError(null);
+		try {
+			if (editingPublication) {
+				await releasePublicationsApi.update(id, editingPublication.id, {
+					platformCode: publicationForm.platformCode,
+					url: publicationForm.url,
+					platformItemId: publicationForm.platformItemId || null,
+					countryCode: publicationForm.countryCode || null,
+					visibility: publicationForm.visibility || null,
+					publishedAt: publicationForm.publishedAt || null,
+					removedAt: publicationForm.removedAt || null,
+					isOfficial: publicationForm.isOfficial,
+				});
+			} else {
+				await releasePublicationsApi.create(id, {
+					id: createId.releasePublication(),
+					releaseId: id,
+					platformCode: publicationForm.platformCode,
+					url: publicationForm.url,
+					platformItemId: publicationForm.platformItemId || null,
+					countryCode: publicationForm.countryCode || null,
+					visibility: publicationForm.visibility || null,
+					publishedAt: publicationForm.publishedAt || null,
+					removedAt: publicationForm.removedAt || null,
+					isOfficial: publicationForm.isOfficial,
+				});
+			}
+			invalidateQuery();
+			setIsPublicationDialogOpen(false);
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "保存に失敗しました",
+			);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const handlePublicationDelete = async (publication: ReleasePublication) => {
+		if (!confirm("この公開リンクを削除しますか？")) {
+			return;
+		}
+		try {
+			await releasePublicationsApi.delete(id, publication.id);
+			invalidateQuery();
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "削除に失敗しました");
+		}
+	};
+
+	// JANコード関連
+	const openJanCodeDialog = (janCode?: ReleaseJanCode) => {
+		if (janCode) {
+			setEditingJanCode(janCode);
+			setJanCodeForm({
+				janCode: janCode.janCode,
+				label: janCode.label || "",
+				countryCode: janCode.countryCode || "",
+				isPrimary: janCode.isPrimary || false,
+			});
+		} else {
+			setEditingJanCode(null);
+			// 既存に主要がなければデフォルトで主要にする
+			const hasPrimary = janCodes.some((jc) => jc.isPrimary);
+			setJanCodeForm({
+				janCode: "",
+				label: "",
+				countryCode: "JP",
+				isPrimary: !hasPrimary,
+			});
+		}
+		setIsJanCodeDialogOpen(true);
+	};
+
+	const handleJanCodeSubmit = async () => {
+		setIsSubmitting(true);
+		setMutationError(null);
+		try {
+			if (editingJanCode) {
+				await releaseJanCodesApi.update(id, editingJanCode.id, {
+					label: janCodeForm.label || null,
+					countryCode: janCodeForm.countryCode || null,
+					isPrimary: janCodeForm.isPrimary,
+				});
+			} else {
+				await releaseJanCodesApi.create(id, {
+					id: createId.releaseJanCode(),
+					releaseId: id,
+					janCode: janCodeForm.janCode,
+					label: janCodeForm.label || null,
+					countryCode: janCodeForm.countryCode || null,
+					isPrimary: janCodeForm.isPrimary,
+				});
+			}
+			invalidateQuery();
+			setIsJanCodeDialogOpen(false);
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "保存に失敗しました",
+			);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const handleJanCodeDelete = async (janCode: ReleaseJanCode) => {
+		if (!confirm(`JANコード "${janCode.janCode}" を削除しますか？`)) {
+			return;
+		}
+		try {
+			await releaseJanCodesApi.delete(id, janCode.id);
+			invalidateQuery();
+		} catch (err) {
+			alert(err instanceof Error ? err.message : "削除に失敗しました");
+		}
+	};
+
 	// ローディング
 	if (isLoading) {
 		return (
@@ -1076,6 +1327,175 @@ function ReleaseDetailPage() {
 														size="icon"
 														className="text-error hover:text-error"
 														onClick={() => handleCircleRemove(rc)}
+													>
+														<Trash2 className="h-4 w-4" />
+														<span className="sr-only">削除</span>
+													</Button>
+												</div>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* 公開リンクカード */}
+			<div className="card bg-base-100 shadow-xl">
+				<div className="card-body">
+					<div className="flex items-center justify-between">
+						<h2 className="card-title">
+							<ExternalLink className="h-5 w-5" />
+							公開リンク
+						</h2>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => openPublicationDialog()}
+						>
+							<Plus className="mr-2 h-4 w-4" />
+							リンク追加
+						</Button>
+					</div>
+
+					{publications.length === 0 ? (
+						<p className="text-base-content/60">
+							公開リンクが登録されていません
+						</p>
+					) : (
+						<div className="overflow-x-auto">
+							<table className="table">
+								<thead>
+									<tr>
+										<th>プラットフォーム</th>
+										<th>URL</th>
+										<th>状態</th>
+										<th>公式</th>
+										<th className="w-24">操作</th>
+									</tr>
+								</thead>
+								<tbody>
+									{publications.map((pub) => (
+										<tr key={pub.id}>
+											<td>
+												<Badge variant="primary">
+													{pub.platform?.name || pub.platformCode}
+												</Badge>
+											</td>
+											<td>
+												<a
+													href={pub.url}
+													target="_blank"
+													rel="noopener noreferrer"
+													className="link link-primary text-sm"
+												>
+													{pub.url.length > 50
+														? `${pub.url.substring(0, 50)}...`
+														: pub.url}
+												</a>
+											</td>
+											<td>
+												<Badge
+													variant={
+														pub.visibility === "public" ? "success" : "ghost"
+													}
+												>
+													{pub.visibility === "public" ? "公開" : "非公開"}
+												</Badge>
+											</td>
+											<td>
+												{pub.isOfficial && <Badge variant="info">公式</Badge>}
+											</td>
+											<td>
+												<div className="flex items-center gap-1">
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => openPublicationDialog(pub)}
+													>
+														<Pencil className="h-4 w-4" />
+														<span className="sr-only">編集</span>
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="text-error hover:text-error"
+														onClick={() => handlePublicationDelete(pub)}
+													>
+														<Trash2 className="h-4 w-4" />
+														<span className="sr-only">削除</span>
+													</Button>
+												</div>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* JANコードカード */}
+			<div className="card bg-base-100 shadow-xl">
+				<div className="card-body">
+					<div className="flex items-center justify-between">
+						<h2 className="card-title">
+							<Barcode className="h-5 w-5" />
+							JANコード
+						</h2>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => openJanCodeDialog()}
+						>
+							<Plus className="mr-2 h-4 w-4" />
+							JANコード追加
+						</Button>
+					</div>
+
+					{janCodes.length === 0 ? (
+						<p className="text-base-content/60">
+							JANコードが登録されていません
+						</p>
+					) : (
+						<div className="overflow-x-auto">
+							<table className="table">
+								<thead>
+									<tr>
+										<th>JANコード</th>
+										<th>ラベル</th>
+										<th>国コード</th>
+										<th>主要</th>
+										<th className="w-24">操作</th>
+									</tr>
+								</thead>
+								<tbody>
+									{janCodes.map((jc) => (
+										<tr key={jc.id}>
+											<td className="font-mono">{jc.janCode}</td>
+											<td>{jc.label || "-"}</td>
+											<td>{jc.countryCode || "-"}</td>
+											<td>
+												{jc.isPrimary && <Badge variant="primary">主要</Badge>}
+											</td>
+											<td>
+												<div className="flex items-center gap-1">
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => openJanCodeDialog(jc)}
+													>
+														<Pencil className="h-4 w-4" />
+														<span className="sr-only">編集</span>
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="text-error hover:text-error"
+														onClick={() => handleJanCodeDelete(jc)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -1854,6 +2274,313 @@ function ReleaseDetailPage() {
 									? "更新中..."
 									: "追加中..."
 								: editingCredit
+									? "更新"
+									: "追加"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* 公開リンク編集ダイアログ */}
+			<Dialog
+				open={isPublicationDialogOpen}
+				onOpenChange={setIsPublicationDialogOpen}
+			>
+				<DialogContent className="sm:max-w-[600px]">
+					<DialogHeader>
+						<DialogTitle>
+							{editingPublication ? "公開リンクの編集" : "公開リンクの追加"}
+						</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{mutationError && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{mutationError}
+							</div>
+						)}
+
+						<div className="grid gap-2">
+							<Label>
+								プラットフォーム <span className="text-error">*</span>
+							</Label>
+							<GroupedSearchableSelect
+								value={publicationForm.platformCode}
+								onChange={(val) =>
+									setPublicationForm({
+										...publicationForm,
+										platformCode: val,
+									})
+								}
+								options={platformOptions}
+								groupOrder={platformGroupOrder}
+								placeholder="プラットフォームを選択"
+								searchPlaceholder="プラットフォームを検索..."
+								emptyMessage="プラットフォームが見つかりません"
+								ungroupedLabel="その他"
+							/>
+						</div>
+
+						<div className="grid gap-2">
+							<Label>
+								URL <span className="text-error">*</span>
+							</Label>
+							<Input
+								type="url"
+								value={publicationForm.url}
+								onChange={(e) =>
+									setPublicationForm({
+										...publicationForm,
+										url: e.target.value,
+									})
+								}
+								placeholder="https://..."
+							/>
+						</div>
+
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label>プラットフォーム内ID</Label>
+								<Input
+									value={publicationForm.platformItemId}
+									onChange={(e) =>
+										setPublicationForm({
+											...publicationForm,
+											platformItemId: e.target.value,
+										})
+									}
+									placeholder="プラットフォーム固有のID"
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label>国コード</Label>
+								<select
+									value={publicationForm.countryCode}
+									onChange={(e) =>
+										setPublicationForm({
+											...publicationForm,
+											countryCode: e.target.value,
+										})
+									}
+									className="select select-bordered w-full"
+								>
+									<option value="">選択してください</option>
+									{COUNTRY_CODE_OPTIONS.map((opt) => (
+										<option key={opt.value} value={opt.value}>
+											{opt.label}
+										</option>
+									))}
+								</select>
+							</div>
+						</div>
+
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label>公開状態</Label>
+								<Select
+									value={publicationForm.visibility}
+									onChange={(e) =>
+										setPublicationForm({
+											...publicationForm,
+											visibility: e.target.value,
+										})
+									}
+								>
+									<option value="public">公開</option>
+									<option value="unlisted">限定公開</option>
+									<option value="private">非公開</option>
+								</Select>
+							</div>
+							<div className="grid gap-2">
+								<Label>公式アップロード</Label>
+								<div className="flex items-center gap-2">
+									<input
+										type="checkbox"
+										className="checkbox"
+										checked={publicationForm.isOfficial}
+										onChange={(e) =>
+											setPublicationForm({
+												...publicationForm,
+												isOfficial: e.target.checked,
+											})
+										}
+									/>
+									<span className="text-sm">公式</span>
+								</div>
+							</div>
+						</div>
+
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label>公開日</Label>
+								<Input
+									type="date"
+									value={publicationForm.publishedAt}
+									onChange={(e) =>
+										setPublicationForm({
+											...publicationForm,
+											publishedAt: e.target.value,
+										})
+									}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label>取り下げ日</Label>
+								<Input
+									type="date"
+									value={publicationForm.removedAt}
+									onChange={(e) =>
+										setPublicationForm({
+											...publicationForm,
+											removedAt: e.target.value,
+										})
+									}
+								/>
+							</div>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							variant="ghost"
+							onClick={() => setIsPublicationDialogOpen(false)}
+							disabled={isSubmitting}
+						>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={handlePublicationSubmit}
+							disabled={
+								isSubmitting ||
+								!publicationForm.platformCode ||
+								!publicationForm.url
+							}
+						>
+							{isSubmitting
+								? editingPublication
+									? "更新中..."
+									: "追加中..."
+								: editingPublication
+									? "更新"
+									: "追加"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* JANコード編集ダイアログ */}
+			<Dialog open={isJanCodeDialogOpen} onOpenChange={setIsJanCodeDialogOpen}>
+				<DialogContent className="sm:max-w-[500px]">
+					<DialogHeader>
+						<DialogTitle>
+							{editingJanCode ? "JANコードの編集" : "JANコードの追加"}
+						</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{mutationError && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{mutationError}
+							</div>
+						)}
+
+						<div className="grid gap-2">
+							<Label>
+								JANコード <span className="text-error">*</span>
+							</Label>
+							<Input
+								value={janCodeForm.janCode}
+								onChange={(e) =>
+									setJanCodeForm({
+										...janCodeForm,
+										janCode: e.target.value.replace(/\D/g, ""),
+									})
+								}
+								placeholder="4900000000000"
+								maxLength={13}
+								disabled={!!editingJanCode}
+								className="font-mono"
+							/>
+							<p className="text-base-content/60 text-xs">
+								8桁または13桁の数字（編集時は変更不可）
+							</p>
+						</div>
+
+						{editingJanCode && (
+							<>
+								<div className="grid gap-2">
+									<Label>ラベル</Label>
+									<Input
+										value={janCodeForm.label}
+										onChange={(e) =>
+											setJanCodeForm({
+												...janCodeForm,
+												label: e.target.value,
+											})
+										}
+										placeholder="通常版、限定版など"
+									/>
+								</div>
+
+								<div className="grid gap-2">
+									<Label>国コード</Label>
+									<select
+										value={janCodeForm.countryCode}
+										onChange={(e) =>
+											setJanCodeForm({
+												...janCodeForm,
+												countryCode: e.target.value,
+											})
+										}
+										className="select select-bordered w-full"
+									>
+										<option value="">選択してください</option>
+										{COUNTRY_CODE_OPTIONS.map((opt) => (
+											<option key={opt.value} value={opt.value}>
+												{opt.label}
+											</option>
+										))}
+									</select>
+								</div>
+							</>
+						)}
+
+						<label className="flex cursor-pointer items-center gap-2">
+							<input
+								type="checkbox"
+								className="checkbox"
+								checked={janCodeForm.isPrimary}
+								onChange={(e) =>
+									setJanCodeForm({
+										...janCodeForm,
+										isPrimary: e.target.checked,
+									})
+								}
+							/>
+							<span>主要JANとして設定</span>
+						</label>
+					</div>
+					<DialogFooter>
+						<Button
+							variant="ghost"
+							onClick={() => setIsJanCodeDialogOpen(false)}
+							disabled={isSubmitting}
+						>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={handleJanCodeSubmit}
+							disabled={
+								isSubmitting ||
+								(!editingJanCode &&
+									janCodeForm.janCode.length !== 8 &&
+									janCodeForm.janCode.length !== 13)
+							}
+						>
+							{isSubmitting
+								? editingJanCode
+									? "更新中..."
+									: "追加中..."
+								: editingJanCode
 									? "更新"
 									: "追加"}
 						</Button>
