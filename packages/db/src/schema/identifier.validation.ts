@@ -49,15 +49,11 @@ export const insertTrackIsrcSchema = createInsertSchema(trackIsrcs, {
 	id: nonEmptyString,
 	trackId: nonEmptyString,
 	isrc: isrcSchema,
-	assignedAt: optionalString,
 	isPrimary: z.boolean().default(true),
-	source: optionalString,
 }).omit({ createdAt: true, updatedAt: true });
 
 export const updateTrackIsrcSchema = z.object({
-	assignedAt: optionalString,
 	isPrimary: z.boolean().optional(),
-	source: optionalString,
 });
 
 export const selectTrackIsrcSchema = createSelectSchema(trackIsrcs);

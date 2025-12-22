@@ -1413,9 +1413,7 @@ export interface TrackIsrc {
 	id: string;
 	trackId: string;
 	isrc: string;
-	assignedAt: string | null;
 	isPrimary: boolean;
-	source: string | null;
 	createdAt: Date | null;
 	updatedAt: Date | null;
 }
@@ -1428,9 +1426,7 @@ export const trackIsrcsApi = {
 		data: {
 			id: string;
 			isrc: string;
-			assignedAt?: string | null;
 			isPrimary?: boolean;
-			source?: string | null;
 		},
 	) =>
 		fetchWithAuth<TrackIsrc>(`/api/admin/tracks/${trackId}/isrcs`, {
@@ -1441,9 +1437,7 @@ export const trackIsrcsApi = {
 		trackId: string,
 		id: string,
 		data: {
-			assignedAt?: string | null;
 			isPrimary?: boolean;
-			source?: string | null;
 		},
 	) =>
 		fetchWithAuth<TrackIsrc>(`/api/admin/tracks/${trackId}/isrcs/${id}`, {

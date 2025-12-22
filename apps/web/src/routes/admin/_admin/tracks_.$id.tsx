@@ -173,9 +173,7 @@ function TrackDetailPage() {
 	const [isrcForm, setIsrcForm] = useState({
 		id: "",
 		isrc: "",
-		assignedAt: "",
 		isPrimary: true,
-		source: "",
 	});
 	const [editingIsrc, setEditingIsrc] = useState<TrackIsrc | null>(null);
 
@@ -864,9 +862,7 @@ function TrackDetailPage() {
 		setIsrcForm({
 			id: createId.trackIsrc(),
 			isrc: "",
-			assignedAt: "",
 			isPrimary: (isrcs?.length ?? 0) === 0,
-			source: "",
 		});
 		setEditingIsrc(null);
 		setIsIsrcDialogOpen(true);
@@ -877,9 +873,7 @@ function TrackDetailPage() {
 		setIsrcForm({
 			id: isrc.id,
 			isrc: isrc.isrc,
-			assignedAt: isrc.assignedAt ?? "",
 			isPrimary: isrc.isPrimary,
-			source: isrc.source ?? "",
 		});
 		setEditingIsrc(isrc);
 		setIsIsrcDialogOpen(true);
@@ -898,17 +892,13 @@ function TrackDetailPage() {
 		try {
 			if (editingIsrc) {
 				await trackIsrcsApi.update(trackId, editingIsrc.id, {
-					assignedAt: isrcForm.assignedAt || null,
 					isPrimary: isrcForm.isPrimary,
-					source: isrcForm.source || null,
 				});
 			} else {
 				await trackIsrcsApi.create(trackId, {
 					id: isrcForm.id,
 					isrc: isrcForm.isrc,
-					assignedAt: isrcForm.assignedAt || null,
 					isPrimary: isrcForm.isPrimary,
-					source: isrcForm.source || null,
 				});
 			}
 			await queryClient.invalidateQueries({
@@ -2223,6 +2213,12 @@ function TrackDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
+						{mutationError && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{mutationError}
+							</div>
+						)}
+
 						{!editingIsrc && (
 							<div className="grid gap-2">
 								<Label>
@@ -2245,26 +2241,6 @@ function TrackDetailPage() {
 								</p>
 							</div>
 						)}
-						<div className="grid gap-2">
-							<Label>付与日</Label>
-							<Input
-								value={isrcForm.assignedAt}
-								onChange={(e) =>
-									setIsrcForm({ ...isrcForm, assignedAt: e.target.value })
-								}
-								placeholder="YYYY-MM-DD"
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label>取得元</Label>
-							<Input
-								value={isrcForm.source}
-								onChange={(e) =>
-									setIsrcForm({ ...isrcForm, source: e.target.value })
-								}
-								placeholder="例: Spotify, Apple Music"
-							/>
-						</div>
 						<label className="flex cursor-pointer items-center gap-2">
 							<input
 								type="checkbox"
@@ -2278,7 +2254,11 @@ function TrackDetailPage() {
 						</label>
 					</div>
 					<DialogFooter>
-						<Button variant="ghost" onClick={closeIsrcDialog}>
+						<Button
+							variant="ghost"
+							onClick={closeIsrcDialog}
+							disabled={isSubmitting}
+						>
 							キャンセル
 						</Button>
 						<Button

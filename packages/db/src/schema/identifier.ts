@@ -53,11 +53,9 @@ export const trackIsrcs = sqliteTable(
 			.notNull()
 			.references(() => tracks.id, { onDelete: "cascade" }),
 		isrc: text("isrc").notNull(),
-		assignedAt: text("assigned_at"),
 		isPrimary: integer("is_primary", { mode: "boolean" })
 			.default(true)
 			.notNull(),
-		source: text("source"),
 		createdAt: integer("created_at", { mode: "timestamp_ms" })
 			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 			.notNull(),
