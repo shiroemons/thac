@@ -11,15 +11,15 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { getCircle } from "@/functions/get-circle";
 import {
-	circlesApi,
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 } from "@/lib/api-client";
 import { createCircleDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/circles_/$id")({
-	loader: ({ params }) => circlesApi.get(params.id),
+	loader: ({ params }) => getCircle(params.id),
 	head: ({ loaderData }) => createCircleDetailHead(loaderData?.name),
 	component: CircleDetailPage,
 });

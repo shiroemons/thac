@@ -2,11 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Label } from "@/components/ui/label";
-import { platformsApi } from "@/lib/api-client";
+import { getPlatform } from "@/functions/get-platform";
 import { createMasterDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/master/platforms_/$code")({
-	loader: ({ params }) => platformsApi.get(params.code),
+	loader: ({ params }) => getPlatform(params.code),
 	head: ({ loaderData }) =>
 		createMasterDetailHead("プラットフォーム", loaderData?.name),
 	component: PlatformDetailPage,
