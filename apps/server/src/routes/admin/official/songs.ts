@@ -24,7 +24,7 @@ const songsRouter = new Hono<AdminContext>();
 // 一覧取得（ページネーション、作品フィルタ、検索対応）
 songsRouter.get("/", async (c) => {
 	const page = Number(c.req.query("page")) || 1;
-	const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
+	const limit = Math.min(Number(c.req.query("limit")) || 20, 5000);
 	const workId = c.req.query("workId");
 	const search = c.req.query("search");
 

@@ -28,6 +28,7 @@ import {
 import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NestedGroupedSearchableSelect } from "@/components/ui/nested-grouped-searchable-select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
 	Table,
@@ -215,34 +216,30 @@ function TrackDetailPage() {
 		staleTime: 30_000,
 	});
 
-	// 公式楽曲マスター
+	// 公式楽曲マスター（全件取得）
 	const { data: officialSongsData } = useQuery({
-		queryKey: ["official-songs", { limit: 500 }],
-		queryFn: () => officialSongsApi.list({ limit: 500 }),
+		queryKey: ["official-songs", { limit: 3000 }],
+		queryFn: () => officialSongsApi.list({ limit: 3000 }),
 		staleTime: 60_000,
 	});
 
-	// 公式楽曲のグループ化オプション（カテゴリ名・ID順）
+	// 公式楽曲のネスト化オプション（カテゴリ → 作品 → 楽曲）
 	const officialSongOptions = useMemo(() => {
 		const songs = officialSongsData?.data ?? [];
-		// カテゴリのsortOrder、楽曲のIDでソート
+		// カテゴリのsortOrder、楽曲IDでソート（ID順で作品も自然に並ぶ）
 		const sorted = [...songs].sort((a, b) => {
 			const aSortOrder = a.workCategorySortOrder ?? 999;
 			const bSortOrder = b.workCategorySortOrder ?? 999;
 			if (aSortOrder !== bSortOrder) return aSortOrder - bSortOrder;
+			// 楽曲IDでソート（作品IDが含まれているため作品順も維持される）
 			return a.id.localeCompare(b.id);
 		});
 		const songOptions = sorted.map((song) => ({
 			value: song.id,
 			label: song.name,
-			group: song.workCategoryName || "その他",
+			category: song.workCategoryName || "その他",
+			subgroup: song.workName || "作品なし",
 		}));
-		// カスタム楽曲オプションを追加
-		songOptions.push({
-			value: "__custom__",
-			label: "その他（カスタム楽曲名を入力）",
-			group: "カスタム",
-		});
 		return songOptions;
 	}, [officialSongsData?.data]);
 
@@ -257,12 +254,9 @@ function TrackDetailPage() {
 				categories.set(name, order);
 			}
 		}
-		const order = Array.from(categories.entries())
+		return Array.from(categories.entries())
 			.sort((a, b) => a[1] - b[1])
 			.map(([name]) => name);
-		// カスタムを最後に追加
-		order.push("カスタム");
-		return order;
 	}, [officialSongsData?.data]);
 
 	// ロール別クレジット抽出
@@ -637,7 +631,7 @@ function TrackDetailPage() {
 
 		try {
 			// 「その他」が選択されている場合はcustomSongNameを使用
-			const isCustom = officialSongForm.officialSongId === "__custom__";
+			const isCustom = officialSongForm.officialSongId === "07999999";
 
 			if (editingOfficialSong) {
 				await trackOfficialSongsApi.update(trackId, editingOfficialSong.id, {
@@ -1811,7 +1805,7 @@ function TrackDetailPage() {
 									<Label>
 										公式楽曲 <span className="text-error">*</span>
 									</Label>
-									<GroupedSearchableSelect
+									<NestedGroupedSearchableSelect
 										value={officialSongForm.officialSongId}
 										onChange={(val) =>
 											setOfficialSongForm({
@@ -1819,24 +1813,22 @@ function TrackDetailPage() {
 												officialSongId: val,
 												// カスタム以外を選択した場合はcustomSongNameをクリア
 												customSongName:
-													val === "__custom__"
+													val === "07999999"
 														? officialSongForm.customSongName
 														: "",
 											})
 										}
 										options={officialSongOptions}
-										groupOrder={officialSongGroupOrder}
+										categoryOrder={officialSongGroupOrder}
 										placeholder="公式楽曲を選択"
 										searchPlaceholder="公式楽曲を検索..."
 										emptyMessage="公式楽曲が見つかりません"
 										ungroupedLabel="その他"
 									/>
 								</div>
-								{officialSongForm.officialSongId === "__custom__" && (
+								{officialSongForm.officialSongId === "07999999" && (
 									<div className="grid gap-2">
-										<Label>
-											カスタム楽曲名 <span className="text-error">*</span>
-										</Label>
+										<Label>カスタム楽曲名</Label>
 										<Input
 											value={officialSongForm.customSongName}
 											onChange={(e) =>
@@ -1916,10 +1908,7 @@ function TrackDetailPage() {
 							onClick={handleOfficialSongSubmit}
 							disabled={
 								isSubmitting ||
-								(!editingOfficialSong &&
-									(!officialSongForm.officialSongId ||
-										(officialSongForm.officialSongId === "__custom__" &&
-											!officialSongForm.customSongName.trim())))
+								(!editingOfficialSong && !officialSongForm.officialSongId)
 							}
 						>
 							{isSubmitting
