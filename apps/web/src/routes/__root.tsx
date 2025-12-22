@@ -11,7 +11,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { APP_NAME } from "@/lib/head";
 import { ThemeProvider } from "@/lib/theme";
 import Header from "../components/header";
-import "../index.css";
+import appCss from "../index.css?url";
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -32,6 +32,8 @@ const themeInitScript = `
     resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
   document.documentElement.setAttribute('data-theme', resolvedTheme);
+  // Pass initial values to React for hydration sync
+  window.__THEME_DATA__ = { theme: theme, resolvedTheme: resolvedTheme };
 })();
 `;
 
@@ -49,7 +51,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 				title: APP_NAME,
 			},
 		],
-		links: [],
+		links: [{ rel: "stylesheet", href: appCss }],
 	}),
 
 	component: RootDocument,
