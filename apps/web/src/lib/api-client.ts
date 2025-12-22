@@ -65,6 +65,8 @@ export interface OfficialSong {
 	updatedAt: string;
 	workName?: string | null;
 	sourceSongName?: string | null;
+	workCategoryName?: string | null;
+	workCategorySortOrder?: number | null;
 }
 
 export interface DashboardStats {
@@ -1219,6 +1221,7 @@ export interface Track {
 	nameEn: string | null;
 	createdAt: string;
 	updatedAt: string;
+	releaseName?: string | null;
 }
 
 export interface TrackWithCreditCount extends Track {
@@ -1565,6 +1568,8 @@ export interface TrackIsrc {
 	isPrimary: boolean;
 	createdAt: Date | null;
 	updatedAt: Date | null;
+	assignedAt?: string | null;
+	source?: string | null;
 }
 
 export const trackIsrcsApi = {

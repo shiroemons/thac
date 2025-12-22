@@ -416,7 +416,6 @@ function ReleaseDetailPage() {
 			} else {
 				await discsApi.create(id, {
 					id: createId.disc(),
-					releaseId: id,
 					discNumber: discForm.discNumber ?? 1,
 					discName: discForm.discName || null,
 				});
@@ -907,7 +906,6 @@ function ReleaseDetailPage() {
 			} else {
 				await releaseJanCodesApi.create(id, {
 					id: createId.releaseJanCode(),
-					releaseId: id,
 					janCode: janCodeForm.janCode,
 					label: janCodeForm.label || null,
 					countryCode: janCodeForm.countryCode || null,

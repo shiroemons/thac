@@ -173,6 +173,7 @@ function DropdownMenuContent({
 
 interface DropdownMenuItemProps extends React.ComponentProps<"li"> {
 	inset?: boolean;
+	disabled?: boolean;
 }
 
 function DropdownMenuItem({
@@ -180,11 +181,13 @@ function DropdownMenuItem({
 	inset,
 	onClick,
 	children,
+	disabled,
 	...props
 }: DropdownMenuItemProps) {
 	const { close } = useDropdownMenuContext();
 
 	const handleClick = (e: React.MouseEvent<HTMLLIElement>) => {
+		if (disabled) return;
 		onClick?.(e);
 		close();
 	};
@@ -193,12 +196,15 @@ function DropdownMenuItem({
 		<li
 			data-slot="dropdown-menu-item"
 			data-inset={inset}
+			data-disabled={disabled}
+			aria-disabled={disabled}
 			role="menuitem"
-			tabIndex={0}
+			tabIndex={disabled ? -1 : 0}
 			onClick={handleClick}
 			className={cn(
 				"flex cursor-pointer items-center rounded-lg px-3 py-2 text-sm hover:bg-base-200 focus:bg-base-200 focus:outline-none",
 				inset && "pl-8",
+				disabled && "cursor-not-allowed opacity-50",
 				className,
 			)}
 			{...props}

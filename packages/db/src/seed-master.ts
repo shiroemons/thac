@@ -281,6 +281,7 @@ async function seed() {
 	console.log("Seeding platforms...");
 	for (let i = 0; i < platformsData.length; i++) {
 		const data = platformsData[i];
+		if (!data) continue;
 		await db
 			.insert(platforms)
 			.values({ ...data, sortOrder: i })
@@ -300,6 +301,7 @@ async function seed() {
 	console.log("Seeding alias_types...");
 	for (let i = 0; i < aliasTypesData.length; i++) {
 		const data = aliasTypesData[i];
+		if (!data) continue;
 		await db
 			.insert(aliasTypes)
 			.values({ ...data, sortOrder: i })
@@ -318,6 +320,7 @@ async function seed() {
 	console.log("Seeding credit_roles...");
 	for (let i = 0; i < creditRolesData.length; i++) {
 		const data = creditRolesData[i];
+		if (!data) continue;
 		await db
 			.insert(creditRoles)
 			.values({ ...data, sortOrder: i })
@@ -336,6 +339,7 @@ async function seed() {
 	console.log("Seeding official_work_categories...");
 	for (let i = 0; i < officialWorkCategoriesData.length; i++) {
 		const data = officialWorkCategoriesData[i];
+		if (!data) continue;
 		await db
 			.insert(officialWorkCategories)
 			.values({ ...data, sortOrder: i })

@@ -140,6 +140,7 @@ function EventsPage() {
 			const newSeries = await eventSeriesApi.create({
 				id,
 				name: newSeriesName.trim(),
+				sortOrder: seriesList.length + 1,
 			});
 			// シリーズ一覧を更新
 			queryClient.invalidateQueries({ queryKey: ["event-series"] });
