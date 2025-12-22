@@ -97,16 +97,19 @@ function getRoleBadgeVariant(
 
 function TrackDetailPage() {
 	const { id: trackId } = Route.useParams();
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
-	// トラック詳細取得
+	// トラック詳細取得（SSRデータをキャッシュとして活用）
 	const {
 		data: track,
-		isLoading,
+		isPending,
 		error,
 	} = useQuery({
 		queryKey: ["track", trackId],
 		queryFn: () => tracksApi.get(trackId),
+		staleTime: 30_000,
+		initialData: loaderData,
 	});
 
 	// 編集関連の状態
@@ -912,7 +915,8 @@ function TrackDetailPage() {
 		}
 	};
 
-	if (isLoading) {
+	// ローディング（キャッシュがない場合のみスケルトンを表示）
+	if (isPending && !track) {
 		return <DetailPageSkeleton cardCount={5} fieldsPerCard={4} />;
 	}
 

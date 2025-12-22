@@ -32,6 +32,7 @@ export const Route = createFileRoute("/admin/_admin/official/songs_/$id")({
 
 function OfficialSongDetailPage() {
 	const { id } = Route.useParams();
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// 編集モード
@@ -40,15 +41,16 @@ function OfficialSongDetailPage() {
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	// 楽曲データ取得
+	// 楽曲データ取得（SSRデータをキャッシュとして活用）
 	const {
 		data: song,
-		isLoading,
+		isPending,
 		error,
 	} = useQuery({
 		queryKey: ["officialSongs", id],
 		queryFn: () => officialSongsApi.get(id),
 		staleTime: 30_000,
+		initialData: loaderData,
 	});
 
 	// 作品一覧取得（編集用）
@@ -186,8 +188,8 @@ function OfficialSongDetailPage() {
 		}
 	};
 
-	// ローディング
-	if (isLoading) {
+	// ローディング（キャッシュがない場合のみスケルトンを表示）
+	if (isPending && !song) {
 		return <DetailPageSkeleton showBadge cardCount={2} fieldsPerCard={8} />;
 	}
 

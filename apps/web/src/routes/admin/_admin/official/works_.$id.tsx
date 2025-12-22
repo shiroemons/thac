@@ -46,6 +46,7 @@ function getCategoryColor(categoryCode: string | null): BadgeVariant {
 
 function OfficialWorkDetailPage() {
 	const { id } = Route.useParams();
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// 編集モード
@@ -54,15 +55,16 @@ function OfficialWorkDetailPage() {
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	// 作品データ取得
+	// 作品データ取得（SSRデータをキャッシュとして活用）
 	const {
 		data: work,
-		isLoading,
+		isPending,
 		error,
 	} = useQuery({
 		queryKey: ["officialWorks", id],
 		queryFn: () => officialWorksApi.get(id),
 		staleTime: 30_000,
+		initialData: loaderData,
 	});
 
 	// カテゴリ一覧取得（編集用）
@@ -148,8 +150,8 @@ function OfficialWorkDetailPage() {
 		}
 	};
 
-	// ローディング
-	if (isLoading) {
+	// ローディング（キャッシュがない場合のみスケルトンを表示）
+	if (isPending && !work) {
 		return <DetailPageSkeleton showBadge cardCount={3} fieldsPerCard={8} />;
 	}
 

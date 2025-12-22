@@ -110,6 +110,7 @@ const PARTICIPATION_TYPE_OPTIONS = Object.entries(
 
 function ReleaseDetailPage() {
 	const { id } = Route.useParams();
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// 編集モード
@@ -185,15 +186,16 @@ function ReleaseDetailPage() {
 		isPrimary: false,
 	});
 
-	// 作品データ取得
+	// 作品データ取得（SSRデータをキャッシュとして活用）
 	const {
 		data: release,
-		isLoading,
+		isPending,
 		error,
 	} = useQuery({
 		queryKey: ["releases", id],
 		queryFn: () => releasesApi.get(id),
 		staleTime: 30_000,
+		initialData: loaderData,
 	});
 
 	// 関連サークル取得
@@ -937,8 +939,8 @@ function ReleaseDetailPage() {
 		}
 	};
 
-	// ローディング
-	if (isLoading) {
+	// ローディング（キャッシュがない場合のみスケルトンを表示）
+	if (isPending && !release) {
 		return <DetailPageSkeleton showBadge cardCount={3} fieldsPerCard={6} />;
 	}
 
