@@ -29,7 +29,6 @@ import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-sele
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Select } from "@/components/ui/select";
 import {
 	Table,
 	TableBody,
@@ -58,7 +57,6 @@ import {
 	tracksApi,
 } from "@/lib/api-client";
 import {
-	COUNTRY_CODE_OPTIONS,
 	PLATFORM_CATEGORY_LABELS,
 	PLATFORM_CATEGORY_ORDER,
 } from "@/lib/constants";
@@ -156,13 +154,7 @@ function TrackDetailPage() {
 	const [publicationForm, setPublicationForm] = useState({
 		id: "",
 		platformCode: "",
-		platformItemId: "",
 		url: "",
-		visibility: "public" as "public" | "unlisted" | "private",
-		publishedAt: "",
-		removedAt: "",
-		isOfficial: false,
-		countryCode: "",
 	});
 	const [editingPublication, setEditingPublication] =
 		useState<TrackPublication | null>(null);
@@ -780,13 +772,7 @@ function TrackDetailPage() {
 		setPublicationForm({
 			id: createId.trackPublication(),
 			platformCode: "",
-			platformItemId: "",
 			url: "",
-			visibility: "public",
-			publishedAt: "",
-			removedAt: "",
-			isOfficial: false,
-			countryCode: "JP",
 		});
 		setEditingPublication(null);
 		setIsPublicationDialogOpen(true);
@@ -797,17 +783,7 @@ function TrackDetailPage() {
 		setPublicationForm({
 			id: publication.id,
 			platformCode: publication.platformCode,
-			platformItemId: publication.platformItemId ?? "",
 			url: publication.url,
-			visibility: publication.visibility ?? "public",
-			publishedAt: publication.publishedAt
-				? format(new Date(publication.publishedAt), "yyyy-MM-dd")
-				: "",
-			removedAt: publication.removedAt
-				? format(new Date(publication.removedAt), "yyyy-MM-dd")
-				: "",
-			isOfficial: publication.isOfficial,
-			countryCode: publication.countryCode ?? "",
 		});
 		setEditingPublication(publication);
 		setIsPublicationDialogOpen(true);
@@ -826,25 +802,13 @@ function TrackDetailPage() {
 		try {
 			if (editingPublication) {
 				await trackPublicationsApi.update(trackId, editingPublication.id, {
-					platformItemId: publicationForm.platformItemId || null,
 					url: publicationForm.url,
-					visibility: publicationForm.visibility,
-					publishedAt: publicationForm.publishedAt || null,
-					removedAt: publicationForm.removedAt || null,
-					isOfficial: publicationForm.isOfficial,
-					countryCode: publicationForm.countryCode || null,
 				});
 			} else {
 				await trackPublicationsApi.create(trackId, {
 					id: publicationForm.id,
 					platformCode: publicationForm.platformCode,
 					url: publicationForm.url,
-					platformItemId: publicationForm.platformItemId || null,
-					visibility: publicationForm.visibility,
-					publishedAt: publicationForm.publishedAt || null,
-					removedAt: publicationForm.removedAt || null,
-					isOfficial: publicationForm.isOfficial,
-					countryCode: publicationForm.countryCode || null,
 				});
 			}
 			await queryClient.invalidateQueries({
@@ -1496,8 +1460,6 @@ function TrackDetailPage() {
 								<TableRow className="hover:bg-transparent">
 									<TableHead>プラットフォーム</TableHead>
 									<TableHead>URL</TableHead>
-									<TableHead className="w-[80px]">状態</TableHead>
-									<TableHead className="w-[80px]">公式</TableHead>
 									<TableHead className="w-[100px]" />
 								</TableRow>
 							</TableHeader>
@@ -1516,30 +1478,6 @@ function TrackDetailPage() {
 											>
 												{pub.url}
 											</a>
-										</TableCell>
-										<TableCell>
-											<Badge
-												variant={
-													pub.visibility === "public"
-														? "success"
-														: pub.visibility === "unlisted"
-															? "warning"
-															: "ghost"
-												}
-											>
-												{pub.visibility === "public"
-													? "公開"
-													: pub.visibility === "unlisted"
-														? "限定"
-														: "非公開"}
-											</Badge>
-										</TableCell>
-										<TableCell>
-											{pub.isOfficial ? (
-												<Badge variant="primary">公式</Badge>
-											) : (
-												"-"
-											)}
 										</TableCell>
 										<TableCell>
 											<div className="flex items-center gap-1">
@@ -2113,110 +2051,6 @@ function TrackDetailPage() {
 								}
 								placeholder="https://..."
 							/>
-						</div>
-
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label>プラットフォーム内ID</Label>
-								<Input
-									value={publicationForm.platformItemId}
-									onChange={(e) =>
-										setPublicationForm({
-											...publicationForm,
-											platformItemId: e.target.value,
-										})
-									}
-									placeholder="プラットフォーム固有のID"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label>国コード</Label>
-								<select
-									value={publicationForm.countryCode}
-									onChange={(e) =>
-										setPublicationForm({
-											...publicationForm,
-											countryCode: e.target.value,
-										})
-									}
-									className="select select-bordered w-full"
-								>
-									<option value="">選択してください</option>
-									{COUNTRY_CODE_OPTIONS.map((opt) => (
-										<option key={opt.value} value={opt.value}>
-											{opt.label}
-										</option>
-									))}
-								</select>
-							</div>
-						</div>
-
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label>公開状態</Label>
-								<Select
-									value={publicationForm.visibility}
-									onChange={(e) =>
-										setPublicationForm({
-											...publicationForm,
-											visibility: e.target.value as
-												| "public"
-												| "unlisted"
-												| "private",
-										})
-									}
-								>
-									<option value="public">公開</option>
-									<option value="unlisted">限定公開</option>
-									<option value="private">非公開</option>
-								</Select>
-							</div>
-							<div className="grid gap-2">
-								<Label>公式アップロード</Label>
-								<div className="flex h-12 items-center gap-2">
-									<input
-										type="checkbox"
-										className="checkbox"
-										checked={publicationForm.isOfficial}
-										onChange={(e) =>
-											setPublicationForm({
-												...publicationForm,
-												isOfficial: e.target.checked,
-											})
-										}
-									/>
-									<span className="text-sm">公式</span>
-								</div>
-							</div>
-						</div>
-
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label>公開日</Label>
-								<Input
-									type="date"
-									value={publicationForm.publishedAt}
-									onChange={(e) =>
-										setPublicationForm({
-											...publicationForm,
-											publishedAt: e.target.value,
-										})
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label>取り下げ日</Label>
-								<Input
-									type="date"
-									value={publicationForm.removedAt}
-									onChange={(e) =>
-										setPublicationForm({
-											...publicationForm,
-											removedAt: e.target.value,
-										})
-									}
-								/>
-							</div>
 						</div>
 					</div>
 					<DialogFooter>

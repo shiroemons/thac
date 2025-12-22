@@ -110,25 +110,6 @@ trackPublicationsRouter.post("/:trackId/publications", async (c) => {
 		return c.json({ error: "URL already exists" }, 409);
 	}
 
-	// 一意性チェック（トラック × プラットフォーム × プラットフォーム内ID）
-	if (parsed.data.platformItemId) {
-		const duplicateCheck = await db
-			.select()
-			.from(trackPublications)
-			.where(
-				and(
-					eq(trackPublications.trackId, trackId),
-					eq(trackPublications.platformCode, parsed.data.platformCode),
-					eq(trackPublications.platformItemId, parsed.data.platformItemId),
-				),
-			)
-			.limit(1);
-
-		if (duplicateCheck.length > 0) {
-			return c.json({ error: "This publication link already exists" }, 409);
-		}
-	}
-
 	// 作成
 	const result = await db
 		.insert(trackPublications)
