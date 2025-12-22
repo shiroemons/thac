@@ -2504,56 +2504,59 @@ function ReleaseDetailPage() {
 							</p>
 						</div>
 
-						<div className="grid gap-2">
-							<Label>ラベル</Label>
-							<Input
-								value={janCodeForm.label}
+						{editingJanCode && (
+							<>
+								<div className="grid gap-2">
+									<Label>ラベル</Label>
+									<Input
+										value={janCodeForm.label}
+										onChange={(e) =>
+											setJanCodeForm({
+												...janCodeForm,
+												label: e.target.value,
+											})
+										}
+										placeholder="通常版、限定版など"
+									/>
+								</div>
+
+								<div className="grid gap-2">
+									<Label>国コード</Label>
+									<select
+										value={janCodeForm.countryCode}
+										onChange={(e) =>
+											setJanCodeForm({
+												...janCodeForm,
+												countryCode: e.target.value,
+											})
+										}
+										className="select select-bordered w-full"
+									>
+										<option value="">選択してください</option>
+										{COUNTRY_CODE_OPTIONS.map((opt) => (
+											<option key={opt.value} value={opt.value}>
+												{opt.label}
+											</option>
+										))}
+									</select>
+								</div>
+							</>
+						)}
+
+						<label className="flex cursor-pointer items-center gap-2">
+							<input
+								type="checkbox"
+								className="checkbox"
+								checked={janCodeForm.isPrimary}
 								onChange={(e) =>
 									setJanCodeForm({
 										...janCodeForm,
-										label: e.target.value,
+										isPrimary: e.target.checked,
 									})
 								}
-								placeholder="通常版、限定版など"
 							/>
-						</div>
-
-						<div className="grid grid-cols-2 items-end gap-4">
-							<div className="grid gap-2">
-								<Label>国コード</Label>
-								<select
-									value={janCodeForm.countryCode}
-									onChange={(e) =>
-										setJanCodeForm({
-											...janCodeForm,
-											countryCode: e.target.value,
-										})
-									}
-									className="select select-bordered w-full"
-								>
-									<option value="">選択してください</option>
-									{COUNTRY_CODE_OPTIONS.map((opt) => (
-										<option key={opt.value} value={opt.value}>
-											{opt.label}
-										</option>
-									))}
-								</select>
-							</div>
-							<div className="flex h-12 items-center gap-2">
-								<input
-									type="checkbox"
-									className="checkbox"
-									checked={janCodeForm.isPrimary}
-									onChange={(e) =>
-										setJanCodeForm({
-											...janCodeForm,
-											isPrimary: e.target.checked,
-										})
-									}
-								/>
-								<span className="text-sm">主要JANとして設定</span>
-							</div>
-						</div>
+							<span>主要JANとして設定</span>
+						</label>
 					</div>
 					<DialogFooter>
 						<Button
