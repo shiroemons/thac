@@ -24,7 +24,6 @@ describe("trackOfficialSongs validation schemas", () => {
 				partPosition: 1,
 				startSecond: 30.5,
 				endSecond: 60.0,
-				confidence: 90,
 				notes: "メインのアレンジ原曲",
 			});
 			expect(result.success).toBe(true);
@@ -32,7 +31,6 @@ describe("trackOfficialSongs validation schemas", () => {
 				expect(result.data.partPosition).toBe(1);
 				expect(result.data.startSecond).toBe(30.5);
 				expect(result.data.endSecond).toBe(60.0);
-				expect(result.data.confidence).toBe(90);
 				expect(result.data.notes).toBe("メインのアレンジ原曲");
 			}
 		});
@@ -62,44 +60,6 @@ describe("trackOfficialSongs validation schemas", () => {
 				officialSongId: "",
 			});
 			expect(result.success).toBe(false);
-		});
-
-		test("should reject negative confidence", () => {
-			const result = insertTrackOfficialSongSchema.safeParse({
-				id: "to_12345",
-				trackId: "tr_12345",
-				officialSongId: "01010001",
-				confidence: -1,
-			});
-			expect(result.success).toBe(false);
-		});
-
-		test("should reject confidence greater than 100", () => {
-			const result = insertTrackOfficialSongSchema.safeParse({
-				id: "to_12345",
-				trackId: "tr_12345",
-				officialSongId: "01010001",
-				confidence: 101,
-			});
-			expect(result.success).toBe(false);
-		});
-
-		test("should accept confidence at boundary values", () => {
-			const result0 = insertTrackOfficialSongSchema.safeParse({
-				id: "to_12345",
-				trackId: "tr_12345",
-				officialSongId: "01010001",
-				confidence: 0,
-			});
-			expect(result0.success).toBe(true);
-
-			const result100 = insertTrackOfficialSongSchema.safeParse({
-				id: "to_12345",
-				trackId: "tr_12345",
-				officialSongId: "01010001",
-				confidence: 100,
-			});
-			expect(result100.success).toBe(true);
 		});
 
 		test("should reject negative startSecond", () => {
@@ -166,20 +126,6 @@ describe("trackOfficialSongs validation schemas", () => {
 				partPosition: 2,
 			});
 			expect(result.success).toBe(true);
-		});
-
-		test("should accept partial update with confidence only", () => {
-			const result = updateTrackOfficialSongSchema.safeParse({
-				confidence: 75,
-			});
-			expect(result.success).toBe(true);
-		});
-
-		test("should reject invalid confidence in update", () => {
-			const result = updateTrackOfficialSongSchema.safeParse({
-				confidence: 150,
-			});
-			expect(result.success).toBe(false);
 		});
 
 		test("should reject endSecond less than startSecond in update", () => {

@@ -183,15 +183,11 @@ describe("trackIsrcs validation schemas", () => {
 				id: "ti_12345",
 				trackId: "tr_12345",
 				isrc: "JPAB00912345",
-				assignedAt: "2024-01-01",
 				isPrimary: true,
-				source: "配信サービス",
 			});
 			expect(result.success).toBe(true);
 			if (result.success) {
-				expect(result.data.assignedAt).toBe("2024-01-01");
 				expect(result.data.isPrimary).toBe(true);
-				expect(result.data.source).toBe("配信サービス");
 			}
 		});
 
