@@ -274,6 +274,27 @@ function TrackDetailPage() {
 		return order;
 	}, [officialSongsData?.data]);
 
+	// ロール別クレジット抽出
+	const roleSummary = useMemo(() => {
+		const credits = track?.credits ?? [];
+		const getCreditsByRole = (roleCode: string): string[] => {
+			return credits
+				.filter((credit) =>
+					credit.roles?.some((role) => role.roleCode === roleCode),
+				)
+				.sort((a, b) => a.creditPosition - b.creditPosition)
+				.map((credit) => credit.creditName);
+		};
+
+		return {
+			vocalists: getCreditsByRole("vocalist"),
+			arrangers: getCreditsByRole("arranger"),
+			remixers: getCreditsByRole("remixer"),
+			lyricists: getCreditsByRole("lyricist"),
+			composers: getCreditsByRole("composer"),
+		};
+	}, [track?.credits]);
+
 	// プラットフォームマスター
 	const { data: platformsData } = useQuery({
 		queryKey: ["platforms"],
@@ -1135,6 +1156,57 @@ function TrackDetailPage() {
 					)}
 				</div>
 			</div>
+
+			{/* ロール別サマリー */}
+			{track.credits.length > 0 && (
+				<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
+					<div className="border-base-300 border-b p-4">
+						<h2 className="font-bold text-lg">役割別担当者</h2>
+					</div>
+					<div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+						{roleSummary.vocalists.length > 0 && (
+							<div>
+								<p className="mb-1 font-medium text-base-content/70 text-sm">
+									ボーカル
+								</p>
+								<p className="text-sm">{roleSummary.vocalists.join(" / ")}</p>
+							</div>
+						)}
+						{roleSummary.arrangers.length > 0 && (
+							<div>
+								<p className="mb-1 font-medium text-base-content/70 text-sm">
+									編曲
+								</p>
+								<p className="text-sm">{roleSummary.arrangers.join(" / ")}</p>
+							</div>
+						)}
+						{roleSummary.remixers.length > 0 && (
+							<div>
+								<p className="mb-1 font-medium text-base-content/70 text-sm">
+									リミックス
+								</p>
+								<p className="text-sm">{roleSummary.remixers.join(" / ")}</p>
+							</div>
+						)}
+						{roleSummary.lyricists.length > 0 && (
+							<div>
+								<p className="mb-1 font-medium text-base-content/70 text-sm">
+									作詞
+								</p>
+								<p className="text-sm">{roleSummary.lyricists.join(" / ")}</p>
+							</div>
+						)}
+						{roleSummary.composers.length > 0 && (
+							<div>
+								<p className="mb-1 font-medium text-base-content/70 text-sm">
+									作曲
+								</p>
+								<p className="text-sm">{roleSummary.composers.join(" / ")}</p>
+							</div>
+						)}
+					</div>
+				</div>
+			)}
 
 			{/* クレジット一覧 */}
 			<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
