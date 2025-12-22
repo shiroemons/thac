@@ -33,6 +33,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -44,13 +45,21 @@ import {
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
+	type PaginatedResponse,
 	platformsApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 import { getExternalLinkUrl } from "@/lib/utils";
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 20;
+
 export const Route = createFileRoute("/admin/_admin/circles")({
 	head: () => createPageHead("サークル"),
+	loader: () =>
+		ssrFetch<PaginatedResponse<Circle>>(
+			`/api/admin/circles?page=${DEFAULT_PAGE}&limit=${DEFAULT_PAGE_SIZE}`,
+		),
 	component: CirclesPage,
 });
 
@@ -76,10 +85,11 @@ const COLUMN_CONFIGS = [
 ] as const;
 
 function CirclesPage() {
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(20);
+	const [page, setPage] = useState(DEFAULT_PAGE);
+	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [search, setSearch] = useState("");
 	const [initialScript, setInitialScript] = useState("");
 
@@ -182,7 +192,13 @@ function CirclesPage() {
 		return "web_site"; // マッチしなければweb_site
 	};
 
-	const { data, isLoading, error } = useQuery({
+	const isInitialQuery =
+		page === DEFAULT_PAGE &&
+		pageSize === DEFAULT_PAGE_SIZE &&
+		!debouncedSearch &&
+		!initialScript;
+
+	const { data, isPending, error } = useQuery({
 		queryKey: ["circles", page, pageSize, debouncedSearch, initialScript],
 		queryFn: () =>
 			circlesApi.list({
@@ -192,6 +208,7 @@ function CirclesPage() {
 				initialScript: initialScript || undefined,
 			}),
 		staleTime: 30_000,
+		initialData: isInitialQuery ? loaderData : undefined,
 	});
 
 	const circles = data?.data ?? [];
@@ -429,7 +446,7 @@ function CirclesPage() {
 					</div>
 				)}
 
-				{isLoading ? (
+				{isPending && !data ? (
 					<DataTableSkeleton
 						rows={5}
 						columns={6}

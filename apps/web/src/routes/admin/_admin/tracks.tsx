@@ -102,7 +102,7 @@ function TracksPage() {
 	});
 
 	// トラック一覧取得（全作品から）
-	const { data, isLoading, error } = useQuery({
+	const { data, isPending, error } = useQuery({
 		queryKey: ["all-tracks", page, pageSize, debouncedSearch, releaseFilter],
 		queryFn: async () => {
 			// 作品IDでフィルターする場合は直接取得
@@ -355,7 +355,7 @@ function TracksPage() {
 					</div>
 				)}
 
-				{isLoading ? (
+				{isPending && !data ? (
 					<DataTableSkeleton
 						rows={5}
 						columns={6}

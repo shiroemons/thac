@@ -84,7 +84,7 @@ function OfficialWorkCategoriesPage() {
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
-	const { data, isLoading, error } = useQuery({
+	const { data, isPending, error } = useQuery({
 		queryKey: [
 			"official-work-categories",
 			page,
@@ -264,7 +264,7 @@ function OfficialWorkCategoriesPage() {
 					</div>
 				)}
 
-				{isLoading ? (
+				{isPending && !data ? (
 					<DataTableSkeleton
 						rows={5}
 						columns={4}

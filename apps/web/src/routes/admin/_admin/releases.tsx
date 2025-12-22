@@ -30,11 +30,13 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
 	type Disc,
 	discsApi,
+	type PaginatedResponse,
 	RELEASE_TYPE_COLORS,
 	RELEASE_TYPE_LABELS,
 	type Release,
@@ -45,8 +47,15 @@ import {
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 20;
+
 export const Route = createFileRoute("/admin/_admin/releases")({
 	head: () => createPageHead("作品"),
+	loader: () =>
+		ssrFetch<PaginatedResponse<ReleaseWithCounts>>(
+			`/api/admin/releases?page=${DEFAULT_PAGE}&limit=${DEFAULT_PAGE_SIZE}`,
+		),
 	component: ReleasesPage,
 });
 
@@ -72,10 +81,11 @@ const RELEASE_TYPE_OPTIONS = Object.entries(RELEASE_TYPE_LABELS).map(
 );
 
 function ReleasesPage() {
+	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
-	const [page, setPage] = useState(1);
-	const [pageSize, setPageSize] = useState(20);
+	const [page, setPage] = useState(DEFAULT_PAGE);
+	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [search, setSearch] = useState("");
 	const [releaseTypeFilter, setReleaseTypeFilter] = useState("");
 
@@ -104,7 +114,13 @@ function ReleasesPage() {
 	const [editingDisc, setEditingDisc] = useState<Disc | null>(null);
 	const [discForm, setDiscForm] = useState<Partial<Disc>>({});
 
-	const { data, isLoading, error } = useQuery({
+	const isInitialQuery =
+		page === DEFAULT_PAGE &&
+		pageSize === DEFAULT_PAGE_SIZE &&
+		!debouncedSearch &&
+		!releaseTypeFilter;
+
+	const { data, isPending, error } = useQuery({
 		queryKey: ["releases", page, pageSize, debouncedSearch, releaseTypeFilter],
 		queryFn: () =>
 			releasesApi.list({
@@ -114,6 +130,7 @@ function ReleasesPage() {
 				releaseType: releaseTypeFilter || undefined,
 			}),
 		staleTime: 30_000,
+		initialData: isInitialQuery ? loaderData : undefined,
 	});
 
 	const releases = data?.data ?? [];
@@ -346,7 +363,7 @@ function ReleasesPage() {
 					</div>
 				)}
 
-				{isLoading ? (
+				{isPending && !data ? (
 					<DataTableSkeleton
 						rows={5}
 						columns={6}
