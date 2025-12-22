@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createId } from "@thac/db/utils/id";
+import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { Disc3, Eye, Pencil, Plus, Trash2 } from "lucide-react";
