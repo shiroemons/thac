@@ -8,16 +8,18 @@ const themes: { value: Theme; label: string; icon: React.ReactNode }[] = [
 ];
 
 export function ThemeSwitcher() {
-	const { theme, setTheme, resolvedTheme } = useTheme();
+	const { theme, setTheme, resolvedTheme, mounted } = useTheme();
 
-	const currentIcon =
-		theme === "system" ? (
-			<Monitor className="size-5" />
-		) : resolvedTheme === "dark" ? (
-			<Moon className="size-5" />
-		) : (
-			<Sun className="size-5" />
-		);
+	// Show placeholder before mount to match SSR output and prevent hydration mismatch
+	const currentIcon = !mounted ? (
+		<div className="size-5" />
+	) : theme === "system" ? (
+		<Monitor className="size-5" />
+	) : resolvedTheme === "dark" ? (
+		<Moon className="size-5" />
+	) : (
+		<Sun className="size-5" />
+	);
 
 	return (
 		<div className="dropdown dropdown-end">
@@ -29,23 +31,26 @@ export function ThemeSwitcher() {
 			>
 				{currentIcon}
 			</div>
-			<ul
-				role="menu"
-				className="dropdown-content menu z-50 w-40 rounded-box bg-base-100 p-2 shadow-lg"
-			>
-				{themes.map((t) => (
-					<li key={t.value}>
-						<button
-							type="button"
-							onClick={() => setTheme(t.value)}
-							className={theme === t.value ? "active" : ""}
-						>
-							{t.icon}
-							{t.label}
-						</button>
-					</li>
-				))}
-			</ul>
+			{/* Only render dropdown after mount to prevent hydration issues */}
+			{mounted && (
+				<ul
+					role="menu"
+					className="dropdown-content menu z-50 w-40 rounded-box bg-base-100 p-2 shadow-lg"
+				>
+					{themes.map((t) => (
+						<li key={t.value}>
+							<button
+								type="button"
+								onClick={() => setTheme(t.value)}
+								className={theme === t.value ? "active" : ""}
+							>
+								{t.icon}
+								{t.label}
+							</button>
+						</li>
+					))}
+				</ul>
+			)}
 		</div>
 	);
 }
