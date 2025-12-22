@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createId } from "@thac/db/utils/id";
+import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { Disc3, Eye, Pencil, Plus, Trash2 } from "lucide-react";
@@ -39,6 +39,7 @@ import {
 	RELEASE_TYPE_LABELS,
 	type Release,
 	type ReleaseType,
+	type ReleaseWithCounts,
 	type ReleaseWithDiscs,
 	releasesApi,
 } from "@/lib/api-client";
@@ -147,7 +148,6 @@ function ReleasesPage() {
 			) {
 				await discsApi.create(id, {
 					id: createId.disc(),
-					releaseId: id,
 					discNumber: 1,
 					discName: createForm.name || null,
 				});
@@ -186,7 +186,7 @@ function ReleasesPage() {
 		}
 	};
 
-	const handleDelete = async (release: ReleaseWithDiscCount) => {
+	const handleDelete = async (release: ReleaseWithCounts) => {
 		if (
 			!confirm(
 				`「${release.name}」を削除しますか？\n※関連するディスク情報も削除されます。`,
@@ -202,7 +202,7 @@ function ReleasesPage() {
 	};
 
 	// 作品を編集モードで開く（詳細取得）
-	const handleEdit = async (release: ReleaseWithDiscCount) => {
+	const handleEdit = async (release: ReleaseWithCounts) => {
 		try {
 			const releaseWithDiscs = await releasesApi.get(release.id);
 			setEditingRelease(releaseWithDiscs);

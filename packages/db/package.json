@@ -13,6 +13,7 @@
 		}
 	},
 	"scripts": {
+		"check-types": "tsc --noEmit",
 		"dev": "turso dev --db-file local.db",
 		"db:local": "turso dev --db-file local.db",
 		"db:push": "drizzle-kit push",

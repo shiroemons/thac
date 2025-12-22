@@ -5,13 +5,16 @@
 コードを変更したら、コミット前に必ず以下を実行:
 
 ```bash
-# 型チェック
-bun run check-types
+# Docker経由（推奨）
+make check-types  # 全パッケージの型チェック
+make check        # Lint・フォーマット
 
-# Lint・フォーマット
+# または ローカル実行
+bun run check-types
 bun run check
 ```
 
+**重要**: 型チェックは全パッケージ（packages/*, apps/*）に対して実行される。
 エラーがある場合は修正してからコミットすること。
 
 ## コミット

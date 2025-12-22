@@ -21,7 +21,9 @@ const db = drizzle({ client });
 function parseTsv<T>(filePath: string): T[] {
 	const content = readFileSync(filePath, "utf-8");
 	const lines = content.trim().split("\n");
-	const headers = lines[0].split("\t");
+	const headerLine = lines[0];
+	if (!headerLine) return [];
+	const headers = headerLine.split("\t");
 
 	return lines.slice(1).map((line) => {
 		const values = line.split("\t");
@@ -64,6 +66,7 @@ async function seed() {
 
 	for (let i = 0; i < worksData.length; i++) {
 		const row = worksData[i];
+		if (!row) continue;
 		await db
 			.insert(officialWorks)
 			.values({

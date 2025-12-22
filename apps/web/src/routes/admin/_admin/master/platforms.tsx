@@ -209,6 +209,7 @@ function PlatformsPage() {
 			name: formData.name,
 			category: formData.category || null,
 			urlPattern: formData.urlPattern || null,
+			sortOrder: platforms.length,
 		});
 	};
 

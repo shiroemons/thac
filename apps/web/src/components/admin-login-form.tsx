@@ -129,14 +129,14 @@ export default function AdminLoginForm() {
 				</form.Subscribe>
 
 				<form.Subscribe
-					selector={(state) => [
-						state.canSubmit,
-						state.isSubmitting,
-						state.values.email,
-						state.values.password,
-					]}
+					selector={(state) => ({
+						canSubmit: state.canSubmit,
+						isSubmitting: state.isSubmitting,
+						email: state.values.email,
+						password: state.values.password,
+					})}
 				>
-					{([canSubmit, isSubmitting, email, password]) => {
+					{({ canSubmit, isSubmitting, email, password }) => {
 						const isEmpty = !email || !password;
 						return (
 							<Button

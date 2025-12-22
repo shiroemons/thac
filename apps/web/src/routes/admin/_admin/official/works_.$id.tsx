@@ -95,7 +95,7 @@ function OfficialWorkDetailPage() {
 				name: work.name,
 				nameJa: work.nameJa,
 				nameEn: work.nameEn,
-				shortName: work.shortName,
+				shortNameEn: work.shortNameEn,
 				shortNameJa: work.shortNameJa,
 				categoryCode: work.categoryCode,
 				seriesCode: work.seriesCode,
@@ -123,17 +123,17 @@ function OfficialWorkDetailPage() {
 		try {
 			await officialWorksApi.update(id, {
 				name: editForm.name,
-				nameJa: editForm.nameJa || null,
-				nameEn: editForm.nameEn || null,
-				shortName: editForm.shortName || null,
-				shortNameJa: editForm.shortNameJa || null,
-				categoryCode: editForm.categoryCode || null,
-				seriesCode: editForm.seriesCode || null,
+				nameJa: editForm.nameJa,
+				nameEn: editForm.nameEn ?? null,
+				shortNameEn: editForm.shortNameEn ?? null,
+				shortNameJa: editForm.shortNameJa ?? null,
+				categoryCode: editForm.categoryCode,
+				seriesCode: editForm.seriesCode ?? null,
 				numberInSeries: editForm.numberInSeries,
-				releaseDate: editForm.releaseDate || null,
-				officialOrganization: editForm.officialOrganization || null,
+				releaseDate: editForm.releaseDate ?? null,
+				officialOrganization: editForm.officialOrganization ?? null,
 				position: editForm.position,
-				notes: editForm.notes || null,
+				notes: editForm.notes ?? null,
 			});
 			invalidateQuery();
 			setIsEditing(false);
@@ -252,21 +252,21 @@ function OfficialWorkDetailPage() {
 							<div className="form-control">
 								<Label>短縮名</Label>
 								<Input
-									value={editForm.shortName || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, shortName: e.target.value })
-									}
-									placeholder="例: EoSD"
-								/>
-							</div>
-							<div className="form-control">
-								<Label>短縮名（日本語）</Label>
-								<Input
 									value={editForm.shortNameJa || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, shortNameJa: e.target.value })
 									}
 									placeholder="例: 紅魔郷"
+								/>
+							</div>
+							<div className="form-control">
+								<Label>短縮名（英語）</Label>
+								<Input
+									value={editForm.shortNameEn || ""}
+									onChange={(e) =>
+										setEditForm({ ...editForm, shortNameEn: e.target.value })
+									}
+									placeholder="例: EoSD"
 								/>
 							</div>
 							<div className="form-control">
@@ -398,11 +398,11 @@ function OfficialWorkDetailPage() {
 							</div>
 							<div>
 								<Label className="text-base-content/60">短縮名</Label>
-								<p>{work.shortName || "-"}</p>
+								<p>{work.shortNameJa || "-"}</p>
 							</div>
 							<div>
-								<Label className="text-base-content/60">短縮名（日本語）</Label>
-								<p>{work.shortNameJa || "-"}</p>
+								<Label className="text-base-content/60">短縮名（英語）</Label>
+								<p>{work.shortNameEn || "-"}</p>
 							</div>
 							<div>
 								<Label className="text-base-content/60">カテゴリ</Label>

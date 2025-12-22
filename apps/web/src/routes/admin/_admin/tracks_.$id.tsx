@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createId } from "@thac/db/utils/id";
+import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import {
@@ -273,7 +273,7 @@ function TrackDetailPage() {
 				.filter((credit) =>
 					credit.roles?.some((role) => role.roleCode === roleCode),
 				)
-				.sort((a, b) => a.creditPosition - b.creditPosition)
+				.sort((a, b) => (a.creditPosition ?? 0) - (b.creditPosition ?? 0))
 				.map((credit) => credit.creditName);
 		};
 
@@ -393,7 +393,7 @@ function TrackDetailPage() {
 	const openCreditDialog = () => {
 		const maxPosition = Math.max(
 			0,
-			...(track?.credits.map((c) => c.creditPosition) ?? []),
+			...(track?.credits.map((c) => c.creditPosition ?? 0) ?? []),
 		);
 		setCreditForm({
 			id: createId.trackCredit(),
@@ -428,7 +428,7 @@ function TrackDetailPage() {
 			artistId: credit.artistId,
 			artistAliasId: credit.artistAliasId ?? "",
 			creditName: credit.creditName,
-			creditPosition: credit.creditPosition,
+			creditPosition: credit.creditPosition ?? 1,
 			selectedRoles: credit.roles?.map((r) => r.roleCode) ?? [],
 		});
 		setIsCreditEditDialogOpen(true);
@@ -548,7 +548,7 @@ function TrackDetailPage() {
 	const handleCreditMoveUp = async (credit: TrackCredit, index: number) => {
 		if (!track || index === 0) return;
 		const sortedCredits = [...track.credits].sort(
-			(a, b) => a.creditPosition - b.creditPosition,
+			(a, b) => (a.creditPosition ?? 0) - (b.creditPosition ?? 0),
 		);
 		const prevCredit = sortedCredits[index - 1];
 
@@ -573,7 +573,7 @@ function TrackDetailPage() {
 	const handleCreditMoveDown = async (credit: TrackCredit, index: number) => {
 		if (!track) return;
 		const sortedCredits = [...track.credits].sort(
-			(a, b) => a.creditPosition - b.creditPosition,
+			(a, b) => (a.creditPosition ?? 0) - (b.creditPosition ?? 0),
 		);
 		if (index === sortedCredits.length - 1) return;
 		const nextCredit = sortedCredits[index + 1];

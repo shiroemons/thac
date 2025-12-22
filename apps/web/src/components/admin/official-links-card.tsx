@@ -50,21 +50,22 @@ export function OfficialLinksCard({
 			: ["officialSongLinks", entityId];
 
 	// リンク一覧取得
-	const { data: links = [], isLoading } = useQuery({
+	const { data: links = [], isLoading } = useQuery<
+		(OfficialWorkLink | OfficialSongLink)[]
+	>({
 		queryKey,
 		queryFn: () => api.list(entityId),
 		staleTime: 30_000,
 	});
 
 	// 並べ替えミューテーション
-	const reorderMutation = useMutation({
-		mutationFn: ({
-			linkId,
-			sortOrder,
-		}: {
-			linkId: string;
-			sortOrder: number;
-		}) => api.reorder(entityId, linkId, sortOrder),
+	const reorderMutation = useMutation<
+		OfficialWorkLink | OfficialSongLink,
+		Error,
+		{ linkId: string; sortOrder: number }
+	>({
+		mutationFn: ({ linkId, sortOrder }) =>
+			api.reorder(entityId, linkId, sortOrder),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey });
 		},

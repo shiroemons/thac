@@ -1,6 +1,6 @@
 .PHONY: help dev up down logs ps build clean rebuild reset reset-deps prune shell-server shell-web \
 	db-push db-generate db-migrate db-seed db-setup db-studio \
-	test test-local
+	check check-types check-local check-types-local test test-local
 
 # デフォルトターゲット
 help: ## ヘルプを表示
@@ -112,10 +112,16 @@ db-studio: ## Drizzle Studioを起動（ローカル）
 install: ## 依存関係をインストール（ローカル）
 	bun install
 
-check: ## Lint・フォーマットチェック（ローカル）
+check: ## Lint・フォーマットチェック（Docker）
+	docker compose exec server bun run check
+
+check-types: ## 型チェック（Docker）
+	docker compose exec server bun run check-types
+
+check-local: ## Lint・フォーマットチェック（ローカル）
 	bun run check
 
-check-types: ## 型チェック（ローカル）
+check-types-local: ## 型チェック（ローカル）
 	bun run check-types
 
 test: ## テストを実行（Docker）
