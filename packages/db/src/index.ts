@@ -29,13 +29,28 @@ const fetchWithRetry = async (
 	throw new Error("Unexpected: all retries exhausted");
 };
 
-const client = createClient({
-	url: process.env.DATABASE_URL || "",
-	authToken: process.env.DATABASE_AUTH_TOKEN,
-	fetch: fetchWithRetry,
-});
+// 遅延初期化: ブラウザ側でのモジュールロード時にDBクライアントを初期化しない
+type DrizzleDB = ReturnType<typeof drizzle<typeof schema>>;
+let _db: DrizzleDB | null = null;
 
-export const db = drizzle({ client, schema });
+function getDb(): DrizzleDB {
+	if (!_db) {
+		const client = createClient({
+			url: process.env.DATABASE_URL || "",
+			authToken: process.env.DATABASE_AUTH_TOKEN,
+			fetch: fetchWithRetry,
+		});
+		_db = drizzle({ client, schema });
+	}
+	return _db;
+}
+
+// Proxyを使用して遅延初期化を実現
+export const db = new Proxy({} as DrizzleDB, {
+	get(_, prop) {
+		return getDb()[prop as keyof DrizzleDB];
+	},
+});
 
 // Re-export drizzle-orm operators
 export {
