@@ -17,6 +17,7 @@ import {
 	Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -938,14 +939,7 @@ function ReleaseDetailPage() {
 
 	// ローディング
 	if (isLoading) {
-		return (
-			<div className="container mx-auto p-6">
-				<div className="animate-pulse space-y-4">
-					<div className="h-8 w-1/4 rounded bg-base-300" />
-					<div className="h-64 rounded bg-base-300" />
-				</div>
-			</div>
-		);
+		return <DetailPageSkeleton showBadge cardCount={3} fieldsPerCard={6} />;
 	}
 
 	// エラー・未存在

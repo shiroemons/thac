@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { useMemo, useState } from "react";
+import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { OfficialLinksCard } from "@/components/admin/official-links-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -187,14 +188,7 @@ function OfficialSongDetailPage() {
 
 	// ローディング
 	if (isLoading) {
-		return (
-			<div className="container mx-auto p-6">
-				<div className="animate-pulse space-y-4">
-					<div className="h-8 w-1/4 rounded bg-base-300" />
-					<div className="h-64 rounded bg-base-300" />
-				</div>
-			</div>
-		);
+		return <DetailPageSkeleton showBadge cardCount={2} fieldsPerCard={8} />;
 	}
 
 	// エラー・未存在
