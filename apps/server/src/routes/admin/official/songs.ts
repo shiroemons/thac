@@ -3,12 +3,16 @@ import {
 	count,
 	db,
 	eq,
+	insertOfficialSongLinkSchema,
 	insertOfficialSongSchema,
 	like,
+	officialSongLinks,
 	officialSongs,
 	officialWorkCategories,
 	officialWorks,
 	or,
+	platforms,
+	updateOfficialSongLinkSchema,
 	updateOfficialSongSchema,
 } from "@thac/db";
 import { Hono } from "hono";
@@ -311,6 +315,260 @@ songsRouter.post("/import", async (c) => {
 		updated,
 		total: data.length,
 	});
+});
+
+// ===== 楽曲リンク関連エンドポイント =====
+
+// 楽曲のリンク一覧取得
+songsRouter.get("/:songId/links", async (c) => {
+	const songId = c.req.param("songId");
+
+	// 楽曲存在チェック
+	const existingSong = await db
+		.select()
+		.from(officialSongs)
+		.where(eq(officialSongs.id, songId))
+		.limit(1);
+
+	if (existingSong.length === 0) {
+		return c.json({ error: "Song not found" }, 404);
+	}
+
+	const links = await db
+		.select({
+			id: officialSongLinks.id,
+			officialSongId: officialSongLinks.officialSongId,
+			platformCode: officialSongLinks.platformCode,
+			url: officialSongLinks.url,
+			sortOrder: officialSongLinks.sortOrder,
+			createdAt: officialSongLinks.createdAt,
+			updatedAt: officialSongLinks.updatedAt,
+			platformName: platforms.name,
+		})
+		.from(officialSongLinks)
+		.leftJoin(platforms, eq(officialSongLinks.platformCode, platforms.code))
+		.where(eq(officialSongLinks.officialSongId, songId))
+		.orderBy(officialSongLinks.sortOrder);
+
+	return c.json(links);
+});
+
+// 楽曲リンク追加
+songsRouter.post("/:songId/links", async (c) => {
+	const songId = c.req.param("songId");
+	const body = await c.req.json();
+
+	// 楽曲存在チェック
+	const existingSong = await db
+		.select()
+		.from(officialSongs)
+		.where(eq(officialSongs.id, songId))
+		.limit(1);
+
+	if (existingSong.length === 0) {
+		return c.json({ error: "Song not found" }, 404);
+	}
+
+	// バリデーション
+	const parsed = insertOfficialSongLinkSchema.safeParse({
+		...body,
+		officialSongId: songId,
+	});
+	if (!parsed.success) {
+		return c.json(
+			{
+				error: "Validation failed",
+				details: parsed.error.flatten().fieldErrors,
+			},
+			400,
+		);
+	}
+
+	// ID重複チェック
+	const existingId = await db
+		.select()
+		.from(officialSongLinks)
+		.where(eq(officialSongLinks.id, parsed.data.id))
+		.limit(1);
+
+	if (existingId.length > 0) {
+		return c.json({ error: "ID already exists" }, 409);
+	}
+
+	// URL重複チェック（同一楽曲内）
+	const existingUrl = await db
+		.select()
+		.from(officialSongLinks)
+		.where(
+			and(
+				eq(officialSongLinks.officialSongId, songId),
+				eq(officialSongLinks.url, parsed.data.url),
+			),
+		)
+		.limit(1);
+
+	if (existingUrl.length > 0) {
+		return c.json({ error: "URL already exists for this song" }, 409);
+	}
+
+	// 作成
+	try {
+		const result = await db
+			.insert(officialSongLinks)
+			.values(parsed.data)
+			.returning();
+		return c.json(result[0], 201);
+	} catch (e) {
+		console.error("Failed to create song link:", e);
+		return c.json(
+			{ error: e instanceof Error ? e.message : "リンクの作成に失敗しました" },
+			500,
+		);
+	}
+});
+
+// 楽曲リンク更新
+songsRouter.put("/:songId/links/:linkId", async (c) => {
+	const songId = c.req.param("songId");
+	const linkId = c.req.param("linkId");
+	const body = await c.req.json();
+
+	// 存在チェック
+	const existing = await db
+		.select()
+		.from(officialSongLinks)
+		.where(
+			and(
+				eq(officialSongLinks.id, linkId),
+				eq(officialSongLinks.officialSongId, songId),
+			),
+		)
+		.limit(1);
+
+	if (existing.length === 0) {
+		return c.json({ error: "Not found" }, 404);
+	}
+
+	// バリデーション
+	const parsed = updateOfficialSongLinkSchema.safeParse(body);
+	if (!parsed.success) {
+		return c.json(
+			{
+				error: "Validation failed",
+				details: parsed.error.flatten().fieldErrors,
+			},
+			400,
+		);
+	}
+
+	// URL重複チェック（同一楽曲内、自身以外）
+	if (parsed.data.url) {
+		const existingUrl = await db
+			.select()
+			.from(officialSongLinks)
+			.where(
+				and(
+					eq(officialSongLinks.officialSongId, songId),
+					eq(officialSongLinks.url, parsed.data.url),
+				),
+			)
+			.limit(1);
+
+		if (existingUrl.length > 0 && existingUrl[0]?.id !== linkId) {
+			return c.json({ error: "URL already exists for this song" }, 409);
+		}
+	}
+
+	// 更新
+	try {
+		const result = await db
+			.update(officialSongLinks)
+			.set(parsed.data)
+			.where(eq(officialSongLinks.id, linkId))
+			.returning();
+		return c.json(result[0]);
+	} catch (e) {
+		console.error("Failed to update song link:", e);
+		return c.json(
+			{ error: e instanceof Error ? e.message : "リンクの更新に失敗しました" },
+			500,
+		);
+	}
+});
+
+// 楽曲リンク削除
+songsRouter.delete("/:songId/links/:linkId", async (c) => {
+	const songId = c.req.param("songId");
+	const linkId = c.req.param("linkId");
+
+	// 存在チェック
+	const existing = await db
+		.select()
+		.from(officialSongLinks)
+		.where(
+			and(
+				eq(officialSongLinks.id, linkId),
+				eq(officialSongLinks.officialSongId, songId),
+			),
+		)
+		.limit(1);
+
+	if (existing.length === 0) {
+		return c.json({ error: "Not found" }, 404);
+	}
+
+	// 削除
+	await db.delete(officialSongLinks).where(eq(officialSongLinks.id, linkId));
+
+	return c.json({ success: true });
+});
+
+// 楽曲リンク並べ替え
+songsRouter.put("/:songId/links/:linkId/reorder", async (c) => {
+	const songId = c.req.param("songId");
+	const linkId = c.req.param("linkId");
+	const body = await c.req.json();
+
+	// 存在チェック
+	const existing = await db
+		.select()
+		.from(officialSongLinks)
+		.where(
+			and(
+				eq(officialSongLinks.id, linkId),
+				eq(officialSongLinks.officialSongId, songId),
+			),
+		)
+		.limit(1);
+
+	if (existing.length === 0) {
+		return c.json({ error: "Not found" }, 404);
+	}
+
+	// バリデーション
+	const sortOrder = Number(body.sortOrder);
+	if (Number.isNaN(sortOrder) || sortOrder < 0) {
+		return c.json({ error: "Invalid sortOrder" }, 400);
+	}
+
+	// 更新
+	try {
+		const result = await db
+			.update(officialSongLinks)
+			.set({ sortOrder })
+			.where(eq(officialSongLinks.id, linkId))
+			.returning();
+		return c.json(result[0]);
+	} catch (e) {
+		console.error("Failed to reorder song link:", e);
+		return c.json(
+			{
+				error:
+					e instanceof Error ? e.message : "リンクの並べ替えに失敗しました",
+			},
+			500,
+		);
+	}
 });
 
 export { songsRouter };

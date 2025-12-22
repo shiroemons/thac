@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { useMemo, useState } from "react";
+import { OfficialLinksCard } from "@/components/admin/official-links-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -491,6 +492,9 @@ function OfficialSongDetailPage() {
 					)}
 				</div>
 			</div>
+
+			{/* 外部リンクカード */}
+			<OfficialLinksCard entityType="song" entityId={id} />
 		</div>
 	);
 }
