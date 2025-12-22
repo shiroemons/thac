@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -42,6 +42,15 @@ export function OfficialLinkDialog({
 	const [url, setUrl] = useState(link?.url ?? "");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	// ダイアログが開いた時にlinkプロップの値でフォーム状態を同期
+	useEffect(() => {
+		if (open) {
+			setPlatformCode(link?.platformCode ?? "");
+			setUrl(link?.url ?? "");
+			setError(null);
+		}
+	}, [open, link]);
 
 	// プラットフォーム一覧取得
 	const { data: platformsData } = useQuery({
@@ -142,7 +151,7 @@ export function OfficialLinkDialog({
 							searchPlaceholder="プラットフォームを検索..."
 							emptyMessage="プラットフォームが見つかりません"
 							ungroupedLabel="その他"
-							disabled={isSubmitting || mode === "edit"}
+							disabled={isSubmitting}
 						/>
 					</div>
 
