@@ -3,7 +3,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"check-types": "tsc --noEmit",
+		"check-types": "tsr generate && tsc --noEmit",
 		"build": "vite build",
 		"serve": "vite preview",
 		"dev": "vite dev --port=3001",
@@ -39,6 +39,7 @@
 		"@happy-dom/global-registrator": "^20.0.11",
 		"@tanstack/react-query-devtools": "^5.91.1",
 		"@tanstack/react-router-devtools": "^1.141.1",
+		"@tanstack/router-cli": "^1.142.8",
 		"@testing-library/dom": "^10.4.0",
 		"@testing-library/react": "^16.2.0",
 		"@thac/config": "workspace:*",
