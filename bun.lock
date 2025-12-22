@@ -49,6 +49,7 @@
         "@tanstack/react-start": "^1.141.1",
         "@tanstack/router-plugin": "^1.141.1",
         "@thac/auth": "workspace:*",
+        "@thac/db": "workspace:*",
         "@thac/utils": "workspace:*",
         "better-auth": "catalog:",
         "clsx": "^2.1.1",
