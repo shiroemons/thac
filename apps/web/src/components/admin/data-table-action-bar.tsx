@@ -22,6 +22,7 @@ interface SecondaryAction {
 	label: string;
 	icon?: React.ReactNode;
 	onClick: () => void;
+	disabled?: boolean;
 }
 
 interface ColumnVisibilityConfig {
@@ -150,7 +151,11 @@ function DataTableActionBar({
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							{secondaryActions.map((action) => (
-								<DropdownMenuItem key={action.label} onClick={action.onClick}>
+								<DropdownMenuItem
+									key={action.label}
+									onClick={action.onClick}
+									disabled={action.disabled}
+								>
 									{action.icon}
 									{action.label}
 								</DropdownMenuItem>
