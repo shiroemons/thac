@@ -11,15 +11,15 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { getArtist } from "@/functions/get-artist";
 import {
-	artistsApi,
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 } from "@/lib/api-client";
 import { createArtistDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/artists_/$id")({
-	loader: ({ params }) => artistsApi.get(params.id),
+	loader: ({ params }) => getArtist(params.id),
 	head: ({ loaderData }) => createArtistDetailHead(loaderData?.name),
 	component: ArtistDetailPage,
 });

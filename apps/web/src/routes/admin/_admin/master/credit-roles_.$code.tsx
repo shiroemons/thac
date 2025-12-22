@@ -2,13 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Label } from "@/components/ui/label";
-import { creditRolesApi } from "@/lib/api-client";
+import { getCreditRole } from "@/functions/get-credit-role";
 import { createMasterDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute(
 	"/admin/_admin/master/credit-roles_/$code",
 )({
-	loader: ({ params }) => creditRolesApi.get(params.code),
+	loader: ({ params }) => getCreditRole(params.code),
 	head: ({ loaderData }) =>
 		createMasterDetailHead("クレジット役割", loaderData?.label),
 	component: CreditRoleDetailPage,

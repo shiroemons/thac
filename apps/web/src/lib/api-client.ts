@@ -1,4 +1,18 @@
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+// SSR時はSERVER_URL（Docker内部通信用）、クライアント側はVITE_SERVER_URL（ブラウザ用）を使用
+const getApiBaseUrl = () => {
+	if (typeof window === "undefined") {
+		// サーバーサイド（SSR）
+		return (
+			process.env.SERVER_URL ||
+			import.meta.env.VITE_SERVER_URL ||
+			"http://localhost:3000"
+		);
+	}
+	// クライアントサイド
+	return import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export interface Platform {
 	code: string;
@@ -93,15 +107,26 @@ export interface PaginatedResponse<T> {
 	limit: number;
 }
 
+// SSR時にリクエストヘッダー（Cookie含む）を転送するためのオプション
+export interface FetchOptions extends RequestInit {
+	// SSR時に元のリクエストヘッダーを転送するためのヘッダー
+	ssrHeaders?: Headers;
+}
+
 async function fetchWithAuth<T>(
 	endpoint: string,
-	options?: RequestInit,
+	options?: FetchOptions,
 ): Promise<T> {
+	// SSR時のヘッダー転送: ssrHeadersからCookieを抽出して転送
+	const ssrCookies = options?.ssrHeaders?.get("cookie");
+
 	const res = await fetch(`${API_BASE_URL}${endpoint}`, {
 		...options,
 		credentials: "include",
 		headers: {
 			"Content-Type": "application/json",
+			// SSR時のCookie転送
+			...(ssrCookies ? { cookie: ssrCookies } : {}),
 			...options?.headers,
 		},
 	});
@@ -1267,8 +1292,8 @@ interface TrackListItem extends Track {
 
 // Tracks
 export const tracksApi = {
-	get: (trackId: string) =>
-		fetchWithAuth<TrackDetail>(`/api/admin/tracks/${trackId}`),
+	get: (trackId: string, ssrHeaders?: Headers) =>
+		fetchWithAuth<TrackDetail>(`/api/admin/tracks/${trackId}`, { ssrHeaders }),
 	listAll: (params?: { limit?: number }) =>
 		fetchWithAuth<{ data: TrackListItem[] }>(
 			`/api/admin/tracks${params?.limit ? `?limit=${params.limit}` : ""}`,

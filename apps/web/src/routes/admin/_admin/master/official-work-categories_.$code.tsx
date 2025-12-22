@@ -2,13 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Label } from "@/components/ui/label";
-import { officialWorkCategoriesApi } from "@/lib/api-client";
+import { getOfficialWorkCategory } from "@/functions/get-official-work-category";
 import { createMasterDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute(
 	"/admin/_admin/master/official-work-categories_/$code",
 )({
-	loader: ({ params }) => officialWorkCategoriesApi.get(params.code),
+	loader: ({ params }) => getOfficialWorkCategory(params.code),
 	head: ({ loaderData }) =>
 		createMasterDetailHead("公式作品カテゴリ", loaderData?.name),
 	component: OfficialWorkCategoryDetailPage,

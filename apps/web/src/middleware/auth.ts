@@ -9,7 +9,11 @@ export const authMiddleware = createMiddleware().server(
 			},
 		});
 		return next({
-			context: { session: session ?? null },
+			context: {
+				session: session ?? null,
+				// SSR時のAPI呼び出しでCookieを転送するためにheadersを渡す
+				ssrHeaders: request.headers,
+			},
 		});
 	},
 );

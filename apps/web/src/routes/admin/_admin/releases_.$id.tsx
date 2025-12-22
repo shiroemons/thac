@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getRelease } from "@/functions/get-release";
 import {
 	artistAliasesApi,
 	artistsApi,
@@ -69,7 +70,7 @@ import {
 import { createReleaseDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/releases_/$id")({
-	loader: ({ params }) => releasesApi.get(params.id),
+	loader: ({ params }) => getRelease(params.id),
 	head: ({ loaderData }) => createReleaseDetailHead(loaderData?.name),
 	component: ReleaseDetailPage,
 });

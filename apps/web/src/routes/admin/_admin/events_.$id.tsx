@@ -12,11 +12,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { eventsApi } from "@/lib/api-client";
+import { getEvent } from "@/functions/get-event";
 import { createEventDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/events_/$id")({
-	loader: ({ params }) => eventsApi.get(params.id),
+	loader: ({ params }) => getEvent(params.id),
 	head: ({ loaderData }) => createEventDetailHead(loaderData?.name),
 	component: EventDetailPage,
 });

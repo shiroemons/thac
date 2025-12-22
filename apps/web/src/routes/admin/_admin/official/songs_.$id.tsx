@@ -13,6 +13,7 @@ import { SearchableGroupedSelect } from "@/components/ui/searchable-grouped-sele
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getOfficialSong } from "@/functions/get-official-song";
 import {
 	type OfficialSong,
 	officialSongsApi,
@@ -22,7 +23,7 @@ import {
 import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/official/songs_/$id")({
-	loader: ({ params }) => officialSongsApi.get(params.id),
+	loader: ({ params }) => getOfficialSong(params.id),
 	head: ({ loaderData }) =>
 		createPageHead(loaderData?.nameJa || loaderData?.name || "公式楽曲詳細"),
 	component: OfficialSongDetailPage,

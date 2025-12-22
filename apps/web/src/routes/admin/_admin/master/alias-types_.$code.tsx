@@ -2,12 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Label } from "@/components/ui/label";
-import { aliasTypesApi } from "@/lib/api-client";
+import { getAliasType } from "@/functions/get-alias-type";
 import { createMasterDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/master/alias-types_/$code")(
 	{
-		loader: ({ params }) => aliasTypesApi.get(params.code),
+		loader: ({ params }) => getAliasType(params.code),
 		head: ({ loaderData }) =>
 			createMasterDetailHead("名義種別", loaderData?.label),
 		component: AliasTypeDetailPage,

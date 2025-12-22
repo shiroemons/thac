@@ -12,11 +12,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { eventSeriesApi } from "@/lib/api-client";
+import { getEventSeries } from "@/functions/get-event-series";
 import { createEventSeriesDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/event-series_/$id")({
-	loader: ({ params }) => eventSeriesApi.get(params.id),
+	loader: ({ params }) => getEventSeries(params.id),
 	head: ({ loaderData }) => createEventSeriesDetailHead(loaderData?.name),
 	component: EventSeriesDetailPage,
 });

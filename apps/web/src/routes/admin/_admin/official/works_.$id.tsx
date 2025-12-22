@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getOfficialWork } from "@/functions/get-official-work";
 import {
 	type OfficialWork,
 	officialSongsApi,
@@ -20,7 +21,7 @@ import {
 import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/official/works_/$id")({
-	loader: ({ params }) => officialWorksApi.get(params.id),
+	loader: ({ params }) => getOfficialWork(params.id),
 	head: ({ loaderData }) =>
 		createPageHead(loaderData?.nameJa || loaderData?.name || "公式作品詳細"),
 	component: OfficialWorkDetailPage,
