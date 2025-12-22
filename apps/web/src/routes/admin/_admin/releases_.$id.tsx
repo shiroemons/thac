@@ -161,21 +161,9 @@ function ReleaseDetailPage() {
 	const [publicationForm, setPublicationForm] = useState<{
 		platformCode: string;
 		url: string;
-		platformItemId: string;
-		countryCode: string;
-		visibility: string;
-		publishedAt: string;
-		removedAt: string;
-		isOfficial: boolean;
 	}>({
 		platformCode: "",
 		url: "",
-		platformItemId: "",
-		countryCode: "",
-		visibility: "public",
-		publishedAt: "",
-		removedAt: "",
-		isOfficial: false,
 	});
 
 	// JANコード管理用
@@ -833,24 +821,12 @@ function ReleaseDetailPage() {
 			setPublicationForm({
 				platformCode: publication.platformCode,
 				url: publication.url,
-				platformItemId: publication.platformItemId || "",
-				countryCode: publication.countryCode || "",
-				visibility: publication.visibility || "public",
-				publishedAt: publication.publishedAt || "",
-				removedAt: publication.removedAt || "",
-				isOfficial: publication.isOfficial || false,
 			});
 		} else {
 			setEditingPublication(null);
 			setPublicationForm({
 				platformCode: "",
 				url: "",
-				platformItemId: "",
-				countryCode: "JP",
-				visibility: "public",
-				publishedAt: "",
-				removedAt: "",
-				isOfficial: false,
 			});
 		}
 		setIsPublicationDialogOpen(true);
@@ -862,27 +838,13 @@ function ReleaseDetailPage() {
 		try {
 			if (editingPublication) {
 				await releasePublicationsApi.update(id, editingPublication.id, {
-					platformCode: publicationForm.platformCode,
 					url: publicationForm.url,
-					platformItemId: publicationForm.platformItemId || null,
-					countryCode: publicationForm.countryCode || null,
-					visibility: publicationForm.visibility || null,
-					publishedAt: publicationForm.publishedAt || null,
-					removedAt: publicationForm.removedAt || null,
-					isOfficial: publicationForm.isOfficial,
 				});
 			} else {
 				await releasePublicationsApi.create(id, {
 					id: createId.releasePublication(),
-					releaseId: id,
 					platformCode: publicationForm.platformCode,
 					url: publicationForm.url,
-					platformItemId: publicationForm.platformItemId || null,
-					countryCode: publicationForm.countryCode || null,
-					visibility: publicationForm.visibility || null,
-					publishedAt: publicationForm.publishedAt || null,
-					removedAt: publicationForm.removedAt || null,
-					isOfficial: publicationForm.isOfficial,
 				});
 			}
 			invalidateQuery();
@@ -1371,8 +1333,6 @@ function ReleaseDetailPage() {
 									<tr>
 										<th>プラットフォーム</th>
 										<th>URL</th>
-										<th>状態</th>
-										<th>公式</th>
 										<th className="w-24">操作</th>
 									</tr>
 								</thead>
@@ -1395,18 +1355,6 @@ function ReleaseDetailPage() {
 														? `${pub.url.substring(0, 50)}...`
 														: pub.url}
 												</a>
-											</td>
-											<td>
-												<Badge
-													variant={
-														pub.visibility === "public" ? "success" : "ghost"
-													}
-												>
-													{pub.visibility === "public" ? "公開" : "非公開"}
-												</Badge>
-											</td>
-											<td>
-												{pub.isOfficial && <Badge variant="info">公式</Badge>}
 											</td>
 											<td>
 												<div className="flex items-center gap-1">
@@ -2335,107 +2283,6 @@ function ReleaseDetailPage() {
 								}
 								placeholder="https://..."
 							/>
-						</div>
-
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label>プラットフォーム内ID</Label>
-								<Input
-									value={publicationForm.platformItemId}
-									onChange={(e) =>
-										setPublicationForm({
-											...publicationForm,
-											platformItemId: e.target.value,
-										})
-									}
-									placeholder="プラットフォーム固有のID"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label>国コード</Label>
-								<select
-									value={publicationForm.countryCode}
-									onChange={(e) =>
-										setPublicationForm({
-											...publicationForm,
-											countryCode: e.target.value,
-										})
-									}
-									className="select select-bordered w-full"
-								>
-									<option value="">選択してください</option>
-									{COUNTRY_CODE_OPTIONS.map((opt) => (
-										<option key={opt.value} value={opt.value}>
-											{opt.label}
-										</option>
-									))}
-								</select>
-							</div>
-						</div>
-
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label>公開状態</Label>
-								<Select
-									value={publicationForm.visibility}
-									onChange={(e) =>
-										setPublicationForm({
-											...publicationForm,
-											visibility: e.target.value,
-										})
-									}
-								>
-									<option value="public">公開</option>
-									<option value="unlisted">限定公開</option>
-									<option value="private">非公開</option>
-								</Select>
-							</div>
-							<div className="grid gap-2">
-								<Label>公式アップロード</Label>
-								<div className="flex items-center gap-2">
-									<input
-										type="checkbox"
-										className="checkbox"
-										checked={publicationForm.isOfficial}
-										onChange={(e) =>
-											setPublicationForm({
-												...publicationForm,
-												isOfficial: e.target.checked,
-											})
-										}
-									/>
-									<span className="text-sm">公式</span>
-								</div>
-							</div>
-						</div>
-
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label>公開日</Label>
-								<Input
-									type="date"
-									value={publicationForm.publishedAt}
-									onChange={(e) =>
-										setPublicationForm({
-											...publicationForm,
-											publishedAt: e.target.value,
-										})
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label>取り下げ日</Label>
-								<Input
-									type="date"
-									value={publicationForm.removedAt}
-									onChange={(e) =>
-										setPublicationForm({
-											...publicationForm,
-											removedAt: e.target.value,
-										})
-									}
-								/>
-							</div>
 						</div>
 					</div>
 					<DialogFooter>

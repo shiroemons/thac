@@ -1508,13 +1508,7 @@ export interface TrackPublication {
 	id: string;
 	trackId: string;
 	platformCode: string;
-	platformItemId: string | null;
 	url: string;
-	visibility: "public" | "unlisted" | "private" | null;
-	publishedAt: Date | null;
-	removedAt: Date | null;
-	isOfficial: boolean;
-	countryCode: string | null;
 	createdAt: Date | null;
 	updatedAt: Date | null;
 	platform?: Platform | null;
@@ -1531,12 +1525,6 @@ export const trackPublicationsApi = {
 			id: string;
 			platformCode: string;
 			url: string;
-			platformItemId?: string | null;
-			visibility?: "public" | "unlisted" | "private" | null;
-			publishedAt?: string | null;
-			removedAt?: string | null;
-			isOfficial?: boolean;
-			countryCode?: string | null;
 		},
 	) =>
 		fetchWithAuth<TrackPublication>(
@@ -1550,13 +1538,7 @@ export const trackPublicationsApi = {
 		trackId: string,
 		id: string,
 		data: {
-			platformItemId?: string | null;
 			url?: string;
-			visibility?: "public" | "unlisted" | "private" | null;
-			publishedAt?: string | null;
-			removedAt?: string | null;
-			isOfficial?: boolean;
-			countryCode?: string | null;
 		},
 	) =>
 		fetchWithAuth<TrackPublication>(
@@ -1625,13 +1607,7 @@ export interface ReleasePublication {
 	id: string;
 	releaseId: string;
 	platformCode: string;
-	platformItemId: string | null;
 	url: string;
-	visibility: "public" | "unlisted" | "private" | null;
-	publishedAt: Date | null;
-	removedAt: Date | null;
-	isOfficial: boolean;
-	countryCode: string | null;
 	createdAt: Date | null;
 	updatedAt: Date | null;
 	platform?: Platform | null;
@@ -1648,12 +1624,6 @@ export const releasePublicationsApi = {
 			id: string;
 			platformCode: string;
 			url: string;
-			platformItemId?: string | null;
-			visibility?: "public" | "unlisted" | "private" | null;
-			publishedAt?: string | null;
-			removedAt?: string | null;
-			isOfficial?: boolean;
-			countryCode?: string | null;
 		},
 	) =>
 		fetchWithAuth<ReleasePublication>(
@@ -1667,13 +1637,7 @@ export const releasePublicationsApi = {
 		releaseId: string,
 		id: string,
 		data: {
-			platformItemId?: string | null;
 			url?: string;
-			visibility?: "public" | "unlisted" | "private" | null;
-			publishedAt?: string | null;
-			removedAt?: string | null;
-			isOfficial?: boolean;
-			countryCode?: string | null;
 		},
 	) =>
 		fetchWithAuth<ReleasePublication>(

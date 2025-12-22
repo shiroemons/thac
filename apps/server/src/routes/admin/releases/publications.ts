@@ -110,25 +110,6 @@ releasePublicationsRouter.post("/:releaseId/publications", async (c) => {
 		return c.json({ error: "URL already exists" }, 409);
 	}
 
-	// 一意性チェック（リリース × プラットフォーム × プラットフォーム内ID）
-	if (parsed.data.platformItemId) {
-		const duplicateCheck = await db
-			.select()
-			.from(releasePublications)
-			.where(
-				and(
-					eq(releasePublications.releaseId, releaseId),
-					eq(releasePublications.platformCode, parsed.data.platformCode),
-					eq(releasePublications.platformItemId, parsed.data.platformItemId),
-				),
-			)
-			.limit(1);
-
-		if (duplicateCheck.length > 0) {
-			return c.json({ error: "This publication link already exists" }, 409);
-		}
-	}
-
 	// 作成
 	const result = await db
 		.insert(releasePublications)
