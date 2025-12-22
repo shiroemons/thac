@@ -450,6 +450,136 @@ export const officialSongsApi = {
 		}),
 };
 
+// Official Work Links
+export interface OfficialWorkLink {
+	id: string;
+	officialWorkId: string;
+	platformCode: string;
+	url: string;
+	sortOrder: number;
+	createdAt: string;
+	updatedAt: string;
+	platformName?: string | null;
+}
+
+export const officialWorkLinksApi = {
+	list: (workId: string) =>
+		fetchWithAuth<OfficialWorkLink[]>(
+			`/api/admin/official/works/${workId}/links`,
+		),
+	create: (
+		workId: string,
+		data: Omit<
+			OfficialWorkLink,
+			"officialWorkId" | "createdAt" | "updatedAt" | "platformName"
+		>,
+	) =>
+		fetchWithAuth<OfficialWorkLink>(
+			`/api/admin/official/works/${workId}/links`,
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		),
+	update: (
+		workId: string,
+		linkId: string,
+		data: Partial<
+			Omit<
+				OfficialWorkLink,
+				"id" | "officialWorkId" | "createdAt" | "updatedAt" | "platformName"
+			>
+		>,
+	) =>
+		fetchWithAuth<OfficialWorkLink>(
+			`/api/admin/official/works/${workId}/links/${linkId}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(data),
+			},
+		),
+	delete: (workId: string, linkId: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/official/works/${workId}/links/${linkId}`,
+			{
+				method: "DELETE",
+			},
+		),
+	reorder: (workId: string, linkId: string, sortOrder: number) =>
+		fetchWithAuth<OfficialWorkLink>(
+			`/api/admin/official/works/${workId}/links/${linkId}/reorder`,
+			{
+				method: "PUT",
+				body: JSON.stringify({ sortOrder }),
+			},
+		),
+};
+
+// Official Song Links
+export interface OfficialSongLink {
+	id: string;
+	officialSongId: string;
+	platformCode: string;
+	url: string;
+	sortOrder: number;
+	createdAt: string;
+	updatedAt: string;
+	platformName?: string | null;
+}
+
+export const officialSongLinksApi = {
+	list: (songId: string) =>
+		fetchWithAuth<OfficialSongLink[]>(
+			`/api/admin/official/songs/${songId}/links`,
+		),
+	create: (
+		songId: string,
+		data: Omit<
+			OfficialSongLink,
+			"officialSongId" | "createdAt" | "updatedAt" | "platformName"
+		>,
+	) =>
+		fetchWithAuth<OfficialSongLink>(
+			`/api/admin/official/songs/${songId}/links`,
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		),
+	update: (
+		songId: string,
+		linkId: string,
+		data: Partial<
+			Omit<
+				OfficialSongLink,
+				"id" | "officialSongId" | "createdAt" | "updatedAt" | "platformName"
+			>
+		>,
+	) =>
+		fetchWithAuth<OfficialSongLink>(
+			`/api/admin/official/songs/${songId}/links/${linkId}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(data),
+			},
+		),
+	delete: (songId: string, linkId: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/official/songs/${songId}/links/${linkId}`,
+			{
+				method: "DELETE",
+			},
+		),
+	reorder: (songId: string, linkId: string, sortOrder: number) =>
+		fetchWithAuth<OfficialSongLink>(
+			`/api/admin/official/songs/${songId}/links/${linkId}/reorder`,
+			{
+				method: "PUT",
+				body: JSON.stringify({ sortOrder }),
+			},
+		),
+};
+
 // Stats
 export const statsApi = {
 	get: () => fetchWithAuth<DashboardStats>("/api/admin/stats"),
