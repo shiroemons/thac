@@ -47,11 +47,15 @@ export const Route = createFileRoute("/admin/_admin/tracks")({
 // カラム定義
 const COLUMN_CONFIGS = [
 	{ key: "id", label: "ID", defaultVisible: false },
+	{ key: "name", label: "トラック名" },
 	{ key: "releaseName", label: "作品" },
 	{ key: "discNumber", label: "ディスク" },
-	{ key: "name", label: "トラック名" },
 	{ key: "trackNumber", label: "No." },
-	{ key: "creditCount", label: "クレジット数" },
+	{ key: "vocalists", label: "ボーカル" },
+	{ key: "arrangers", label: "編曲" },
+	{ key: "lyricists", label: "作詞" },
+	{ key: "originalSongs", label: "原曲" },
+	{ key: "creditCount", label: "クレジット数", defaultVisible: false },
 	{ key: "createdAt", label: "作成日時", defaultVisible: false },
 	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
 ] as const;
@@ -366,17 +370,29 @@ function TracksPage() {
 									{isVisible("id") && (
 										<TableHead className="w-[220px]">ID</TableHead>
 									)}
+									{isVisible("name") && (
+										<TableHead className="min-w-[200px]">トラック名</TableHead>
+									)}
 									{isVisible("releaseName") && (
 										<TableHead className="min-w-[200px]">作品</TableHead>
 									)}
 									{isVisible("discNumber") && (
 										<TableHead className="w-[100px]">ディスク</TableHead>
 									)}
-									{isVisible("name") && (
-										<TableHead className="min-w-[200px]">トラック名</TableHead>
-									)}
 									{isVisible("trackNumber") && (
 										<TableHead className="w-[60px]">No.</TableHead>
+									)}
+									{isVisible("vocalists") && (
+										<TableHead className="min-w-[150px]">ボーカル</TableHead>
+									)}
+									{isVisible("arrangers") && (
+										<TableHead className="min-w-[150px]">編曲</TableHead>
+									)}
+									{isVisible("lyricists") && (
+										<TableHead className="min-w-[150px]">作詞</TableHead>
+									)}
+									{isVisible("originalSongs") && (
+										<TableHead className="min-w-[200px]">原曲</TableHead>
 									)}
 									{isVisible("creditCount") && (
 										<TableHead className="w-[100px]">クレジット数</TableHead>
@@ -408,6 +424,18 @@ function TracksPage() {
 													{track.id}
 												</TableCell>
 											)}
+											{isVisible("name") && (
+												<TableCell className="font-medium">
+													<div>
+														<p>{track.name}</p>
+														{track.nameJa && (
+															<p className="text-base-content/60 text-sm">
+																{track.nameJa}
+															</p>
+														)}
+													</div>
+												</TableCell>
+											)}
 											{isVisible("releaseName") && (
 												<TableCell>
 													<Link
@@ -424,21 +452,29 @@ function TracksPage() {
 													{track.discNumber ? `Disc ${track.discNumber}` : "-"}
 												</TableCell>
 											)}
-											{isVisible("name") && (
-												<TableCell className="font-medium">
-													<div>
-														<p>{track.name}</p>
-														{track.nameJa && (
-															<p className="text-base-content/60 text-sm">
-																{track.nameJa}
-															</p>
-														)}
-													</div>
-												</TableCell>
-											)}
 											{isVisible("trackNumber") && (
 												<TableCell className="text-base-content/70">
 													{track.trackNumber}
+												</TableCell>
+											)}
+											{isVisible("vocalists") && (
+												<TableCell className="text-base-content/70 text-sm">
+													{track.vocalists || "-"}
+												</TableCell>
+											)}
+											{isVisible("arrangers") && (
+												<TableCell className="text-base-content/70 text-sm">
+													{track.arrangers || "-"}
+												</TableCell>
+											)}
+											{isVisible("lyricists") && (
+												<TableCell className="text-base-content/70 text-sm">
+													{track.lyricists || "-"}
+												</TableCell>
+											)}
+											{isVisible("originalSongs") && (
+												<TableCell className="text-base-content/70 text-sm">
+													{track.originalSongs || "-"}
 												</TableCell>
 											)}
 											{isVisible("creditCount") && (

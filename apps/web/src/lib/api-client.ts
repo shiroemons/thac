@@ -1060,6 +1060,10 @@ export interface Track {
 
 export interface TrackWithCreditCount extends Track {
 	creditCount: number;
+	vocalists: string | null;
+	arrangers: string | null;
+	lyricists: string | null;
+	originalSongs: string | null;
 }
 
 export interface TrackDetail extends Track {
