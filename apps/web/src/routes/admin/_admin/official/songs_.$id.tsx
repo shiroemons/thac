@@ -14,7 +14,6 @@ import { SearchableGroupedSelect } from "@/components/ui/searchable-grouped-sele
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { getOfficialSong } from "@/functions/get-official-song";
 import {
 	type OfficialSong,
 	officialSongsApi,
@@ -22,9 +21,13 @@ import {
 	officialWorksApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { officialSongDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/official/songs_/$id")({
-	loader: ({ params }) => getOfficialSong(params.id),
+	loader: ({ context, params }) =>
+		context.queryClient.ensureQueryData(
+			officialSongDetailQueryOptions(params.id),
+		),
 	head: ({ loaderData }) =>
 		createPageHead(loaderData?.nameJa || loaderData?.name || "公式楽曲詳細"),
 	component: OfficialSongDetailPage,
@@ -32,7 +35,6 @@ export const Route = createFileRoute("/admin/_admin/official/songs_/$id")({
 
 function OfficialSongDetailPage() {
 	const { id } = Route.useParams();
-	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// 編集モード
@@ -46,12 +48,7 @@ function OfficialSongDetailPage() {
 		data: song,
 		isPending,
 		error,
-	} = useQuery({
-		queryKey: ["officialSongs", id],
-		queryFn: () => officialSongsApi.get(id),
-		staleTime: 30_000,
-		initialData: loaderData,
-	});
+	} = useQuery(officialSongDetailQueryOptions(id));
 
 	// 作品一覧取得（編集用）
 	const { data: worksData } = useQuery({
