@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
 	createRootRouteWithContext,
 	HeadContent,
@@ -13,15 +14,13 @@ import { ThemeProvider } from "@/lib/theme";
 import Header from "../components/header";
 import appCss from "../index.css?url";
 
-const queryClient = new QueryClient({
-	defaultOptions: {
-		queries: {
-			staleTime: 30_000,
-		},
-	},
-});
-
-export type RouterAppContext = Record<string, never>;
+/**
+ * ルーターコンテキストの型定義
+ * queryClientはrouter.tsxで注入される
+ */
+export type RouterAppContext = {
+	queryClient: QueryClient;
+};
 
 // Inline script to prevent FOUC (Flash of Unstyled Content)
 const themeInitScript = `
@@ -60,6 +59,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 function RootDocument() {
 	const location = useLocation();
 	const isAdminRoute = location.pathname.startsWith("/admin");
+	// ルーターコンテキストからqueryClientを取得
+	const { queryClient } = Route.useRouteContext();
 
 	return (
 		<html lang="ja" suppressHydrationWarning>

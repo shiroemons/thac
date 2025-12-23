@@ -31,7 +31,6 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -40,18 +39,18 @@ import {
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
-	type PaginatedResponse,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { artistsListQueryOptions } from "@/lib/query-options";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/admin/_admin/artists")({
 	head: () => createPageHead("アーティスト"),
-	loader: () =>
-		ssrFetch<PaginatedResponse<Artist>>(
-			`/api/admin/artists?page=${DEFAULT_PAGE}&limit=${DEFAULT_PAGE_SIZE}`,
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(
+			artistsListQueryOptions({ page: DEFAULT_PAGE, limit: DEFAULT_PAGE_SIZE }),
 		),
 	component: ArtistsPage,
 });
@@ -79,7 +78,6 @@ const COLUMN_CONFIGS = [
 ] as const;
 
 function ArtistsPage() {
-	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// ページネーション・フィルタ状態
@@ -106,24 +104,16 @@ function ArtistsPage() {
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const isInitialQuery =
-		page === DEFAULT_PAGE &&
-		pageSize === DEFAULT_PAGE_SIZE &&
-		!debouncedSearch &&
-		!initialScript;
-
-	const { data, isPending, error } = useQuery({
-		queryKey: ["artists", page, pageSize, debouncedSearch, initialScript],
-		queryFn: () =>
-			artistsApi.list({
-				page,
-				limit: pageSize,
-				search: debouncedSearch || undefined,
-				initialScript: initialScript || undefined,
-			}),
-		staleTime: 30_000,
-		initialData: isInitialQuery ? loaderData : undefined,
-	});
+	// ensureQueryData + queryOptionsパターン
+	// ローダーでプリフェッチしたデータを自動的に使用
+	const { data, isPending, error } = useQuery(
+		artistsListQueryOptions({
+			page,
+			limit: pageSize,
+			search: debouncedSearch || undefined,
+			initialScript: initialScript || undefined,
+		}),
+	);
 
 	const artists = data?.data ?? [];
 	const total = data?.total ?? 0;
