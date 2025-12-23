@@ -1,6 +1,49 @@
 import { createServerFn } from "@tanstack/react-start";
 import { authMiddleware } from "@/middleware/auth";
 
+// タイムアウト設定（ミリ秒）
+const SSR_TIMEOUT = {
+	DEFAULT: 5000, // 5秒（詳細ページ用）
+	LIST: 10000, // 10秒（一覧ページ用）
+} as const;
+
+/**
+ * SSRタイムアウトエラー
+ */
+export class SSRTimeoutError extends Error {
+	constructor(endpoint: string, timeout: number) {
+		super(`SSR fetch timeout after ${timeout}ms: ${endpoint}`);
+		this.name = "SSRTimeoutError";
+	}
+}
+
+/**
+ * エンドポイントに応じたタイムアウト時間を取得
+ * クエリパラメータがある場合は一覧APIと判断
+ */
+function getTimeoutForEndpoint(endpoint: string): number {
+	if (endpoint.includes("?")) {
+		return SSR_TIMEOUT.LIST;
+	}
+	return SSR_TIMEOUT.DEFAULT;
+}
+
+/**
+ * パフォーマンスログを出力
+ */
+function logPerformance(
+	endpoint: string,
+	duration: number,
+	isSSR: boolean,
+	success: boolean,
+) {
+	const context = isSSR ? "SSR" : "Client";
+	const status = success ? "" : " FAILED";
+	const level = duration > 1000 ? "warn" : "info";
+
+	console[level](`[${context}]${status} ${endpoint}: ${duration.toFixed(2)}ms`);
+}
+
 // SSR時はSERVER_URL（Docker内部通信用）、クライアント側はVITE_SERVER_URL（ブラウザ用）を使用
 const getApiBaseUrl = () => {
 	if (typeof window === "undefined") {
@@ -19,6 +62,7 @@ const getApiBaseUrl = () => {
 const ssrFetchFn = createServerFn({ method: "GET" })
 	.middleware([authMiddleware])
 	.handler(async (ctx) => {
+		const startTime = performance.now();
 		// biome-ignore lint/suspicious/noExplicitAny: TanStack Startの型定義制限を回避
 		const endpoint = (ctx as any).data as string | undefined;
 		// biome-ignore lint/suspicious/noExplicitAny: TanStack Startの型定義制限を回避
@@ -33,20 +77,48 @@ const ssrFetchFn = createServerFn({ method: "GET" })
 
 		// API呼び出しを直接実行
 		const API_BASE_URL = getApiBaseUrl();
-		const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-			credentials: "include",
-			headers: {
-				"Content-Type": "application/json",
-				...(cookie ? { cookie } : {}),
-			},
-		});
+		const timeout = getTimeoutForEndpoint(endpoint);
+		const isSSR = typeof window === "undefined";
 
-		if (!res.ok) {
-			const error = await res.json().catch(() => ({ error: "Unknown error" }));
-			throw new Error(error.error || `HTTP ${res.status}`);
+		// AbortControllerでタイムアウトを設定
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+		try {
+			const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+				credentials: "include",
+				signal: controller.signal,
+				headers: {
+					"Content-Type": "application/json",
+					...(cookie ? { cookie } : {}),
+				},
+			});
+
+			clearTimeout(timeoutId);
+			const duration = performance.now() - startTime;
+			logPerformance(endpoint, duration, isSSR, true);
+
+			if (!res.ok) {
+				const error = await res
+					.json()
+					.catch(() => ({ error: "Unknown error" }));
+				throw new Error(error.error || `HTTP ${res.status}`);
+			}
+
+			return res.json();
+		} catch (error) {
+			clearTimeout(timeoutId);
+			const duration = performance.now() - startTime;
+
+			// タイムアウトエラーの場合はSSRTimeoutErrorをスロー
+			if (error instanceof Error && error.name === "AbortError") {
+				logPerformance(endpoint, duration, isSSR, false);
+				throw new SSRTimeoutError(endpoint, timeout);
+			}
+
+			logPerformance(endpoint, duration, isSSR, false);
+			throw error;
 		}
-
-		return res.json();
 	});
 
 /**

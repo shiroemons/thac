@@ -1,6 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,21 +13,28 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { getArtist } from "@/functions/get-artist";
 import {
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 } from "@/lib/api-client";
 import { createArtistDetailHead } from "@/lib/head";
+import { artistDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/artists_/$id")({
-	loader: ({ params }) => getArtist(params.id),
+	loader: ({ context, params }) =>
+		context.queryClient.ensureQueryData(artistDetailQueryOptions(params.id)),
 	head: ({ loaderData }) => createArtistDetailHead(loaderData?.name),
 	component: ArtistDetailPage,
 });
 
 function ArtistDetailPage() {
-	const artist = Route.useLoaderData();
+	const { id } = Route.useParams();
+	const { data: artist, isPending } = useQuery(artistDetailQueryOptions(id));
+
+	// ローディング
+	if (isPending && !artist) {
+		return <DetailPageSkeleton cardCount={2} fieldsPerCard={7} />;
+	}
 
 	// エラー・未存在
 	if (!artist) {

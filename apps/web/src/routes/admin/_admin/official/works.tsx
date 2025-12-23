@@ -30,7 +30,6 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -38,9 +37,9 @@ import {
 	type OfficialWork,
 	officialWorkCategoriesApi,
 	officialWorksApi,
-	type PaginatedResponse,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { officialWorksListQueryOptions } from "@/lib/query-options";
 
 // 初期表示用のデフォルト値
 const DEFAULT_PAGE = 1;
@@ -70,9 +69,12 @@ const CATEGORY_CODES: Record<string, string> = {
 
 export const Route = createFileRoute("/admin/_admin/official/works")({
 	head: () => createPageHead("公式作品"),
-	loader: () =>
-		ssrFetch<PaginatedResponse<OfficialWork>>(
-			`/api/admin/official/works?page=${DEFAULT_PAGE}&limit=${DEFAULT_PAGE_SIZE}`,
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(
+			officialWorksListQueryOptions({
+				page: DEFAULT_PAGE,
+				limit: DEFAULT_PAGE_SIZE,
+			}),
 		),
 	component: OfficialWorksPage,
 });
@@ -93,7 +95,6 @@ const COLUMN_CONFIGS = [
 ] as const;
 
 function OfficialWorksPage() {
-	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// ページネーション・フィルタ状態
@@ -163,26 +164,14 @@ function OfficialWorksPage() {
 		return `${categoryCode}${nextNumber}`;
 	};
 
-	// 初期状態かどうかを判定
-	const isInitialQuery =
-		page === DEFAULT_PAGE &&
-		pageSize === DEFAULT_PAGE_SIZE &&
-		!debouncedSearch &&
-		!category;
-
-	const { data, isPending, error } = useQuery({
-		queryKey: ["officialWorks", page, pageSize, debouncedSearch, category],
-		queryFn: () =>
-			officialWorksApi.list({
-				page,
-				limit: pageSize,
-				search: debouncedSearch || undefined,
-				category: category || undefined,
-			}),
-		staleTime: 30_000,
-		// 初期状態の場合のみSSRデータをキャッシュとして使用
-		initialData: isInitialQuery ? loaderData : undefined,
-	});
+	const { data, isPending, error } = useQuery(
+		officialWorksListQueryOptions({
+			page,
+			limit: pageSize,
+			search: debouncedSearch || undefined,
+			category: category || undefined,
+		}),
+	);
 
 	const works = data?.data ?? [];
 	const total = data?.total ?? 0;

@@ -39,7 +39,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { getTrack } from "@/functions/get-track";
 import {
 	artistAliasesApi,
 	artistsApi,
@@ -64,10 +63,11 @@ import {
 	PLATFORM_CATEGORY_ORDER,
 } from "@/lib/constants";
 import { createTrackDetailHead } from "@/lib/head";
+import { trackDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/tracks_/$id")({
-	// SSR時にCookieを転送するためサーバー関数を使用
-	loader: ({ params }) => getTrack(params.id),
+	loader: ({ context, params }) =>
+		context.queryClient.ensureQueryData(trackDetailQueryOptions(params.id)),
 	head: ({ loaderData }) =>
 		createTrackDetailHead(loaderData?.name, loaderData?.release?.name),
 	component: TrackDetailPage,
@@ -97,7 +97,6 @@ function getRoleBadgeVariant(
 
 function TrackDetailPage() {
 	const { id: trackId } = Route.useParams();
-	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// トラック詳細取得（SSRデータをキャッシュとして活用）
@@ -105,12 +104,7 @@ function TrackDetailPage() {
 		data: track,
 		isPending,
 		error,
-	} = useQuery({
-		queryKey: ["track", trackId],
-		queryFn: () => tracksApi.get(trackId),
-		staleTime: 30_000,
-		initialData: loaderData,
-	});
+	} = useQuery(trackDetailQueryOptions(trackId));
 
 	// 編集関連の状態
 	const [isEditing, setIsEditing] = useState(false);

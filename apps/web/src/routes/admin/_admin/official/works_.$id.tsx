@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { getOfficialWork } from "@/functions/get-official-work";
 import {
 	type OfficialWork,
 	officialSongsApi,
@@ -20,9 +19,13 @@ import {
 	officialWorksApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { officialWorkDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/official/works_/$id")({
-	loader: ({ params }) => getOfficialWork(params.id),
+	loader: ({ context, params }) =>
+		context.queryClient.ensureQueryData(
+			officialWorkDetailQueryOptions(params.id),
+		),
 	head: ({ loaderData }) =>
 		createPageHead(loaderData?.nameJa || loaderData?.name || "公式作品詳細"),
 	component: OfficialWorkDetailPage,
@@ -46,7 +49,6 @@ function getCategoryColor(categoryCode: string | null): BadgeVariant {
 
 function OfficialWorkDetailPage() {
 	const { id } = Route.useParams();
-	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// 編集モード
@@ -60,12 +62,7 @@ function OfficialWorkDetailPage() {
 		data: work,
 		isPending,
 		error,
-	} = useQuery({
-		queryKey: ["officialWorks", id],
-		queryFn: () => officialWorksApi.get(id),
-		staleTime: 30_000,
-		initialData: loaderData,
-	});
+	} = useQuery(officialWorkDetailQueryOptions(id));
 
 	// カテゴリ一覧取得（編集用）
 	const { data: categoriesData } = useQuery({
