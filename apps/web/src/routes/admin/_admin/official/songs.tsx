@@ -32,7 +32,6 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -41,9 +40,9 @@ import {
 	officialSongsApi,
 	officialWorkCategoriesApi,
 	officialWorksApi,
-	type PaginatedResponse,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { officialSongsListQueryOptions } from "@/lib/query-options";
 
 // 初期表示用のデフォルト値
 const DEFAULT_PAGE = 1;
@@ -51,9 +50,12 @@ const DEFAULT_PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/admin/_admin/official/songs")({
 	head: () => createPageHead("公式楽曲"),
-	loader: () =>
-		ssrFetch<PaginatedResponse<OfficialSong>>(
-			`/api/admin/official/songs?page=${DEFAULT_PAGE}&limit=${DEFAULT_PAGE_SIZE}`,
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(
+			officialSongsListQueryOptions({
+				page: DEFAULT_PAGE,
+				limit: DEFAULT_PAGE_SIZE,
+			}),
 		),
 	component: OfficialSongsPage,
 });
@@ -73,7 +75,6 @@ const COLUMN_CONFIGS = [
 ] as const;
 
 function OfficialSongsPage() {
-	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// ページネーション・フィルタ状態
@@ -146,26 +147,14 @@ function OfficialSongsPage() {
 		return `${workId}${nextNumber}`;
 	};
 
-	// 初期状態かどうかを判定
-	const isInitialQuery =
-		page === DEFAULT_PAGE &&
-		pageSize === DEFAULT_PAGE_SIZE &&
-		!debouncedSearch &&
-		!workId;
-
-	const { data, isPending, error } = useQuery({
-		queryKey: ["officialSongs", page, pageSize, debouncedSearch, workId],
-		queryFn: () =>
-			officialSongsApi.list({
-				page,
-				limit: pageSize,
-				search: debouncedSearch || undefined,
-				workId: workId || undefined,
-			}),
-		staleTime: 30_000,
-		// 初期状態の場合のみSSRデータをキャッシュとして使用
-		initialData: isInitialQuery ? loaderData : undefined,
-	});
+	const { data, isPending, error } = useQuery(
+		officialSongsListQueryOptions({
+			page,
+			limit: pageSize,
+			search: debouncedSearch || undefined,
+			workId: workId || undefined,
+		}),
+	);
 
 	const songs = data?.data ?? [];
 	const total = data?.total ?? 0;

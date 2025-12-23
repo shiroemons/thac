@@ -31,7 +31,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { ssrFetch } from "@/functions/ssr-fetcher";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -42,18 +41,21 @@ import {
 	artistsApi,
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
-	type PaginatedResponse,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { artistAliasesListQueryOptions } from "@/lib/query-options";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/admin/_admin/artist-aliases")({
 	head: () => createPageHead("アーティスト名義"),
-	loader: () =>
-		ssrFetch<PaginatedResponse<ArtistAlias>>(
-			`/api/admin/artist-aliases?page=${DEFAULT_PAGE}&limit=${DEFAULT_PAGE_SIZE}`,
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(
+			artistAliasesListQueryOptions({
+				page: DEFAULT_PAGE,
+				limit: DEFAULT_PAGE_SIZE,
+			}),
 		),
 	component: ArtistAliasesPage,
 });
@@ -115,7 +117,6 @@ const COLUMN_CONFIGS = [
 ] as const;
 
 function ArtistAliasesPage() {
-	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	const [page, setPage] = useState(DEFAULT_PAGE);
@@ -165,30 +166,14 @@ function ArtistAliasesPage() {
 	});
 	const aliasTypes = aliasTypesData?.data ?? [];
 
-	const isInitialQuery =
-		page === DEFAULT_PAGE &&
-		pageSize === DEFAULT_PAGE_SIZE &&
-		!debouncedSearch &&
-		!artistIdFilter;
-
-	const { data, isPending, error } = useQuery({
-		queryKey: [
-			"artistAliases",
+	const { data, isPending, error } = useQuery(
+		artistAliasesListQueryOptions({
 			page,
-			pageSize,
-			debouncedSearch,
-			artistIdFilter,
-		],
-		queryFn: () =>
-			artistAliasesApi.list({
-				page,
-				limit: pageSize,
-				search: debouncedSearch || undefined,
-				artistId: artistIdFilter || undefined,
-			}),
-		staleTime: 30_000,
-		initialData: isInitialQuery ? loaderData : undefined,
-	});
+			limit: pageSize,
+			search: debouncedSearch || undefined,
+			artistId: artistIdFilter || undefined,
+		}),
+	);
 
 	const aliases = data?.data ?? [];
 	const total = data?.total ?? 0;

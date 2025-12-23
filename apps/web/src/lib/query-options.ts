@@ -16,18 +16,22 @@
 import { queryOptions } from "@tanstack/react-query";
 import { ssrFetch } from "@/functions/ssr-fetcher";
 import type {
+	AliasType,
 	Artist,
 	ArtistAlias,
 	ArtistWithAliases,
 	Circle,
 	CircleWithLinks,
+	CreditRole,
 	Event,
 	EventSeries,
 	EventSeriesWithEvents,
 	EventWithDays,
 	OfficialSong,
 	OfficialWork,
+	OfficialWorkCategory,
 	PaginatedResponse,
+	Platform,
 	ReleaseWithCounts,
 	ReleaseWithDiscs,
 	TrackDetail,
@@ -427,4 +431,175 @@ export const officialSongDetailQueryOptions = (id: string) =>
 		queryKey: ["officialSong", id],
 		queryFn: () => ssrFetch<OfficialSong>(`/api/admin/official/songs/${id}`),
 		staleTime: STALE_TIME.SHORT,
+	});
+
+// ===== マスターデータ: プラットフォーム =====
+
+interface PlatformListParams {
+	page?: number;
+	limit?: number;
+	search?: string;
+	category?: string;
+}
+
+/**
+ * プラットフォーム一覧のqueryOptions
+ */
+export const platformsListQueryOptions = (params?: PlatformListParams) => {
+	const searchParams = new URLSearchParams();
+	if (params?.page) searchParams.set("page", String(params.page));
+	if (params?.limit) searchParams.set("limit", String(params.limit));
+	if (params?.search) searchParams.set("search", params.search);
+	if (params?.category) searchParams.set("category", params.category);
+	const query = searchParams.toString();
+
+	return queryOptions({
+		queryKey: [
+			"platforms",
+			params?.page,
+			params?.limit,
+			params?.search,
+			params?.category,
+		],
+		queryFn: () =>
+			ssrFetch<PaginatedResponse<Platform>>(
+				`/api/admin/master/platforms${query ? `?${query}` : ""}`,
+			),
+		staleTime: STALE_TIME.MEDIUM,
+	});
+};
+
+/**
+ * プラットフォーム詳細のqueryOptions
+ */
+export const platformDetailQueryOptions = (code: string) =>
+	queryOptions({
+		queryKey: ["platform", code],
+		queryFn: () => ssrFetch<Platform>(`/api/admin/master/platforms/${code}`),
+		staleTime: STALE_TIME.MEDIUM,
+	});
+
+// ===== マスターデータ: 名義種別 =====
+
+interface AliasTypeListParams {
+	page?: number;
+	limit?: number;
+	search?: string;
+}
+
+/**
+ * 名義種別一覧のqueryOptions
+ */
+export const aliasTypesListQueryOptions = (params?: AliasTypeListParams) => {
+	const searchParams = new URLSearchParams();
+	if (params?.page) searchParams.set("page", String(params.page));
+	if (params?.limit) searchParams.set("limit", String(params.limit));
+	if (params?.search) searchParams.set("search", params.search);
+	const query = searchParams.toString();
+
+	return queryOptions({
+		queryKey: ["aliasTypes", params?.page, params?.limit, params?.search],
+		queryFn: () =>
+			ssrFetch<PaginatedResponse<AliasType>>(
+				`/api/admin/master/alias-types${query ? `?${query}` : ""}`,
+			),
+		staleTime: STALE_TIME.MEDIUM,
+	});
+};
+
+/**
+ * 名義種別詳細のqueryOptions
+ */
+export const aliasTypeDetailQueryOptions = (code: string) =>
+	queryOptions({
+		queryKey: ["aliasType", code],
+		queryFn: () => ssrFetch<AliasType>(`/api/admin/master/alias-types/${code}`),
+		staleTime: STALE_TIME.MEDIUM,
+	});
+
+// ===== マスターデータ: クレジット役割 =====
+
+interface CreditRoleListParams {
+	page?: number;
+	limit?: number;
+	search?: string;
+}
+
+/**
+ * クレジット役割一覧のqueryOptions
+ */
+export const creditRolesListQueryOptions = (params?: CreditRoleListParams) => {
+	const searchParams = new URLSearchParams();
+	if (params?.page) searchParams.set("page", String(params.page));
+	if (params?.limit) searchParams.set("limit", String(params.limit));
+	if (params?.search) searchParams.set("search", params.search);
+	const query = searchParams.toString();
+
+	return queryOptions({
+		queryKey: ["creditRoles", params?.page, params?.limit, params?.search],
+		queryFn: () =>
+			ssrFetch<PaginatedResponse<CreditRole>>(
+				`/api/admin/master/credit-roles${query ? `?${query}` : ""}`,
+			),
+		staleTime: STALE_TIME.MEDIUM,
+	});
+};
+
+/**
+ * クレジット役割詳細のqueryOptions
+ */
+export const creditRoleDetailQueryOptions = (code: string) =>
+	queryOptions({
+		queryKey: ["creditRole", code],
+		queryFn: () =>
+			ssrFetch<CreditRole>(`/api/admin/master/credit-roles/${code}`),
+		staleTime: STALE_TIME.MEDIUM,
+	});
+
+// ===== マスターデータ: 公式作品カテゴリ =====
+
+interface OfficialWorkCategoryListParams {
+	page?: number;
+	limit?: number;
+	search?: string;
+}
+
+/**
+ * 公式作品カテゴリ一覧のqueryOptions
+ */
+export const officialWorkCategoriesListQueryOptions = (
+	params?: OfficialWorkCategoryListParams,
+) => {
+	const searchParams = new URLSearchParams();
+	if (params?.page) searchParams.set("page", String(params.page));
+	if (params?.limit) searchParams.set("limit", String(params.limit));
+	if (params?.search) searchParams.set("search", params.search);
+	const query = searchParams.toString();
+
+	return queryOptions({
+		queryKey: [
+			"officialWorkCategories",
+			params?.page,
+			params?.limit,
+			params?.search,
+		],
+		queryFn: () =>
+			ssrFetch<PaginatedResponse<OfficialWorkCategory>>(
+				`/api/admin/master/official-work-categories${query ? `?${query}` : ""}`,
+			),
+		staleTime: STALE_TIME.MEDIUM,
+	});
+};
+
+/**
+ * 公式作品カテゴリ詳細のqueryOptions
+ */
+export const officialWorkCategoryDetailQueryOptions = (code: string) =>
+	queryOptions({
+		queryKey: ["officialWorkCategory", code],
+		queryFn: () =>
+			ssrFetch<OfficialWorkCategory>(
+				`/api/admin/master/official-work-categories/${code}`,
+			),
+		staleTime: STALE_TIME.MEDIUM,
 	});
