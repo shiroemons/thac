@@ -34,9 +34,9 @@ export const events = sqliteTable(
 	"events",
 	{
 		id: text("id").primaryKey(),
-		eventSeriesId: text("event_series_id")
-			.notNull()
-			.references(() => eventSeries.id, { onDelete: "restrict" }),
+		eventSeriesId: text("event_series_id").references(() => eventSeries.id, {
+			onDelete: "restrict",
+		}),
 		name: text("name").notNull(),
 		edition: integer("edition"),
 		totalDays: integer("total_days"),

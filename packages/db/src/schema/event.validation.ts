@@ -42,7 +42,7 @@ export const selectEventSeriesSchema = createSelectSchema(eventSeries);
 // Events
 export const insertEventSchema = createInsertSchema(events, {
 	id: nonEmptyString,
-	eventSeriesId: nonEmptyString,
+	eventSeriesId: z.string().trim().optional().nullable(),
 	name: nonEmptyString.max(200, "200文字以内で入力してください"),
 	edition: z
 		.number()
@@ -64,7 +64,7 @@ export const insertEventSchema = createInsertSchema(events, {
 }).omit({ createdAt: true, updatedAt: true });
 
 export const updateEventSchema = z.object({
-	eventSeriesId: nonEmptyString.optional(),
+	eventSeriesId: z.string().trim().optional().nullable(),
 	name: nonEmptyString.max(200, "200文字以内で入力してください").optional(),
 	edition: z
 		.number()

@@ -143,32 +143,34 @@ eventsRouter.post("/", async (c) => {
 		return c.json({ error: "ID already exists" }, 409);
 	}
 
-	// シリーズ存在チェック
-	const existingSeries = await db
-		.select()
-		.from(eventSeries)
-		.where(eq(eventSeries.id, parsed.data.eventSeriesId))
-		.limit(1);
-
-	if (existingSeries.length === 0) {
-		return c.json({ error: "Event series not found" }, 404);
-	}
-
-	// 回次重複チェック（同一シリーズ内）
-	if (parsed.data.edition !== null && parsed.data.edition !== undefined) {
-		const existingEdition = await db
+	// シリーズ存在チェック（eventSeriesIdが指定されている場合のみ）
+	if (parsed.data.eventSeriesId) {
+		const existingSeries = await db
 			.select()
-			.from(events)
-			.where(
-				and(
-					eq(events.eventSeriesId, parsed.data.eventSeriesId),
-					eq(events.edition, parsed.data.edition),
-				),
-			)
+			.from(eventSeries)
+			.where(eq(eventSeries.id, parsed.data.eventSeriesId))
 			.limit(1);
 
-		if (existingEdition.length > 0) {
-			return c.json({ error: "Edition already exists in this series" }, 409);
+		if (existingSeries.length === 0) {
+			return c.json({ error: "Event series not found" }, 404);
+		}
+
+		// 回次重複チェック（同一シリーズ内）
+		if (parsed.data.edition !== null && parsed.data.edition !== undefined) {
+			const existingEdition = await db
+				.select()
+				.from(events)
+				.where(
+					and(
+						eq(events.eventSeriesId, parsed.data.eventSeriesId),
+						eq(events.edition, parsed.data.edition),
+					),
+				)
+				.limit(1);
+
+			if (existingEdition.length > 0) {
+				return c.json({ error: "Edition already exists in this series" }, 409);
+			}
 		}
 	}
 
@@ -227,7 +229,8 @@ eventsRouter.put("/:id", async (c) => {
 	const targetSeriesId =
 		parsed.data.eventSeriesId ?? existingEvent.eventSeriesId;
 
-	if (targetEdition !== null && targetEdition !== undefined) {
+	// シリーズが指定されていて、回次がある場合のみ重複チェック
+	if (targetSeriesId && targetEdition !== null && targetEdition !== undefined) {
 		const existingEdition = await db
 			.select()
 			.from(events)

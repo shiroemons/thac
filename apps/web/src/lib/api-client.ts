@@ -338,6 +338,101 @@ export const importApi = {
 		uploadFile("/api/admin/official/songs/import", file),
 };
 
+// レガシーCSVインポート用の型定義
+export interface LegacyCSVRecord {
+	circle: string;
+	album: string;
+	title: string;
+	trackNumber: number;
+	event: string;
+	vocalists: string[];
+	arrangers: string[];
+	lyricists: string[];
+	originalSongs: string[];
+}
+
+export interface SongCandidate {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	officialWorkName: string | null;
+	matchType: "exact" | "partial";
+}
+
+export interface SongMatchResult {
+	originalName: string;
+	isOriginal: boolean;
+	matchType: "exact" | "partial" | "none";
+	candidates: SongCandidate[];
+	autoMatched: boolean;
+	selectedId: string | null;
+	customSongName: string | null;
+}
+
+export interface LegacyPreviewResponse {
+	success: boolean;
+	records: LegacyCSVRecord[];
+	songMatches: SongMatchResult[];
+	errors: { row: number; message: string }[];
+	error?: string;
+}
+
+export interface LegacyImportResult {
+	success: boolean;
+	events: { created: number; updated: number; skipped: number };
+	circles: { created: number; updated: number; skipped: number };
+	artists: { created: number; updated: number; skipped: number };
+	releases: { created: number; updated: number; skipped: number };
+	tracks: { created: number; updated: number; skipped: number };
+	credits: { created: number; updated: number; skipped: number };
+	officialSongLinks: { created: number; updated: number; skipped: number };
+	errors: { row: number; message: string }[];
+}
+
+export const legacyImportApi = {
+	preview: async (file: File): Promise<LegacyPreviewResponse> => {
+		const formData = new FormData();
+		formData.append("file", file);
+
+		const res = await fetch(`${API_BASE_URL}/api/admin/import/legacy/preview`, {
+			method: "POST",
+			credentials: "include",
+			body: formData,
+		});
+
+		const data = await res.json();
+
+		if (!res.ok) {
+			throw new Error(data.error || `HTTP ${res.status}`);
+		}
+
+		return data;
+	},
+
+	execute: async (
+		records: LegacyCSVRecord[],
+		songMappings: Record<string, string>,
+		customSongNames: Record<string, string>,
+	): Promise<LegacyImportResult> => {
+		const res = await fetch(`${API_BASE_URL}/api/admin/import/legacy/execute`, {
+			method: "POST",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ records, songMappings, customSongNames }),
+		});
+
+		const data = await res.json();
+
+		if (!res.ok) {
+			throw new Error(data.error || `HTTP ${res.status}`);
+		}
+
+		return data;
+	},
+};
+
 export const officialWorkCategoriesApi = {
 	list: (params?: {
 		page?: number;

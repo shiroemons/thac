@@ -7,6 +7,7 @@ import { artistAliasesRouter } from "./artist-aliases";
 import { artistsRouter } from "./artists";
 import { circlesRouter } from "./circles";
 import { eventSeriesRouter, eventsAdminRouter } from "./events";
+import { importRouter } from "./import";
 import { masterRouter } from "./master";
 import { officialRouter } from "./official";
 import { releasesAdminRouter } from "./releases";
@@ -47,5 +48,8 @@ adminRouter.route("/releases", releasesAdminRouter);
 
 // トラック管理ルート
 adminRouter.route("/tracks", tracksAdminRouter);
+
+// インポートルート
+adminRouter.route("/import", importRouter);
 
 export { adminRouter };
