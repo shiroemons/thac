@@ -1,8 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowLeft } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Label } from "@/components/ui/label";
 import {
 	Table,
@@ -12,17 +14,24 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { getEvent } from "@/functions/get-event";
 import { createEventDetailHead } from "@/lib/head";
+import { eventDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/events_/$id")({
-	loader: ({ params }) => getEvent(params.id),
+	loader: ({ context, params }) =>
+		context.queryClient.ensureQueryData(eventDetailQueryOptions(params.id)),
 	head: ({ loaderData }) => createEventDetailHead(loaderData?.name),
 	component: EventDetailPage,
 });
 
 function EventDetailPage() {
-	const event = Route.useLoaderData();
+	const { id } = Route.useParams();
+	const { data: event, isPending } = useQuery(eventDetailQueryOptions(id));
+
+	// ローディング
+	if (isPending && !event) {
+		return <DetailPageSkeleton cardCount={2} fieldsPerCard={7} />;
+	}
 
 	// エラー・未存在
 	if (!event) {

@@ -1,8 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowLeft } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Label } from "@/components/ui/label";
 import {
 	Table,
@@ -12,17 +14,28 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { getEventSeries } from "@/functions/get-event-series";
 import { createEventSeriesDetailHead } from "@/lib/head";
+import { eventSeriesDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/event-series_/$id")({
-	loader: ({ params }) => getEventSeries(params.id),
+	loader: ({ context, params }) =>
+		context.queryClient.ensureQueryData(
+			eventSeriesDetailQueryOptions(params.id),
+		),
 	head: ({ loaderData }) => createEventSeriesDetailHead(loaderData?.name),
 	component: EventSeriesDetailPage,
 });
 
 function EventSeriesDetailPage() {
-	const series = Route.useLoaderData();
+	const { id } = Route.useParams();
+	const { data: series, isPending } = useQuery(
+		eventSeriesDetailQueryOptions(id),
+	);
+
+	// ローディング
+	if (isPending && !series) {
+		return <DetailPageSkeleton cardCount={2} fieldsPerCard={7} />;
+	}
 
 	// エラー・未存在
 	if (!series) {

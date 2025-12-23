@@ -1,6 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,21 +13,28 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { getCircle } from "@/functions/get-circle";
 import {
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 } from "@/lib/api-client";
 import { createCircleDetailHead } from "@/lib/head";
+import { circleDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/circles_/$id")({
-	loader: ({ params }) => getCircle(params.id),
+	loader: ({ context, params }) =>
+		context.queryClient.ensureQueryData(circleDetailQueryOptions(params.id)),
 	head: ({ loaderData }) => createCircleDetailHead(loaderData?.name),
 	component: CircleDetailPage,
 });
 
 function CircleDetailPage() {
-	const circle = Route.useLoaderData();
+	const { id } = Route.useParams();
+	const { data: circle, isPending } = useQuery(circleDetailQueryOptions(id));
+
+	// ローディング
+	if (isPending && !circle) {
+		return <DetailPageSkeleton cardCount={2} fieldsPerCard={7} />;
+	}
 
 	// エラー・未存在
 	if (!circle) {

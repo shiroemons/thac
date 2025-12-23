@@ -33,7 +33,6 @@ import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { getRelease } from "@/functions/get-release";
 import {
 	artistAliasesApi,
 	artistsApi,
@@ -69,9 +68,11 @@ import {
 	PLATFORM_CATEGORY_ORDER,
 } from "@/lib/constants";
 import { createReleaseDetailHead } from "@/lib/head";
+import { releaseDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/releases_/$id")({
-	loader: ({ params }) => getRelease(params.id),
+	loader: ({ context, params }) =>
+		context.queryClient.ensureQueryData(releaseDetailQueryOptions(params.id)),
 	head: ({ loaderData }) => createReleaseDetailHead(loaderData?.name),
 	component: ReleaseDetailPage,
 });
@@ -110,7 +111,6 @@ const PARTICIPATION_TYPE_OPTIONS = Object.entries(
 
 function ReleaseDetailPage() {
 	const { id } = Route.useParams();
-	const loaderData = Route.useLoaderData();
 	const queryClient = useQueryClient();
 
 	// 編集モード
@@ -191,12 +191,7 @@ function ReleaseDetailPage() {
 		data: release,
 		isPending,
 		error,
-	} = useQuery({
-		queryKey: ["releases", id],
-		queryFn: () => releasesApi.get(id),
-		staleTime: 30_000,
-		initialData: loaderData,
-	});
+	} = useQuery(releaseDetailQueryOptions(id));
 
 	// 関連サークル取得
 	const { data: releaseCircles = [] } = useQuery({
