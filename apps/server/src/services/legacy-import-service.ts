@@ -16,9 +16,11 @@ import {
 	eventDays,
 	eventSeries,
 	events,
+	inArray,
 	like,
 	releaseCircles,
 	releases,
+	sql,
 	trackCreditRoles,
 	trackCredits,
 	trackOfficialSongs,
@@ -185,8 +187,903 @@ interface ImportCache {
 // biome-ignore lint/suspicious/noExplicitAny: Transaction type is complex
 type DbTransaction = any;
 
+// ============================================================================
+// 最適化: 一括プリフェッチ＆一括挿入
+// ============================================================================
+
 /**
- * レガシーCSVデータをインポートする
+ * レコードから抽出したユニークなエンティティデータ
+ */
+interface ExtractedEntities {
+	eventNames: Set<string>;
+	circleNames: Set<string>;
+	artistNames: Set<string>;
+	// releaseKey: `${primaryCircle}:${albumBaseName}`
+	releaseKeys: Map<string, { albumBaseName: string; circleNames: string[] }>;
+	// discKey: `${releaseKey}:${discNumber}`
+	discKeys: Map<string, { releaseKey: string; discNumber: number }>;
+	// trackKey: `${discKey}:${trackNumber}`
+	trackData: Map<
+		string,
+		{
+			releaseKey: string;
+			discKey: string;
+			trackNumber: number;
+			record: LegacyCSVRecord;
+		}
+	>;
+}
+
+/**
+ * 全レコードからユニークなエンティティを抽出（1パス）
+ */
+function extractUniqueEntities(records: LegacyCSVRecord[]): ExtractedEntities {
+	const result: ExtractedEntities = {
+		eventNames: new Set(),
+		circleNames: new Set(),
+		artistNames: new Set(),
+		releaseKeys: new Map(),
+		discKeys: new Map(),
+		trackData: new Map(),
+	};
+
+	for (const record of records) {
+		// イベント
+		const eventName = record.event.trim();
+		if (eventName) {
+			result.eventNames.add(eventName);
+		}
+
+		// サークル
+		const circleNameList = splitCircles(record.circle);
+		for (const name of circleNameList) {
+			const normalized = normalizeFullWidthSymbols(name.trim());
+			if (normalized) {
+				result.circleNames.add(normalized);
+			}
+		}
+
+		// アーティスト
+		const allArtists = [
+			...record.vocalists,
+			...record.arrangers,
+			...record.lyricists,
+		];
+		for (const name of allArtists) {
+			const normalized = normalizeFullWidthSymbols(name.trim());
+			if (normalized) {
+				result.artistNames.add(normalized);
+			}
+		}
+
+		// リリース
+		const discInfo = parseDiscInfo(record.album);
+		const primaryCircle = normalizeFullWidthSymbols(
+			circleNameList[0]?.trim() || "",
+		);
+		const releaseKey = `${primaryCircle}:${discInfo.name}`;
+		if (!result.releaseKeys.has(releaseKey)) {
+			result.releaseKeys.set(releaseKey, {
+				albumBaseName: discInfo.name,
+				circleNames: circleNameList.map((n) =>
+					normalizeFullWidthSymbols(n.trim()),
+				),
+			});
+		}
+
+		// ディスク
+		const discKey = `${releaseKey}:${discInfo.discNumber}`;
+		if (!result.discKeys.has(discKey)) {
+			result.discKeys.set(discKey, {
+				releaseKey,
+				discNumber: discInfo.discNumber,
+			});
+		}
+
+		// トラック
+		const trackKey = `${discKey}:${record.trackNumber}`;
+		if (!result.trackData.has(trackKey)) {
+			result.trackData.set(trackKey, {
+				releaseKey,
+				discKey,
+				trackNumber: record.trackNumber,
+				record,
+			});
+		}
+	}
+
+	return result;
+}
+
+/**
+ * 既存エンティティを一括プリフェッチしてキャッシュに格納
+ */
+async function prefetchExistingEntities(
+	tx: DbTransaction,
+	extracted: ExtractedEntities,
+	cache: ImportCache,
+): Promise<void> {
+	// イベント一括取得
+	const eventNameList = [...extracted.eventNames];
+	if (eventNameList.length > 0) {
+		const existingEvents = await tx
+			.select({ id: events.id, name: events.name })
+			.from(events)
+			.where(inArray(events.name, eventNameList));
+		for (const e of existingEvents) {
+			cache.events.set(e.name, e.id);
+		}
+	}
+
+	// サークル一括取得
+	const circleNameList = [...extracted.circleNames];
+	if (circleNameList.length > 0) {
+		const existingCircles = await tx
+			.select({ id: circles.id, name: circles.name })
+			.from(circles)
+			.where(inArray(circles.name, circleNameList));
+		for (const c of existingCircles) {
+			cache.circles.set(c.name, c.id);
+		}
+	}
+
+	// アーティスト一括取得
+	const artistNameList = [...extracted.artistNames];
+	if (artistNameList.length > 0) {
+		const existingArtists = await tx
+			.select({ id: artists.id, name: artists.name })
+			.from(artists)
+			.where(inArray(artists.name, artistNameList));
+		for (const a of existingArtists) {
+			cache.artists.set(a.name, a.id);
+		}
+	}
+
+	// リリース一括取得（名前で検索し、後でサークルと照合）
+	const albumNames = [
+		...new Set([...extracted.releaseKeys.values()].map((r) => r.albumBaseName)),
+	];
+	if (albumNames.length > 0) {
+		const existingReleases = await tx
+			.select({
+				id: releases.id,
+				name: releases.name,
+				circleId: releaseCircles.circleId,
+			})
+			.from(releases)
+			.leftJoin(releaseCircles, eq(releases.id, releaseCircles.releaseId))
+			.where(inArray(releases.name, albumNames));
+
+		// リリースID -> サークルIDのマップを構築
+		const releaseCircleMap = new Map<string, Set<string>>();
+		for (const r of existingReleases) {
+			if (!releaseCircleMap.has(r.id)) {
+				releaseCircleMap.set(r.id, new Set());
+			}
+			if (r.circleId) {
+				releaseCircleMap.get(r.id)?.add(r.circleId);
+			}
+		}
+
+		// サークル名->IDの逆引き
+		for (const [releaseKey, data] of extracted.releaseKeys) {
+			const primaryCircleName = data.circleNames[0] || "";
+			const primaryCircleId = cache.circles.get(primaryCircleName);
+
+			// 同名リリースでサークルが一致するものを探す
+			for (const r of existingReleases) {
+				if (r.name === data.albumBaseName) {
+					const circleIds = releaseCircleMap.get(r.id);
+					if (circleIds && primaryCircleId && circleIds.has(primaryCircleId)) {
+						cache.releases.set(releaseKey, r.id);
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
+/**
+ * 新規サークルを一括挿入
+ */
+async function batchInsertCircles(
+	tx: DbTransaction,
+	extracted: ExtractedEntities,
+	cache: ImportCache,
+	result: ImportResult,
+): Promise<void> {
+	const newCircles: Array<{
+		id: string;
+		name: string;
+		nameJa: string | null;
+		nameEn: string | null;
+		sortName: string | null;
+		initialScript: string | null;
+		nameInitial: string | null;
+	}> = [];
+
+	for (const circleName of extracted.circleNames) {
+		if (cache.circles.has(circleName)) {
+			result.circles.skipped++;
+			continue;
+		}
+
+		const initial = detectInitial(circleName);
+		const nameInfo = generateNameInfo(circleName);
+		const sortName = generateSortName(circleName);
+		const newId = createId.circle();
+
+		newCircles.push({
+			id: newId,
+			name: nameInfo.name,
+			nameJa: nameInfo.nameJa,
+			nameEn: nameInfo.nameEn,
+			sortName,
+			initialScript: initial.initialScript,
+			nameInitial: initial.nameInitial,
+		});
+		cache.circles.set(circleName, newId);
+	}
+
+	if (newCircles.length > 0) {
+		await tx
+			.insert(circles)
+			.values(newCircles)
+			.onConflictDoUpdate({
+				target: circles.name,
+				set: {
+					nameJa: sql.raw(`excluded.${circles.nameJa.name}`),
+					nameEn: sql.raw(`excluded.${circles.nameEn.name}`),
+					sortName: sql.raw(`excluded.${circles.sortName.name}`),
+					initialScript: sql.raw(`excluded.${circles.initialScript.name}`),
+					nameInitial: sql.raw(`excluded.${circles.nameInitial.name}`),
+				},
+			});
+		result.circles.created += newCircles.length;
+	}
+}
+
+/**
+ * 新規アーティストを一括挿入（エイリアスも同時作成）
+ */
+async function batchInsertArtists(
+	tx: DbTransaction,
+	extracted: ExtractedEntities,
+	cache: ImportCache,
+	result: ImportResult,
+): Promise<void> {
+	const newArtists: Array<{
+		id: string;
+		name: string;
+		nameJa: string | null;
+		nameEn: string | null;
+		initialScript: string | null;
+		nameInitial: string | null;
+	}> = [];
+
+	const newAliases: Array<{
+		id: string;
+		artistId: string;
+		name: string;
+		aliasTypeCode: string;
+		initialScript: string | null;
+		nameInitial: string | null;
+	}> = [];
+
+	for (const artistName of extracted.artistNames) {
+		if (cache.artists.has(artistName)) {
+			result.artists.skipped++;
+			continue;
+		}
+
+		const initial = detectInitial(artistName);
+		const nameInfo = generateNameInfo(artistName);
+		const newId = createId.artist();
+
+		newArtists.push({
+			id: newId,
+			name: nameInfo.name,
+			nameJa: nameInfo.nameJa,
+			nameEn: nameInfo.nameEn,
+			initialScript: initial.initialScript,
+			nameInitial: initial.nameInitial,
+		});
+
+		newAliases.push({
+			id: createId.artistAlias(),
+			artistId: newId,
+			name: nameInfo.name,
+			aliasTypeCode: MAIN_ALIAS_TYPE_CODE,
+			initialScript: initial.initialScript,
+			nameInitial: initial.nameInitial,
+		});
+
+		cache.artists.set(artistName, newId);
+	}
+
+	if (newArtists.length > 0) {
+		await tx
+			.insert(artists)
+			.values(newArtists)
+			.onConflictDoUpdate({
+				target: artists.name,
+				set: {
+					nameJa: sql.raw(`excluded.${artists.nameJa.name}`),
+					nameEn: sql.raw(`excluded.${artists.nameEn.name}`),
+					initialScript: sql.raw(`excluded.${artists.initialScript.name}`),
+					nameInitial: sql.raw(`excluded.${artists.nameInitial.name}`),
+				},
+			});
+		result.artists.created += newArtists.length;
+	}
+
+	if (newAliases.length > 0) {
+		await tx
+			.insert(artistAliases)
+			.values(newAliases)
+			.onConflictDoNothing({
+				target: [artistAliases.artistId, artistAliases.name],
+			});
+		result.artistAliases.created += newAliases.length;
+	}
+}
+
+/**
+ * 新規リリースを一括挿入（releaseCirclesも同時作成）
+ */
+async function batchInsertReleases(
+	tx: DbTransaction,
+	extracted: ExtractedEntities,
+	cache: ImportCache,
+	result: ImportResult,
+): Promise<void> {
+	const newReleases: Array<{
+		id: string;
+		name: string;
+		nameJa: string | null;
+		nameEn: string | null;
+		releaseType: string;
+	}> = [];
+
+	const newReleaseCircles: Array<{
+		releaseId: string;
+		circleId: string;
+		participationType: string;
+		position: number;
+	}> = [];
+
+	for (const [releaseKey, data] of extracted.releaseKeys) {
+		if (cache.releases.has(releaseKey)) {
+			result.releases.skipped++;
+			continue;
+		}
+
+		const nameInfo = generateNameInfo(data.albumBaseName);
+		const newId = createId.release();
+
+		newReleases.push({
+			id: newId,
+			name: nameInfo.name,
+			nameJa: nameInfo.nameJa,
+			nameEn: nameInfo.nameEn,
+			releaseType: "album",
+		});
+
+		// releaseCirclesを準備
+		const isMultipleCircles = data.circleNames.length > 1;
+		for (let i = 0; i < data.circleNames.length; i++) {
+			const circleName = data.circleNames[i];
+			if (!circleName) continue;
+
+			const circleId = cache.circles.get(circleName);
+			if (circleId) {
+				newReleaseCircles.push({
+					releaseId: newId,
+					circleId,
+					participationType: isMultipleCircles ? "co-host" : "host",
+					position: i + 1,
+				});
+			}
+		}
+
+		cache.releases.set(releaseKey, newId);
+	}
+
+	if (newReleases.length > 0) {
+		// releasesにはビジネスキーのユニーク制約がないため通常INSERT
+		// 重複チェックはprefetchExistingEntitiesで実施済み
+		await tx.insert(releases).values(newReleases);
+		result.releases.created += newReleases.length;
+	}
+
+	if (newReleaseCircles.length > 0) {
+		await tx
+			.insert(releaseCircles)
+			.values(newReleaseCircles)
+			.onConflictDoNothing({
+				target: [
+					releaseCircles.releaseId,
+					releaseCircles.circleId,
+					releaseCircles.participationType,
+				],
+			});
+	}
+}
+
+/**
+ * 新規ディスクを一括挿入
+ */
+async function batchInsertDiscs(
+	tx: DbTransaction,
+	extracted: ExtractedEntities,
+	cache: ImportCache,
+	result: ImportResult,
+): Promise<void> {
+	// 既存ディスクをプリフェッチ
+	const releaseIds = [...new Set([...cache.releases.values()])];
+	if (releaseIds.length > 0) {
+		const existingDiscs = await tx
+			.select({
+				id: discs.id,
+				releaseId: discs.releaseId,
+				discNumber: discs.discNumber,
+			})
+			.from(discs)
+			.where(inArray(discs.releaseId, releaseIds));
+
+		for (const d of existingDiscs) {
+			// releaseIdからreleaseKeyを逆引き
+			for (const [releaseKey, releaseId] of cache.releases) {
+				if (releaseId === d.releaseId) {
+					const discKey = `${releaseKey}:${d.discNumber}`;
+					cache.discs.set(discKey, d.id);
+				}
+			}
+		}
+	}
+
+	const newDiscs: Array<{
+		id: string;
+		releaseId: string;
+		discNumber: number;
+	}> = [];
+
+	for (const [discKey, data] of extracted.discKeys) {
+		if (cache.discs.has(discKey)) {
+			result.discs.skipped++;
+			continue;
+		}
+
+		const releaseId = cache.releases.get(data.releaseKey);
+		if (!releaseId) continue;
+
+		const newId = createId.disc();
+		newDiscs.push({
+			id: newId,
+			releaseId,
+			discNumber: data.discNumber,
+		});
+		cache.discs.set(discKey, newId);
+	}
+
+	if (newDiscs.length > 0) {
+		await tx
+			.insert(discs)
+			.values(newDiscs)
+			.onConflictDoNothing({
+				target: [discs.releaseId, discs.discNumber],
+			});
+		result.discs.created += newDiscs.length;
+	}
+}
+
+/**
+ * 新規トラックを一括挿入
+ */
+async function batchInsertTracks(
+	tx: DbTransaction,
+	extracted: ExtractedEntities,
+	cache: ImportCache,
+	result: ImportResult,
+): Promise<void> {
+	// 既存トラックをプリフェッチ
+	const discIds = [...new Set([...cache.discs.values()])];
+	if (discIds.length > 0) {
+		const existingTracks = await tx
+			.select({
+				id: tracks.id,
+				discId: tracks.discId,
+				trackNumber: tracks.trackNumber,
+			})
+			.from(tracks)
+			.where(inArray(tracks.discId, discIds));
+
+		for (const t of existingTracks) {
+			// discIdからdiscKeyを逆引き
+			for (const [discKey, discId] of cache.discs) {
+				if (discId === t.discId) {
+					const trackKey = `${discKey}:${t.trackNumber}`;
+					cache.tracks.set(trackKey, t.id);
+				}
+			}
+		}
+	}
+
+	const newTracks: Array<{
+		id: string;
+		releaseId: string;
+		discId: string;
+		trackNumber: number;
+		name: string;
+		nameJa: string | null;
+		nameEn: string | null;
+	}> = [];
+
+	for (const [trackKey, data] of extracted.trackData) {
+		if (cache.tracks.has(trackKey)) {
+			result.tracks.skipped++;
+			continue;
+		}
+
+		const releaseId = cache.releases.get(data.releaseKey);
+		const discId = cache.discs.get(data.discKey);
+		if (!releaseId || !discId) continue;
+
+		const nameInfo = generateNameInfo(data.record.title);
+		const newId = createId.track();
+
+		newTracks.push({
+			id: newId,
+			releaseId,
+			discId,
+			trackNumber: data.trackNumber,
+			name: nameInfo.name,
+			nameJa: nameInfo.nameJa,
+			nameEn: nameInfo.nameEn,
+		});
+		cache.tracks.set(trackKey, newId);
+	}
+
+	if (newTracks.length > 0) {
+		// tracksは条件付きユニーク制約(discId, trackNumber)を持つ
+		// 同一ディスク+同一トラック番号の重複はスキップ
+		await tx.insert(tracks).values(newTracks).onConflictDoNothing();
+		result.tracks.created += newTracks.length;
+	}
+}
+
+/**
+ * クレジットを一括挿入
+ */
+async function batchInsertCredits(
+	tx: DbTransaction,
+	extracted: ExtractedEntities,
+	cache: ImportCache,
+	result: ImportResult,
+): Promise<void> {
+	// 既存クレジットをプリフェッチ
+	const trackIds = [...new Set([...cache.tracks.values()])];
+	const existingCreditsMap = new Map<
+		string,
+		{ id: string; artistId: string; creditName: string }[]
+	>();
+
+	if (trackIds.length > 0) {
+		const existingCredits = await tx
+			.select({
+				id: trackCredits.id,
+				trackId: trackCredits.trackId,
+				artistId: trackCredits.artistId,
+				creditName: trackCredits.creditName,
+			})
+			.from(trackCredits)
+			.where(inArray(trackCredits.trackId, trackIds));
+
+		for (const c of existingCredits) {
+			if (!existingCreditsMap.has(c.trackId)) {
+				existingCreditsMap.set(c.trackId, []);
+			}
+			existingCreditsMap.get(c.trackId)?.push({
+				id: c.id,
+				artistId: c.artistId,
+				creditName: c.creditName,
+			});
+		}
+	}
+
+	const newCredits: Array<{
+		id: string;
+		trackId: string;
+		artistId: string;
+		creditName: string;
+		creditPosition: number;
+	}> = [];
+
+	const creditRolesToAdd: Array<{
+		trackCreditId: string;
+		roleCode: string;
+		rolePosition: number;
+	}> = [];
+
+	// trackKey -> creditId のマップ（ロール追加用）
+	const creditIdMap = new Map<string, string>();
+
+	for (const [trackKey, data] of extracted.trackData) {
+		const trackId = cache.tracks.get(trackKey);
+		if (!trackId) continue;
+
+		const existingCreditsForTrack = existingCreditsMap.get(trackId) || [];
+
+		// vocalist
+		for (let i = 0; i < data.record.vocalists.length; i++) {
+			const artistName = normalizeFullWidthSymbols(
+				data.record.vocalists[i]?.trim() || "",
+			);
+			if (!artistName) continue;
+
+			const artistId = cache.artists.get(artistName);
+			if (!artistId) continue;
+
+			const creditKey = `${trackId}:${artistId}:${artistName}`;
+			let creditId = creditIdMap.get(creditKey);
+
+			// 既存チェック
+			const existing = existingCreditsForTrack.find(
+				(c) => c.artistId === artistId && c.creditName === artistName,
+			);
+
+			if (existing) {
+				creditId = existing.id;
+				result.credits.skipped++;
+			} else if (!creditId) {
+				creditId = createId.trackCredit();
+				newCredits.push({
+					id: creditId,
+					trackId,
+					artistId,
+					creditName: artistName,
+					creditPosition: i + 1,
+				});
+				creditIdMap.set(creditKey, creditId);
+			}
+
+			if (creditId) {
+				creditRolesToAdd.push({
+					trackCreditId: creditId,
+					roleCode: "vocalist",
+					rolePosition: i + 1,
+				});
+			}
+		}
+
+		// arranger
+		for (let i = 0; i < data.record.arrangers.length; i++) {
+			const artistName = normalizeFullWidthSymbols(
+				data.record.arrangers[i]?.trim() || "",
+			);
+			if (!artistName) continue;
+
+			const artistId = cache.artists.get(artistName);
+			if (!artistId) continue;
+
+			const creditKey = `${trackId}:${artistId}:${artistName}`;
+			let creditId = creditIdMap.get(creditKey);
+
+			const existing = existingCreditsForTrack.find(
+				(c) => c.artistId === artistId && c.creditName === artistName,
+			);
+
+			if (existing) {
+				creditId = existing.id;
+			} else if (!creditId) {
+				creditId = createId.trackCredit();
+				newCredits.push({
+					id: creditId,
+					trackId,
+					artistId,
+					creditName: artistName,
+					creditPosition: i + 1,
+				});
+				creditIdMap.set(creditKey, creditId);
+			}
+
+			if (creditId) {
+				creditRolesToAdd.push({
+					trackCreditId: creditId,
+					roleCode: "arranger",
+					rolePosition: i + 1,
+				});
+			}
+		}
+
+		// lyricist
+		for (let i = 0; i < data.record.lyricists.length; i++) {
+			const artistName = normalizeFullWidthSymbols(
+				data.record.lyricists[i]?.trim() || "",
+			);
+			if (!artistName) continue;
+
+			const artistId = cache.artists.get(artistName);
+			if (!artistId) continue;
+
+			const creditKey = `${trackId}:${artistId}:${artistName}`;
+			let creditId = creditIdMap.get(creditKey);
+
+			const existing = existingCreditsForTrack.find(
+				(c) => c.artistId === artistId && c.creditName === artistName,
+			);
+
+			if (existing) {
+				creditId = existing.id;
+			} else if (!creditId) {
+				creditId = createId.trackCredit();
+				newCredits.push({
+					id: creditId,
+					trackId,
+					artistId,
+					creditName: artistName,
+					creditPosition: i + 1,
+				});
+				creditIdMap.set(creditKey, creditId);
+			}
+
+			if (creditId) {
+				creditRolesToAdd.push({
+					trackCreditId: creditId,
+					roleCode: "lyricist",
+					rolePosition: i + 1,
+				});
+			}
+		}
+	}
+
+	if (newCredits.length > 0) {
+		// trackCreditsは条件付きユニーク制約(trackId, artistId)を持つ
+		// 同一トラック+同一アーティストの重複はスキップ
+		await tx.insert(trackCredits).values(newCredits).onConflictDoNothing();
+		result.credits.created += newCredits.length;
+	}
+
+	// 既存ロールをプリフェッチ
+	const allCreditIds = [
+		...new Set([
+			...newCredits.map((c) => c.id),
+			...creditRolesToAdd.map((r) => r.trackCreditId),
+		]),
+	];
+	const existingRolesSet = new Set<string>();
+
+	if (allCreditIds.length > 0) {
+		const existingRoles = await tx
+			.select({
+				trackCreditId: trackCreditRoles.trackCreditId,
+				roleCode: trackCreditRoles.roleCode,
+			})
+			.from(trackCreditRoles)
+			.where(inArray(trackCreditRoles.trackCreditId, allCreditIds));
+
+		for (const r of existingRoles) {
+			existingRolesSet.add(`${r.trackCreditId}:${r.roleCode}`);
+		}
+	}
+
+	// 新規ロールのみフィルタ
+	const newRoles = creditRolesToAdd.filter(
+		(r) => !existingRolesSet.has(`${r.trackCreditId}:${r.roleCode}`),
+	);
+
+	if (newRoles.length > 0) {
+		await tx
+			.insert(trackCreditRoles)
+			.values(newRoles)
+			.onConflictDoNothing({
+				target: [
+					trackCreditRoles.trackCreditId,
+					trackCreditRoles.roleCode,
+					trackCreditRoles.rolePosition,
+				],
+			});
+	}
+}
+
+/**
+ * 原曲紐付けを一括挿入
+ */
+async function batchInsertOfficialSongLinks(
+	tx: DbTransaction,
+	extracted: ExtractedEntities,
+	cache: ImportCache,
+	songMappings: Map<string, string>,
+	customSongNames: Map<string, string>,
+	result: ImportResult,
+): Promise<void> {
+	// 既存紐付けをプリフェッチ
+	const trackIds = [...new Set([...cache.tracks.values()])];
+	const existingLinksMap = new Map<string, Set<string>>();
+
+	if (trackIds.length > 0) {
+		const existingLinks = await tx
+			.select({
+				trackId: trackOfficialSongs.trackId,
+				officialSongId: trackOfficialSongs.officialSongId,
+			})
+			.from(trackOfficialSongs)
+			.where(inArray(trackOfficialSongs.trackId, trackIds));
+
+		for (const l of existingLinks) {
+			if (!existingLinksMap.has(l.trackId)) {
+				existingLinksMap.set(l.trackId, new Set());
+			}
+			if (l.officialSongId) {
+				existingLinksMap.get(l.trackId)?.add(l.officialSongId);
+			}
+		}
+	}
+
+	const newLinks: Array<{
+		id: string;
+		trackId: string;
+		officialSongId: string;
+		customSongName: string | null;
+		partPosition: number;
+	}> = [];
+
+	for (const [trackKey, data] of extracted.trackData) {
+		const trackId = cache.tracks.get(trackKey);
+		if (!trackId) continue;
+
+		const existingLinksForTrack = existingLinksMap.get(trackId) || new Set();
+
+		for (let i = 0; i < data.record.originalSongs.length; i++) {
+			const originalName = data.record.originalSongs[i]?.trim();
+			if (!originalName) continue;
+
+			const officialSongId = songMappings.get(originalName);
+			if (!officialSongId) {
+				result.officialSongLinks.skipped++;
+				continue;
+			}
+
+			if (existingLinksForTrack.has(officialSongId)) {
+				result.officialSongLinks.skipped++;
+				continue;
+			}
+
+			const customSongName = customSongNames.get(originalName) || null;
+
+			newLinks.push({
+				id: createId.trackOfficialSong(),
+				trackId,
+				officialSongId,
+				customSongName,
+				partPosition: i + 1,
+			});
+		}
+	}
+
+	if (newLinks.length > 0) {
+		await tx
+			.insert(trackOfficialSongs)
+			.values(newLinks)
+			.onConflictDoUpdate({
+				target: [
+					trackOfficialSongs.trackId,
+					trackOfficialSongs.officialSongId,
+					trackOfficialSongs.partPosition,
+				],
+				set: {
+					customSongName: sql.raw(
+						`excluded.${trackOfficialSongs.customSongName.name}`,
+					),
+				},
+			});
+		result.officialSongLinks.created += newLinks.length;
+	}
+}
+
+/**
+ * レガシーCSVデータをインポートする（最適化版: 一括プリフェッチ＆一括挿入）
  * @param input インポート入力データ
  * @param onProgress 進捗コールバック（オプション）
  */
@@ -228,14 +1125,6 @@ export async function executeLegacyImport(
 		entityProgress.events.total += input.newEvents.length;
 	}
 
-	// 処理済みエンティティを追跡するセット
-	const processedEntities = {
-		events: new Set<string>(),
-		circles: new Set<string>(),
-		artists: new Set<string>(),
-		releases: new Set<string>(),
-	};
-
 	// 進捗通知ヘルパー（エンティティ進捗を含む）
 	const notifyProgress = (
 		stage: ImportStage,
@@ -248,23 +1137,19 @@ export async function executeLegacyImport(
 		}
 	};
 
-	// エンティティ処理済みを記録してカウントを更新
-	const markEntityProcessed = (
-		type: "events" | "circles" | "artists" | "releases",
-		name: string,
-	) => {
-		if (!processedEntities[type].has(name)) {
-			processedEntities[type].add(name);
-			entityProgress[type].processed = processedEntities[type].size;
-		}
-	};
-
 	try {
-		notifyProgress("preparing", 0, totalRecords, "インポートを準備中...");
+		notifyProgress("preparing", 0, totalRecords, "データを解析中...");
 
-		// トランザクション内で処理
+		// Phase 1: 全レコードからユニークなエンティティを抽出（1パス）
+		const extracted = extractUniqueEntities(input.records);
+
+		// トランザクション内で一括処理
 		await db.transaction(async (tx) => {
-			// 1. 新規イベントを先に処理
+			// Phase 2: 既存エンティティを一括プリフェッチ
+			notifyProgress("preparing", 0, totalRecords, "既存データを確認中...");
+			await prefetchExistingEntities(tx, extracted, cache);
+
+			// Phase 3: 新規イベントを処理（これは個別処理が必要）
 			if (input.newEvents && input.newEvents.length > 0) {
 				notifyProgress(
 					"events",
@@ -276,7 +1161,7 @@ export async function executeLegacyImport(
 					const newEvent = input.newEvents[i];
 					if (newEvent) {
 						await processNewEvent(tx, newEvent, cache, result);
-						markEntityProcessed("events", newEvent.name);
+						entityProgress.events.processed++;
 						notifyProgress(
 							"events",
 							entityProgress.events.processed,
@@ -287,134 +1172,139 @@ export async function executeLegacyImport(
 				}
 			}
 
-			// 2. 全レコードを処理
-			for (let i = 0; i < input.records.length; i++) {
-				const record = input.records[i];
-				if (!record) continue;
+			// CSV内のイベントも処理
+			for (const eventName of extracted.eventNames) {
+				if (!cache.events.has(eventName)) {
+					// 新規イベントを作成
+					const editionInfo = parseEventEdition(eventName);
+					let eventSeriesId: string | null = null;
 
-				const rowNumber = i + 2; // 1-indexed + header row
-
-				try {
-					// イベント処理
-					const eventName = record.event.trim();
-					if (eventName) {
-						await processEvent(tx, record, cache, result);
-						markEntityProcessed("events", eventName);
-						notifyProgress(
-							"events",
-							entityProgress.events.processed,
-							entityProgress.events.total,
-							`イベント: ${eventName}`,
-						);
-					}
-
-					// サークル処理（複合サークルを分割）
-					const circleNames = splitCircles(record.circle);
-					for (const circleName of circleNames) {
-						const normalized = normalizeFullWidthSymbols(circleName.trim());
-						if (normalized) {
-							await processCircle(tx, circleName, cache, result);
-							markEntityProcessed("circles", normalized);
+					if (editionInfo.baseName) {
+						const series = await tx
+							.select()
+							.from(eventSeries)
+							.where(like(eventSeries.name, `%${editionInfo.baseName}%`))
+							.limit(1);
+						if (series.length > 0 && series[0]) {
+							eventSeriesId = series[0].id;
 						}
 					}
-					notifyProgress(
-						"circles",
-						entityProgress.circles.processed,
-						entityProgress.circles.total,
-						`サークル: ${entityProgress.circles.processed}/${entityProgress.circles.total}件`,
-					);
 
-					// アーティスト処理
-					const allArtists = [
-						...record.vocalists,
-						...record.arrangers,
-						...record.lyricists,
-					];
-					for (const artistName of allArtists) {
-						const normalized = normalizeFullWidthSymbols(artistName.trim());
-						if (normalized) {
-							await processArtist(tx, artistName, cache, result);
-							markEntityProcessed("artists", normalized);
-						}
-					}
-					notifyProgress(
-						"artists",
-						entityProgress.artists.processed,
-						entityProgress.artists.total,
-						`アーティスト: ${entityProgress.artists.processed}/${entityProgress.artists.total}件`,
-					);
-
-					// リリース処理（ディスク情報を考慮）
-					const discInfo = parseDiscInfo(record.album);
-					const primaryCircle = normalizeFullWidthSymbols(
-						circleNames[0]?.trim() || "",
-					);
-					const releaseKey = `${primaryCircle}:${discInfo.name}`;
-
-					const releaseId = await processRelease(
-						tx,
-						discInfo.name,
-						circleNames,
-						cache,
-						result,
-					);
-					markEntityProcessed("releases", releaseKey);
-					notifyProgress(
-						"releases",
-						entityProgress.releases.processed,
-						entityProgress.releases.total,
-						`作品: ${entityProgress.releases.processed}/${entityProgress.releases.total}件`,
-					);
-
-					// ディスク処理
-					const discId = await processDisc(
-						tx,
-						releaseId,
-						discInfo.discNumber,
-						cache,
-						result,
-					);
-
-					// トラック処理
-					const trackId = await processTrack(
-						tx,
-						record,
-						releaseId,
-						discId,
-						cache,
-						result,
-					);
-					entityProgress.tracks.processed = i + 1;
-					notifyProgress(
-						"tracks",
-						entityProgress.tracks.processed,
-						entityProgress.tracks.total,
-						`トラック: ${entityProgress.tracks.processed}/${entityProgress.tracks.total}件`,
-					);
-
-					// クレジット処理
-					await processCredits(tx, record, trackId, cache, result);
-
-					// 原曲紐付け処理
-					await processOfficialSongLinks(
-						tx,
-						record,
-						trackId,
-						input.songMappings,
-						input.customSongNames,
-						result,
-					);
-				} catch (error) {
-					const message =
-						error instanceof Error ? error.message : "Unknown error";
-					result.errors.push({
-						row: rowNumber,
-						entity: "record",
-						message,
+					const newId = createId.event();
+					await tx.insert(events).values({
+						id: newId,
+						name: eventName,
+						eventSeriesId,
+						edition: editionInfo.edition,
 					});
-					// 致命的でないエラーは続行
+					cache.events.set(eventName, newId);
+					result.events.created++;
+				} else {
+					result.events.skipped++;
 				}
+				entityProgress.events.processed++;
 			}
+			notifyProgress(
+				"events",
+				entityProgress.events.processed,
+				entityProgress.events.total,
+				`イベント: ${entityProgress.events.processed}/${entityProgress.events.total}件`,
+			);
+
+			// Phase 4: サークルを一括挿入
+			notifyProgress(
+				"circles",
+				0,
+				entityProgress.circles.total,
+				"サークルを登録中...",
+			);
+			await batchInsertCircles(tx, extracted, cache, result);
+			entityProgress.circles.processed = extracted.circleNames.size;
+			notifyProgress(
+				"circles",
+				entityProgress.circles.processed,
+				entityProgress.circles.total,
+				`サークル: ${entityProgress.circles.processed}/${entityProgress.circles.total}件`,
+			);
+
+			// Phase 5: アーティストを一括挿入
+			notifyProgress(
+				"artists",
+				0,
+				entityProgress.artists.total,
+				"アーティストを登録中...",
+			);
+			await batchInsertArtists(tx, extracted, cache, result);
+			entityProgress.artists.processed = extracted.artistNames.size;
+			notifyProgress(
+				"artists",
+				entityProgress.artists.processed,
+				entityProgress.artists.total,
+				`アーティスト: ${entityProgress.artists.processed}/${entityProgress.artists.total}件`,
+			);
+
+			// Phase 6: リリースを一括挿入
+			notifyProgress(
+				"releases",
+				0,
+				entityProgress.releases.total,
+				"作品を登録中...",
+			);
+			await batchInsertReleases(tx, extracted, cache, result);
+			entityProgress.releases.processed = extracted.releaseKeys.size;
+			notifyProgress(
+				"releases",
+				entityProgress.releases.processed,
+				entityProgress.releases.total,
+				`作品: ${entityProgress.releases.processed}/${entityProgress.releases.total}件`,
+			);
+
+			// Phase 7: ディスクを一括挿入
+			notifyProgress(
+				"tracks",
+				0,
+				entityProgress.tracks.total,
+				"ディスクを登録中...",
+			);
+			await batchInsertDiscs(tx, extracted, cache, result);
+
+			// Phase 8: トラックを一括挿入
+			notifyProgress(
+				"tracks",
+				0,
+				entityProgress.tracks.total,
+				"トラックを登録中...",
+			);
+			await batchInsertTracks(tx, extracted, cache, result);
+			entityProgress.tracks.processed = extracted.trackData.size;
+			notifyProgress(
+				"tracks",
+				entityProgress.tracks.processed,
+				entityProgress.tracks.total,
+				`トラック: ${entityProgress.tracks.processed}/${entityProgress.tracks.total}件`,
+			);
+
+			// Phase 9: クレジットを一括挿入
+			notifyProgress("credits", 0, totalRecords, "クレジットを登録中...");
+			await batchInsertCredits(tx, extracted, cache, result);
+			notifyProgress(
+				"credits",
+				totalRecords,
+				totalRecords,
+				"クレジット登録完了",
+			);
+
+			// Phase 10: 原曲紐付けを一括挿入
+			notifyProgress("links", 0, totalRecords, "原曲紐付けを登録中...");
+			await batchInsertOfficialSongLinks(
+				tx,
+				extracted,
+				cache,
+				input.songMappings,
+				input.customSongNames,
+				result,
+			);
+			notifyProgress("links", totalRecords, totalRecords, "原曲紐付け登録完了");
 		});
 
 		notifyProgress("complete", totalRecords, totalRecords, "インポート完了");
@@ -507,585 +1397,6 @@ async function processNewEvent(
 			date,
 		});
 		result.eventDays.created++;
-	}
-}
-
-/**
- * イベントを処理（作成または既存を使用）
- */
-async function processEvent(
-	tx: DbTransaction,
-	record: LegacyCSVRecord,
-	cache: ImportCache,
-	result: ImportResult,
-): Promise<void> {
-	const eventName = record.event.trim();
-	if (!eventName) return;
-
-	// キャッシュチェック
-	if (cache.events.has(eventName)) {
-		result.events.skipped++;
-		return;
-	}
-
-	// 既存チェック
-	const existing = await tx
-		.select()
-		.from(events)
-		.where(eq(events.name, eventName))
-		.limit(1);
-
-	if (existing.length > 0 && existing[0]) {
-		cache.events.set(eventName, existing[0].id);
-		result.events.skipped++;
-		return;
-	}
-
-	// eventSeriesをパターンマッチで検索
-	const editionInfo = parseEventEdition(eventName);
-	let eventSeriesId: string | null = null;
-
-	if (editionInfo.baseName) {
-		const series = await tx
-			.select()
-			.from(eventSeries)
-			.where(like(eventSeries.name, `%${editionInfo.baseName}%`))
-			.limit(1);
-		if (series.length > 0 && series[0]) {
-			eventSeriesId = series[0].id;
-		}
-	}
-
-	// 新規作成
-	const newId = createId.event();
-	await tx.insert(events).values({
-		id: newId,
-		name: eventName,
-		eventSeriesId,
-		edition: editionInfo.edition,
-	});
-
-	cache.events.set(eventName, newId);
-	result.events.created++;
-}
-
-/**
- * サークルを処理（作成または既存を使用）
- */
-async function processCircle(
-	tx: DbTransaction,
-	circleName: string,
-	cache: ImportCache,
-	result: ImportResult,
-): Promise<void> {
-	// 全角記号を半角に変換
-	const normalizedName = normalizeFullWidthSymbols(circleName.trim());
-	if (!normalizedName) return;
-
-	// キャッシュチェック
-	if (cache.circles.has(normalizedName)) {
-		result.circles.skipped++;
-		return;
-	}
-
-	// 既存チェック
-	const existing = await tx
-		.select()
-		.from(circles)
-		.where(eq(circles.name, normalizedName))
-		.limit(1);
-
-	if (existing.length > 0 && existing[0]) {
-		cache.circles.set(normalizedName, existing[0].id);
-		result.circles.skipped++;
-		return;
-	}
-
-	// 頭文字を判定
-	const initial = detectInitial(normalizedName);
-
-	// 名前情報を生成
-	const nameInfo = generateNameInfo(normalizedName);
-
-	// ソート名を生成
-	const sortName = generateSortName(normalizedName);
-
-	// 新規作成
-	const newId = createId.circle();
-	await tx.insert(circles).values({
-		id: newId,
-		name: nameInfo.name,
-		nameJa: nameInfo.nameJa,
-		nameEn: nameInfo.nameEn,
-		sortName,
-		initialScript: initial.initialScript,
-		nameInitial: initial.nameInitial,
-	});
-
-	cache.circles.set(normalizedName, newId);
-	result.circles.created++;
-}
-
-/**
- * アーティストを処理（作成または既存を使用）
- */
-async function processArtist(
-	tx: DbTransaction,
-	artistName: string,
-	cache: ImportCache,
-	result: ImportResult,
-): Promise<void> {
-	// 全角記号を半角に変換
-	const normalizedName = normalizeFullWidthSymbols(artistName.trim());
-	if (!normalizedName) return;
-
-	// キャッシュチェック
-	if (cache.artists.has(normalizedName)) {
-		result.artists.skipped++;
-		return;
-	}
-
-	// 既存チェック
-	const existing = await tx
-		.select()
-		.from(artists)
-		.where(eq(artists.name, normalizedName))
-		.limit(1);
-
-	if (existing.length > 0 && existing[0]) {
-		cache.artists.set(normalizedName, existing[0].id);
-		result.artists.skipped++;
-		return;
-	}
-
-	// 頭文字を判定
-	const initial = detectInitial(normalizedName);
-
-	// 名前情報を生成
-	const nameInfo = generateNameInfo(normalizedName);
-
-	// 新規作成
-	const newId = createId.artist();
-	await tx.insert(artists).values({
-		id: newId,
-		name: nameInfo.name,
-		nameJa: nameInfo.nameJa,
-		nameEn: nameInfo.nameEn,
-		initialScript: initial.initialScript,
-		nameInitial: initial.nameInitial,
-	});
-
-	cache.artists.set(normalizedName, newId);
-	result.artists.created++;
-
-	// アーティスト名義を「本名義」で作成
-	await tx.insert(artistAliases).values({
-		id: createId.artistAlias(),
-		artistId: newId,
-		name: nameInfo.name,
-		aliasTypeCode: MAIN_ALIAS_TYPE_CODE,
-		initialScript: initial.initialScript,
-		nameInitial: initial.nameInitial,
-	});
-
-	result.artistAliases.created++;
-}
-
-/**
- * リリースを処理（作成または既存を使用）
- */
-async function processRelease(
-	tx: DbTransaction,
-	albumBaseName: string,
-	circleNames: string[],
-	cache: ImportCache,
-	result: ImportResult,
-): Promise<string> {
-	const primaryCircle = normalizeFullWidthSymbols(circleNames[0]?.trim() || "");
-	const cacheKey = `${primaryCircle}:${albumBaseName}`;
-
-	// キャッシュチェック
-	if (cache.releases.has(cacheKey)) {
-		result.releases.skipped++;
-		// biome-ignore lint/style/noNonNullAssertion: cache.releases.has(cacheKey) is true
-		return cache.releases.get(cacheKey)!;
-	}
-
-	// 既存チェック（サークル名とアルバム名の組み合わせで検索）
-	const existingRelease = await findExistingRelease(
-		tx,
-		albumBaseName,
-		primaryCircle,
-		cache,
-	);
-	if (existingRelease) {
-		cache.releases.set(cacheKey, existingRelease);
-		result.releases.skipped++;
-		return existingRelease;
-	}
-
-	// 名前情報を生成
-	const nameInfo = generateNameInfo(albumBaseName);
-
-	// 新規作成
-	const newId = createId.release();
-	await tx.insert(releases).values({
-		id: newId,
-		name: nameInfo.name,
-		nameJa: nameInfo.nameJa,
-		nameEn: nameInfo.nameEn,
-		releaseType: "album", // デフォルトでアルバム
-	});
-
-	// releaseCirclesを作成（複数サークルの場合は共同主催）
-	const isMultipleCircles = circleNames.length > 1;
-	for (let i = 0; i < circleNames.length; i++) {
-		const circleName = normalizeFullWidthSymbols(circleNames[i]?.trim() || "");
-		if (!circleName) continue;
-
-		const circleId = cache.circles.get(circleName);
-		if (circleId) {
-			// 複数サークルの場合は全て「共同主催」、単一の場合は「主催」
-			const participationType = isMultipleCircles ? "co-host" : "host";
-			await tx.insert(releaseCircles).values({
-				releaseId: newId,
-				circleId,
-				participationType,
-				position: i + 1,
-			});
-		}
-	}
-
-	cache.releases.set(cacheKey, newId);
-	result.releases.created++;
-	return newId;
-}
-
-/**
- * 既存リリースを検索
- */
-async function findExistingRelease(
-	tx: DbTransaction,
-	albumName: string,
-	circleName: string,
-	cache: ImportCache,
-): Promise<string | null> {
-	const circleId = cache.circles.get(circleName);
-	if (!circleId) return null;
-
-	// リリース名とサークルIDで検索
-	const existing = await tx
-		.select({ id: releases.id })
-		.from(releases)
-		.innerJoin(releaseCircles, eq(releases.id, releaseCircles.releaseId))
-		.where(eq(releases.name, albumName))
-		.limit(1);
-
-	if (existing.length > 0 && existing[0]) {
-		return existing[0].id;
-	}
-
-	return null;
-}
-
-/**
- * ディスクを処理（作成または既存を使用）
- */
-async function processDisc(
-	tx: DbTransaction,
-	releaseId: string,
-	discNumber: number,
-	cache: ImportCache,
-	result: ImportResult,
-): Promise<string> {
-	const cacheKey = `${releaseId}:${discNumber}`;
-
-	// キャッシュチェック
-	if (cache.discs.has(cacheKey)) {
-		result.discs.skipped++;
-		// biome-ignore lint/style/noNonNullAssertion: cache.discs.has(cacheKey) is true
-		return cache.discs.get(cacheKey)!;
-	}
-
-	// 既存チェック
-	const existing = await tx
-		.select()
-		.from(discs)
-		.where(eq(discs.releaseId, releaseId))
-		.limit(100);
-
-	const existingDisc = existing.find(
-		(d: { id: string; discNumber: number }) => d.discNumber === discNumber,
-	);
-
-	if (existingDisc) {
-		cache.discs.set(cacheKey, existingDisc.id);
-		result.discs.skipped++;
-		return existingDisc.id;
-	}
-
-	// 新規作成
-	const newId = createId.disc();
-	await tx.insert(discs).values({
-		id: newId,
-		releaseId,
-		discNumber,
-	});
-
-	cache.discs.set(cacheKey, newId);
-	result.discs.created++;
-	return newId;
-}
-
-/**
- * トラックを処理（作成または更新）
- */
-async function processTrack(
-	tx: DbTransaction,
-	record: LegacyCSVRecord,
-	releaseId: string,
-	discId: string,
-	cache: ImportCache,
-	result: ImportResult,
-): Promise<string> {
-	const cacheKey = `${discId}:${record.trackNumber}`;
-
-	// キャッシュチェック
-	if (cache.tracks.has(cacheKey)) {
-		result.tracks.skipped++;
-		// biome-ignore lint/style/noNonNullAssertion: cache.tracks.has(cacheKey) is true
-		return cache.tracks.get(cacheKey)!;
-	}
-
-	// 名前情報を生成
-	const nameInfo = generateNameInfo(record.title);
-
-	// 既存チェック（upsert）
-	const existing = await tx
-		.select()
-		.from(tracks)
-		.where(eq(tracks.discId, discId))
-		.limit(100);
-
-	const existingTrack = existing.find(
-		(t: { id: string; trackNumber: number | null }) =>
-			t.trackNumber === record.trackNumber,
-	);
-
-	if (existingTrack) {
-		// 更新
-		await tx
-			.update(tracks)
-			.set({
-				name: nameInfo.name,
-				nameJa: nameInfo.nameJa,
-				nameEn: nameInfo.nameEn,
-			})
-			.where(eq(tracks.id, existingTrack.id));
-
-		cache.tracks.set(cacheKey, existingTrack.id);
-		result.tracks.updated++;
-		return existingTrack.id;
-	}
-
-	// 新規作成
-	const newId = createId.track();
-	await tx.insert(tracks).values({
-		id: newId,
-		releaseId,
-		discId,
-		trackNumber: record.trackNumber,
-		name: nameInfo.name,
-		nameJa: nameInfo.nameJa,
-		nameEn: nameInfo.nameEn,
-	});
-
-	cache.tracks.set(cacheKey, newId);
-	result.tracks.created++;
-	return newId;
-}
-
-/**
- * クレジットを処理
- */
-async function processCredits(
-	tx: DbTransaction,
-	record: LegacyCSVRecord,
-	trackId: string,
-	cache: ImportCache,
-	result: ImportResult,
-): Promise<void> {
-	// vocalist
-	for (let i = 0; i < record.vocalists.length; i++) {
-		const artistName = normalizeFullWidthSymbols(
-			record.vocalists[i]?.trim() || "",
-		);
-		if (!artistName) continue;
-
-		await createCredit(
-			tx,
-			trackId,
-			artistName,
-			"vocalist",
-			i + 1,
-			cache,
-			result,
-		);
-	}
-
-	// arranger
-	for (let i = 0; i < record.arrangers.length; i++) {
-		const artistName = normalizeFullWidthSymbols(
-			record.arrangers[i]?.trim() || "",
-		);
-		if (!artistName) continue;
-
-		await createCredit(
-			tx,
-			trackId,
-			artistName,
-			"arranger",
-			i + 1,
-			cache,
-			result,
-		);
-	}
-
-	// lyricist
-	for (let i = 0; i < record.lyricists.length; i++) {
-		const artistName = normalizeFullWidthSymbols(
-			record.lyricists[i]?.trim() || "",
-		);
-		if (!artistName) continue;
-
-		await createCredit(
-			tx,
-			trackId,
-			artistName,
-			"lyricist",
-			i + 1,
-			cache,
-			result,
-		);
-	}
-}
-
-/**
- * 単一クレジットを作成
- */
-async function createCredit(
-	tx: DbTransaction,
-	trackId: string,
-	artistName: string,
-	roleCode: string,
-	position: number,
-	cache: ImportCache,
-	result: ImportResult,
-): Promise<void> {
-	const artistId = cache.artists.get(artistName);
-	if (!artistId) return;
-
-	// 既存チェック
-	const existing = await tx
-		.select()
-		.from(trackCredits)
-		.where(eq(trackCredits.trackId, trackId))
-		.limit(100);
-
-	const existingCredit = existing.find(
-		(c: { id: string; artistId: string; creditName: string }) =>
-			c.artistId === artistId && c.creditName === artistName,
-	);
-
-	let creditId: string;
-
-	if (existingCredit) {
-		creditId = existingCredit.id;
-		result.credits.skipped++;
-	} else {
-		// 新規作成
-		creditId = createId.trackCredit();
-		await tx.insert(trackCredits).values({
-			id: creditId,
-			trackId,
-			artistId,
-			creditName: artistName,
-			creditPosition: position,
-		});
-		result.credits.created++;
-	}
-
-	// ロールを追加（存在しない場合のみ）
-	const existingRoles = await tx
-		.select()
-		.from(trackCreditRoles)
-		.where(eq(trackCreditRoles.trackCreditId, creditId))
-		.limit(10);
-
-	const hasRole = existingRoles.some(
-		(r: { roleCode: string }) => r.roleCode === roleCode,
-	);
-	if (!hasRole) {
-		await tx.insert(trackCreditRoles).values({
-			trackCreditId: creditId,
-			roleCode,
-			rolePosition: position,
-		});
-	}
-}
-
-/**
- * 原曲紐付けを処理
- */
-async function processOfficialSongLinks(
-	tx: DbTransaction,
-	record: LegacyCSVRecord,
-	trackId: string,
-	songMappings: Map<string, string>,
-	customSongNames: Map<string, string>,
-	result: ImportResult,
-): Promise<void> {
-	for (let i = 0; i < record.originalSongs.length; i++) {
-		const originalName = record.originalSongs[i]?.trim();
-		if (!originalName) continue;
-
-		const officialSongId = songMappings.get(originalName);
-		if (!officialSongId) {
-			// マッピングがない場合はスキップ
-			result.officialSongLinks.skipped++;
-			continue;
-		}
-
-		// customSongNameの取得（マッチしない原曲の場合）
-		const customSongName = customSongNames.get(originalName) || null;
-
-		// 既存チェック
-		const existing = await tx
-			.select()
-			.from(trackOfficialSongs)
-			.where(eq(trackOfficialSongs.trackId, trackId))
-			.limit(100);
-
-		const existingLink = existing.find(
-			(l: { officialSongId: string | null }) =>
-				l.officialSongId === officialSongId,
-		);
-
-		if (existingLink) {
-			result.officialSongLinks.skipped++;
-			continue;
-		}
-
-		// 新規作成
-		await tx.insert(trackOfficialSongs).values({
-			id: createId.trackOfficialSong(),
-			trackId,
-			officialSongId,
-			customSongName,
-			partPosition: i + 1,
-		});
-
-		result.officialSongLinks.created++;
 	}
 }
 
