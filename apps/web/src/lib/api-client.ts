@@ -338,6 +338,241 @@ export const importApi = {
 		uploadFile("/api/admin/official/songs/import", file),
 };
 
+// レガシーCSVインポート用の型定義
+export interface LegacyCSVRecord {
+	circle: string;
+	album: string;
+	title: string;
+	trackNumber: number;
+	event: string;
+	vocalists: string[];
+	arrangers: string[];
+	lyricists: string[];
+	originalSongs: string[];
+}
+
+export interface SongCandidate {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	officialWorkName: string | null;
+	matchType: "exact" | "partial";
+}
+
+export interface SongMatchResult {
+	originalName: string;
+	isOriginal: boolean;
+	matchType: "exact" | "partial" | "none";
+	candidates: SongCandidate[];
+	autoMatched: boolean;
+	selectedId: string | null;
+	customSongName: string | null;
+}
+
+export interface NewEventNeeded {
+	name: string;
+	baseName: string;
+	edition: number | null;
+}
+
+export interface NewEventInput {
+	name: string;
+	totalDays: number;
+	startDate: string;
+	endDate: string;
+	eventDates: string[];
+}
+
+export interface LegacyPreviewResponse {
+	success: boolean;
+	records: LegacyCSVRecord[];
+	songMatches: SongMatchResult[];
+	newEventsNeeded: NewEventNeeded[];
+	errors: { row: number; message: string }[];
+	error?: string;
+}
+
+export interface LegacyImportResult {
+	success: boolean;
+	events: { created: number; updated: number; skipped: number };
+	eventDays: { created: number; updated: number; skipped: number };
+	circles: { created: number; updated: number; skipped: number };
+	artists: { created: number; updated: number; skipped: number };
+	artistAliases: { created: number; updated: number; skipped: number };
+	releases: { created: number; updated: number; skipped: number };
+	discs: { created: number; updated: number; skipped: number };
+	tracks: { created: number; updated: number; skipped: number };
+	credits: { created: number; updated: number; skipped: number };
+	officialSongLinks: { created: number; updated: number; skipped: number };
+	errors: { row: number; entity: string; message: string }[];
+}
+
+// SSEストリーミング進捗用の型定義
+export type ImportStage =
+	| "preparing"
+	| "events"
+	| "circles"
+	| "artists"
+	| "releases"
+	| "tracks"
+	| "credits"
+	| "links"
+	| "complete";
+
+export interface EntityProgress {
+	processed: number;
+	total: number;
+}
+
+export interface EntityProgressMap {
+	events: EntityProgress;
+	circles: EntityProgress;
+	artists: EntityProgress;
+	releases: EntityProgress;
+	tracks: EntityProgress;
+}
+
+export interface ImportProgress {
+	stage: ImportStage;
+	current: number;
+	total: number;
+	message: string;
+	entityProgress?: EntityProgressMap;
+}
+
+export const legacyImportApi = {
+	preview: async (file: File): Promise<LegacyPreviewResponse> => {
+		const formData = new FormData();
+		formData.append("file", file);
+
+		const res = await fetch(`${API_BASE_URL}/api/admin/import/legacy/preview`, {
+			method: "POST",
+			credentials: "include",
+			body: formData,
+		});
+
+		const data = await res.json();
+
+		if (!res.ok) {
+			throw new Error(data.error || `HTTP ${res.status}`);
+		}
+
+		return data;
+	},
+
+	/**
+	 * SSEストリーミング対応のインポート実行
+	 * @param records CSVレコード
+	 * @param songMappings 原曲マッピング
+	 * @param customSongNames カスタム曲名
+	 * @param newEvents 新規イベント
+	 * @param onProgress 進捗コールバック
+	 * @returns インポート結果
+	 */
+	executeWithProgress: async (
+		records: LegacyCSVRecord[],
+		songMappings: Record<string, string>,
+		customSongNames: Record<string, string>,
+		newEvents: NewEventInput[] | undefined,
+		onProgress: (progress: ImportProgress) => void,
+	): Promise<LegacyImportResult> => {
+		const res = await fetch(`${API_BASE_URL}/api/admin/import/legacy/execute`, {
+			method: "POST",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "text/event-stream",
+			},
+			body: JSON.stringify({
+				records,
+				songMappings,
+				customSongNames,
+				newEvents,
+			}),
+		});
+
+		if (!res.ok) {
+			const data = await res.json().catch(() => ({}));
+			throw new Error(data.error || `HTTP ${res.status}`);
+		}
+
+		const reader = res.body?.getReader();
+		if (!reader) {
+			throw new Error("ストリーム読み込みに失敗しました");
+		}
+
+		const decoder = new TextDecoder();
+		let buffer = "";
+		let result: LegacyImportResult | null = null;
+
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+
+			buffer += decoder.decode(value, { stream: true });
+
+			// SSEイベントをパース
+			const lines = buffer.split("\n");
+			buffer = lines.pop() || ""; // 未完成の行を保持
+
+			let eventType = "";
+			let eventData = "";
+
+			for (const line of lines) {
+				if (line.startsWith("event:")) {
+					eventType = line.slice(6).trim();
+				} else if (line.startsWith("data:")) {
+					eventData = line.slice(5).trim();
+				} else if (line === "" && eventData) {
+					// 空行でイベント完了
+					try {
+						const parsed = JSON.parse(eventData);
+						if (eventType === "progress") {
+							onProgress(parsed as ImportProgress);
+						} else if (eventType === "result") {
+							result = parsed as LegacyImportResult;
+						} else if (eventType === "error") {
+							throw new Error(parsed.error || "インポートエラー");
+						}
+					} catch (e) {
+						if (e instanceof SyntaxError) {
+							console.error("SSE parse error:", eventData);
+						} else {
+							throw e;
+						}
+					}
+					eventType = "";
+					eventData = "";
+				}
+			}
+		}
+
+		if (!result) {
+			throw new Error("インポート結果を取得できませんでした");
+		}
+
+		return result;
+	},
+
+	/**
+	 * 従来のインポート実行（進捗なし、後方互換性用）
+	 */
+	execute: async (
+		records: LegacyCSVRecord[],
+		songMappings: Record<string, string>,
+		customSongNames: Record<string, string>,
+		newEvents?: NewEventInput[],
+	): Promise<LegacyImportResult> => {
+		return legacyImportApi.executeWithProgress(
+			records,
+			songMappings,
+			customSongNames,
+			newEvents,
+			() => {}, // 進捗を無視
+		);
+	},
+};
+
 export const officialWorkCategoriesApi = {
 	list: (params?: {
 		page?: number;

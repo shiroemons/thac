@@ -6,6 +6,7 @@ import {
 	Disc,
 	Disc3,
 	FolderOpen,
+	Import,
 	Layers,
 	LayoutDashboard,
 	MonitorSmartphone,
@@ -124,6 +125,17 @@ const navItems: NavEntry[] = [
 				to: "/admin/tracks",
 				label: "トラック",
 				icon: Music,
+			},
+		],
+	},
+	{
+		label: "インポート",
+		icon: Import,
+		items: [
+			{
+				to: "/admin/import-legacy",
+				label: "レガシーCSV",
+				icon: Import,
 			},
 		],
 	},
