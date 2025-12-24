@@ -198,8 +198,17 @@ interface CachedEntityInfo {
 	hasNameJa: boolean;
 }
 
+/**
+ * イベント日のキャッシュ情報
+ */
+interface CachedEventDayInfo {
+	id: string;
+	date: string;
+}
+
 interface ImportCache {
 	events: Map<string, string>; // eventName -> eventId
+	eventDays: Map<string, CachedEventDayInfo>; // eventId -> { id, date } (1日目のみ)
 	circles: Map<string, CachedEntityInfo>; // circleName -> { id, hasNameJa }
 	artists: Map<string, CachedEntityInfo>; // artistName -> { id, hasNameJa }
 	releases: Map<string, string>; // `${circleName}:${albumBaseName}` -> releaseId
@@ -223,7 +232,10 @@ interface ExtractedEntities {
 	circleNames: Set<string>;
 	artistNames: Set<string>;
 	// releaseKey: `${primaryCircle}:${albumBaseName}`
-	releaseKeys: Map<string, { albumBaseName: string; circleNames: string[] }>;
+	releaseKeys: Map<
+		string,
+		{ albumBaseName: string; circleNames: string[]; eventName: string }
+	>;
 	// discKey: `${releaseKey}:${discNumber}`
 	discKeys: Map<string, { releaseKey: string; discNumber: number }>;
 	// trackKey: `${discKey}:${trackNumber}`
@@ -292,6 +304,7 @@ function extractUniqueEntities(records: LegacyCSVRecord[]): ExtractedEntities {
 				circleNames: circleNameList.map((n) =>
 					normalizeFullWidthSymbols(n.trim()),
 				),
+				eventName: record.event.trim(),
 			});
 		}
 
@@ -336,6 +349,30 @@ async function prefetchExistingEntities(
 			.where(inArray(events.name, eventNameList));
 		for (const e of existingEvents) {
 			cache.events.set(e.name, e.id);
+		}
+
+		// イベント日を一括取得（1日目のみ）
+		const eventIds = existingEvents.map((e: { id: string }) => e.id);
+		if (eventIds.length > 0) {
+			const existingEventDays = await tx
+				.select({
+					id: eventDays.id,
+					eventId: eventDays.eventId,
+					dayNumber: eventDays.dayNumber,
+					date: eventDays.date,
+				})
+				.from(eventDays)
+				.where(inArray(eventDays.eventId, eventIds));
+
+			// 各イベントの1日目をキャッシュ
+			for (const day of existingEventDays) {
+				if (day.dayNumber === 1) {
+					cache.eventDays.set(day.eventId, {
+						id: day.id,
+						date: day.date,
+					});
+				}
+			}
 		}
 	}
 
@@ -592,6 +629,7 @@ async function batchInsertArtists(
 
 /**
  * 新規リリースを一括挿入（releaseCirclesも同時作成）
+ * イベント日がある場合は発売日をイベント日に設定
  */
 async function batchInsertReleases(
 	tx: DbTransaction,
@@ -605,6 +643,8 @@ async function batchInsertReleases(
 		nameJa: string | null;
 		nameEn: string | null;
 		releaseType: string;
+		eventDayId: string | null;
+		releaseDate: string | null;
 	}> = [];
 
 	const newReleaseCircles: Array<{
@@ -623,12 +663,28 @@ async function batchInsertReleases(
 		const nameInfo = generateNameInfo(data.albumBaseName);
 		const newId = createId.release();
 
+		// イベント日を取得（1日目）
+		let eventDayId: string | null = null;
+		let releaseDate: string | null = null;
+		if (data.eventName) {
+			const eventId = cache.events.get(data.eventName);
+			if (eventId) {
+				const eventDayInfo = cache.eventDays.get(eventId);
+				if (eventDayInfo) {
+					eventDayId = eventDayInfo.id;
+					releaseDate = eventDayInfo.date;
+				}
+			}
+		}
+
 		newReleases.push({
 			id: newId,
 			name: nameInfo.name,
 			nameJa: nameInfo.nameJa,
 			nameEn: nameInfo.nameEn,
 			releaseType: "album",
+			eventDayId,
+			releaseDate,
 		});
 
 		// releaseCirclesを準備
@@ -1172,6 +1228,7 @@ export async function executeLegacyImport(
 
 	const cache: ImportCache = {
 		events: new Map(),
+		eventDays: new Map(),
 		circles: new Map(),
 		artists: new Map(),
 		releases: new Map(),
