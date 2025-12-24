@@ -1,0 +1,71 @@
+import {
+	circles,
+	db,
+	eq,
+	type ParticipationType,
+	releaseCircles,
+	releases,
+} from "@thac/db";
+import { Hono } from "hono";
+import type { AdminContext } from "../../../middleware/admin-auth";
+
+const circleReleasesRouter = new Hono<AdminContext>();
+
+// サークルのリリース一覧取得（参加形態別にグループ化）
+circleReleasesRouter.get("/:circleId/releases", async (c) => {
+	const circleId = c.req.param("circleId");
+
+	// サークル存在チェック
+	const existingCircle = await db
+		.select()
+		.from(circles)
+		.where(eq(circles.id, circleId))
+		.limit(1);
+
+	if (existingCircle.length === 0) {
+		return c.json({ error: "Circle not found" }, 404);
+	}
+
+	// リリースを参加形態別に取得
+	const data = await db
+		.select({
+			releaseId: releases.id,
+			releaseName: releases.name,
+			releaseDate: releases.releaseDate,
+			releaseType: releases.releaseType,
+			catalogNumber: releases.catalogNumber,
+			participationType: releaseCircles.participationType,
+		})
+		.from(releaseCircles)
+		.innerJoin(releases, eq(releaseCircles.releaseId, releases.id))
+		.where(eq(releaseCircles.circleId, circleId))
+		.orderBy(releases.releaseDate, releaseCircles.position);
+
+	// 参加形態別にグループ化
+	const participationOrder: ParticipationType[] = [
+		"host",
+		"co-host",
+		"participant",
+		"guest",
+		"split_partner",
+	];
+
+	const grouped = participationOrder
+		.map((type) => ({
+			participationType: type,
+			releases: data
+				.filter((d) => d.participationType === type)
+				.map((d) => ({
+					id: d.releaseId,
+					name: d.releaseName,
+					releaseDate: d.releaseDate,
+					releaseType: d.releaseType,
+					catalogNumber: d.catalogNumber,
+				})),
+		}))
+		.filter((g) => g.releases.length > 0);
+
+	return c.json(grouped);
+});
+
+export { circleReleasesRouter };

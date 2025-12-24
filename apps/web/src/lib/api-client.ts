@@ -1469,6 +1469,28 @@ export const releaseCirclesApi = {
 		),
 };
 
+// ===== サークルのリリース一覧 =====
+
+export interface CircleReleaseItem {
+	id: string;
+	name: string;
+	releaseDate: string | null;
+	releaseType: string | null;
+	catalogNumber: string | null;
+}
+
+export interface CircleReleasesByType {
+	participationType: ParticipationType;
+	releases: CircleReleaseItem[];
+}
+
+export const circleReleasesApi = {
+	list: (circleId: string) =>
+		fetchWithAuth<CircleReleasesByType[]>(
+			`/api/admin/circles/${circleId}/releases`,
+		),
+};
+
 // ===== トラック管理 =====
 
 export interface Track {

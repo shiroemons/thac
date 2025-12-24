@@ -16,8 +16,12 @@ import {
 } from "@thac/db";
 import { Hono } from "hono";
 import type { AdminContext } from "../../../middleware/admin-auth";
+import { circleReleasesRouter } from "./releases";
 
 const circlesRouter = new Hono<AdminContext>();
+
+// サブルーターをマウント
+circlesRouter.route("/", circleReleasesRouter);
 
 // サークル一覧取得（ページネーション、検索、頭文字フィルタ対応）
 circlesRouter.get("/", async (c) => {
