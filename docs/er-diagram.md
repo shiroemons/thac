@@ -285,7 +285,11 @@ erDiagram
         text name_en
         text catalog_number
         text release_date
+        integer release_year
+        integer release_month
+        integer release_day
         text release_type
+        text event_id FK
         text event_day_id FK
         text notes
         integer created_at
@@ -308,6 +312,7 @@ erDiagram
         integer position
     }
 
+    events ||--o{ releases : "hosted_at"
     event_days ||--o{ releases : "released_at"
     releases ||--o{ discs : "contains"
     releases ||--o{ release_circles : "has"
@@ -324,6 +329,12 @@ erDiagram
         text name
         text name_ja
         text name_en
+        text release_date
+        integer release_year
+        integer release_month
+        integer release_day
+        text event_id FK
+        text event_day_id FK
         integer created_at
         integer updated_at
     }
@@ -348,6 +359,8 @@ erDiagram
 
     releases ||--o{ tracks : "contains"
     discs ||--o{ tracks : "contains"
+    events ||--o{ tracks : "hosted_at"
+    event_days ||--o{ tracks : "released_at"
     tracks ||--o{ track_credits : "has"
     artists ||--o{ track_credits : "credited"
     artist_aliases ||--o{ track_credits : "credited_as"
@@ -496,9 +509,9 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `user_id` | `user.id` | CASCADE |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `user_id` | `user.id` | CASCADE | ユーザー削除時に連鎖削除 |
 
 ---
 
@@ -531,9 +544,9 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `user_id` | `user.id` | CASCADE |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `user_id` | `user.id` | CASCADE | ユーザー削除時に連鎖削除 |
 
 ---
 
@@ -613,9 +626,9 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `event_series_id` | `event_series.id` | RESTRICT |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `event_series_id` | `event_series.id` | RESTRICT | シリーズを参照中は削除不可 |
 
 ---
 
@@ -644,9 +657,9 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `event_id` | `events.id` | CASCADE |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `event_id` | `events.id` | CASCADE | イベント削除時に連鎖削除 |
 
 ---
 
@@ -793,10 +806,10 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `artist_id` | `artists.id` | CASCADE |
-| `alias_type_code` | `alias_types.code` | - |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `artist_id` | `artists.id` | CASCADE | アーティスト削除時に連鎖削除 |
+| `alias_type_code` | `alias_types.code` | - | 制約なし |
 
 ---
 
@@ -854,10 +867,10 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `circle_id` | `circles.id` | CASCADE |
-| `platform_code` | `platforms.code` | RESTRICT |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `circle_id` | `circles.id` | CASCADE | サークル削除時に連鎖削除 |
+| `platform_code` | `platforms.code` | RESTRICT | プラットフォームを参照中は削除不可 |
 
 ---
 
@@ -897,9 +910,9 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `category_code` | `official_work_categories.code` | - |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `category_code` | `official_work_categories.code` | - | 制約なし |
 
 ---
 
@@ -933,9 +946,9 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `official_work_id` | `official_works.id` | CASCADE |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `official_work_id` | `official_works.id` | CASCADE | 公式作品削除時に連鎖削除 |
 
 ---
 
@@ -963,10 +976,10 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `official_work_id` | `official_works.id` | CASCADE |
-| `platform_code` | `platforms.code` | RESTRICT |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `official_work_id` | `official_works.id` | CASCADE | 公式作品削除時に連鎖削除 |
+| `platform_code` | `platforms.code` | RESTRICT | プラットフォームを参照中は削除不可 |
 
 ---
 
@@ -994,10 +1007,10 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `official_song_id` | `official_songs.id` | CASCADE |
-| `platform_code` | `platforms.code` | RESTRICT |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `official_song_id` | `official_songs.id` | CASCADE | 公式楽曲削除時に連鎖削除 |
+| `platform_code` | `platforms.code` | RESTRICT | プラットフォームを参照中は削除不可 |
 
 ---
 
@@ -1015,7 +1028,11 @@ erDiagram
 | `name_en` | TEXT | YES | - | 英語名 |
 | `catalog_number` | TEXT | YES | - | カタログ番号 |
 | `release_date` | TEXT | YES | - | 発売日 |
+| `release_year` | INTEGER | YES | - | 発売年 |
+| `release_month` | INTEGER | YES | - | 発売月 |
+| `release_day` | INTEGER | YES | - | 発売日（日） |
 | `release_type` | TEXT | YES | - | 種別（album/single/ep/digital/video） |
+| `event_id` | TEXT | YES | - | イベントID |
 | `event_day_id` | TEXT | YES | - | イベント日ID |
 | `notes` | TEXT | YES | - | 備考 |
 | `created_at` | INTEGER | NO | 現在時刻 | 作成日時 |
@@ -1027,15 +1044,19 @@ erDiagram
 |---------------|------|--------|------|
 | `PRIMARY KEY` | PRIMARY | `id` | - |
 | `idx_releases_date` | INDEX | `release_date` | - |
+| `idx_releases_year` | INDEX | `release_year` | - |
+| `idx_releases_year_month` | INDEX | `release_year, release_month` | - |
 | `idx_releases_type` | INDEX | `release_type` | - |
+| `idx_releases_event` | INDEX | `event_id` | - |
 | `idx_releases_event_day` | INDEX | `event_day_id` | - |
 | `idx_releases_catalog` | INDEX | `catalog_number` | - |
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `event_day_id` | `event_days.id` | SET NULL |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `event_id` | `events.id` | SET NULL | イベント削除時はNULLに設定 |
+| `event_day_id` | `event_days.id` | SET NULL | イベント日削除時はNULLに設定 |
 
 ---
 
@@ -1062,9 +1083,9 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `release_id` | `releases.id` | CASCADE |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `release_id` | `releases.id` | CASCADE | リリース削除時に連鎖削除 |
 
 ---
 
@@ -1089,10 +1110,10 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `release_id` | `releases.id` | CASCADE |
-| `circle_id` | `circles.id` | RESTRICT |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `release_id` | `releases.id` | CASCADE | リリース削除時に連鎖削除 |
+| `circle_id` | `circles.id` | RESTRICT | サークルを参照中は削除不可 |
 
 ---
 
@@ -1111,6 +1132,12 @@ erDiagram
 | `name` | TEXT | NO | - | トラック名 |
 | `name_ja` | TEXT | YES | - | 日本語名 |
 | `name_en` | TEXT | YES | - | 英語名 |
+| `release_date` | TEXT | YES | - | 発売日 |
+| `release_year` | INTEGER | YES | - | 発売年 |
+| `release_month` | INTEGER | YES | - | 発売月 |
+| `release_day` | INTEGER | YES | - | 発売日（日） |
+| `event_id` | TEXT | YES | - | イベントID |
+| `event_day_id` | TEXT | YES | - | イベント日ID |
 | `created_at` | INTEGER | NO | 現在時刻 | 作成日時 |
 | `updated_at` | INTEGER | NO | 現在時刻 | 更新日時 |
 
@@ -1121,16 +1148,22 @@ erDiagram
 | `PRIMARY KEY` | PRIMARY | `id` | - |
 | `idx_tracks_release` | INDEX | `release_id` | - |
 | `idx_tracks_disc` | INDEX | `disc_id` | - |
+| `idx_tracks_date` | INDEX | `release_date` | - |
+| `idx_tracks_year` | INDEX | `release_year` | - |
+| `idx_tracks_event` | INDEX | `event_id` | - |
+| `idx_tracks_event_day` | INDEX | `event_day_id` | - |
 | `idx_tracks_ordering` | INDEX | `release_id, disc_id, track_number` | - |
 | `uq_tracks_release_tracknumber` | UNIQUE | `release_id, track_number` | `disc_id IS NULL` |
 | `uq_tracks_disc_tracknumber` | UNIQUE | `disc_id, track_number` | `disc_id IS NOT NULL` |
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `release_id` | `releases.id` | CASCADE |
-| `disc_id` | `discs.id` | CASCADE |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `release_id` | `releases.id` | CASCADE | リリース削除時に連鎖削除 |
+| `disc_id` | `discs.id` | CASCADE | ディスク削除時に連鎖削除 |
+| `event_id` | `events.id` | SET NULL | イベント削除時はNULLに設定 |
+| `event_day_id` | `event_days.id` | SET NULL | イベント日削除時はNULLに設定 |
 
 ---
 
@@ -1163,12 +1196,12 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `track_id` | `tracks.id` | CASCADE |
-| `artist_id` | `artists.id` | RESTRICT |
-| `alias_type_code` | `alias_types.code` | - |
-| `artist_alias_id` | `artist_aliases.id` | SET NULL |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `track_id` | `tracks.id` | CASCADE | トラック削除時に連鎖削除 |
+| `artist_id` | `artists.id` | RESTRICT | アーティストを参照中は削除不可 |
+| `alias_type_code` | `alias_types.code` | - | 制約なし |
+| `artist_alias_id` | `artist_aliases.id` | SET NULL | 別名義削除時はNULLに設定 |
 
 ---
 
@@ -1192,10 +1225,10 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `track_credit_id` | `track_credits.id` | CASCADE |
-| `role_code` | `credit_roles.code` | - |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `track_credit_id` | `track_credits.id` | CASCADE | クレジット削除時に連鎖削除 |
+| `role_code` | `credit_roles.code` | - | 制約なし |
 
 ---
 
@@ -1229,10 +1262,10 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `track_id` | `tracks.id` | CASCADE |
-| `official_song_id` | `official_songs.id` | RESTRICT |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `track_id` | `tracks.id` | CASCADE | トラック削除時に連鎖削除 |
+| `official_song_id` | `official_songs.id` | RESTRICT | 公式楽曲を参照中は削除不可 |
 
 ---
 
@@ -1260,10 +1293,10 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `child_track_id` | `tracks.id` | CASCADE |
-| `parent_track_id` | `tracks.id` | RESTRICT |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `child_track_id` | `tracks.id` | CASCADE | 派生先トラック削除時に連鎖削除 |
+| `parent_track_id` | `tracks.id` | RESTRICT | 派生元トラックを参照中は削除不可 |
 
 ---
 
@@ -1295,9 +1328,9 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `release_id` | `releases.id` | CASCADE |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `release_id` | `releases.id` | CASCADE | リリース削除時に連鎖削除 |
 
 ---
 
@@ -1325,9 +1358,9 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `track_id` | `tracks.id` | CASCADE |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `track_id` | `tracks.id` | CASCADE | トラック削除時に連鎖削除 |
 
 ---
 
@@ -1357,10 +1390,10 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `release_id` | `releases.id` | CASCADE |
-| `platform_code` | `platforms.code` | RESTRICT |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `release_id` | `releases.id` | CASCADE | リリース削除時に連鎖削除 |
+| `platform_code` | `platforms.code` | RESTRICT | プラットフォームを参照中は削除不可 |
 
 ---
 
@@ -1388,10 +1421,10 @@ erDiagram
 
 **外部キー:**
 
-| カラム | 参照先 | ON DELETE |
-|--------|--------|-----------|
-| `track_id` | `tracks.id` | CASCADE |
-| `platform_code` | `platforms.code` | RESTRICT |
+| カラム | 参照先 | ON DELETE | 説明 |
+|--------|--------|-----------|------|
+| `track_id` | `tracks.id` | CASCADE | トラック削除時に連鎖削除 |
+| `platform_code` | `platforms.code` | RESTRICT | プラットフォームを参照中は削除不可 |
 
 ---
 
@@ -1419,6 +1452,7 @@ erDiagram
 - `platforms` → `official_work_links`, `official_song_links`: 1対多
 
 ### リリース系
+- `events` → `releases`: 1対多（イベントに複数のリリース）
 - `event_days` → `releases`: 1対多（イベント日に複数のリリース）
 - `releases` → `discs`: 1対多（リリースは複数のディスクを含む）
 - `releases` ↔ `circles`: 多対多（`release_circles`経由、参加形態付き）
@@ -1426,6 +1460,8 @@ erDiagram
 ### トラック系
 - `releases` → `tracks`: 1対多
 - `discs` → `tracks`: 1対多
+- `events` → `tracks`: 1対多（イベントに複数のトラック）
+- `event_days` → `tracks`: 1対多（イベント日に複数のトラック）
 - `tracks` → `track_credits`: 1対多
 - `artists` → `track_credits`: 1対多
 - `artist_aliases` → `track_credits`: 1対多
