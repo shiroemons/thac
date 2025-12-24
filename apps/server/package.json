@@ -16,7 +16,8 @@
 		"dotenv": "catalog:",
 		"zod": "catalog:",
 		"@thac/auth": "workspace:*",
-		"@thac/db": "workspace:*"
+		"@thac/db": "workspace:*",
+		"@thac/utils": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/bun": "catalog:",

@@ -29,6 +29,7 @@
       "dependencies": {
         "@thac/auth": "workspace:*",
         "@thac/db": "workspace:*",
+        "@thac/utils": "workspace:*",
         "better-auth": "catalog:",
         "dotenv": "catalog:",
         "hono": "^4.8.2",

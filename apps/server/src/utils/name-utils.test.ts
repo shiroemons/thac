@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import {
 	generateNameInfo,
 	generateSortName,
@@ -132,10 +132,10 @@ describe("parseEventEdition", () => {
 });
 
 describe("generateNameInfo", () => {
-	it("英語のみの名前はnameEnに設定する", () => {
+	it("英語のみの名前はnameJaとnameEnの両方に設定する", () => {
 		expect(generateNameInfo("ARIA")).toEqual({
 			name: "ARIA",
-			nameJa: null,
+			nameJa: "ARIA",
 			nameEn: "ARIA",
 		});
 	});
