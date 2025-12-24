@@ -14,8 +14,14 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import {
+	circleReleasesApi,
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
+	PARTICIPATION_TYPE_COLORS,
+	PARTICIPATION_TYPE_LABELS,
+	RELEASE_TYPE_COLORS,
+	RELEASE_TYPE_LABELS,
+	type ReleaseType,
 } from "@/lib/api-client";
 import { createCircleDetailHead } from "@/lib/head";
 import { circleDetailQueryOptions } from "@/lib/query-options";
@@ -30,6 +36,11 @@ export const Route = createFileRoute("/admin/_admin/circles_/$id")({
 function CircleDetailPage() {
 	const { id } = Route.useParams();
 	const { data: circle, isPending } = useQuery(circleDetailQueryOptions(id));
+	const { data: releasesByType } = useQuery({
+		queryKey: ["circles", id, "releases"],
+		queryFn: () => circleReleasesApi.list(id),
+		enabled: !!circle,
+	});
 
 	// ローディング
 	if (isPending && !circle) {
@@ -160,6 +171,88 @@ function CircleDetailPage() {
 									))}
 								</TableBody>
 							</Table>
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* 参加形態別リリース一覧カード */}
+			<div className="card bg-base-100 shadow-xl">
+				<div className="card-body">
+					<h2 className="card-title">参加作品一覧</h2>
+
+					{!releasesByType || releasesByType.length === 0 ? (
+						<p className="text-base-content/60">参加作品が登録されていません</p>
+					) : (
+						<div className="space-y-6">
+							{releasesByType.map((group) => (
+								<div key={group.participationType}>
+									<div className="mb-2 flex items-center gap-2">
+										<Badge
+											variant={
+												PARTICIPATION_TYPE_COLORS[group.participationType]
+											}
+										>
+											{PARTICIPATION_TYPE_LABELS[group.participationType]}
+										</Badge>
+										<span className="text-base-content/60 text-sm">
+											({group.releases.length}件)
+										</span>
+									</div>
+									<div className="overflow-x-auto">
+										<Table zebra>
+											<TableHeader>
+												<TableRow className="hover:bg-transparent">
+													<TableHead>作品名</TableHead>
+													<TableHead className="w-[120px]">発売日</TableHead>
+													<TableHead className="w-[100px]">タイプ</TableHead>
+													<TableHead className="w-[150px]">
+														カタログ番号
+													</TableHead>
+												</TableRow>
+											</TableHeader>
+											<TableBody>
+												{group.releases.map((release) => (
+													<TableRow key={release.id}>
+														<TableCell>
+															<Link
+																to="/admin/releases/$id"
+																params={{ id: release.id }}
+																className="text-primary hover:underline"
+															>
+																{release.name}
+															</Link>
+														</TableCell>
+														<TableCell>{release.releaseDate || "-"}</TableCell>
+														<TableCell>
+															{release.releaseType ? (
+																<Badge
+																	variant={
+																		RELEASE_TYPE_COLORS[
+																			release.releaseType as ReleaseType
+																		]
+																	}
+																>
+																	{
+																		RELEASE_TYPE_LABELS[
+																			release.releaseType as ReleaseType
+																		]
+																	}
+																</Badge>
+															) : (
+																"-"
+															)}
+														</TableCell>
+														<TableCell>
+															{release.catalogNumber || "-"}
+														</TableCell>
+													</TableRow>
+												))}
+											</TableBody>
+										</Table>
+									</div>
+								</div>
+							))}
 						</div>
 					)}
 				</div>
