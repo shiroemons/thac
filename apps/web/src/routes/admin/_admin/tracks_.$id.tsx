@@ -310,7 +310,7 @@ function TrackDetailPage() {
 	// トラック一覧（派生関係用）
 	const { data: allTracksData } = useQuery({
 		queryKey: ["tracks-all", { limit: 500 }],
-		queryFn: () => tracksApi.listAll({ limit: 500 }),
+		queryFn: () => tracksApi.listPaginated({ limit: 500 }),
 		staleTime: 60_000,
 	});
 

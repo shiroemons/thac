@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Disc3, Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -34,7 +34,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import {
 	releasesApi,
 	type Track,
-	type TrackWithCreditCount,
+	type TrackListItem,
 	tracksApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
@@ -60,12 +60,6 @@ const COLUMN_CONFIGS = [
 	{ key: "updatedAt", label: "更新日時", defaultVisible: false },
 ] as const;
 
-// 拡張トラック型（作品名を含む）
-interface TrackWithRelease extends TrackWithCreditCount {
-	releaseName?: string;
-	discNumber?: number;
-}
-
 function TracksPage() {
 	const queryClient = useQueryClient();
 
@@ -83,9 +77,7 @@ function TracksPage() {
 		columnConfigs,
 	);
 
-	const [editingTrack, setEditingTrack] = useState<TrackWithRelease | null>(
-		null,
-	);
+	const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
 	const [editForm, setEditForm] = useState<Partial<Track>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -94,116 +86,24 @@ function TracksPage() {
 	>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	// 作品一覧取得（フィルター用）
+	// 作品一覧取得（フィルター用・新規作成用）
 	const { data: releasesData } = useQuery({
 		queryKey: ["releases", { limit: 200 }],
 		queryFn: () => releasesApi.list({ limit: 200 }),
 		staleTime: 60_000,
 	});
 
-	// トラック一覧取得（全作品から）
+	// トラック一覧取得（ページネーション対応API）
 	const { data, isPending, error } = useQuery({
 		queryKey: ["all-tracks", page, pageSize, debouncedSearch, releaseFilter],
-		queryFn: async () => {
-			// 作品IDでフィルターする場合は直接取得
-			if (releaseFilter) {
-				const tracks = await tracksApi.list(releaseFilter);
-				const release = releasesData?.data.find((r) => r.id === releaseFilter);
-				const releaseDetail = release
-					? await releasesApi.get(release.id)
-					: null;
-
-				const tracksWithRelease: TrackWithRelease[] = tracks.map((track) => {
-					const disc = releaseDetail?.discs.find((d) => d.id === track.discId);
-					return {
-						...track,
-						releaseName: release?.name,
-						discNumber: disc?.discNumber,
-					};
-				});
-
-				// 検索フィルター
-				let filtered = tracksWithRelease;
-				if (debouncedSearch) {
-					const searchLower = debouncedSearch.toLowerCase();
-					filtered = tracksWithRelease.filter(
-						(t) =>
-							t.name.toLowerCase().includes(searchLower) ||
-							t.nameJa?.toLowerCase().includes(searchLower) ||
-							t.nameEn?.toLowerCase().includes(searchLower),
-					);
-				}
-
-				// ページネーション
-				const start = (page - 1) * pageSize;
-				const paged = filtered.slice(start, start + pageSize);
-
-				return {
-					data: paged,
-					total: filtered.length,
-					page,
-					limit: pageSize,
-				};
-			}
-
-			// 全作品からトラックを取得
-			const releases = releasesData?.data ?? [];
-			const allTracks: TrackWithRelease[] = [];
-
-			for (const release of releases) {
-				try {
-					const tracks = await tracksApi.list(release.id);
-					const releaseDetail = await releasesApi.get(release.id);
-					for (const track of tracks) {
-						const disc = releaseDetail.discs.find((d) => d.id === track.discId);
-						allTracks.push({
-							...track,
-							releaseName: release.name,
-							discNumber: disc?.discNumber,
-						});
-					}
-				} catch {
-					// 取得に失敗した作品はスキップ
-				}
-			}
-
-			// 検索フィルター
-			let filtered = allTracks;
-			if (debouncedSearch) {
-				const searchLower = debouncedSearch.toLowerCase();
-				filtered = allTracks.filter(
-					(t) =>
-						t.name.toLowerCase().includes(searchLower) ||
-						t.nameJa?.toLowerCase().includes(searchLower) ||
-						t.nameEn?.toLowerCase().includes(searchLower) ||
-						t.releaseName?.toLowerCase().includes(searchLower),
-				);
-			}
-
-			// ソート（作品名 → ディスク番号 → トラック番号）
-			filtered.sort((a, b) => {
-				const releaseCompare = (a.releaseName ?? "").localeCompare(
-					b.releaseName ?? "",
-				);
-				if (releaseCompare !== 0) return releaseCompare;
-				const discCompare = (a.discNumber ?? 0) - (b.discNumber ?? 0);
-				if (discCompare !== 0) return discCompare;
-				return a.trackNumber - b.trackNumber;
-			});
-
-			// ページネーション
-			const start = (page - 1) * pageSize;
-			const paged = filtered.slice(start, start + pageSize);
-
-			return {
-				data: paged,
-				total: filtered.length,
+		queryFn: () =>
+			tracksApi.listPaginated({
 				page,
 				limit: pageSize,
-			};
-		},
+				search: debouncedSearch || undefined,
+				releaseId: releaseFilter || undefined,
+			}),
 		staleTime: 30_000,
-		enabled: !!releasesData,
 	});
 
 	const tracks = data?.data ?? [];
@@ -259,7 +159,7 @@ function TracksPage() {
 		}
 	};
 
-	const handleDelete = async (track: TrackWithRelease) => {
+	const handleDelete = async (track: TrackListItem) => {
 		if (
 			!confirm(
 				`「${track.name}」を削除しますか？\n※関連するクレジット情報も削除されます。`,
@@ -274,7 +174,7 @@ function TracksPage() {
 		}
 	};
 
-	const handleEdit = (track: TrackWithRelease) => {
+	const handleEdit = (track: TrackListItem) => {
 		setEditingTrack(track);
 		setEditForm({
 			trackNumber: track.trackNumber,
@@ -437,14 +337,8 @@ function TracksPage() {
 												</TableCell>
 											)}
 											{isVisible("releaseName") && (
-												<TableCell>
-													<Link
-														to="/admin/releases/$id"
-														params={{ id: track.releaseId }}
-														className="text-primary hover:underline"
-													>
-														{track.releaseName || "-"}
-													</Link>
+												<TableCell className="text-base-content/70">
+													{track.releaseName || "-"}
 												</TableCell>
 											)}
 											{isVisible("discNumber") && (
@@ -509,15 +403,6 @@ function TracksPage() {
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">トラック詳細</span>
-													</Link>
-													<Link
-														to="/admin/releases/$id"
-														params={{ id: track.releaseId }}
-														className="btn btn-ghost btn-xs"
-														title="リリース詳細"
-													>
-														<Disc3 className="h-4 w-4" />
-														<span className="sr-only">リリース詳細</span>
 													</Link>
 													<Button
 														variant="ghost"

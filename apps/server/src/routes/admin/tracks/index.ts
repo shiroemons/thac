@@ -1,13 +1,19 @@
 import {
+	and,
 	artistAliases,
 	artists,
+	count,
 	creditRoles,
 	db,
 	discs,
 	eq,
+	officialSongs,
+	or,
 	releases,
+	sql,
 	trackCreditRoles,
 	trackCredits,
+	trackOfficialSongs,
 	tracks,
 } from "@thac/db";
 import { Hono } from "hono";
@@ -29,25 +35,193 @@ tracksAdminRouter.route("/", trackDerivationsRouter);
 tracksAdminRouter.route("/", trackPublicationsRouter);
 tracksAdminRouter.route("/", trackIsrcsRouter);
 
-// トラック一覧取得（派生関係などで使用）
+// ページネーション対応トラック一覧取得
 tracksAdminRouter.get("/", async (c) => {
-	const limit = Number.parseInt(c.req.query("limit") ?? "100", 10);
+	const page = Number.parseInt(c.req.query("page") ?? "1", 10);
+	const limit = Number.parseInt(c.req.query("limit") ?? "20", 10);
+	const search = c.req.query("search") ?? "";
+	const releaseId = c.req.query("releaseId") ?? "";
 
+	const offset = (page - 1) * limit;
+
+	// 検索条件の構築
+	const searchConditions = [];
+	if (search) {
+		const searchPattern = `%${search}%`;
+		searchConditions.push(
+			or(
+				sql`${tracks.name} LIKE ${searchPattern}`,
+				sql`${tracks.nameJa} LIKE ${searchPattern}`,
+				sql`${tracks.nameEn} LIKE ${searchPattern}`,
+				sql`${releases.name} LIKE ${searchPattern}`,
+			),
+		);
+	}
+	if (releaseId) {
+		searchConditions.push(eq(tracks.releaseId, releaseId));
+	}
+
+	const whereCondition =
+		searchConditions.length > 0 ? and(...searchConditions) : undefined;
+
+	// トラック一覧取得（リリース名、ディスク番号付き）
 	const result = await db
 		.select({
 			track: tracks,
-			release: releases,
+			releaseName: releases.name,
+			discNumber: discs.discNumber,
 		})
 		.from(tracks)
 		.leftJoin(releases, eq(tracks.releaseId, releases.id))
-		.orderBy(tracks.name)
-		.limit(limit);
+		.leftJoin(discs, eq(tracks.discId, discs.id))
+		.where(whereCondition)
+		.orderBy(releases.name, discs.discNumber, tracks.trackNumber)
+		.limit(limit)
+		.offset(offset);
+
+	// トラックIDリスト
+	const trackIds = result.map((r) => r.track.id);
+
+	// クレジット情報を一括取得（role別にグループ化）
+	const creditsData =
+		trackIds.length > 0
+			? await db
+					.select({
+						trackId: trackCredits.trackId,
+						creditName: trackCredits.creditName,
+						roleCode: trackCreditRoles.roleCode,
+					})
+					.from(trackCredits)
+					.leftJoin(
+						trackCreditRoles,
+						eq(trackCredits.id, trackCreditRoles.trackCreditId),
+					)
+					.where(
+						sql`${trackCredits.trackId} IN (${sql.join(
+							trackIds.map((id) => sql`${id}`),
+							sql`, `,
+						)})`,
+					)
+			: [];
+
+	// 原曲情報を一括取得（officialSongsテーブルと結合）
+	const officialSongsData =
+		trackIds.length > 0
+			? await db
+					.select({
+						trackId: trackOfficialSongs.trackId,
+						customSongName: trackOfficialSongs.customSongName,
+						officialSongName: officialSongs.name,
+					})
+					.from(trackOfficialSongs)
+					.leftJoin(
+						officialSongs,
+						eq(trackOfficialSongs.officialSongId, officialSongs.id),
+					)
+					.where(
+						sql`${trackOfficialSongs.trackId} IN (${sql.join(
+							trackIds.map((id) => sql`${id}`),
+							sql`, `,
+						)})`,
+					)
+			: [];
+
+	// トラックごとのクレジット情報をマップに集約
+	const creditsByTrack = new Map<
+		string,
+		{
+			vocalists: Set<string>;
+			arrangers: Set<string>;
+			lyricists: Set<string>;
+			creditCount: number;
+		}
+	>();
+
+	for (const credit of creditsData) {
+		if (!creditsByTrack.has(credit.trackId)) {
+			creditsByTrack.set(credit.trackId, {
+				vocalists: new Set(),
+				arrangers: new Set(),
+				lyricists: new Set(),
+				creditCount: 0,
+			});
+		}
+		const trackCreditsInfo = creditsByTrack.get(credit.trackId);
+		if (trackCreditsInfo) {
+			if (credit.roleCode === "vocalist") {
+				trackCreditsInfo.vocalists.add(credit.creditName);
+			} else if (credit.roleCode === "arranger") {
+				trackCreditsInfo.arrangers.add(credit.creditName);
+			} else if (credit.roleCode === "lyricist") {
+				trackCreditsInfo.lyricists.add(credit.creditName);
+			}
+		}
+	}
+
+	// ユニークなクレジットをカウント
+	const creditCountByTrack = new Map<string, number>();
+	const uniqueCredits = new Map<string, Set<string>>();
+	for (const credit of creditsData) {
+		if (!uniqueCredits.has(credit.trackId)) {
+			uniqueCredits.set(credit.trackId, new Set());
+		}
+		uniqueCredits.get(credit.trackId)?.add(credit.creditName);
+	}
+	for (const [trackId, names] of uniqueCredits) {
+		creditCountByTrack.set(trackId, names.size);
+	}
+
+	// 原曲情報をマップに集約
+	const originalSongsByTrack = new Map<string, Set<string>>();
+	for (const song of officialSongsData) {
+		if (!originalSongsByTrack.has(song.trackId)) {
+			originalSongsByTrack.set(song.trackId, new Set());
+		}
+		// カスタム曲名があればそれを使用、なければ公式曲名を使用
+		const songName = song.customSongName || song.officialSongName;
+		if (songName) {
+			originalSongsByTrack.get(song.trackId)?.add(songName);
+		}
+	}
+
+	// 総件数を取得
+	const [totalResult] = await db
+		.select({ count: count() })
+		.from(tracks)
+		.leftJoin(releases, eq(tracks.releaseId, releases.id))
+		.where(whereCondition);
+
+	const total = totalResult?.count ?? 0;
+
+	// レスポンス形成
+	const data = result.map((row) => {
+		const trackCreditsInfo = creditsByTrack.get(row.track.id);
+		const originalSongs = originalSongsByTrack.get(row.track.id);
+		return {
+			...row.track,
+			releaseName: row.releaseName ?? null,
+			discNumber: row.discNumber ?? null,
+			creditCount: creditCountByTrack.get(row.track.id) ?? 0,
+			vocalists: trackCreditsInfo
+				? Array.from(trackCreditsInfo.vocalists).join(", ")
+				: null,
+			arrangers: trackCreditsInfo
+				? Array.from(trackCreditsInfo.arrangers).join(", ")
+				: null,
+			lyricists: trackCreditsInfo
+				? Array.from(trackCreditsInfo.lyricists).join(", ")
+				: null,
+			originalSongs: originalSongs
+				? Array.from(originalSongs).join(", ")
+				: null,
+		};
+	});
 
 	return c.json({
-		data: result.map((row) => ({
-			...row.track,
-			releaseName: row.release?.name ?? null,
-		})),
+		data,
+		total,
+		page,
+		limit,
 	});
 });
 
