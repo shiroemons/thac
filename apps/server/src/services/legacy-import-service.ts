@@ -188,10 +188,20 @@ function countUniqueEntities(records: LegacyCSVRecord[]): EntityProgressMap {
 }
 
 // キャッシュ用のマップ
+/**
+ * キャッシュされるエンティティ情報
+ * id: エンティティのID
+ * hasNameJa: nameJaが設定されているかどうか
+ */
+interface CachedEntityInfo {
+	id: string;
+	hasNameJa: boolean;
+}
+
 interface ImportCache {
 	events: Map<string, string>; // eventName -> eventId
-	circles: Map<string, string>; // circleName -> circleId
-	artists: Map<string, string>; // artistName -> artistId
+	circles: Map<string, CachedEntityInfo>; // circleName -> { id, hasNameJa }
+	artists: Map<string, CachedEntityInfo>; // artistName -> { id, hasNameJa }
 	releases: Map<string, string>; // `${circleName}:${albumBaseName}` -> releaseId
 	discs: Map<string, string>; // `${releaseId}:${discNumber}` -> discId
 	tracks: Map<string, string>; // `${discId}:${trackNumber}` or `${releaseId}:${trackNumber}` -> trackId
@@ -329,27 +339,33 @@ async function prefetchExistingEntities(
 		}
 	}
 
-	// サークル一括取得
+	// サークル一括取得（nameJaも取得して更新要否を判定）
 	const circleNameList = [...extracted.circleNames];
 	if (circleNameList.length > 0) {
 		const existingCircles = await tx
-			.select({ id: circles.id, name: circles.name })
+			.select({ id: circles.id, name: circles.name, nameJa: circles.nameJa })
 			.from(circles)
 			.where(inArray(circles.name, circleNameList));
 		for (const c of existingCircles) {
-			cache.circles.set(c.name, c.id);
+			cache.circles.set(c.name, {
+				id: c.id,
+				hasNameJa: c.nameJa !== null,
+			});
 		}
 	}
 
-	// アーティスト一括取得
+	// アーティスト一括取得（nameJaも取得して更新要否を判定）
 	const artistNameList = [...extracted.artistNames];
 	if (artistNameList.length > 0) {
 		const existingArtists = await tx
-			.select({ id: artists.id, name: artists.name })
+			.select({ id: artists.id, name: artists.name, nameJa: artists.nameJa })
 			.from(artists)
 			.where(inArray(artists.name, artistNameList));
 		for (const a of existingArtists) {
-			cache.artists.set(a.name, a.id);
+			cache.artists.set(a.name, {
+				id: a.id,
+				hasNameJa: a.nameJa !== null,
+			});
 		}
 	}
 
@@ -382,13 +398,17 @@ async function prefetchExistingEntities(
 		// サークル名->IDの逆引き
 		for (const [releaseKey, data] of extracted.releaseKeys) {
 			const primaryCircleName = data.circleNames[0] || "";
-			const primaryCircleId = cache.circles.get(primaryCircleName);
+			const primaryCircleInfo = cache.circles.get(primaryCircleName);
 
 			// 同名リリースでサークルが一致するものを探す
 			for (const r of existingReleases) {
 				if (r.name === data.albumBaseName) {
 					const circleIds = releaseCircleMap.get(r.id);
-					if (circleIds && primaryCircleId && circleIds.has(primaryCircleId)) {
+					if (
+						circleIds &&
+						primaryCircleInfo &&
+						circleIds.has(primaryCircleInfo.id)
+					) {
 						cache.releases.set(releaseKey, r.id);
 						break;
 					}
@@ -399,7 +419,10 @@ async function prefetchExistingEntities(
 }
 
 /**
- * 新規サークルを一括挿入
+ * サークルを一括挿入/更新
+ * - 新規: 新しいIDで挿入
+ * - 既存でnameJa未設定: 既存IDで更新（UPSERT）
+ * - 既存でnameJa設定済み: スキップ
  */
 async function batchInsertCircles(
 	tx: DbTransaction,
@@ -407,7 +430,7 @@ async function batchInsertCircles(
 	cache: ImportCache,
 	result: ImportResult,
 ): Promise<void> {
-	const newCircles: Array<{
+	const circlesToUpsert: Array<{
 		id: string;
 		name: string;
 		nameJa: string | null;
@@ -418,7 +441,10 @@ async function batchInsertCircles(
 	}> = [];
 
 	for (const circleName of extracted.circleNames) {
-		if (cache.circles.has(circleName)) {
+		const cached = cache.circles.get(circleName);
+
+		// 既存でnameJa設定済みならスキップ
+		if (cached?.hasNameJa) {
 			result.circles.skipped++;
 			continue;
 		}
@@ -426,10 +452,11 @@ async function batchInsertCircles(
 		const initial = detectInitial(circleName);
 		const nameInfo = generateNameInfo(circleName);
 		const sortName = generateSortName(circleName);
-		const newId = createId.circle();
+		// 既存の場合は既存IDを使用、新規の場合は新しいIDを生成
+		const circleId = cached?.id ?? createId.circle();
 
-		newCircles.push({
-			id: newId,
+		circlesToUpsert.push({
+			id: circleId,
 			name: nameInfo.name,
 			nameJa: nameInfo.nameJa,
 			nameEn: nameInfo.nameEn,
@@ -437,13 +464,18 @@ async function batchInsertCircles(
 			initialScript: initial.initialScript,
 			nameInitial: initial.nameInitial,
 		});
-		cache.circles.set(circleName, newId);
+
+		// キャッシュを更新
+		cache.circles.set(circleName, {
+			id: circleId,
+			hasNameJa: nameInfo.nameJa !== null,
+		});
 	}
 
-	if (newCircles.length > 0) {
+	if (circlesToUpsert.length > 0) {
 		await tx
 			.insert(circles)
-			.values(newCircles)
+			.values(circlesToUpsert)
 			.onConflictDoUpdate({
 				target: circles.name,
 				set: {
@@ -454,12 +486,15 @@ async function batchInsertCircles(
 					nameInitial: sql.raw(`excluded.${circles.nameInitial.name}`),
 				},
 			});
-		result.circles.created += newCircles.length;
+		result.circles.created += circlesToUpsert.length;
 	}
 }
 
 /**
- * 新規アーティストを一括挿入（エイリアスも同時作成）
+ * アーティストを一括挿入/更新（エイリアスは新規のみ作成）
+ * - 新規: 新しいIDで挿入 + エイリアス作成
+ * - 既存でnameJa未設定: 既存IDで更新（UPSERT）
+ * - 既存でnameJa設定済み: スキップ
  */
 async function batchInsertArtists(
 	tx: DbTransaction,
@@ -467,7 +502,7 @@ async function batchInsertArtists(
 	cache: ImportCache,
 	result: ImportResult,
 ): Promise<void> {
-	const newArtists: Array<{
+	const artistsToUpsert: Array<{
 		id: string;
 		name: string;
 		nameJa: string | null;
@@ -486,17 +521,22 @@ async function batchInsertArtists(
 	}> = [];
 
 	for (const artistName of extracted.artistNames) {
-		if (cache.artists.has(artistName)) {
+		const cached = cache.artists.get(artistName);
+
+		// 既存でnameJa設定済みならスキップ
+		if (cached?.hasNameJa) {
 			result.artists.skipped++;
 			continue;
 		}
 
 		const initial = detectInitial(artistName);
 		const nameInfo = generateNameInfo(artistName);
-		const newId = createId.artist();
+		// 既存の場合は既存IDを使用、新規の場合は新しいIDを生成
+		const artistId = cached?.id ?? createId.artist();
+		const isNew = !cached;
 
-		newArtists.push({
-			id: newId,
+		artistsToUpsert.push({
+			id: artistId,
 			name: nameInfo.name,
 			nameJa: nameInfo.nameJa,
 			nameEn: nameInfo.nameEn,
@@ -504,22 +544,29 @@ async function batchInsertArtists(
 			nameInitial: initial.nameInitial,
 		});
 
-		newAliases.push({
-			id: createId.artistAlias(),
-			artistId: newId,
-			name: nameInfo.name,
-			aliasTypeCode: MAIN_ALIAS_TYPE_CODE,
-			initialScript: initial.initialScript,
-			nameInitial: initial.nameInitial,
-		});
+		// エイリアスは新規アーティストの場合のみ作成
+		if (isNew) {
+			newAliases.push({
+				id: createId.artistAlias(),
+				artistId: artistId,
+				name: nameInfo.name,
+				aliasTypeCode: MAIN_ALIAS_TYPE_CODE,
+				initialScript: initial.initialScript,
+				nameInitial: initial.nameInitial,
+			});
+		}
 
-		cache.artists.set(artistName, newId);
+		// キャッシュを更新
+		cache.artists.set(artistName, {
+			id: artistId,
+			hasNameJa: nameInfo.nameJa !== null,
+		});
 	}
 
-	if (newArtists.length > 0) {
+	if (artistsToUpsert.length > 0) {
 		await tx
 			.insert(artists)
-			.values(newArtists)
+			.values(artistsToUpsert)
 			.onConflictDoUpdate({
 				target: artists.name,
 				set: {
@@ -529,7 +576,7 @@ async function batchInsertArtists(
 					nameInitial: sql.raw(`excluded.${artists.nameInitial.name}`),
 				},
 			});
-		result.artists.created += newArtists.length;
+		result.artists.created += artistsToUpsert.length;
 	}
 
 	if (newAliases.length > 0) {
@@ -590,11 +637,11 @@ async function batchInsertReleases(
 			const circleName = data.circleNames[i];
 			if (!circleName) continue;
 
-			const circleId = cache.circles.get(circleName);
-			if (circleId) {
+			const circleInfo = cache.circles.get(circleName);
+			if (circleInfo) {
 				newReleaseCircles.push({
 					releaseId: newId,
-					circleId,
+					circleId: circleInfo.id,
 					participationType: isMultipleCircles ? "co-host" : "host",
 					position: i + 1,
 				});
@@ -836,8 +883,9 @@ async function batchInsertCredits(
 			);
 			if (!artistName) continue;
 
-			const artistId = cache.artists.get(artistName);
-			if (!artistId) continue;
+			const artistInfo = cache.artists.get(artistName);
+			if (!artistInfo) continue;
+			const artistId = artistInfo.id;
 
 			const creditKey = `${trackId}:${artistId}:${artistName}`;
 			let creditId = creditIdMap.get(creditKey);
@@ -878,8 +926,9 @@ async function batchInsertCredits(
 			);
 			if (!artistName) continue;
 
-			const artistId = cache.artists.get(artistName);
-			if (!artistId) continue;
+			const artistInfo = cache.artists.get(artistName);
+			if (!artistInfo) continue;
+			const artistId = artistInfo.id;
 
 			const creditKey = `${trackId}:${artistId}:${artistName}`;
 			let creditId = creditIdMap.get(creditKey);
@@ -918,8 +967,9 @@ async function batchInsertCredits(
 			);
 			if (!artistName) continue;
 
-			const artistId = cache.artists.get(artistName);
-			if (!artistId) continue;
+			const artistInfo = cache.artists.get(artistName);
+			if (!artistInfo) continue;
+			const artistId = artistInfo.id;
 
 			const creditKey = `${trackId}:${artistId}:${artistName}`;
 			let creditId = creditIdMap.get(creditKey);
