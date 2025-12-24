@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { detectInitial } from "@thac/utils";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -289,10 +289,25 @@ function ArtistAliasesPage() {
 		setPage(1);
 	};
 
-	const artistFilterOptions = artists.map((a) => ({
-		value: a.id,
-		label: a.name,
-	}));
+	// アーティストオプションを作成（編集中のアーティストを含める）
+	const artistFilterOptions = useMemo(() => {
+		const options = artists.map((a) => ({
+			value: a.id,
+			label: a.name,
+		}));
+		// 編集中の名義のアーティストがリストにない場合は追加
+		if (
+			editingAlias?.artistId &&
+			editingAlias?.artistName &&
+			!options.find((o) => o.value === editingAlias.artistId)
+		) {
+			options.unshift({
+				value: editingAlias.artistId,
+				label: editingAlias.artistName,
+			});
+		}
+		return options;
+	}, [artists, editingAlias?.artistId, editingAlias?.artistName]);
 
 	const displayError =
 		mutationError || (error instanceof Error ? error.message : null);
@@ -397,7 +412,13 @@ function ArtistAliasesPage() {
 											)}
 											{isVisible("name") && (
 												<TableCell className="font-medium">
-													{alias.name}
+													<Link
+														to="/admin/artist-aliases/$id"
+														params={{ id: alias.id }}
+														className="text-primary hover:underline"
+													>
+														{alias.name}
+													</Link>
 												</TableCell>
 											)}
 											{isVisible("artistName") && (
@@ -467,6 +488,14 @@ function ArtistAliasesPage() {
 											)}
 											<TableCell>
 												<div className="flex items-center gap-1">
+													<Link
+														to="/admin/artist-aliases/$id"
+														params={{ id: alias.id }}
+														className="btn btn-ghost btn-xs"
+													>
+														<Eye className="h-4 w-4" />
+														<span className="sr-only">詳細</span>
+													</Link>
 													<Button
 														variant="ghost"
 														size="icon"

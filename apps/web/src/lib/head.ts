@@ -58,3 +58,10 @@ export function createMasterDetailHead(masterType: string, itemName?: string) {
 		meta: [{ title: `${masterType}詳細：${subtitle} | ${APP_NAME}` }],
 	};
 }
+
+export function createArtistAliasDetailHead(aliasName?: string) {
+	const subtitle = aliasName || "読み込み中";
+	return {
+		meta: [{ title: `名義詳細：${subtitle} | ${APP_NAME}` }],
+	};
+}

@@ -134,6 +134,16 @@ export const artistAliasesListQueryOptions = (
 	});
 };
 
+/**
+ * アーティストエイリアス詳細のqueryOptions
+ */
+export const artistAliasDetailQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["artistAlias", id],
+		queryFn: () => ssrFetch<ArtistAlias>(`/api/admin/artist-aliases/${id}`),
+		staleTime: STALE_TIME.SHORT,
+	});
+
 // ===== サークル =====
 
 interface CircleListParams {
