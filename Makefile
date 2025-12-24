@@ -105,6 +105,9 @@ db-setup: ## DBセットアップ（push + seed）（Docker）
 db-studio: ## Drizzle Studioを起動（ローカル）
 	bun run db:studio
 
+db-truncate: ## マスタデータ・公式作品以外をトランケート（Docker）
+	docker compose exec server bun run --cwd /app db:truncate
+
 # =============================================================================
 # ユーティリティ
 # =============================================================================

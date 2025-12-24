@@ -24,6 +24,7 @@
 		"db:seed:master": "bun run src/seed-master.ts",
 		"db:seed:official": "bun run src/seed-official.ts",
 		"db:seed:official-links": "bun run src/seed-official-links.ts",
+		"db:truncate": "bun run src/truncate-non-master.ts",
 		"test": "bun test"
 	},
 	"devDependencies": {

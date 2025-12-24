@@ -32,7 +32,8 @@
 		"db:studio": "turbo -F @thac/db db:studio",
 		"db:generate": "turbo -F @thac/db db:generate",
 		"db:migrate": "turbo -F @thac/db db:migrate",
-		"db:seed": "bun run --cwd packages/db db:seed"
+		"db:seed": "bun run --cwd packages/db db:seed",
+		"db:truncate": "bun run --cwd packages/db db:truncate"
 	},
 	"dependencies": {
 		"@tanstack/react-router": "^1.142.8",
