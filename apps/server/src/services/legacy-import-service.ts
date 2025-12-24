@@ -80,6 +80,97 @@ export interface ImportResult {
 	errors: ImportError[];
 }
 
+// 進捗通知用インターフェース
+export type ImportStage =
+	| "preparing"
+	| "events"
+	| "circles"
+	| "artists"
+	| "releases"
+	| "tracks"
+	| "credits"
+	| "links"
+	| "complete";
+
+export interface ImportProgress {
+	stage: ImportStage;
+	current: number;
+	total: number;
+	message: string;
+	// 全エンティティの進捗情報
+	entityProgress?: EntityProgressMap;
+}
+
+// 各エンティティタイプの進捗
+export interface EntityProgress {
+	processed: number;
+	total: number;
+}
+
+export interface EntityProgressMap {
+	events: EntityProgress;
+	circles: EntityProgress;
+	artists: EntityProgress;
+	releases: EntityProgress;
+	tracks: EntityProgress;
+}
+
+export type ProgressCallback = (progress: ImportProgress) => void;
+
+// レコードから事前にユニークなエンティティ数をカウント
+function countUniqueEntities(records: LegacyCSVRecord[]): EntityProgressMap {
+	const uniqueEvents = new Set<string>();
+	const uniqueCircles = new Set<string>();
+	const uniqueArtists = new Set<string>();
+	const uniqueReleases = new Set<string>();
+
+	for (const record of records) {
+		// イベント
+		if (record.event.trim()) {
+			uniqueEvents.add(record.event.trim());
+		}
+
+		// サークル（複合サークルを分割）
+		const circleNames = splitCircles(record.circle);
+		for (const name of circleNames) {
+			const normalized = normalizeFullWidthSymbols(name.trim());
+			if (normalized) {
+				uniqueCircles.add(normalized);
+			}
+		}
+
+		// アーティスト
+		const allArtists = [
+			...record.vocalists,
+			...record.arrangers,
+			...record.lyricists,
+		];
+		for (const name of allArtists) {
+			const normalized = normalizeFullWidthSymbols(name.trim());
+			if (normalized) {
+				uniqueArtists.add(normalized);
+			}
+		}
+
+		// リリース（サークル名:アルバムベース名）
+		const discInfo = parseDiscInfo(record.album);
+		const primaryCircle = normalizeFullWidthSymbols(
+			circleNames[0]?.trim() || "",
+		);
+		if (primaryCircle && discInfo.name) {
+			uniqueReleases.add(`${primaryCircle}:${discInfo.name}`);
+		}
+	}
+
+	return {
+		events: { processed: 0, total: uniqueEvents.size },
+		circles: { processed: 0, total: uniqueCircles.size },
+		artists: { processed: 0, total: uniqueArtists.size },
+		releases: { processed: 0, total: uniqueReleases.size },
+		tracks: { processed: 0, total: records.length },
+	};
+}
+
 // キャッシュ用のマップ
 interface ImportCache {
 	events: Map<string, string>; // eventName -> eventId
@@ -96,9 +187,12 @@ type DbTransaction = any;
 
 /**
  * レガシーCSVデータをインポートする
+ * @param input インポート入力データ
+ * @param onProgress 進捗コールバック（オプション）
  */
 export async function executeLegacyImport(
 	input: ImportInput,
+	onProgress?: ProgressCallback,
 ): Promise<ImportResult> {
 	const result: ImportResult = {
 		success: true,
@@ -124,13 +218,72 @@ export async function executeLegacyImport(
 		tracks: new Map(),
 	};
 
+	const totalRecords = input.records.length;
+
+	// 事前にユニークなエンティティ数をカウント
+	const entityProgress = countUniqueEntities(input.records);
+
+	// 新規イベントも含める
+	if (input.newEvents && input.newEvents.length > 0) {
+		entityProgress.events.total += input.newEvents.length;
+	}
+
+	// 処理済みエンティティを追跡するセット
+	const processedEntities = {
+		events: new Set<string>(),
+		circles: new Set<string>(),
+		artists: new Set<string>(),
+		releases: new Set<string>(),
+	};
+
+	// 進捗通知ヘルパー（エンティティ進捗を含む）
+	const notifyProgress = (
+		stage: ImportStage,
+		current: number,
+		total: number,
+		message: string,
+	) => {
+		if (onProgress) {
+			onProgress({ stage, current, total, message, entityProgress });
+		}
+	};
+
+	// エンティティ処理済みを記録してカウントを更新
+	const markEntityProcessed = (
+		type: "events" | "circles" | "artists" | "releases",
+		name: string,
+	) => {
+		if (!processedEntities[type].has(name)) {
+			processedEntities[type].add(name);
+			entityProgress[type].processed = processedEntities[type].size;
+		}
+	};
+
 	try {
+		notifyProgress("preparing", 0, totalRecords, "インポートを準備中...");
+
 		// トランザクション内で処理
 		await db.transaction(async (tx) => {
 			// 1. 新規イベントを先に処理
-			if (input.newEvents) {
-				for (const newEvent of input.newEvents) {
-					await processNewEvent(tx, newEvent, cache, result);
+			if (input.newEvents && input.newEvents.length > 0) {
+				notifyProgress(
+					"events",
+					0,
+					entityProgress.events.total,
+					"イベントを登録中...",
+				);
+				for (let i = 0; i < input.newEvents.length; i++) {
+					const newEvent = input.newEvents[i];
+					if (newEvent) {
+						await processNewEvent(tx, newEvent, cache, result);
+						markEntityProcessed("events", newEvent.name);
+						notifyProgress(
+							"events",
+							entityProgress.events.processed,
+							entityProgress.events.total,
+							`イベント: ${newEvent.name}`,
+						);
+					}
 				}
 			}
 
@@ -143,13 +296,33 @@ export async function executeLegacyImport(
 
 				try {
 					// イベント処理
-					await processEvent(tx, record, cache, result);
+					const eventName = record.event.trim();
+					if (eventName) {
+						await processEvent(tx, record, cache, result);
+						markEntityProcessed("events", eventName);
+						notifyProgress(
+							"events",
+							entityProgress.events.processed,
+							entityProgress.events.total,
+							`イベント: ${eventName}`,
+						);
+					}
 
 					// サークル処理（複合サークルを分割）
 					const circleNames = splitCircles(record.circle);
 					for (const circleName of circleNames) {
-						await processCircle(tx, circleName, cache, result);
+						const normalized = normalizeFullWidthSymbols(circleName.trim());
+						if (normalized) {
+							await processCircle(tx, circleName, cache, result);
+							markEntityProcessed("circles", normalized);
+						}
 					}
+					notifyProgress(
+						"circles",
+						entityProgress.circles.processed,
+						entityProgress.circles.total,
+						`サークル: ${entityProgress.circles.processed}/${entityProgress.circles.total}件`,
+					);
 
 					// アーティスト処理
 					const allArtists = [
@@ -158,17 +331,39 @@ export async function executeLegacyImport(
 						...record.lyricists,
 					];
 					for (const artistName of allArtists) {
-						await processArtist(tx, artistName, cache, result);
+						const normalized = normalizeFullWidthSymbols(artistName.trim());
+						if (normalized) {
+							await processArtist(tx, artistName, cache, result);
+							markEntityProcessed("artists", normalized);
+						}
 					}
+					notifyProgress(
+						"artists",
+						entityProgress.artists.processed,
+						entityProgress.artists.total,
+						`アーティスト: ${entityProgress.artists.processed}/${entityProgress.artists.total}件`,
+					);
 
 					// リリース処理（ディスク情報を考慮）
 					const discInfo = parseDiscInfo(record.album);
+					const primaryCircle = normalizeFullWidthSymbols(
+						circleNames[0]?.trim() || "",
+					);
+					const releaseKey = `${primaryCircle}:${discInfo.name}`;
+
 					const releaseId = await processRelease(
 						tx,
 						discInfo.name,
 						circleNames,
 						cache,
 						result,
+					);
+					markEntityProcessed("releases", releaseKey);
+					notifyProgress(
+						"releases",
+						entityProgress.releases.processed,
+						entityProgress.releases.total,
+						`作品: ${entityProgress.releases.processed}/${entityProgress.releases.total}件`,
 					);
 
 					// ディスク処理
@@ -188,6 +383,13 @@ export async function executeLegacyImport(
 						discId,
 						cache,
 						result,
+					);
+					entityProgress.tracks.processed = i + 1;
+					notifyProgress(
+						"tracks",
+						entityProgress.tracks.processed,
+						entityProgress.tracks.total,
+						`トラック: ${entityProgress.tracks.processed}/${entityProgress.tracks.total}件`,
 					);
 
 					// クレジット処理
@@ -214,6 +416,8 @@ export async function executeLegacyImport(
 				}
 			}
 		});
+
+		notifyProgress("complete", totalRecords, totalRecords, "インポート完了");
 	} catch (error) {
 		result.success = false;
 		const message = error instanceof Error ? error.message : "Unknown error";
@@ -222,6 +426,7 @@ export async function executeLegacyImport(
 			entity: "transaction",
 			message: `トランザクションエラー: ${message}`,
 		});
+		notifyProgress("complete", 0, totalRecords, `エラー: ${message}`);
 	}
 
 	if (result.errors.length > 0) {

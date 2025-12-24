@@ -2,12 +2,14 @@
  * レガシーCSVインポートAPIエンドポイント
  */
 import { Hono } from "hono";
+import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import {
 	checkNewEventsNeeded,
 	executeLegacyImport,
 	type ImportInput,
+	type ImportProgress,
 } from "../../../services/legacy-import-service";
 import { createDbSongMatcher } from "../../../services/song-matcher-service";
 import { parseLegacyCSV } from "../../../utils/legacy-csv-parser";
@@ -157,10 +159,11 @@ legacyImportRouter.post("/preview", async (c) => {
 });
 
 /**
- * 実行エンドポイント
+ * 実行エンドポイント（SSEストリーミング）
  * POST /api/admin/import/legacy/execute
  *
  * パースされたレコードと原曲マッピングを受け取ってデータ登録を実行
+ * Server-Sent Events で進捗をリアルタイム通知
  */
 legacyImportRouter.post("/execute", async (c) => {
 	try {
@@ -195,9 +198,44 @@ legacyImportRouter.post("/execute", async (c) => {
 			newEvents: parsed.data.newEvents,
 		};
 
-		const result = await executeLegacyImport(input);
+		// SSEでストリーミングレスポンス
+		return streamSSE(c, async (stream) => {
+			let eventId = 0;
 
-		return c.json(result);
+			// 進捗コールバック
+			const onProgress = async (progress: ImportProgress) => {
+				await stream.writeSSE({
+					id: String(eventId++),
+					event: "progress",
+					data: JSON.stringify(progress),
+				});
+			};
+
+			try {
+				// インポート実行（進捗コールバック付き）
+				const result = await executeLegacyImport(input, onProgress);
+
+				// 最終結果を送信
+				await stream.writeSSE({
+					id: String(eventId++),
+					event: "result",
+					data: JSON.stringify(result),
+				});
+			} catch (error) {
+				// エラーを送信
+				await stream.writeSSE({
+					id: String(eventId++),
+					event: "error",
+					data: JSON.stringify({
+						success: false,
+						error:
+							error instanceof Error
+								? error.message
+								: "予期しないエラーが発生しました",
+					}),
+				});
+			}
+		});
 	} catch (error) {
 		console.error("Execute error:", error);
 		return c.json(

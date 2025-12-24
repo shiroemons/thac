@@ -24,6 +24,9 @@ import {
 import { useCallback, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import {
+	type EntityProgressMap,
+	type ImportProgress,
+	type ImportStage,
 	type LegacyCSVRecord,
 	type LegacyImportResult,
 	legacyImportApi,
@@ -38,7 +41,7 @@ export const Route = createFileRoute("/admin/_admin/import-legacy")({
 	component: LegacyImportPage,
 });
 
-type WizardStep = "upload" | "mapping" | "events" | "result";
+type WizardStep = "upload" | "mapping" | "events" | "importing" | "result";
 
 function LegacyImportPage() {
 	const [step, setStep] = useState<WizardStep>("upload");
@@ -58,6 +61,10 @@ function LegacyImportPage() {
 	const [importResult, setImportResult] = useState<LegacyImportResult | null>(
 		null,
 	);
+	const [importStage, setImportStage] = useState<ImportStage>("preparing");
+	const [importProgress, setImportProgress] = useState(0);
+	const [entityProgress, setEntityProgress] =
+		useState<EntityProgressMap | null>(null);
 
 	// プレビューAPI
 	const previewMutation = useMutation({
@@ -104,23 +111,53 @@ function LegacyImportPage() {
 		},
 	});
 
-	// 実行API
+	// 進捗コールバック
+	const handleProgress = useCallback((progress: ImportProgress) => {
+		setImportStage(progress.stage);
+		if (progress.entityProgress) {
+			setEntityProgress(progress.entityProgress);
+			// トラック進捗をパーセンテージに変換
+			const tracks = progress.entityProgress.tracks;
+			if (tracks.total > 0) {
+				setImportProgress(Math.round((tracks.processed / tracks.total) * 100));
+			}
+		}
+	}, []);
+
+	// 実行API（SSEストリーミング対応）
 	const executeMutation = useMutation({
-		mutationFn: () => {
+		mutationFn: async () => {
 			const newEvents =
 				newEventsNeeded.length > 0
 					? Object.values(newEventInputs).filter((e) => e.startDate !== "")
 					: undefined;
-			return legacyImportApi.execute(
+			return legacyImportApi.executeWithProgress(
 				records,
 				mappings,
 				customSongNames,
 				newEvents,
+				handleProgress,
 			);
 		},
+		onMutate: () => {
+			// インポート開始時に進捗表示を開始
+			setStep("importing");
+			setImportStage("preparing");
+			setImportProgress(0);
+			setEntityProgress(null);
+		},
 		onSuccess: (data) => {
+			setImportStage("complete");
+			setImportProgress(100);
 			setImportResult(data);
-			setStep("result");
+			// 少し待ってから結果画面へ
+			setTimeout(() => {
+				setStep("result");
+			}, 500);
+		},
+		onError: () => {
+			setImportStage("complete");
+			setImportProgress(100);
 		},
 	});
 
@@ -215,24 +252,29 @@ function LegacyImportPage() {
 			<div className="mb-8">
 				<ul className="steps w-full">
 					<li
-						className={`step ${step === "upload" || step === "mapping" || step === "events" || step === "result" ? "step-primary" : ""}`}
+						className={`step ${["upload", "mapping", "events", "importing", "result"].includes(step) ? "step-primary" : ""}`}
 					>
 						CSVアップロード
 					</li>
 					<li
-						className={`step ${step === "mapping" || step === "events" || step === "result" ? "step-primary" : ""}`}
+						className={`step ${["mapping", "events", "importing", "result"].includes(step) ? "step-primary" : ""}`}
 					>
 						原曲マッピング
 					</li>
-					{!skipEventsStep && (
-						<li
-							className={`step ${step === "events" || step === "result" ? "step-primary" : ""}`}
-						>
-							イベント登録
-						</li>
-					)}
+					<li
+						className={`step ${["events", "importing", "result"].includes(step) ? "step-primary" : ""}`}
+					>
+						{step !== "upload" && skipEventsStep
+							? "イベント登録（スキップ）"
+							: "イベント登録"}
+					</li>
+					<li
+						className={`step ${["importing", "result"].includes(step) ? "step-primary" : ""}`}
+					>
+						インポート実行
+					</li>
 					<li className={`step ${step === "result" ? "step-primary" : ""}`}>
-						インポート結果
+						結果
 					</li>
 				</ul>
 			</div>
@@ -267,13 +309,21 @@ function LegacyImportPage() {
 						/>
 					)}
 
+					{step === "importing" && (
+						<ImportingStep
+							stage={importStage}
+							progress={importProgress}
+							entityProgress={entityProgress}
+						/>
+					)}
+
 					{step === "result" && importResult && (
 						<ResultStep result={importResult} onReset={handleReset} />
 					)}
 				</div>
 
 				{/* ナビゲーションボタン */}
-				{step !== "result" && (
+				{step !== "result" && step !== "importing" && (
 					<div className="card-actions justify-between border-base-300 border-t px-6 py-4">
 						<button
 							type="button"
@@ -292,12 +342,7 @@ function LegacyImportPage() {
 								onClick={handleNext}
 								disabled={executeMutation.isPending}
 							>
-								{executeMutation.isPending ? (
-									<>
-										<Loader2 className="h-4 w-4 animate-spin" />
-										インポート中...
-									</>
-								) : step === "mapping" && !skipEventsStep ? (
+								{step === "mapping" && !skipEventsStep ? (
 									<>
 										次へ
 										<ChevronRight className="h-4 w-4" />
@@ -822,7 +867,240 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 	);
 }
 
-// ステップ4: インポート結果
+// ステップ4: インポート中
+interface ImportingStepProps {
+	stage: ImportStage;
+	progress: number;
+	entityProgress: EntityProgressMap | null;
+}
+
+function ImportingStep({
+	stage,
+	progress,
+	entityProgress,
+}: ImportingStepProps) {
+	// エンティティタイプのラベルマップ
+	const entityLabels: Record<keyof EntityProgressMap, string> = {
+		events: "イベント",
+		circles: "サークル",
+		artists: "アーティスト",
+		releases: "作品",
+		tracks: "トラック",
+	};
+
+	// ステージとエンティティの対応
+	const stageToEntity: Partial<Record<ImportStage, keyof EntityProgressMap>> = {
+		events: "events",
+		circles: "circles",
+		artists: "artists",
+		releases: "releases",
+		tracks: "tracks",
+	};
+
+	const stageInfo: Record<
+		ImportStage,
+		{ label: string; icon: React.ReactNode }
+	> = {
+		preparing: {
+			label: "準備中",
+			icon: <Loader2 className="h-5 w-5 animate-spin" />,
+		},
+		events: {
+			label: "イベント",
+			icon: <Calendar className="h-5 w-5" />,
+		},
+		circles: {
+			label: "サークル",
+			icon: <CheckCircle className="h-5 w-5" />,
+		},
+		artists: {
+			label: "アーティスト",
+			icon: <CheckCircle className="h-5 w-5" />,
+		},
+		releases: {
+			label: "作品",
+			icon: <CheckCircle className="h-5 w-5" />,
+		},
+		tracks: {
+			label: "トラック",
+			icon: <Music className="h-5 w-5" />,
+		},
+		credits: {
+			label: "クレジット",
+			icon: <CheckCircle className="h-5 w-5" />,
+		},
+		links: {
+			label: "原曲紐付け",
+			icon: <CheckCircle className="h-5 w-5" />,
+		},
+		complete: {
+			label: "完了",
+			icon: <CheckCircle className="h-5 w-5 text-success" />,
+		},
+	};
+
+	const stages: ImportStage[] = [
+		"events",
+		"circles",
+		"artists",
+		"releases",
+		"tracks",
+		"credits",
+		"links",
+	];
+
+	const isComplete = stage === "complete";
+
+	// エンティティの進捗テキストを生成
+	const getEntityProgressText = (
+		entityKey: keyof EntityProgressMap,
+	): string => {
+		if (!entityProgress) return "";
+		const ep = entityProgress[entityKey];
+		if (!ep || ep.total === 0) return "";
+		return `${ep.processed}/${ep.total}件`;
+	};
+
+	// 現在のステージのメッセージを生成
+	const getCurrentMessage = (): string => {
+		if (stage === "preparing") return "インポートの準備をしています...";
+		if (stage === "complete") return "インポートが完了しました";
+		if (stage === "credits") return "クレジット情報を登録しています...";
+		if (stage === "links") return "原曲との紐付けを登録しています...";
+
+		const entityKey = stageToEntity[stage];
+		if (entityKey && entityProgress) {
+			const ep = entityProgress[entityKey];
+			if (ep && ep.total > 0) {
+				const label = entityLabels[entityKey];
+				return `${label}: ${ep.processed}/${ep.total}件 処理中...`;
+			}
+		}
+		return `${stageInfo[stage].label}情報を登録しています...`;
+	};
+
+	return (
+		<div className="space-y-8">
+			<div className="text-center">
+				<div className="flex items-center justify-center gap-2">
+					{isComplete ? (
+						<CheckCircle className="h-8 w-8 text-success" />
+					) : (
+						<Loader2 className="h-8 w-8 animate-spin text-primary" />
+					)}
+				</div>
+				<h3 className="mt-4 font-semibold text-lg">
+					{isComplete ? "インポート完了" : "インポート実行中"}
+				</h3>
+				<p className="text-base-content/60 text-sm">
+					{isComplete
+						? "結果画面に移動します..."
+						: "データベースにレコードを登録しています。しばらくお待ちください..."}
+				</p>
+			</div>
+
+			{/* プログレスバー */}
+			<div className="space-y-2">
+				<div className="flex items-center justify-between text-sm">
+					<span className="flex items-center gap-2">
+						{stageInfo[stage].icon}
+						<span>{getCurrentMessage()}</span>
+					</span>
+					<span className="font-medium">{progress}%</span>
+				</div>
+				<progress
+					className="progress progress-primary w-full"
+					value={progress}
+					max="100"
+				/>
+			</div>
+
+			{/* エンティティ別進捗 */}
+			{entityProgress && (
+				<div className="stats stats-vertical lg:stats-horizontal w-full border border-base-300 shadow-sm">
+					{(
+						Object.entries(entityLabels) as [keyof EntityProgressMap, string][]
+					).map(([key, label]) => {
+						const ep = entityProgress[key];
+						const isCurrentEntity = stageToEntity[stage] === key;
+						const isDone = ep.processed === ep.total && ep.total > 0;
+
+						return (
+							<div
+								key={key}
+								className={`stat ${isCurrentEntity ? "bg-primary/5" : ""}`}
+							>
+								<div className="stat-title">{label}</div>
+								<div
+									className={`stat-value text-xl ${isDone ? "text-success" : isCurrentEntity ? "text-primary" : ""}`}
+								>
+									{ep.processed}/{ep.total}
+								</div>
+								<div className="stat-desc">
+									{isDone ? (
+										<span className="text-success">完了</span>
+									) : isCurrentEntity ? (
+										<span className="text-primary">処理中...</span>
+									) : ep.processed > 0 ? (
+										<span>処理済み</span>
+									) : (
+										<span>待機中</span>
+									)}
+								</div>
+							</div>
+						);
+					})}
+				</div>
+			)}
+
+			{/* ステージリスト */}
+			<div className="space-y-2">
+				<h4 className="font-medium text-sm">処理ステージ</h4>
+				<ul className="space-y-1">
+					{stages.map((s) => {
+						const info = stageInfo[s];
+						const stageCompleted =
+							stages.indexOf(s) < stages.indexOf(stage) || stage === "complete";
+						const isCurrent = s === stage;
+						const entityKey = stageToEntity[s];
+						const progressText = entityKey
+							? getEntityProgressText(entityKey)
+							: "";
+
+						return (
+							<li
+								key={s}
+								className={`flex items-center justify-between rounded p-2 text-sm ${
+									isCurrent
+										? "bg-primary/10 text-primary"
+										: stageCompleted
+											? "text-success"
+											: "text-base-content/40"
+								}`}
+							>
+								<span className="flex items-center gap-2">
+									{stageCompleted ? (
+										<CheckCircle className="h-4 w-4" />
+									) : isCurrent ? (
+										<Loader2 className="h-4 w-4 animate-spin" />
+									) : (
+										<div className="h-4 w-4 rounded-full border border-current" />
+									)}
+									<span>{info.label}</span>
+								</span>
+								{progressText && (
+									<span className="font-medium">{progressText}</span>
+								)}
+							</li>
+						);
+					})}
+				</ul>
+			</div>
+		</div>
+	);
+}
+
+// ステップ5: インポート結果
 interface ResultStepProps {
 	result: LegacyImportResult;
 	onReset: () => void;
