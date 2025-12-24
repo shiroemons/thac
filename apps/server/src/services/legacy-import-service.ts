@@ -45,6 +45,7 @@ export interface ImportInput {
 	songMappings: Map<string, string>; // originalName -> officialSongId
 	customSongNames: Map<string, string>; // originalName -> customSongName（マッチしない原曲用）
 	newEvents?: NewEventInput[]; // 新規イベント情報
+	eventDayMappings?: Map<string, string>; // eventName -> eventDayId（既存イベントのイベント日選択用）
 }
 
 export interface NewEventInput {
@@ -67,6 +68,24 @@ export interface EventConfigurationStatus {
 	hasStartDate: boolean;
 	hasTotalDays: boolean;
 	needsConfiguration: boolean; // 設定が必要かどうか
+}
+
+/**
+ * 既存イベントのイベント日情報
+ */
+export interface ExistingEventDay {
+	id: string;
+	dayNumber: number;
+	eventDate: string | null;
+}
+
+/**
+ * 複数日を持つ既存イベント情報
+ */
+export interface ExistingEventWithDays {
+	eventId: string;
+	eventName: string;
+	eventDays: ExistingEventDay[];
 }
 
 export interface EntityCount {
@@ -211,6 +230,7 @@ interface ImportCache {
 	eventDays: Map<string, CachedEventDayInfo>; // eventId -> { id, date } (1日目のみ)
 	circles: Map<string, CachedEntityInfo>; // circleName -> { id, hasNameJa }
 	artists: Map<string, CachedEntityInfo>; // artistName -> { id, hasNameJa }
+	artistAliases: Map<string, string>; // artistName -> aliasId (本名義のID)
 	releases: Map<string, string>; // `${circleName}:${albumBaseName}` -> releaseId
 	discs: Map<string, string>; // `${releaseId}:${discNumber}` -> discId
 	tracks: Map<string, string>; // `${discId}:${trackNumber}` or `${releaseId}:${trackNumber}` -> trackId
@@ -404,6 +424,38 @@ async function prefetchExistingEntities(
 				hasNameJa: a.nameJa !== null,
 			});
 		}
+
+		// 既存アーティストの本名義を一括取得
+		const artistIds = existingArtists.map(
+			(a: { id: string; name: string; nameJa: string | null }) => a.id,
+		);
+		if (artistIds.length > 0) {
+			const existingAliases = await tx
+				.select({
+					id: artistAliases.id,
+					artistId: artistAliases.artistId,
+					name: artistAliases.name,
+					aliasTypeCode: artistAliases.aliasTypeCode,
+				})
+				.from(artistAliases)
+				.where(inArray(artistAliases.artistId, artistIds));
+
+			// アーティスト名と同じ名前の本名義をキャッシュ
+			for (const alias of existingAliases) {
+				// 本名義（main）またはアーティスト名と一致する名義をキャッシュ
+				const artistEntry = existingArtists.find(
+					(a: { id: string; name: string; nameJa: string | null }) =>
+						a.id === alias.artistId,
+				);
+				if (
+					artistEntry &&
+					(alias.aliasTypeCode === MAIN_ALIAS_TYPE_CODE ||
+						alias.name === artistEntry.name)
+				) {
+					cache.artistAliases.set(artistEntry.name, alias.id);
+				}
+			}
+		}
 	}
 
 	// リリース一括取得（名前で検索し、後でサークルと照合）
@@ -583,14 +635,17 @@ async function batchInsertArtists(
 
 		// エイリアスは新規アーティストの場合のみ作成
 		if (isNew) {
+			const aliasId = createId.artistAlias();
 			newAliases.push({
-				id: createId.artistAlias(),
+				id: aliasId,
 				artistId: artistId,
 				name: nameInfo.name,
 				aliasTypeCode: MAIN_ALIAS_TYPE_CODE,
 				initialScript: initial.initialScript,
 				nameInitial: initial.nameInitial,
 			});
+			// エイリアスIDをキャッシュ
+			cache.artistAliases.set(artistName, aliasId);
 		}
 
 		// キャッシュを更新
@@ -636,6 +691,7 @@ async function batchInsertReleases(
 	extracted: ExtractedEntities,
 	cache: ImportCache,
 	result: ImportResult,
+	eventDayMappings?: Map<string, string>,
 ): Promise<void> {
 	const newReleases: Array<{
 		id: string;
@@ -663,16 +719,35 @@ async function batchInsertReleases(
 		const nameInfo = generateNameInfo(data.albumBaseName);
 		const newId = createId.release();
 
-		// イベント日を取得（1日目）
+		// イベント日を取得
+		// 1. eventDayMappingsに指定があればそれを使用
+		// 2. なければデフォルト（1日目）を使用
 		let eventDayId: string | null = null;
 		let releaseDate: string | null = null;
 		if (data.eventName) {
-			const eventId = cache.events.get(data.eventName);
-			if (eventId) {
-				const eventDayInfo = cache.eventDays.get(eventId);
-				if (eventDayInfo) {
-					eventDayId = eventDayInfo.id;
-					releaseDate = eventDayInfo.date;
+			// ユーザーが選択したイベント日があるかチェック
+			const mappedEventDayId = eventDayMappings?.get(data.eventName);
+			if (mappedEventDayId) {
+				// 選択されたイベント日を使用
+				eventDayId = mappedEventDayId;
+				// 日付を取得
+				const dayInfo = await tx
+					.select({ date: eventDays.date })
+					.from(eventDays)
+					.where(eq(eventDays.id, mappedEventDayId))
+					.limit(1);
+				if (dayInfo.length > 0 && dayInfo[0]) {
+					releaseDate = dayInfo[0].date;
+				}
+			} else {
+				// デフォルト：キャッシュされた1日目を使用
+				const eventId = cache.events.get(data.eventName);
+				if (eventId) {
+					const eventDayInfo = cache.eventDays.get(eventId);
+					if (eventDayInfo) {
+						eventDayId = eventDayInfo.id;
+						releaseDate = eventDayInfo.date;
+					}
 				}
 			}
 		}
@@ -913,6 +988,7 @@ async function batchInsertCredits(
 		id: string;
 		trackId: string;
 		artistId: string;
+		artistAliasId: string | null;
 		creditName: string;
 		creditPosition: number;
 	}> = [];
@@ -942,6 +1018,7 @@ async function batchInsertCredits(
 			const artistInfo = cache.artists.get(artistName);
 			if (!artistInfo) continue;
 			const artistId = artistInfo.id;
+			const artistAliasId = cache.artistAliases.get(artistName) || null;
 
 			const creditKey = `${trackId}:${artistId}:${artistName}`;
 			let creditId = creditIdMap.get(creditKey);
@@ -960,6 +1037,7 @@ async function batchInsertCredits(
 					id: creditId,
 					trackId,
 					artistId,
+					artistAliasId,
 					creditName: artistName,
 					creditPosition: i + 1,
 				});
@@ -985,6 +1063,7 @@ async function batchInsertCredits(
 			const artistInfo = cache.artists.get(artistName);
 			if (!artistInfo) continue;
 			const artistId = artistInfo.id;
+			const artistAliasId = cache.artistAliases.get(artistName) || null;
 
 			const creditKey = `${trackId}:${artistId}:${artistName}`;
 			let creditId = creditIdMap.get(creditKey);
@@ -1001,6 +1080,7 @@ async function batchInsertCredits(
 					id: creditId,
 					trackId,
 					artistId,
+					artistAliasId,
 					creditName: artistName,
 					creditPosition: i + 1,
 				});
@@ -1026,6 +1106,7 @@ async function batchInsertCredits(
 			const artistInfo = cache.artists.get(artistName);
 			if (!artistInfo) continue;
 			const artistId = artistInfo.id;
+			const artistAliasId = cache.artistAliases.get(artistName) || null;
 
 			const creditKey = `${trackId}:${artistId}:${artistName}`;
 			let creditId = creditIdMap.get(creditKey);
@@ -1042,6 +1123,7 @@ async function batchInsertCredits(
 					id: creditId,
 					trackId,
 					artistId,
+					artistAliasId,
 					creditName: artistName,
 					creditPosition: i + 1,
 				});
@@ -1231,6 +1313,7 @@ export async function executeLegacyImport(
 		eventDays: new Map(),
 		circles: new Map(),
 		artists: new Map(),
+		artistAliases: new Map(),
 		releases: new Map(),
 		discs: new Map(),
 		tracks: new Map(),
@@ -1371,7 +1454,13 @@ export async function executeLegacyImport(
 				entityProgress.releases.total,
 				"作品を登録中...",
 			);
-			await batchInsertReleases(tx, extracted, cache, result);
+			await batchInsertReleases(
+				tx,
+				extracted,
+				cache,
+				result,
+				input.eventDayMappings,
+			);
 			entityProgress.releases.processed = extracted.releaseKeys.size;
 			notifyProgress(
 				"releases",
@@ -1722,4 +1811,61 @@ export async function updateExistingEventConfiguration(
 	});
 
 	return { eventDaysCreated, eventUpdated };
+}
+
+/**
+ * 既存イベントのうち、複数日を持つものを取得する
+ * （イベント日選択が必要なイベントを特定するため）
+ */
+export async function getExistingEventsWithMultipleDays(
+	eventNames: string[],
+): Promise<ExistingEventWithDays[]> {
+	const results: ExistingEventWithDays[] = [];
+	const uniqueNames = [
+		...new Set(eventNames.map((n) => n.trim()).filter(Boolean)),
+	];
+
+	for (const eventName of uniqueNames) {
+		// イベントを検索
+		const existing = await db
+			.select({
+				id: events.id,
+				name: events.name,
+			})
+			.from(events)
+			.where(eq(events.name, eventName))
+			.limit(1);
+
+		if (existing.length === 0 || !existing[0]) {
+			continue; // イベントが存在しない場合はスキップ
+		}
+
+		const event = existing[0];
+
+		// このイベントのイベント日を取得
+		const days = await db
+			.select({
+				id: eventDays.id,
+				dayNumber: eventDays.dayNumber,
+				date: eventDays.date,
+			})
+			.from(eventDays)
+			.where(eq(eventDays.eventId, event.id))
+			.orderBy(eventDays.dayNumber);
+
+		// 複数日を持つイベントのみ返す
+		if (days.length > 1) {
+			results.push({
+				eventId: event.id,
+				eventName: event.name,
+				eventDays: days.map((d) => ({
+					id: d.id,
+					dayNumber: d.dayNumber,
+					eventDate: d.date,
+				})),
+			});
+		}
+	}
+
+	return results;
 }
