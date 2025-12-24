@@ -152,7 +152,7 @@ export function parseEventEdition(eventName: string): EventEditionInfo {
 /**
  * 名前情報を生成
  * - name: 元の名前（正規化後）
- * - nameJa: 日本語名（英語のみの場合はnull）
+ * - nameJa: 日本語名（常に設定）
  * - nameEn: 英語名（英語のみの場合のみ設定）
  */
 export interface NameInfo {
@@ -167,7 +167,7 @@ export function generateNameInfo(originalName: string): NameInfo {
 	if (isEnglishOnly(name)) {
 		return {
 			name,
-			nameJa: null,
+			nameJa: name, // 英語のみでも日本語名として設定
 			nameEn: name,
 		};
 	}
