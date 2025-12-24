@@ -5,14 +5,25 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import {
+	checkNewEventsNeeded,
 	executeLegacyImport,
 	type ImportInput,
 } from "../../../services/legacy-import-service";
 import { createDbSongMatcher } from "../../../services/song-matcher-service";
 import { parseLegacyCSV } from "../../../utils/legacy-csv-parser";
+import { parseEventEdition } from "../../../utils/name-utils";
 
 // ファイルサイズ上限: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+// 新規イベント入力スキーマ
+const newEventInputSchema = z.object({
+	name: z.string(),
+	totalDays: z.number().int().min(1),
+	startDate: z.string(),
+	endDate: z.string(),
+	eventDates: z.array(z.string()),
+});
 
 // 実行リクエスト型
 const executeRequestSchema = z.object({
@@ -31,6 +42,7 @@ const executeRequestSchema = z.object({
 	),
 	songMappings: z.record(z.string(), z.string()),
 	customSongNames: z.record(z.string(), z.string()),
+	newEvents: z.array(newEventInputSchema).optional(),
 });
 
 const legacyImportRouter = new Hono<AdminContext>();
@@ -90,6 +102,7 @@ legacyImportRouter.post("/preview", async (c) => {
 				success: false,
 				records: [],
 				songMatches: [],
+				newEventsNeeded: [],
 				errors: parseResult.errors,
 			});
 		}
@@ -103,10 +116,29 @@ legacyImportRouter.post("/preview", async (c) => {
 		const matcher = createDbSongMatcher(10);
 		const songMatches = await matcher.matchSongs(uniqueOriginalNames);
 
+		// ユニークなイベント名を抽出
+		const uniqueEventNames = [
+			...new Set(parseResult.records.map((r) => r.event)),
+		].filter((name) => name.trim() !== "");
+
+		// 新規イベントが必要かチェック
+		const newEventsNeeded = await checkNewEventsNeeded(uniqueEventNames);
+
+		// 新規イベントの回次を推測
+		const newEventsWithEdition = newEventsNeeded.map((eventName) => {
+			const editionInfo = parseEventEdition(eventName);
+			return {
+				name: eventName,
+				baseName: editionInfo.baseName,
+				edition: editionInfo.edition,
+			};
+		});
+
 		return c.json({
 			success: true,
 			records: parseResult.records,
 			songMatches,
+			newEventsNeeded: newEventsWithEdition,
 			errors: [],
 		});
 	} catch (error) {
@@ -160,6 +192,7 @@ legacyImportRouter.post("/execute", async (c) => {
 			records: parsed.data.records,
 			songMappings,
 			customSongNames,
+			newEvents: parsed.data.newEvents,
 		};
 
 		const result = await executeLegacyImport(input);

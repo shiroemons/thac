@@ -369,10 +369,25 @@ export interface SongMatchResult {
 	customSongName: string | null;
 }
 
+export interface NewEventNeeded {
+	name: string;
+	baseName: string;
+	edition: number | null;
+}
+
+export interface NewEventInput {
+	name: string;
+	totalDays: number;
+	startDate: string;
+	endDate: string;
+	eventDates: string[];
+}
+
 export interface LegacyPreviewResponse {
 	success: boolean;
 	records: LegacyCSVRecord[];
 	songMatches: SongMatchResult[];
+	newEventsNeeded: NewEventNeeded[];
 	errors: { row: number; message: string }[];
 	error?: string;
 }
@@ -380,13 +395,16 @@ export interface LegacyPreviewResponse {
 export interface LegacyImportResult {
 	success: boolean;
 	events: { created: number; updated: number; skipped: number };
+	eventDays: { created: number; updated: number; skipped: number };
 	circles: { created: number; updated: number; skipped: number };
 	artists: { created: number; updated: number; skipped: number };
+	artistAliases: { created: number; updated: number; skipped: number };
 	releases: { created: number; updated: number; skipped: number };
+	discs: { created: number; updated: number; skipped: number };
 	tracks: { created: number; updated: number; skipped: number };
 	credits: { created: number; updated: number; skipped: number };
 	officialSongLinks: { created: number; updated: number; skipped: number };
-	errors: { row: number; message: string }[];
+	errors: { row: number; entity: string; message: string }[];
 }
 
 export const legacyImportApi = {
@@ -413,6 +431,7 @@ export const legacyImportApi = {
 		records: LegacyCSVRecord[],
 		songMappings: Record<string, string>,
 		customSongNames: Record<string, string>,
+		newEvents?: NewEventInput[],
 	): Promise<LegacyImportResult> => {
 		const res = await fetch(`${API_BASE_URL}/api/admin/import/legacy/execute`, {
 			method: "POST",
@@ -420,7 +439,12 @@ export const legacyImportApi = {
 			headers: {
 				"Content-Type": "application/json",
 			},
-			body: JSON.stringify({ records, songMappings, customSongNames }),
+			body: JSON.stringify({
+				records,
+				songMappings,
+				customSongNames,
+				newEvents,
+			}),
 		});
 
 		const data = await res.json();

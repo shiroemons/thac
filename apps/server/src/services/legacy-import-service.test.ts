@@ -32,9 +32,12 @@ describe("LegacyImportService", () => {
 			const result: ImportResult = {
 				success: true,
 				events: { created: 1, updated: 0, skipped: 0 },
+				eventDays: { created: 0, updated: 0, skipped: 0 },
 				circles: { created: 2, updated: 0, skipped: 0 },
 				artists: { created: 3, updated: 0, skipped: 0 },
+				artistAliases: { created: 3, updated: 0, skipped: 0 },
 				releases: { created: 1, updated: 0, skipped: 0 },
+				discs: { created: 1, updated: 0, skipped: 0 },
 				tracks: { created: 1, updated: 0, skipped: 0 },
 				credits: { created: 2, updated: 0, skipped: 0 },
 				officialSongLinks: { created: 1, updated: 0, skipped: 0 },

@@ -1,15 +1,17 @@
 /**
  * レガシーCSVインポートページ
  *
- * 3ステップウィザード:
+ * 4ステップウィザード:
  * 1. CSVアップロード
  * 2. 原曲マッピング
- * 3. インポート結果
+ * 3. イベント登録（新規イベントがある場合のみ）
+ * 4. インポート結果
  */
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	AlertCircle,
+	Calendar,
 	CheckCircle,
 	ChevronLeft,
 	ChevronRight,
@@ -25,6 +27,8 @@ import {
 	type LegacyCSVRecord,
 	type LegacyImportResult,
 	legacyImportApi,
+	type NewEventInput,
+	type NewEventNeeded,
 	type SongMatchResult,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
@@ -34,15 +38,19 @@ export const Route = createFileRoute("/admin/_admin/import-legacy")({
 	component: LegacyImportPage,
 });
 
-type WizardStep = "upload" | "mapping" | "result";
+type WizardStep = "upload" | "mapping" | "events" | "result";
 
 function LegacyImportPage() {
 	const [step, setStep] = useState<WizardStep>("upload");
 	const [records, setRecords] = useState<LegacyCSVRecord[]>([]);
 	const [songMatches, setSongMatches] = useState<SongMatchResult[]>([]);
+	const [newEventsNeeded, setNewEventsNeeded] = useState<NewEventNeeded[]>([]);
 	const [mappings, setMappings] = useState<Record<string, string>>({});
 	const [customSongNames, setCustomSongNames] = useState<
 		Record<string, string>
+	>({});
+	const [newEventInputs, setNewEventInputs] = useState<
+		Record<string, NewEventInput>
 	>({});
 	const [parseErrors, setParseErrors] = useState<
 		{ row: number; message: string }[]
@@ -58,6 +66,7 @@ function LegacyImportPage() {
 			if (data.success) {
 				setRecords(data.records);
 				setSongMatches(data.songMatches);
+				setNewEventsNeeded(data.newEventsNeeded);
 				setParseErrors(data.errors);
 
 				// 自動マッチングされた結果をマッピングに設定
@@ -75,6 +84,19 @@ function LegacyImportPage() {
 				setMappings(autoMappings);
 				setCustomSongNames(autoCustomSongNames);
 
+				// 新規イベントのデフォルト値を設定
+				const defaultEventInputs: Record<string, NewEventInput> = {};
+				for (const event of data.newEventsNeeded) {
+					defaultEventInputs[event.name] = {
+						name: event.name,
+						totalDays: 1,
+						startDate: "",
+						endDate: "",
+						eventDates: [""],
+					};
+				}
+				setNewEventInputs(defaultEventInputs);
+
 				setStep("mapping");
 			} else {
 				setParseErrors(data.errors);
@@ -84,8 +106,18 @@ function LegacyImportPage() {
 
 	// 実行API
 	const executeMutation = useMutation({
-		mutationFn: () =>
-			legacyImportApi.execute(records, mappings, customSongNames),
+		mutationFn: () => {
+			const newEvents =
+				newEventsNeeded.length > 0
+					? Object.values(newEventInputs).filter((e) => e.startDate !== "")
+					: undefined;
+			return legacyImportApi.execute(
+				records,
+				mappings,
+				customSongNames,
+				newEvents,
+			);
+		},
 		onSuccess: (data) => {
 			setImportResult(data);
 			setStep("result");
@@ -123,17 +155,36 @@ function LegacyImportPage() {
 		[],
 	);
 
+	// イベント入力更新ハンドラ
+	const handleEventInputChange = useCallback(
+		(eventName: string, input: Partial<NewEventInput>) => {
+			setNewEventInputs((prev) => ({
+				...prev,
+				[eventName]: { ...prev[eventName], ...input } as NewEventInput,
+			}));
+		},
+		[],
+	);
+
 	// 次へハンドラ
 	const handleNext = useCallback(() => {
 		if (step === "mapping") {
+			if (newEventsNeeded.length > 0) {
+				setStep("events");
+			} else {
+				executeMutation.mutate();
+			}
+		} else if (step === "events") {
 			executeMutation.mutate();
 		}
-	}, [step, executeMutation]);
+	}, [step, newEventsNeeded.length, executeMutation]);
 
 	// 戻るハンドラ
 	const handleBack = useCallback(() => {
 		if (step === "mapping") {
 			setStep("upload");
+		} else if (step === "events") {
+			setStep("mapping");
 		}
 	}, [step]);
 
@@ -142,11 +193,16 @@ function LegacyImportPage() {
 		setStep("upload");
 		setRecords([]);
 		setSongMatches([]);
+		setNewEventsNeeded([]);
 		setMappings({});
 		setCustomSongNames({});
+		setNewEventInputs({});
 		setParseErrors([]);
 		setImportResult(null);
 	}, []);
+
+	// イベントステップをスキップするかどうか
+	const skipEventsStep = newEventsNeeded.length === 0;
 
 	return (
 		<div className="container mx-auto py-6">
@@ -159,15 +215,22 @@ function LegacyImportPage() {
 			<div className="mb-8">
 				<ul className="steps w-full">
 					<li
-						className={`step ${step === "upload" || step === "mapping" || step === "result" ? "step-primary" : ""}`}
+						className={`step ${step === "upload" || step === "mapping" || step === "events" || step === "result" ? "step-primary" : ""}`}
 					>
 						CSVアップロード
 					</li>
 					<li
-						className={`step ${step === "mapping" || step === "result" ? "step-primary" : ""}`}
+						className={`step ${step === "mapping" || step === "events" || step === "result" ? "step-primary" : ""}`}
 					>
 						原曲マッピング
 					</li>
+					{!skipEventsStep && (
+						<li
+							className={`step ${step === "events" || step === "result" ? "step-primary" : ""}`}
+						>
+							イベント登録
+						</li>
+					)}
 					<li className={`step ${step === "result" ? "step-primary" : ""}`}>
 						インポート結果
 					</li>
@@ -196,6 +259,14 @@ function LegacyImportPage() {
 						/>
 					)}
 
+					{step === "events" && (
+						<EventRegistrationStep
+							events={newEventsNeeded}
+							eventInputs={newEventInputs}
+							onEventInputChange={handleEventInputChange}
+						/>
+					)}
+
 					{step === "result" && importResult && (
 						<ResultStep result={importResult} onReset={handleReset} />
 					)}
@@ -214,7 +285,7 @@ function LegacyImportPage() {
 							戻る
 						</button>
 
-						{step === "mapping" && (
+						{(step === "mapping" || step === "events") && (
 							<button
 								type="button"
 								className="btn btn-primary"
@@ -225,6 +296,11 @@ function LegacyImportPage() {
 									<>
 										<Loader2 className="h-4 w-4 animate-spin" />
 										インポート中...
+									</>
+								) : step === "mapping" && !skipEventsStep ? (
+									<>
+										次へ
+										<ChevronRight className="h-4 w-4" />
 									</>
 								) : (
 									<>
@@ -572,7 +648,181 @@ function SongMappingRow({
 	);
 }
 
-// ステップ3: インポート結果
+// ステップ3: イベント登録
+interface EventRegistrationStepProps {
+	events: NewEventNeeded[];
+	eventInputs: Record<string, NewEventInput>;
+	onEventInputChange: (
+		eventName: string,
+		input: Partial<NewEventInput>,
+	) => void;
+}
+
+function EventRegistrationStep({
+	events,
+	eventInputs,
+	onEventInputChange,
+}: EventRegistrationStepProps) {
+	return (
+		<div className="space-y-6">
+			<div className="text-center">
+				<h3 className="font-semibold text-lg">新規イベント登録</h3>
+				<p className="text-base-content/60 text-sm">
+					以下のイベントはデータベースに存在しないため、情報を入力してください
+				</p>
+			</div>
+
+			<div className="space-y-4">
+				{events.map((event) => (
+					<EventInputCard
+						key={event.name}
+						event={event}
+						input={eventInputs[event.name]}
+						onChange={(input) => onEventInputChange(event.name, input)}
+					/>
+				))}
+			</div>
+		</div>
+	);
+}
+
+// イベント入力カード
+interface EventInputCardProps {
+	event: NewEventNeeded;
+	input: NewEventInput | undefined;
+	onChange: (input: Partial<NewEventInput>) => void;
+}
+
+function EventInputCard({ event, input, onChange }: EventInputCardProps) {
+	const handleTotalDaysChange = useCallback(
+		(totalDays: number) => {
+			const eventDates = Array(totalDays).fill("");
+			onChange({ totalDays, eventDates });
+		},
+		[onChange],
+	);
+
+	const handleStartDateChange = useCallback(
+		(startDate: string) => {
+			// 開催日数が1の場合は終了日も同じ値に
+			if (input?.totalDays === 1) {
+				const eventDates = [startDate];
+				onChange({ startDate, endDate: startDate, eventDates });
+			} else {
+				onChange({ startDate });
+			}
+		},
+		[input?.totalDays, onChange],
+	);
+
+	const handleEventDateChange = useCallback(
+		(index: number, date: string) => {
+			const newEventDates = [...(input?.eventDates || [])];
+			newEventDates[index] = date;
+
+			// 開始日・終了日を自動設定
+			const filledDates = newEventDates.filter((d) => d !== "");
+			if (filledDates.length > 0) {
+				const sortedDates = [...filledDates].sort();
+				onChange({
+					eventDates: newEventDates,
+					startDate: sortedDates[0],
+					endDate: sortedDates[sortedDates.length - 1],
+				});
+			} else {
+				onChange({ eventDates: newEventDates });
+			}
+		},
+		[input?.eventDates, onChange],
+	);
+
+	return (
+		<div className="card border border-base-300 bg-base-100">
+			<div className="card-body">
+				<div className="flex items-center gap-2">
+					<Calendar className="h-5 w-5 text-primary" />
+					<h4 className="card-title text-lg">{event.name}</h4>
+					{event.edition && (
+						<span className="badge badge-primary">第{event.edition}回</span>
+					)}
+				</div>
+
+				<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+					{/* 開催日数 */}
+					<div className="form-control">
+						<label className="label">
+							<span className="label-text">開催日数</span>
+						</label>
+						<select
+							className="select select-bordered"
+							value={input?.totalDays || 1}
+							onChange={(e) =>
+								handleTotalDaysChange(Number.parseInt(e.target.value, 10))
+							}
+						>
+							{[1, 2, 3, 4, 5].map((days) => (
+								<option key={days} value={days}>
+									{days}日
+								</option>
+							))}
+						</select>
+					</div>
+
+					{/* 開始日 */}
+					<div className="form-control">
+						<label className="label">
+							<span className="label-text">開始日</span>
+						</label>
+						<input
+							type="date"
+							className="input input-bordered"
+							value={input?.startDate || ""}
+							onChange={(e) => handleStartDateChange(e.target.value)}
+						/>
+					</div>
+
+					{/* 終了日 */}
+					<div className="form-control">
+						<label className="label">
+							<span className="label-text">終了日</span>
+						</label>
+						<input
+							type="date"
+							className="input input-bordered"
+							value={input?.endDate || ""}
+							onChange={(e) => onChange({ endDate: e.target.value })}
+							disabled={input?.totalDays === 1}
+						/>
+					</div>
+				</div>
+
+				{/* 各日の日付 */}
+				{(input?.totalDays || 1) > 1 && (
+					<div className="mt-4">
+						<h5 className="mb-2 font-medium text-sm">開催日</h5>
+						<div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+							{Array.from({ length: input?.totalDays || 1 }).map((_, i) => (
+								<div key={`day-${event.name}-${i}`} className="form-control">
+									<label className="label">
+										<span className="label-text">{i + 1}日目</span>
+									</label>
+									<input
+										type="date"
+										className="input input-bordered input-sm"
+										value={input?.eventDates?.[i] || ""}
+										onChange={(e) => handleEventDateChange(i, e.target.value)}
+									/>
+								</div>
+							))}
+						</div>
+					</div>
+				)}
+			</div>
+		</div>
+	);
+}
+
+// ステップ4: インポート結果
 interface ResultStepProps {
 	result: LegacyImportResult;
 	onReset: () => void;
@@ -581,9 +831,12 @@ interface ResultStepProps {
 function ResultStep({ result, onReset }: ResultStepProps) {
 	const entityNames: Record<string, string> = {
 		events: "イベント",
+		eventDays: "イベント開催日",
 		circles: "サークル",
 		artists: "アーティスト",
+		artistAliases: "アーティスト名義",
 		releases: "リリース",
+		discs: "ディスク",
 		tracks: "トラック",
 		credits: "クレジット",
 		officialSongLinks: "原曲紐付け",
@@ -627,6 +880,7 @@ function ResultStep({ result, onReset }: ResultStepProps) {
 								updated: number;
 								skipped: number;
 							};
+							if (!counts) return null;
 							return (
 								<tr key={key}>
 									<td>{name}</td>
@@ -654,8 +908,8 @@ function ResultStep({ result, onReset }: ResultStepProps) {
 						<h4 className="font-semibold">警告</h4>
 						<ul className="list-disc pl-4 text-sm">
 							{result.errors.map((error) => (
-								<li key={`${error.row}-${error.message}`}>
-									行 {error.row}: {error.message}
+								<li key={`${error.row}-${error.entity}-${error.message}`}>
+									行 {error.row} ({error.entity}): {error.message}
 								</li>
 							))}
 						</ul>

@@ -2,15 +2,18 @@
  * レガシーCSVインポートサービス
  *
  * パースされたCSVデータをデータベースに登録するサービス。
- * 依存関係順（events → circles → artists → releases → tracks → credits）で処理する。
+ * 依存関係順（events → circles → artists → releases → discs → tracks → credits）で処理する。
  */
 
 import {
+	artistAliases,
 	artists,
 	circles,
 	createId,
 	db,
+	discs,
 	eq,
+	eventDays,
 	eventSeries,
 	events,
 	like,
@@ -24,11 +27,30 @@ import {
 import { detectInitial } from "@thac/utils";
 import type { LegacyCSVRecord } from "../utils/legacy-csv-parser";
 import { splitCircles } from "../utils/legacy-csv-parser";
+import {
+	generateNameInfo,
+	generateSortName,
+	normalizeFullWidthSymbols,
+	parseDiscInfo,
+	parseEventEdition,
+} from "../utils/name-utils";
+
+// 「本名義」のエイリアスタイプコード
+const MAIN_ALIAS_TYPE_CODE = "main";
 
 export interface ImportInput {
 	records: LegacyCSVRecord[];
 	songMappings: Map<string, string>; // originalName -> officialSongId
 	customSongNames: Map<string, string>; // originalName -> customSongName（マッチしない原曲用）
+	newEvents?: NewEventInput[]; // 新規イベント情報
+}
+
+export interface NewEventInput {
+	name: string;
+	totalDays: number;
+	startDate: string;
+	endDate: string;
+	eventDates: string[]; // 各日の日付
 }
 
 export interface EntityCount {
@@ -46,9 +68,12 @@ export interface ImportError {
 export interface ImportResult {
 	success: boolean;
 	events: EntityCount;
+	eventDays: EntityCount;
 	circles: EntityCount;
 	artists: EntityCount;
+	artistAliases: EntityCount;
 	releases: EntityCount;
+	discs: EntityCount;
 	tracks: EntityCount;
 	credits: EntityCount;
 	officialSongLinks: EntityCount;
@@ -60,8 +85,9 @@ interface ImportCache {
 	events: Map<string, string>; // eventName -> eventId
 	circles: Map<string, string>; // circleName -> circleId
 	artists: Map<string, string>; // artistName -> artistId
-	releases: Map<string, string>; // `${circleName}:${albumName}` -> releaseId
-	tracks: Map<string, string>; // `${releaseId}:${trackNumber}` -> trackId
+	releases: Map<string, string>; // `${circleName}:${albumBaseName}` -> releaseId
+	discs: Map<string, string>; // `${releaseId}:${discNumber}` -> discId
+	tracks: Map<string, string>; // `${discId}:${trackNumber}` or `${releaseId}:${trackNumber}` -> trackId
 }
 
 // トランザクション型
@@ -77,9 +103,12 @@ export async function executeLegacyImport(
 	const result: ImportResult = {
 		success: true,
 		events: { created: 0, updated: 0, skipped: 0 },
+		eventDays: { created: 0, updated: 0, skipped: 0 },
 		circles: { created: 0, updated: 0, skipped: 0 },
 		artists: { created: 0, updated: 0, skipped: 0 },
+		artistAliases: { created: 0, updated: 0, skipped: 0 },
 		releases: { created: 0, updated: 0, skipped: 0 },
+		discs: { created: 0, updated: 0, skipped: 0 },
 		tracks: { created: 0, updated: 0, skipped: 0 },
 		credits: { created: 0, updated: 0, skipped: 0 },
 		officialSongLinks: { created: 0, updated: 0, skipped: 0 },
@@ -91,12 +120,21 @@ export async function executeLegacyImport(
 		circles: new Map(),
 		artists: new Map(),
 		releases: new Map(),
+		discs: new Map(),
 		tracks: new Map(),
 	};
 
 	try {
 		// トランザクション内で処理
 		await db.transaction(async (tx) => {
+			// 1. 新規イベントを先に処理
+			if (input.newEvents) {
+				for (const newEvent of input.newEvents) {
+					await processNewEvent(tx, newEvent, cache, result);
+				}
+			}
+
+			// 2. 全レコードを処理
 			for (let i = 0; i < input.records.length; i++) {
 				const record = input.records[i];
 				if (!record) continue;
@@ -104,16 +142,16 @@ export async function executeLegacyImport(
 				const rowNumber = i + 2; // 1-indexed + header row
 
 				try {
-					// 1. イベント処理
+					// イベント処理
 					await processEvent(tx, record, cache, result);
 
-					// 2. サークル処理（複合サークルを分割）
+					// サークル処理（複合サークルを分割）
 					const circleNames = splitCircles(record.circle);
 					for (const circleName of circleNames) {
 						await processCircle(tx, circleName, cache, result);
 					}
 
-					// 3. アーティスト処理
+					// アーティスト処理
 					const allArtists = [
 						...record.vocalists,
 						...record.arrangers,
@@ -123,28 +161,39 @@ export async function executeLegacyImport(
 						await processArtist(tx, artistName, cache, result);
 					}
 
-					// 4. リリース処理
+					// リリース処理（ディスク情報を考慮）
+					const discInfo = parseDiscInfo(record.album);
 					const releaseId = await processRelease(
 						tx,
-						record,
+						discInfo.name,
 						circleNames,
 						cache,
 						result,
 					);
 
-					// 5. トラック処理
-					const trackId = await processTrack(
+					// ディスク処理
+					const discId = await processDisc(
 						tx,
-						record,
 						releaseId,
+						discInfo.discNumber,
 						cache,
 						result,
 					);
 
-					// 6. クレジット処理
+					// トラック処理
+					const trackId = await processTrack(
+						tx,
+						record,
+						releaseId,
+						discId,
+						cache,
+						result,
+					);
+
+					// クレジット処理
 					await processCredits(tx, record, trackId, cache, result);
 
-					// 7. 原曲紐付け処理
+					// 原曲紐付け処理
 					await processOfficialSongLinks(
 						tx,
 						record,
@@ -183,6 +232,80 @@ export async function executeLegacyImport(
 }
 
 /**
+ * 新規イベントを処理（ウィザードステップから）
+ */
+async function processNewEvent(
+	tx: DbTransaction,
+	input: NewEventInput,
+	cache: ImportCache,
+	result: ImportResult,
+): Promise<void> {
+	const eventName = input.name.trim();
+	if (!eventName) return;
+
+	// 既にキャッシュにある場合はスキップ
+	if (cache.events.has(eventName)) {
+		return;
+	}
+
+	// 既存チェック
+	const existing = await tx
+		.select()
+		.from(events)
+		.where(eq(events.name, eventName))
+		.limit(1);
+
+	if (existing.length > 0 && existing[0]) {
+		cache.events.set(eventName, existing[0].id);
+		return;
+	}
+
+	// イベントシリーズを検索
+	const editionInfo = parseEventEdition(eventName);
+	let eventSeriesId: string | null = null;
+
+	if (editionInfo.baseName) {
+		const series = await tx
+			.select()
+			.from(eventSeries)
+			.where(like(eventSeries.name, `%${editionInfo.baseName}%`))
+			.limit(1);
+		if (series.length > 0 && series[0]) {
+			eventSeriesId = series[0].id;
+		}
+	}
+
+	// イベントを作成
+	const newEventId = createId.event();
+	await tx.insert(events).values({
+		id: newEventId,
+		name: eventName,
+		eventSeriesId,
+		edition: editionInfo.edition,
+		totalDays: input.totalDays,
+		startDate: input.startDate,
+		endDate: input.endDate,
+	});
+
+	cache.events.set(eventName, newEventId);
+	result.events.created++;
+
+	// イベント開催日を作成
+	for (let i = 0; i < input.eventDates.length; i++) {
+		const date = input.eventDates[i];
+		if (!date) continue;
+
+		await tx.insert(eventDays).values({
+			id: createId.eventDay(),
+			eventId: newEventId,
+			dayNumber: i + 1,
+			date,
+		});
+		result.eventDays.created++;
+	}
+}
+
+/**
  * イベントを処理（作成または既存を使用）
  */
 async function processEvent(
@@ -214,13 +337,14 @@ async function processEvent(
 	}
 
 	// eventSeriesをパターンマッチで検索
+	const editionInfo = parseEventEdition(eventName);
 	let eventSeriesId: string | null = null;
-	const seriesPattern = extractSeriesPattern(eventName);
-	if (seriesPattern) {
+
+	if (editionInfo.baseName) {
 		const series = await tx
 			.select()
 			.from(eventSeries)
-			.where(like(eventSeries.name, `%${seriesPattern}%`))
+			.where(like(eventSeries.name, `%${editionInfo.baseName}%`))
 			.limit(1);
 		if (series.length > 0 && series[0]) {
 			eventSeriesId = series[0].id;
@@ -233,31 +357,11 @@ async function processEvent(
 		id: newId,
 		name: eventName,
 		eventSeriesId,
+		edition: editionInfo.edition,
 	});
 
 	cache.events.set(eventName, newId);
 	result.events.created++;
-}
-
-/**
- * イベント名からシリーズ名パターンを抽出
- */
-function extractSeriesPattern(eventName: string): string | null {
-	// コミックマーケット、例大祭などのパターン
-	const patterns = [
-		/^(.+?)(\d+)$/, // "コミケ100" → "コミケ"
-		/^(.+?)(第\d+回)$/, // "例大祭第20回" → "例大祭"
-		/^(.+?)(\s*\d+)$/, // "M3 50" → "M3"
-	];
-
-	for (const pattern of patterns) {
-		const match = eventName.match(pattern);
-		if (match && match[1]) {
-			return match[1].trim();
-		}
-	}
-
-	return null;
 }
 
 /**
@@ -269,11 +373,12 @@ async function processCircle(
 	cache: ImportCache,
 	result: ImportResult,
 ): Promise<void> {
-	const name = circleName.trim();
-	if (!name) return;
+	// 全角記号を半角に変換
+	const normalizedName = normalizeFullWidthSymbols(circleName.trim());
+	if (!normalizedName) return;
 
 	// キャッシュチェック
-	if (cache.circles.has(name)) {
+	if (cache.circles.has(normalizedName)) {
 		result.circles.skipped++;
 		return;
 	}
@@ -282,28 +387,37 @@ async function processCircle(
 	const existing = await tx
 		.select()
 		.from(circles)
-		.where(eq(circles.name, name))
+		.where(eq(circles.name, normalizedName))
 		.limit(1);
 
 	if (existing.length > 0 && existing[0]) {
-		cache.circles.set(name, existing[0].id);
+		cache.circles.set(normalizedName, existing[0].id);
 		result.circles.skipped++;
 		return;
 	}
 
 	// 頭文字を判定
-	const initial = detectInitial(name);
+	const initial = detectInitial(normalizedName);
+
+	// 名前情報を生成
+	const nameInfo = generateNameInfo(normalizedName);
+
+	// ソート名を生成
+	const sortName = generateSortName(normalizedName);
 
 	// 新規作成
 	const newId = createId.circle();
 	await tx.insert(circles).values({
 		id: newId,
-		name,
+		name: nameInfo.name,
+		nameJa: nameInfo.nameJa,
+		nameEn: nameInfo.nameEn,
+		sortName,
 		initialScript: initial.initialScript,
 		nameInitial: initial.nameInitial,
 	});
 
-	cache.circles.set(name, newId);
+	cache.circles.set(normalizedName, newId);
 	result.circles.created++;
 }
 
@@ -316,11 +430,12 @@ async function processArtist(
 	cache: ImportCache,
 	result: ImportResult,
 ): Promise<void> {
-	const name = artistName.trim();
-	if (!name) return;
+	// 全角記号を半角に変換
+	const normalizedName = normalizeFullWidthSymbols(artistName.trim());
+	if (!normalizedName) return;
 
 	// キャッシュチェック
-	if (cache.artists.has(name)) {
+	if (cache.artists.has(normalizedName)) {
 		result.artists.skipped++;
 		return;
 	}
@@ -329,29 +444,46 @@ async function processArtist(
 	const existing = await tx
 		.select()
 		.from(artists)
-		.where(eq(artists.name, name))
+		.where(eq(artists.name, normalizedName))
 		.limit(1);
 
 	if (existing.length > 0 && existing[0]) {
-		cache.artists.set(name, existing[0].id);
+		cache.artists.set(normalizedName, existing[0].id);
 		result.artists.skipped++;
 		return;
 	}
 
 	// 頭文字を判定
-	const initial = detectInitial(name);
+	const initial = detectInitial(normalizedName);
+
+	// 名前情報を生成
+	const nameInfo = generateNameInfo(normalizedName);
 
 	// 新規作成
 	const newId = createId.artist();
 	await tx.insert(artists).values({
 		id: newId,
-		name,
+		name: nameInfo.name,
+		nameJa: nameInfo.nameJa,
+		nameEn: nameInfo.nameEn,
 		initialScript: initial.initialScript,
 		nameInitial: initial.nameInitial,
 	});
 
-	cache.artists.set(name, newId);
+	cache.artists.set(normalizedName, newId);
 	result.artists.created++;
+
+	// アーティスト名義を「本名義」で作成
+	await tx.insert(artistAliases).values({
+		id: createId.artistAlias(),
+		artistId: newId,
+		name: nameInfo.name,
+		aliasTypeCode: MAIN_ALIAS_TYPE_CODE,
+		initialScript: initial.initialScript,
+		nameInitial: initial.nameInitial,
+	});
+
+	result.artistAliases.created++;
 }
 
 /**
@@ -359,14 +491,13 @@ async function processArtist(
  */
 async function processRelease(
 	tx: DbTransaction,
-	record: LegacyCSVRecord,
+	albumBaseName: string,
 	circleNames: string[],
 	cache: ImportCache,
 	result: ImportResult,
 ): Promise<string> {
-	const albumName = record.album.trim();
-	const primaryCircle = circleNames[0]?.trim() || "";
-	const cacheKey = `${primaryCircle}:${albumName}`;
+	const primaryCircle = normalizeFullWidthSymbols(circleNames[0]?.trim() || "");
+	const cacheKey = `${primaryCircle}:${albumBaseName}`;
 
 	// キャッシュチェック
 	if (cache.releases.has(cacheKey)) {
@@ -378,7 +509,7 @@ async function processRelease(
 	// 既存チェック（サークル名とアルバム名の組み合わせで検索）
 	const existingRelease = await findExistingRelease(
 		tx,
-		albumName,
+		albumBaseName,
 		primaryCircle,
 		cache,
 	);
@@ -388,24 +519,33 @@ async function processRelease(
 		return existingRelease;
 	}
 
+	// 名前情報を生成
+	const nameInfo = generateNameInfo(albumBaseName);
+
 	// 新規作成
 	const newId = createId.release();
 	await tx.insert(releases).values({
 		id: newId,
-		name: albumName,
+		name: nameInfo.name,
+		nameJa: nameInfo.nameJa,
+		nameEn: nameInfo.nameEn,
+		releaseType: "album", // デフォルトでアルバム
 	});
 
-	// releaseCirclesを作成（複合サークルの場合は複数）
+	// releaseCirclesを作成（複数サークルの場合は共同主催）
+	const isMultipleCircles = circleNames.length > 1;
 	for (let i = 0; i < circleNames.length; i++) {
-		const circleName = circleNames[i]?.trim();
+		const circleName = normalizeFullWidthSymbols(circleNames[i]?.trim() || "");
 		if (!circleName) continue;
 
 		const circleId = cache.circles.get(circleName);
 		if (circleId) {
+			// 複数サークルの場合は全て「共同主催」、単一の場合は「主催」
+			const participationType = isMultipleCircles ? "co-host" : "host";
 			await tx.insert(releaseCircles).values({
 				releaseId: newId,
 				circleId,
-				participationType: i === 0 ? "host" : "co-host",
+				participationType,
 				position: i + 1,
 			});
 		}
@@ -444,16 +584,66 @@ async function findExistingRelease(
 }
 
 /**
+ * ディスクを処理（作成または既存を使用）
+ */
+async function processDisc(
+	tx: DbTransaction,
+	releaseId: string,
+	discNumber: number,
+	cache: ImportCache,
+	result: ImportResult,
+): Promise<string> {
+	const cacheKey = `${releaseId}:${discNumber}`;
+
+	// キャッシュチェック
+	if (cache.discs.has(cacheKey)) {
+		result.discs.skipped++;
+		// biome-ignore lint/style/noNonNullAssertion: cache.discs.has(cacheKey) is true
+		return cache.discs.get(cacheKey)!;
+	}
+
+	// 既存チェック
+	const existing = await tx
+		.select()
+		.from(discs)
+		.where(eq(discs.releaseId, releaseId))
+		.limit(100);
+
+	const existingDisc = existing.find(
+		(d: { id: string; discNumber: number }) => d.discNumber === discNumber,
+	);
+
+	if (existingDisc) {
+		cache.discs.set(cacheKey, existingDisc.id);
+		result.discs.skipped++;
+		return existingDisc.id;
+	}
+
+	// 新規作成
+	const newId = createId.disc();
+	await tx.insert(discs).values({
+		id: newId,
+		releaseId,
+		discNumber,
+	});
+
+	cache.discs.set(cacheKey, newId);
+	result.discs.created++;
+	return newId;
+}
+
+/**
  * トラックを処理（作成または更新）
  */
 async function processTrack(
 	tx: DbTransaction,
 	record: LegacyCSVRecord,
 	releaseId: string,
+	discId: string,
 	cache: ImportCache,
 	result: ImportResult,
 ): Promise<string> {
-	const cacheKey = `${releaseId}:${record.trackNumber}`;
+	const cacheKey = `${discId}:${record.trackNumber}`;
 
 	// キャッシュチェック
 	if (cache.tracks.has(cacheKey)) {
@@ -462,11 +652,14 @@ async function processTrack(
 		return cache.tracks.get(cacheKey)!;
 	}
 
+	// 名前情報を生成
+	const nameInfo = generateNameInfo(record.title);
+
 	// 既存チェック（upsert）
 	const existing = await tx
 		.select()
 		.from(tracks)
-		.where(eq(tracks.releaseId, releaseId))
+		.where(eq(tracks.discId, discId))
 		.limit(100);
 
 	const existingTrack = existing.find(
@@ -478,7 +671,11 @@ async function processTrack(
 		// 更新
 		await tx
 			.update(tracks)
-			.set({ name: record.title })
+			.set({
+				name: nameInfo.name,
+				nameJa: nameInfo.nameJa,
+				nameEn: nameInfo.nameEn,
+			})
 			.where(eq(tracks.id, existingTrack.id));
 
 		cache.tracks.set(cacheKey, existingTrack.id);
@@ -491,8 +688,11 @@ async function processTrack(
 	await tx.insert(tracks).values({
 		id: newId,
 		releaseId,
+		discId,
 		trackNumber: record.trackNumber,
-		name: record.title,
+		name: nameInfo.name,
+		nameJa: nameInfo.nameJa,
+		nameEn: nameInfo.nameEn,
 	});
 
 	cache.tracks.set(cacheKey, newId);
@@ -512,7 +712,9 @@ async function processCredits(
 ): Promise<void> {
 	// vocalist
 	for (let i = 0; i < record.vocalists.length; i++) {
-		const artistName = record.vocalists[i]?.trim();
+		const artistName = normalizeFullWidthSymbols(
+			record.vocalists[i]?.trim() || "",
+		);
 		if (!artistName) continue;
 
 		await createCredit(
@@ -528,7 +730,9 @@ async function processCredits(
 
 	// arranger
 	for (let i = 0; i < record.arrangers.length; i++) {
-		const artistName = record.arrangers[i]?.trim();
+		const artistName = normalizeFullWidthSymbols(
+			record.arrangers[i]?.trim() || "",
+		);
 		if (!artistName) continue;
 
 		await createCredit(
@@ -544,7 +748,9 @@ async function processCredits(
 
 	// lyricist
 	for (let i = 0; i < record.lyricists.length; i++) {
-		const artistName = record.lyricists[i]?.trim();
+		const artistName = normalizeFullWidthSymbols(
+			record.lyricists[i]?.trim() || "",
+		);
 		if (!artistName) continue;
 
 		await createCredit(
@@ -676,4 +882,30 @@ async function processOfficialSongLinks(
 
 		result.officialSongLinks.created++;
 	}
+}
+
+/**
+ * 新規イベントが必要かどうかをチェック
+ */
+export async function checkNewEventsNeeded(
+	eventNames: string[],
+): Promise<string[]> {
+	const newEvents: string[] = [];
+
+	for (const eventName of eventNames) {
+		const trimmed = eventName.trim();
+		if (!trimmed) continue;
+
+		const existing = await db
+			.select()
+			.from(events)
+			.where(eq(events.name, trimmed))
+			.limit(1);
+
+		if (existing.length === 0) {
+			newEvents.push(trimmed);
+		}
+	}
+
+	return [...new Set(newEvents)]; // 重複を除去
 }

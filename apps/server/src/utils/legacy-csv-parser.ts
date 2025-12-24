@@ -156,7 +156,7 @@ function parseRow(
 	}
 
 	// track_numberの検証
-	const trackNumberStr = row["track_number"] || "";
+	const trackNumberStr = row.track_number || "";
 	const trackNumber = Number.parseInt(trackNumberStr, 10);
 	if (Number.isNaN(trackNumber)) {
 		return {
@@ -169,15 +169,15 @@ function parseRow(
 	}
 
 	const record: LegacyCSVRecord = {
-		circle: row["circle"] || "",
-		album: row["album"] || "",
-		title: row["title"] || "",
+		circle: row.circle || "",
+		album: row.album || "",
+		title: row.title || "",
 		trackNumber,
-		event: row["event"] || "",
-		vocalists: splitColonValues(row["vocalists"] || ""),
-		arrangers: splitColonValues(row["arrangers"] || ""),
-		lyricists: splitColonValues(row["lyricists"] || ""),
-		originalSongs: splitColonValues(row["original_songs"] || ""),
+		event: row.event || "",
+		vocalists: splitColonValues(row.vocalists || ""),
+		arrangers: splitColonValues(row.arrangers || ""),
+		lyricists: splitColonValues(row.lyricists || ""),
+		originalSongs: splitColonValues(row.original_songs || ""),
 	};
 
 	return { record, error: null };
