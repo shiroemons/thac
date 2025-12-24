@@ -8,6 +8,7 @@ import {
 	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { artistAliases, artists } from "./artist-circle";
+import { eventDays, events } from "./event";
 import { aliasTypes, creditRoles } from "./master";
 import { discs, releases } from "./release";
 
@@ -27,6 +28,16 @@ export const tracks = sqliteTable(
 		name: text("name").notNull(),
 		nameJa: text("name_ja"),
 		nameEn: text("name_en"),
+		releaseDate: text("release_date"),
+		releaseYear: integer("release_year"),
+		releaseMonth: integer("release_month"),
+		releaseDay: integer("release_day"),
+		eventId: text("event_id").references(() => events.id, {
+			onDelete: "set null",
+		}),
+		eventDayId: text("event_day_id").references(() => eventDays.id, {
+			onDelete: "set null",
+		}),
 		createdAt: integer("created_at", { mode: "timestamp_ms" })
 			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 			.notNull(),
@@ -38,6 +49,10 @@ export const tracks = sqliteTable(
 	(table) => [
 		index("idx_tracks_release").on(table.releaseId),
 		index("idx_tracks_disc").on(table.discId),
+		index("idx_tracks_date").on(table.releaseDate),
+		index("idx_tracks_year").on(table.releaseYear),
+		index("idx_tracks_event").on(table.eventId),
+		index("idx_tracks_event_day").on(table.eventDayId),
 		// Composite index for ordering tracks by release, disc, and track number
 		index("idx_tracks_ordering").on(
 			table.releaseId,

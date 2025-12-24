@@ -228,8 +228,23 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 		);
 	}
 
+	// 親リリースから日付・イベント情報を取得して自動設定
+	const release = existingRelease[0];
+	if (!release) {
+		return c.json({ error: "Release not found" }, 404);
+	}
+	const insertData = {
+		...parsed.data,
+		releaseDate: release.releaseDate,
+		releaseYear: release.releaseYear,
+		releaseMonth: release.releaseMonth,
+		releaseDay: release.releaseDay,
+		eventId: release.eventId,
+		eventDayId: release.eventDayId,
+	};
+
 	// 作成
-	const result = await db.insert(tracks).values(parsed.data).returning();
+	const result = await db.insert(tracks).values(insertData).returning();
 
 	return c.json(result[0], 201);
 });

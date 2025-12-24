@@ -4,6 +4,7 @@ import {
 	db,
 	discs,
 	eq,
+	eventDays,
 	insertReleaseSchema,
 	like,
 	releases,
@@ -12,6 +13,59 @@ import {
 } from "@thac/db";
 import { Hono } from "hono";
 import type { AdminContext } from "../../../middleware/admin-auth";
+
+// リリース日を年月日に分解するヘルパー関数
+function parseDateToComponents(
+	dateStr: string | null | undefined,
+): { year: number; month: number; day: number } | null {
+	if (!dateStr) return null;
+	const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+	if (!match || !match[1] || !match[2] || !match[3]) return null;
+	return {
+		year: Number.parseInt(match[1], 10),
+		month: Number.parseInt(match[2], 10),
+		day: Number.parseInt(match[3], 10),
+	};
+}
+
+// event_id と event_day_id の整合性チェック
+async function validateEventConsistency(
+	eventId: string | null | undefined,
+	eventDayId: string | null | undefined,
+): Promise<{ valid: boolean; error?: string; eventId?: string | null }> {
+	// 両方nullの場合はOK
+	if (!eventId && !eventDayId) {
+		return { valid: true };
+	}
+
+	// event_day_id が指定されている場合
+	if (eventDayId) {
+		const eventDayResult = await db
+			.select()
+			.from(eventDays)
+			.where(eq(eventDays.id, eventDayId))
+			.limit(1);
+
+		const eventDay = eventDayResult[0];
+		if (!eventDay) {
+			return { valid: false, error: "指定されたevent_day_idが存在しません" };
+		}
+
+		// event_id が指定されている場合、整合性チェック
+		if (eventId && eventId !== eventDay.eventId) {
+			return {
+				valid: false,
+				error: "event_idとevent_day_idが整合していません",
+			};
+		}
+
+		// event_day_id から event_id を自動設定
+		return { valid: true, eventId: eventDay.eventId };
+	}
+
+	// event_id のみ指定されている場合はOK
+	return { valid: true };
+}
 
 const releasesRouter = new Hono<AdminContext>();
 
@@ -48,7 +102,11 @@ releasesRouter.get("/", async (c) => {
 				nameEn: releases.nameEn,
 				catalogNumber: releases.catalogNumber,
 				releaseDate: releases.releaseDate,
+				releaseYear: releases.releaseYear,
+				releaseMonth: releases.releaseMonth,
+				releaseDay: releases.releaseDay,
 				releaseType: releases.releaseType,
+				eventId: releases.eventId,
 				eventDayId: releases.eventDayId,
 				notes: releases.notes,
 				createdAt: releases.createdAt,
@@ -163,8 +221,31 @@ releasesRouter.post("/", async (c) => {
 		return c.json({ error: "ID already exists" }, 409);
 	}
 
+	// event_id と event_day_id の整合性チェック
+	const eventValidation = await validateEventConsistency(
+		parsed.data.eventId,
+		parsed.data.eventDayId,
+	);
+	if (!eventValidation.valid) {
+		return c.json({ error: eventValidation.error }, 400);
+	}
+
+	// release_date から年月日を自動設定
+	const dateComponents = parseDateToComponents(parsed.data.releaseDate);
+
+	// 作成データを構築
+	const insertData = {
+		...parsed.data,
+		// event_day_id から event_id を自動設定
+		eventId: eventValidation.eventId ?? parsed.data.eventId,
+		// release_date から年月日を設定
+		releaseYear: dateComponents?.year ?? parsed.data.releaseYear,
+		releaseMonth: dateComponents?.month ?? parsed.data.releaseMonth,
+		releaseDay: dateComponents?.day ?? parsed.data.releaseDay,
+	};
+
 	// 作成
-	const result = await db.insert(releases).values(parsed.data).returning();
+	const result = await db.insert(releases).values(insertData).returning();
 
 	return c.json(result[0], 201);
 });
@@ -197,14 +278,60 @@ releasesRouter.put("/:id", async (c) => {
 		);
 	}
 
+	// event_id と event_day_id の整合性チェック
+	const existingRelease = existing[0];
+	const newEventId = parsed.data.eventId ?? existingRelease?.eventId;
+	const newEventDayId = parsed.data.eventDayId ?? existingRelease?.eventDayId;
+	const eventValidation = await validateEventConsistency(
+		newEventId,
+		newEventDayId,
+	);
+	if (!eventValidation.valid) {
+		return c.json({ error: eventValidation.error }, 400);
+	}
+
+	// release_date から年月日を自動設定
+	const newReleaseDate =
+		parsed.data.releaseDate ?? existingRelease?.releaseDate;
+	const dateComponents = parseDateToComponents(newReleaseDate);
+
+	// 更新データを構築
+	const updateData = {
+		...parsed.data,
+		// event_day_id から event_id を自動設定
+		eventId: eventValidation.eventId ?? newEventId,
+		// release_date から年月日を設定
+		releaseYear: dateComponents?.year ?? parsed.data.releaseYear,
+		releaseMonth: dateComponents?.month ?? parsed.data.releaseMonth,
+		releaseDay: dateComponents?.day ?? parsed.data.releaseDay,
+	};
+
 	// 更新
 	const result = await db
 		.update(releases)
-		.set(parsed.data)
+		.set(updateData)
 		.where(eq(releases.id, id))
 		.returning();
 
-	return c.json(result[0]);
+	const updatedRelease = result[0];
+	if (!updatedRelease) {
+		return c.json({ error: "Update failed" }, 500);
+	}
+
+	// 関連トラックの日付・イベント情報も更新
+	await db
+		.update(tracks)
+		.set({
+			releaseDate: updatedRelease.releaseDate,
+			releaseYear: updatedRelease.releaseYear,
+			releaseMonth: updatedRelease.releaseMonth,
+			releaseDay: updatedRelease.releaseDay,
+			eventId: updatedRelease.eventId,
+			eventDayId: updatedRelease.eventDayId,
+		})
+		.where(eq(tracks.releaseId, id));
+
+	return c.json(updatedRelease);
 });
 
 // リリース削除（ディスクはCASCADE削除）

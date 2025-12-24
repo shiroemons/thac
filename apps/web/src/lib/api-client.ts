@@ -943,6 +943,27 @@ export interface CircleWithLinks extends Circle {
 	links: CircleLink[];
 }
 
+// アーティスト関連楽曲の型定義
+export interface ArtistTrackRelease {
+	id: string;
+	name: string;
+	releaseDate: string | null;
+}
+
+export interface ArtistTrack {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	trackNumber: number;
+	release: ArtistTrackRelease | null;
+}
+
+export interface ArtistTracksResponse {
+	totalUniqueTrackCount: number;
+	byRole: Record<string, number>;
+	tracks: ArtistTrack[];
+}
+
 // Artists
 export const artistsApi = {
 	list: (params?: {
@@ -964,6 +985,8 @@ export const artistsApi = {
 	},
 	get: (id: string) =>
 		fetchWithAuth<ArtistWithAliases>(`/api/admin/artists/${id}`),
+	getTracks: (id: string) =>
+		fetchWithAuth<ArtistTracksResponse>(`/api/admin/artists/${id}/tracks`),
 	create: (data: Omit<Artist, "createdAt" | "updatedAt">) =>
 		fetchWithAuth<Artist>("/api/admin/artists", {
 			method: "POST",
@@ -1003,6 +1026,10 @@ export const artistAliasesApi = {
 	},
 	get: (id: string) =>
 		fetchWithAuth<ArtistAlias>(`/api/admin/artist-aliases/${id}`),
+	getTracks: (id: string) =>
+		fetchWithAuth<ArtistTracksResponse>(
+			`/api/admin/artist-aliases/${id}/tracks`,
+		),
 	create: (data: Omit<ArtistAlias, "createdAt" | "updatedAt" | "artistName">) =>
 		fetchWithAuth<ArtistAlias>("/api/admin/artist-aliases", {
 			method: "POST",

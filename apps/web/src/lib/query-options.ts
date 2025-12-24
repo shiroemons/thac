@@ -19,6 +19,7 @@ import type {
 	AliasType,
 	Artist,
 	ArtistAlias,
+	ArtistTracksResponse,
 	ArtistWithAliases,
 	Circle,
 	CircleWithLinks,
@@ -97,6 +98,17 @@ export const artistDetailQueryOptions = (id: string) =>
 		staleTime: STALE_TIME.SHORT,
 	});
 
+/**
+ * アーティストの関連楽曲のqueryOptions
+ */
+export const artistTracksQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["artist", id, "tracks"],
+		queryFn: () =>
+			ssrFetch<ArtistTracksResponse>(`/api/admin/artists/${id}/tracks`),
+		staleTime: STALE_TIME.SHORT,
+	});
+
 // ===== アーティストエイリアス =====
 
 interface ArtistAliasListParams {
@@ -141,6 +153,17 @@ export const artistAliasDetailQueryOptions = (id: string) =>
 	queryOptions({
 		queryKey: ["artistAlias", id],
 		queryFn: () => ssrFetch<ArtistAlias>(`/api/admin/artist-aliases/${id}`),
+		staleTime: STALE_TIME.SHORT,
+	});
+
+/**
+ * アーティストエイリアスの関連楽曲のqueryOptions
+ */
+export const artistAliasTracksQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["artistAlias", id, "tracks"],
+		queryFn: () =>
+			ssrFetch<ArtistTracksResponse>(`/api/admin/artist-aliases/${id}/tracks`),
 		staleTime: STALE_TIME.SHORT,
 	});
 
