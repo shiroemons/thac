@@ -383,11 +383,24 @@ export interface NewEventInput {
 	eventDates: string[];
 }
 
+export interface ExistingEventDay {
+	id: string;
+	dayNumber: number;
+	eventDate: string | null;
+}
+
+export interface ExistingEventWithDays {
+	eventId: string;
+	eventName: string;
+	eventDays: ExistingEventDay[];
+}
+
 export interface LegacyPreviewResponse {
 	success: boolean;
 	records: LegacyCSVRecord[];
 	songMatches: SongMatchResult[];
 	newEventsNeeded: NewEventNeeded[];
+	existingEventsWithDays?: ExistingEventWithDays[];
 	errors: { row: number; message: string }[];
 	error?: string;
 }
@@ -475,6 +488,7 @@ export const legacyImportApi = {
 		customSongNames: Record<string, string>,
 		newEvents: NewEventInput[] | undefined,
 		onProgress: (progress: ImportProgress) => void,
+		eventDayMappings?: Record<string, string>,
 	): Promise<LegacyImportResult> => {
 		const res = await fetch(`${API_BASE_URL}/api/admin/import/legacy/execute`, {
 			method: "POST",
@@ -488,6 +502,7 @@ export const legacyImportApi = {
 				songMappings,
 				customSongNames,
 				newEvents,
+				eventDayMappings,
 			}),
 		});
 
@@ -562,6 +577,7 @@ export const legacyImportApi = {
 		songMappings: Record<string, string>,
 		customSongNames: Record<string, string>,
 		newEvents?: NewEventInput[],
+		eventDayMappings?: Record<string, string>,
 	): Promise<LegacyImportResult> => {
 		return legacyImportApi.executeWithProgress(
 			records,
@@ -569,6 +585,7 @@ export const legacyImportApi = {
 			customSongNames,
 			newEvents,
 			() => {}, // 進捗を無視
+			eventDayMappings,
 		);
 	},
 };

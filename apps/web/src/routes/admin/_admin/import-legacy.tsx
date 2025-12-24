@@ -25,6 +25,7 @@ import { useCallback, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import {
 	type EntityProgressMap,
+	type ExistingEventWithDays,
 	type ImportProgress,
 	type ImportStage,
 	type LegacyCSVRecord,
@@ -54,6 +55,12 @@ function LegacyImportPage() {
 	>({});
 	const [newEventInputs, setNewEventInputs] = useState<
 		Record<string, NewEventInput>
+	>({});
+	const [existingEventsWithDays, setExistingEventsWithDays] = useState<
+		ExistingEventWithDays[]
+	>([]);
+	const [eventDayMappings, setEventDayMappings] = useState<
+		Record<string, string>
 	>({});
 	const [parseErrors, setParseErrors] = useState<
 		{ row: number; message: string }[]
@@ -104,6 +111,17 @@ function LegacyImportPage() {
 				}
 				setNewEventInputs(defaultEventInputs);
 
+				// 複数日を持つ既存イベントのデフォルト選択（1日目）
+				const existingEvents = data.existingEventsWithDays || [];
+				setExistingEventsWithDays(existingEvents);
+				const defaultEventDayMappings: Record<string, string> = {};
+				for (const event of existingEvents) {
+					if (event.eventDays.length > 0 && event.eventDays[0]) {
+						defaultEventDayMappings[event.eventName] = event.eventDays[0].id;
+					}
+				}
+				setEventDayMappings(defaultEventDayMappings);
+
 				setStep("mapping");
 			} else {
 				setParseErrors(data.errors);
@@ -131,12 +149,16 @@ function LegacyImportPage() {
 				newEventsNeeded.length > 0
 					? Object.values(newEventInputs).filter((e) => e.startDate !== "")
 					: undefined;
+			// イベント日マッピングは既存イベントがある場合のみ渡す
+			const eventDayMappingsToSend =
+				existingEventsWithDays.length > 0 ? eventDayMappings : undefined;
 			return legacyImportApi.executeWithProgress(
 				records,
 				mappings,
 				customSongNames,
 				newEvents,
 				handleProgress,
+				eventDayMappingsToSend,
 			);
 		},
 		onMutate: () => {
@@ -203,10 +225,25 @@ function LegacyImportPage() {
 		[],
 	);
 
+	// 既存イベントのイベント日選択ハンドラ
+	const handleEventDayChange = useCallback(
+		(eventName: string, eventDayId: string) => {
+			setEventDayMappings((prev) => ({
+				...prev,
+				[eventName]: eventDayId,
+			}));
+		},
+		[],
+	);
+
+	// イベント設定が必要かどうか
+	const needsEventStep =
+		newEventsNeeded.length > 0 || existingEventsWithDays.length > 0;
+
 	// 次へハンドラ
 	const handleNext = useCallback(() => {
 		if (step === "mapping") {
-			if (newEventsNeeded.length > 0) {
+			if (needsEventStep) {
 				setStep("events");
 			} else {
 				executeMutation.mutate();
@@ -214,7 +251,7 @@ function LegacyImportPage() {
 		} else if (step === "events") {
 			executeMutation.mutate();
 		}
-	}, [step, newEventsNeeded.length, executeMutation]);
+	}, [step, needsEventStep, executeMutation]);
 
 	// 戻るハンドラ
 	const handleBack = useCallback(() => {
@@ -239,7 +276,7 @@ function LegacyImportPage() {
 	}, []);
 
 	// イベントステップをスキップするかどうか
-	const skipEventsStep = newEventsNeeded.length === 0;
+	const skipEventsStep = !needsEventStep;
 
 	return (
 		<div className="container mx-auto py-6">
@@ -306,6 +343,9 @@ function LegacyImportPage() {
 							events={newEventsNeeded}
 							eventInputs={newEventInputs}
 							onEventInputChange={handleEventInputChange}
+							existingEventsWithDays={existingEventsWithDays}
+							eventDayMappings={eventDayMappings}
+							onEventDayChange={handleEventDayChange}
 						/>
 					)}
 
@@ -701,32 +741,85 @@ interface EventRegistrationStepProps {
 		eventName: string,
 		input: Partial<NewEventInput>,
 	) => void;
+	existingEventsWithDays: ExistingEventWithDays[];
+	eventDayMappings: Record<string, string>;
+	onEventDayChange: (eventName: string, eventDayId: string) => void;
 }
 
 function EventRegistrationStep({
 	events,
 	eventInputs,
 	onEventInputChange,
+	existingEventsWithDays,
+	eventDayMappings,
+	onEventDayChange,
 }: EventRegistrationStepProps) {
 	return (
 		<div className="space-y-6">
-			<div className="text-center">
-				<h3 className="font-semibold text-lg">新規イベント登録</h3>
-				<p className="text-base-content/60 text-sm">
-					以下のイベントはデータベースに存在しないため、情報を入力してください
-				</p>
-			</div>
+			{/* 既存イベントのイベント日選択 */}
+			{existingEventsWithDays.length > 0 && (
+				<div className="space-y-4">
+					<div className="text-center">
+						<h3 className="font-semibold text-lg">イベント日の選択</h3>
+						<p className="text-base-content/60 text-sm">
+							以下のイベントは複数日開催されています。リリースを紐付ける日を選択してください
+						</p>
+					</div>
+					{existingEventsWithDays.map((event) => (
+						<div key={event.eventId} className="card bg-base-200 p-4 shadow-sm">
+							<h4 className="mb-3 font-medium">{event.eventName}</h4>
+							<div className="flex flex-wrap gap-4">
+								{event.eventDays.map((day) => (
+									<label
+										key={day.id}
+										className="flex cursor-pointer items-center gap-2"
+									>
+										<input
+											type="radio"
+											name={`eventDay-${event.eventId}`}
+											value={day.id}
+											checked={eventDayMappings[event.eventName] === day.id}
+											onChange={() => onEventDayChange(event.eventName, day.id)}
+											className="radio radio-primary radio-sm"
+										/>
+										<span>
+											{day.dayNumber}日目
+											{day.eventDate && (
+												<span className="ml-1 text-base-content/60 text-sm">
+													({day.eventDate})
+												</span>
+											)}
+										</span>
+									</label>
+								))}
+							</div>
+						</div>
+					))}
+				</div>
+			)}
 
-			<div className="space-y-4">
-				{events.map((event) => (
-					<EventInputCard
-						key={event.name}
-						event={event}
-						input={eventInputs[event.name]}
-						onChange={(input) => onEventInputChange(event.name, input)}
-					/>
-				))}
-			</div>
+			{/* 新規イベント登録 */}
+			{events.length > 0 && (
+				<div className="space-y-4">
+					<div className="text-center">
+						<h3 className="font-semibold text-lg">新規イベント登録</h3>
+						<p className="text-base-content/60 text-sm">
+							以下のイベントはデータベースに存在しないため、情報を入力してください
+						</p>
+					</div>
+
+					<div className="space-y-4">
+						{events.map((event) => (
+							<EventInputCard
+								key={event.name}
+								event={event}
+								input={eventInputs[event.name]}
+								onChange={(input) => onEventInputChange(event.name, input)}
+							/>
+						))}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

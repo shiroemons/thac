@@ -8,6 +8,7 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 import {
 	checkNewEventsNeeded,
 	executeLegacyImport,
+	getExistingEventsWithMultipleDays,
 	type ImportInput,
 	type ImportProgress,
 } from "../../../services/legacy-import-service";
@@ -45,6 +46,7 @@ const executeRequestSchema = z.object({
 	songMappings: z.record(z.string(), z.string()),
 	customSongNames: z.record(z.string(), z.string()),
 	newEvents: z.array(newEventInputSchema).optional(),
+	eventDayMappings: z.record(z.string(), z.string()).optional(), // イベント名 -> イベント日ID
 });
 
 const legacyImportRouter = new Hono<AdminContext>();
@@ -136,11 +138,16 @@ legacyImportRouter.post("/preview", async (c) => {
 			};
 		});
 
+		// 複数日を持つ既存イベントを取得
+		const existingEventsWithDays =
+			await getExistingEventsWithMultipleDays(uniqueEventNames);
+
 		return c.json({
 			success: true,
 			records: parseResult.records,
 			songMatches,
 			newEventsNeeded: newEventsWithEdition,
+			existingEventsWithDays,
 			errors: [],
 		});
 	} catch (error) {
@@ -189,6 +196,9 @@ legacyImportRouter.post("/execute", async (c) => {
 		const customSongNames = new Map<string, string>(
 			Object.entries(parsed.data.customSongNames),
 		);
+		const eventDayMappings = parsed.data.eventDayMappings
+			? new Map<string, string>(Object.entries(parsed.data.eventDayMappings))
+			: undefined;
 
 		// インポート実行
 		const input: ImportInput = {
@@ -196,6 +206,7 @@ legacyImportRouter.post("/execute", async (c) => {
 			songMappings,
 			customSongNames,
 			newEvents: parsed.data.newEvents,
+			eventDayMappings,
 		};
 
 		// SSEでストリーミングレスポンス
