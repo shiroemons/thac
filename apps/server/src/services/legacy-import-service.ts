@@ -55,6 +55,20 @@ export interface NewEventInput {
 	eventDates: string[]; // 各日の日付
 }
 
+/**
+ * イベントの設定状態
+ */
+export interface EventConfigurationStatus {
+	name: string;
+	exists: boolean;
+	eventId?: string;
+	hasEventDays: boolean;
+	eventDaysCount: number;
+	hasStartDate: boolean;
+	hasTotalDays: boolean;
+	needsConfiguration: boolean; // 設定が必要かどうか
+}
+
 export interface EntityCount {
 	created: number;
 	updated: number;
@@ -1327,7 +1341,7 @@ export async function executeLegacyImport(
 }
 
 /**
- * 新規イベントを処理（ウィザードステップから）
+ * イベントを処理（新規作成または既存イベントの設定更新）
  */
 async function processNewEvent(
 	tx: DbTransaction,
@@ -1345,13 +1359,66 @@ async function processNewEvent(
 
 	// 既存チェック
 	const existing = await tx
-		.select()
+		.select({
+			id: events.id,
+			startDate: events.startDate,
+			totalDays: events.totalDays,
+		})
 		.from(events)
 		.where(eq(events.name, eventName))
 		.limit(1);
 
 	if (existing.length > 0 && existing[0]) {
-		cache.events.set(eventName, existing[0].id);
+		const existingEvent = existing[0];
+		cache.events.set(eventName, existingEvent.id);
+
+		// 既存イベントのevent_daysをチェック
+		const existingDays = await tx
+			.select({ dayNumber: eventDays.dayNumber })
+			.from(eventDays)
+			.where(eq(eventDays.eventId, existingEvent.id));
+
+		const hasEventDays = existingDays.length > 0;
+		const hasStartDate = !!existingEvent.startDate;
+
+		// 設定が不完全な場合は更新
+		if (!hasEventDays || !hasStartDate) {
+			// イベントの日付情報を更新
+			await tx
+				.update(events)
+				.set({
+					totalDays: input.totalDays,
+					startDate: input.startDate,
+					endDate: input.endDate,
+				})
+				.where(eq(events.id, existingEvent.id));
+			result.events.updated++;
+
+			// 既存のdayNumberを取得
+			const existingDayNumbers = new Set(
+				existingDays.map((d: { dayNumber: number }) => d.dayNumber),
+			);
+
+			// 新しいevent_daysを追加（既存のものはスキップ）
+			for (let i = 0; i < input.eventDates.length; i++) {
+				const date = input.eventDates[i];
+				const dayNumber = i + 1;
+				if (!date) continue;
+
+				if (!existingDayNumbers.has(dayNumber)) {
+					await tx
+						.insert(eventDays)
+						.values({
+							id: createId.eventDay(),
+							eventId: existingEvent.id,
+							dayNumber,
+							date,
+						})
+						.onConflictDoNothing();
+					result.eventDays.created++;
+				}
+			}
+		}
 		return;
 	}
 
@@ -1390,12 +1457,15 @@ async function processNewEvent(
 		const date = input.eventDates[i];
 		if (!date) continue;
 
-		await tx.insert(eventDays).values({
-			id: createId.eventDay(),
-			eventId: newEventId,
-			dayNumber: i + 1,
-			date,
-		});
+		await tx
+			.insert(eventDays)
+			.values({
+				id: createId.eventDay(),
+				eventId: newEventId,
+				dayNumber: i + 1,
+				date,
+			})
+			.onConflictDoNothing();
 		result.eventDays.created++;
 	}
 }
@@ -1424,4 +1494,125 @@ export async function checkNewEventsNeeded(
 	}
 
 	return [...new Set(newEvents)]; // 重複を除去
+}
+
+/**
+ * イベントの設定状態を詳細にチェック
+ * 存在するが設定が不完全なイベントも検出する
+ */
+export async function checkEventsConfiguration(
+	eventNames: string[],
+): Promise<EventConfigurationStatus[]> {
+	const results: EventConfigurationStatus[] = [];
+	const uniqueNames = [
+		...new Set(eventNames.map((n) => n.trim()).filter(Boolean)),
+	];
+
+	for (const eventName of uniqueNames) {
+		// イベントを検索
+		const existing = await db
+			.select({
+				id: events.id,
+				name: events.name,
+				startDate: events.startDate,
+				totalDays: events.totalDays,
+			})
+			.from(events)
+			.where(eq(events.name, eventName))
+			.limit(1);
+
+		if (existing.length === 0 || !existing[0]) {
+			// イベントが存在しない
+			results.push({
+				name: eventName,
+				exists: false,
+				hasEventDays: false,
+				eventDaysCount: 0,
+				hasStartDate: false,
+				hasTotalDays: false,
+				needsConfiguration: true,
+			});
+		} else {
+			// イベントが存在する場合、event_daysをチェック
+			const event = existing[0];
+			const days = await db
+				.select({ id: eventDays.id })
+				.from(eventDays)
+				.where(eq(eventDays.eventId, event.id));
+
+			const hasEventDays = days.length > 0;
+			const hasStartDate = !!event.startDate;
+			const hasTotalDays = !!event.totalDays;
+
+			// 設定が必要: event_daysがないか、startDateがない場合
+			const needsConfiguration = !hasEventDays || !hasStartDate;
+
+			results.push({
+				name: eventName,
+				exists: true,
+				eventId: event.id,
+				hasEventDays,
+				eventDaysCount: days.length,
+				hasStartDate,
+				hasTotalDays,
+				needsConfiguration,
+			});
+		}
+	}
+
+	return results;
+}
+
+/**
+ * 既存イベントにevent_daysと日付情報を設定
+ */
+export async function updateExistingEventConfiguration(
+	eventId: string,
+	input: NewEventInput,
+): Promise<{ eventDaysCreated: number; eventUpdated: boolean }> {
+	let eventDaysCreated = 0;
+	let eventUpdated = false;
+
+	await db.transaction(async (tx) => {
+		// イベントの日付情報を更新
+		await tx
+			.update(events)
+			.set({
+				totalDays: input.totalDays,
+				startDate: input.startDate,
+				endDate: input.endDate,
+			})
+			.where(eq(events.id, eventId));
+		eventUpdated = true;
+
+		// 既存のevent_daysを取得
+		const existingDays = await tx
+			.select({ dayNumber: eventDays.dayNumber })
+			.from(eventDays)
+			.where(eq(eventDays.eventId, eventId));
+
+		const existingDayNumbers = new Set(existingDays.map((d) => d.dayNumber));
+
+		// 新しいevent_daysを追加（既存のものはスキップ）
+		for (let i = 0; i < input.eventDates.length; i++) {
+			const date = input.eventDates[i];
+			const dayNumber = i + 1;
+			if (!date) continue;
+
+			if (!existingDayNumbers.has(dayNumber)) {
+				await tx
+					.insert(eventDays)
+					.values({
+						id: createId.eventDay(),
+						eventId,
+						dayNumber,
+						date,
+					})
+					.onConflictDoNothing();
+				eventDaysCreated++;
+			}
+		}
+	});
+
+	return { eventDaysCreated, eventUpdated };
 }
