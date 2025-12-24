@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { detectInitial } from "@thac/utils";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Music, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select } from "@/components/ui/select";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import {
 	type ArtistAlias,
 	aliasTypesApi,
@@ -20,7 +28,10 @@ import {
 	type InitialScript,
 } from "@/lib/api-client";
 import { createArtistAliasDetailHead } from "@/lib/head";
-import { artistAliasDetailQueryOptions } from "@/lib/query-options";
+import {
+	artistAliasDetailQueryOptions,
+	artistAliasTracksQueryOptions,
+} from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/artist-aliases_/$id")({
 	loader: ({ context, params }) =>
@@ -34,6 +45,26 @@ export const Route = createFileRoute("/admin/_admin/artist-aliases_/$id")({
 const initialScriptOptions = Object.entries(INITIAL_SCRIPT_LABELS).map(
 	([value, label]) => ({ value, label }),
 );
+
+/** 役割コードのラベルマップ */
+const ROLE_LABELS: Record<string, string> = {
+	vocal: "ボーカル",
+	arrange: "編曲",
+	lyrics: "作詞",
+	compose: "作曲",
+	circle: "サークル",
+	guitar: "ギター",
+	bass: "ベース",
+	drums: "ドラム",
+	piano: "ピアノ",
+	strings: "ストリングス",
+	chorus: "コーラス",
+	mix: "ミックス",
+	mastering: "マスタリング",
+	illustration: "イラスト",
+	movie: "動画",
+	other: "その他",
+};
 
 const requiresInitial = (initialScript: string) =>
 	["latin", "hiragana", "katakana"].includes(initialScript);
@@ -67,6 +98,9 @@ function ArtistAliasDetailPage() {
 
 	const { data: alias, isPending } = useQuery(
 		artistAliasDetailQueryOptions(id),
+	);
+	const { data: tracksData, isPending: isTracksPending } = useQuery(
+		artistAliasTracksQueryOptions(id),
 	);
 
 	// アーティスト一覧取得
@@ -447,6 +481,101 @@ function ArtistAliasDetailPage() {
 										? `${alias.periodFrom || "?"} 〜 ${alias.periodTo || "現在"}`
 										: "-"}
 								</p>
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* 関連楽曲カード */}
+			<div className="card bg-base-100 shadow-xl">
+				<div className="card-body">
+					<div className="flex items-center gap-2">
+						<Music className="h-5 w-5" />
+						<h2 className="card-title">関連楽曲</h2>
+						{tracksData && (
+							<Badge variant="secondary">
+								{tracksData.totalUniqueTrackCount}曲
+							</Badge>
+						)}
+					</div>
+
+					{isTracksPending ? (
+						<div className="flex items-center justify-center py-8">
+							<span className="loading loading-spinner loading-md" />
+						</div>
+					) : !tracksData || tracksData.totalUniqueTrackCount === 0 ? (
+						<p className="text-base-content/60">関連する楽曲がありません</p>
+					) : (
+						<div className="space-y-6">
+							{/* 役割別カウント */}
+							<div>
+								<h3 className="mb-3 font-medium text-base-content/80">
+									役割別カウント
+								</h3>
+								<div className="flex flex-wrap gap-2">
+									{Object.entries(tracksData.byRole)
+										.sort((a, b) => b[1] - a[1])
+										.map(([roleCode, count]) => (
+											<Badge key={roleCode} variant="outline">
+												{ROLE_LABELS[roleCode] || roleCode}: {count}曲
+											</Badge>
+										))}
+								</div>
+							</div>
+
+							{/* 楽曲一覧 */}
+							<div>
+								<h3 className="mb-3 font-medium text-base-content/80">
+									楽曲一覧
+								</h3>
+								<div className="overflow-x-auto">
+									<Table zebra>
+										<TableHeader>
+											<TableRow className="hover:bg-transparent">
+												<TableHead>楽曲名</TableHead>
+												<TableHead>リリース</TableHead>
+												<TableHead className="w-[100px]">リリース日</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{tracksData.tracks.map((track) => (
+												<TableRow key={track.id}>
+													<TableCell className="font-medium">
+														<Link
+															to="/admin/tracks/$id"
+															params={{ id: track.id }}
+															className="link link-hover"
+														>
+															{track.name}
+														</Link>
+														{track.nameJa && track.nameJa !== track.name && (
+															<span className="ml-2 text-base-content/60 text-sm">
+																({track.nameJa})
+															</span>
+														)}
+													</TableCell>
+													<TableCell>
+														{track.release ? (
+															<Link
+																to="/admin/releases/$id"
+																params={{ id: track.release.id }}
+																className="link link-hover"
+															>
+																{track.release.name}
+															</Link>
+														) : (
+															"-"
+														)}
+													</TableCell>
+													<TableCell className="text-base-content/70">
+														{track.release?.releaseDate || "-"}
+													</TableCell>
+												</TableRow>
+											))}
+										</TableBody>
+									</Table>
+								</div>
 							</div>
 						</div>
 					)}

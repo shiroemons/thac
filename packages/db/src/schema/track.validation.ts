@@ -6,7 +6,15 @@ import { trackCreditRoles, trackCredits, tracks } from "./track";
 const nonEmptyString = z.string().trim().min(1, "必須項目です");
 const optionalString = z.string().trim().optional().nullable();
 
+// 日付バリデーション（YYYY-MM-DD形式）
+const dateSchema = z
+	.string()
+	.regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD形式で入力してください")
+	.optional()
+	.nullable();
+
 // Track
+// Note: releaseDate, releaseYear/Month/Day, eventId, eventDayId are auto-set from parent release
 export const insertTrackSchema = createInsertSchema(tracks, {
 	id: nonEmptyString,
 	releaseId: nonEmptyString,
@@ -15,6 +23,12 @@ export const insertTrackSchema = createInsertSchema(tracks, {
 	name: nonEmptyString.max(200, "200文字以内で入力してください"),
 	nameJa: optionalString,
 	nameEn: optionalString,
+	releaseDate: dateSchema,
+	releaseYear: z.number().int().min(1900).max(2100).optional().nullable(),
+	releaseMonth: z.number().int().min(1).max(12).optional().nullable(),
+	releaseDay: z.number().int().min(1).max(31).optional().nullable(),
+	eventId: optionalString,
+	eventDayId: optionalString,
 }).omit({ createdAt: true, updatedAt: true });
 
 export const updateTrackSchema = z.object({

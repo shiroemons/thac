@@ -8,7 +8,7 @@ import {
 	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { circles } from "./artist-circle";
-import { eventDays } from "./event";
+import { eventDays, events } from "./event";
 
 // リリースタイプの定義
 export const RELEASE_TYPES = [
@@ -42,7 +42,13 @@ export const releases = sqliteTable(
 		nameEn: text("name_en"),
 		catalogNumber: text("catalog_number"),
 		releaseDate: text("release_date"),
+		releaseYear: integer("release_year"),
+		releaseMonth: integer("release_month"),
+		releaseDay: integer("release_day"),
 		releaseType: text("release_type"),
+		eventId: text("event_id").references(() => events.id, {
+			onDelete: "set null",
+		}),
 		eventDayId: text("event_day_id").references(() => eventDays.id, {
 			onDelete: "set null",
 		}),
@@ -57,7 +63,10 @@ export const releases = sqliteTable(
 	},
 	(table) => [
 		index("idx_releases_date").on(table.releaseDate),
+		index("idx_releases_year").on(table.releaseYear),
+		index("idx_releases_year_month").on(table.releaseYear, table.releaseMonth),
 		index("idx_releases_type").on(table.releaseType),
+		index("idx_releases_event").on(table.eventId),
 		index("idx_releases_event_day").on(table.eventDayId),
 		index("idx_releases_catalog").on(table.catalogNumber),
 	],

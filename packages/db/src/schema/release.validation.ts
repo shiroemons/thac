@@ -29,7 +29,11 @@ export const insertReleaseSchema = createInsertSchema(releases, {
 	nameEn: optionalString,
 	catalogNumber: optionalString,
 	releaseDate: dateSchema,
+	releaseYear: z.number().int().min(1900).max(2100).optional().nullable(),
+	releaseMonth: z.number().int().min(1).max(12).optional().nullable(),
+	releaseDay: z.number().int().min(1).max(31).optional().nullable(),
 	releaseType: z.enum(RELEASE_TYPES).optional().nullable(),
+	eventId: optionalString,
 	eventDayId: optionalString,
 	notes: optionalString,
 }).omit({ createdAt: true, updatedAt: true });
@@ -40,7 +44,11 @@ export const updateReleaseSchema = z.object({
 	nameEn: optionalString,
 	catalogNumber: optionalString,
 	releaseDate: dateSchema,
+	releaseYear: z.number().int().min(1900).max(2100).optional().nullable(),
+	releaseMonth: z.number().int().min(1).max(12).optional().nullable(),
+	releaseDay: z.number().int().min(1).max(31).optional().nullable(),
 	releaseType: z.enum(RELEASE_TYPES).optional().nullable(),
+	eventId: optionalString,
 	eventDayId: optionalString,
 	notes: optionalString,
 });
