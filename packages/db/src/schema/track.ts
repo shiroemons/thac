@@ -38,6 +38,12 @@ export const tracks = sqliteTable(
 	(table) => [
 		index("idx_tracks_release").on(table.releaseId),
 		index("idx_tracks_disc").on(table.discId),
+		// Composite index for ordering tracks by release, disc, and track number
+		index("idx_tracks_ordering").on(
+			table.releaseId,
+			table.discId,
+			table.trackNumber,
+		),
 		// Conditional unique index: track number unique within release when disc_id IS NULL
 		uniqueIndex("uq_tracks_release_tracknumber")
 			.on(table.releaseId, table.trackNumber)
@@ -112,6 +118,11 @@ export const trackCreditRoles = sqliteTable(
 			columns: [table.trackCreditId, table.roleCode, table.rolePosition],
 		}),
 		index("idx_track_credit_roles_credit").on(table.trackCreditId),
+		// Composite index for role-based credit queries
+		index("idx_track_credit_roles_composite").on(
+			table.trackCreditId,
+			table.roleCode,
+		),
 	],
 );
 

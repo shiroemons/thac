@@ -107,6 +107,7 @@ export const releaseCircles = sqliteTable(
 		primaryKey({
 			columns: [table.releaseId, table.circleId, table.participationType],
 		}),
+		index("idx_release_circles_release").on(table.releaseId),
 		index("idx_release_circles_circle").on(table.circleId),
 	],
 );

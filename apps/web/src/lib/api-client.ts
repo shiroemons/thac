@@ -1520,19 +1520,37 @@ export interface TrackCredit {
 	roles: TrackCreditRole[];
 }
 
-// Track list item with release name
-interface TrackListItem extends Track {
+// Track list item with release info (paginated API response)
+export interface TrackListItem extends Track {
 	releaseName: string | null;
+	discNumber: number | null;
+	creditCount: number;
+	vocalists: string | null;
+	arrangers: string | null;
+	lyricists: string | null;
+	originalSongs: string | null;
 }
 
 // Tracks
 export const tracksApi = {
 	get: (trackId: string, ssrHeaders?: Headers) =>
 		fetchWithAuth<TrackDetail>(`/api/admin/tracks/${trackId}`, { ssrHeaders }),
-	listAll: (params?: { limit?: number }) =>
-		fetchWithAuth<{ data: TrackListItem[] }>(
-			`/api/admin/tracks${params?.limit ? `?limit=${params.limit}` : ""}`,
-		),
+	listPaginated: (params?: {
+		page?: number;
+		limit?: number;
+		search?: string;
+		releaseId?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.search) searchParams.set("search", params.search);
+		if (params?.releaseId) searchParams.set("releaseId", params.releaseId);
+		const query = searchParams.toString();
+		return fetchWithAuth<PaginatedResponse<TrackListItem>>(
+			`/api/admin/tracks${query ? `?${query}` : ""}`,
+		);
+	},
 	list: (releaseId: string) =>
 		fetchWithAuth<TrackWithCreditCount[]>(
 			`/api/admin/releases/${releaseId}/tracks`,

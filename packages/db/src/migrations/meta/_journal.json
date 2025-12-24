@@ -64,6 +64,13 @@
 			"when": 1766217216055,
 			"tag": "0008_clean_black_queen",
 			"breakpoints": true
+		},
+		{
+			"idx": 9,
+			"version": "6",
+			"when": 1766553628537,
+			"tag": "0009_low_kingpin",
+			"breakpoints": true
 		}
 	]
 }
