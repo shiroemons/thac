@@ -225,13 +225,26 @@ interface CachedEventDayInfo {
 	date: string;
 }
 
+/**
+ * リリースのキャッシュ情報（イベント情報含む）
+ */
+interface CachedReleaseInfo {
+	id: string;
+	eventId: string | null;
+	eventDayId: string | null;
+	releaseDate: string | null;
+	releaseYear: number | null;
+	releaseMonth: number | null;
+	releaseDay: number | null;
+}
+
 interface ImportCache {
 	events: Map<string, string>; // eventName -> eventId
 	eventDays: Map<string, CachedEventDayInfo>; // eventId -> { id, date } (1日目のみ)
 	circles: Map<string, CachedEntityInfo>; // circleName -> { id, hasNameJa }
 	artists: Map<string, CachedEntityInfo>; // artistName -> { id, hasNameJa }
 	artistAliases: Map<string, string>; // artistName -> aliasId (本名義のID)
-	releases: Map<string, string>; // `${circleName}:${albumBaseName}` -> releaseId
+	releases: Map<string, CachedReleaseInfo>; // `${circleName}:${albumBaseName}` -> releaseInfo
 	discs: Map<string, string>; // `${releaseId}:${discNumber}` -> discId
 	tracks: Map<string, string>; // `${discId}:${trackNumber}` or `${releaseId}:${trackNumber}` -> trackId
 }
@@ -468,16 +481,41 @@ async function prefetchExistingEntities(
 				id: releases.id,
 				name: releases.name,
 				circleId: releaseCircles.circleId,
+				eventId: releases.eventId,
+				eventDayId: releases.eventDayId,
+				releaseDate: releases.releaseDate,
+				releaseYear: releases.releaseYear,
+				releaseMonth: releases.releaseMonth,
+				releaseDay: releases.releaseDay,
 			})
 			.from(releases)
 			.leftJoin(releaseCircles, eq(releases.id, releaseCircles.releaseId))
 			.where(inArray(releases.name, albumNames));
 
-		// リリースID -> サークルIDのマップを構築
+		// リリースID -> サークルID & イベント情報のマップを構築
 		const releaseCircleMap = new Map<string, Set<string>>();
+		const releaseInfoMap = new Map<
+			string,
+			{
+				eventId: string | null;
+				eventDayId: string | null;
+				releaseDate: string | null;
+				releaseYear: number | null;
+				releaseMonth: number | null;
+				releaseDay: number | null;
+			}
+		>();
 		for (const r of existingReleases) {
 			if (!releaseCircleMap.has(r.id)) {
 				releaseCircleMap.set(r.id, new Set());
+				releaseInfoMap.set(r.id, {
+					eventId: r.eventId,
+					eventDayId: r.eventDayId,
+					releaseDate: r.releaseDate,
+					releaseYear: r.releaseYear,
+					releaseMonth: r.releaseMonth,
+					releaseDay: r.releaseDay,
+				});
 			}
 			if (r.circleId) {
 				releaseCircleMap.get(r.id)?.add(r.circleId);
@@ -498,7 +536,16 @@ async function prefetchExistingEntities(
 						primaryCircleInfo &&
 						circleIds.has(primaryCircleInfo.id)
 					) {
-						cache.releases.set(releaseKey, r.id);
+						const releaseInfo = releaseInfoMap.get(r.id);
+						cache.releases.set(releaseKey, {
+							id: r.id,
+							eventId: releaseInfo?.eventId ?? null,
+							eventDayId: releaseInfo?.eventDayId ?? null,
+							releaseDate: releaseInfo?.releaseDate ?? null,
+							releaseYear: releaseInfo?.releaseYear ?? null,
+							releaseMonth: releaseInfo?.releaseMonth ?? null,
+							releaseDay: releaseInfo?.releaseDay ?? null,
+						});
 						break;
 					}
 				}
@@ -699,8 +746,12 @@ async function batchInsertReleases(
 		nameJa: string | null;
 		nameEn: string | null;
 		releaseType: string;
+		eventId: string | null;
 		eventDayId: string | null;
 		releaseDate: string | null;
+		releaseYear: number | null;
+		releaseMonth: number | null;
+		releaseDay: number | null;
 	}> = [];
 
 	const newReleaseCircles: Array<{
@@ -722,9 +773,11 @@ async function batchInsertReleases(
 		// イベント日を取得
 		// 1. eventDayMappingsに指定があればそれを使用
 		// 2. なければデフォルト（1日目）を使用
+		let eventId: string | null = null;
 		let eventDayId: string | null = null;
 		let releaseDate: string | null = null;
 		if (data.eventName) {
+			eventId = cache.events.get(data.eventName) ?? null;
 			// ユーザーが選択したイベント日があるかチェック
 			const mappedEventDayId = eventDayMappings?.get(data.eventName);
 			if (mappedEventDayId) {
@@ -741,7 +794,6 @@ async function batchInsertReleases(
 				}
 			} else {
 				// デフォルト：キャッシュされた1日目を使用
-				const eventId = cache.events.get(data.eventName);
 				if (eventId) {
 					const eventDayInfo = cache.eventDays.get(eventId);
 					if (eventDayInfo) {
@@ -752,14 +804,31 @@ async function batchInsertReleases(
 			}
 		}
 
+		// 発売日から年/月/日を分解
+		let releaseYear: number | null = null;
+		let releaseMonth: number | null = null;
+		let releaseDay: number | null = null;
+		if (releaseDate) {
+			const dateParts = releaseDate.split("-");
+			if (dateParts.length >= 3) {
+				releaseYear = Number.parseInt(dateParts[0] ?? "0", 10) || null;
+				releaseMonth = Number.parseInt(dateParts[1] ?? "0", 10) || null;
+				releaseDay = Number.parseInt(dateParts[2] ?? "0", 10) || null;
+			}
+		}
+
 		newReleases.push({
 			id: newId,
 			name: nameInfo.name,
 			nameJa: nameInfo.nameJa,
 			nameEn: nameInfo.nameEn,
 			releaseType: "album",
+			eventId,
 			eventDayId,
 			releaseDate,
+			releaseYear,
+			releaseMonth,
+			releaseDay,
 		});
 
 		// releaseCirclesを準備
@@ -779,7 +848,15 @@ async function batchInsertReleases(
 			}
 		}
 
-		cache.releases.set(releaseKey, newId);
+		cache.releases.set(releaseKey, {
+			id: newId,
+			eventId,
+			eventDayId,
+			releaseDate,
+			releaseYear,
+			releaseMonth,
+			releaseDay,
+		});
 	}
 
 	if (newReleases.length > 0) {
@@ -813,7 +890,9 @@ async function batchInsertDiscs(
 	result: ImportResult,
 ): Promise<void> {
 	// 既存ディスクをプリフェッチ
-	const releaseIds = [...new Set([...cache.releases.values()])];
+	const releaseIds = [
+		...new Set([...cache.releases.values()].map((r) => r.id)),
+	];
 	if (releaseIds.length > 0) {
 		const existingDiscs = await tx
 			.select({
@@ -826,8 +905,8 @@ async function batchInsertDiscs(
 
 		for (const d of existingDiscs) {
 			// releaseIdからreleaseKeyを逆引き
-			for (const [releaseKey, releaseId] of cache.releases) {
-				if (releaseId === d.releaseId) {
+			for (const [releaseKey, releaseInfo] of cache.releases) {
+				if (releaseInfo.id === d.releaseId) {
 					const discKey = `${releaseKey}:${d.discNumber}`;
 					cache.discs.set(discKey, d.id);
 				}
@@ -847,13 +926,13 @@ async function batchInsertDiscs(
 			continue;
 		}
 
-		const releaseId = cache.releases.get(data.releaseKey);
-		if (!releaseId) continue;
+		const releaseInfo = cache.releases.get(data.releaseKey);
+		if (!releaseInfo) continue;
 
 		const newId = createId.disc();
 		newDiscs.push({
 			id: newId,
-			releaseId,
+			releaseId: releaseInfo.id,
 			discNumber: data.discNumber,
 		});
 		cache.discs.set(discKey, newId);
@@ -910,6 +989,12 @@ async function batchInsertTracks(
 		name: string;
 		nameJa: string | null;
 		nameEn: string | null;
+		eventId: string | null;
+		eventDayId: string | null;
+		releaseDate: string | null;
+		releaseYear: number | null;
+		releaseMonth: number | null;
+		releaseDay: number | null;
 	}> = [];
 
 	for (const [trackKey, data] of extracted.trackData) {
@@ -918,21 +1003,27 @@ async function batchInsertTracks(
 			continue;
 		}
 
-		const releaseId = cache.releases.get(data.releaseKey);
+		const releaseInfo = cache.releases.get(data.releaseKey);
 		const discId = cache.discs.get(data.discKey);
-		if (!releaseId || !discId) continue;
+		if (!releaseInfo || !discId) continue;
 
 		const nameInfo = generateNameInfo(data.record.title);
 		const newId = createId.track();
 
 		newTracks.push({
 			id: newId,
-			releaseId,
+			releaseId: releaseInfo.id,
 			discId,
 			trackNumber: data.trackNumber,
 			name: nameInfo.name,
 			nameJa: nameInfo.nameJa,
 			nameEn: nameInfo.nameEn,
+			eventId: releaseInfo.eventId,
+			eventDayId: releaseInfo.eventDayId,
+			releaseDate: releaseInfo.releaseDate,
+			releaseYear: releaseInfo.releaseYear,
+			releaseMonth: releaseInfo.releaseMonth,
+			releaseDay: releaseInfo.releaseDay,
 		});
 		cache.tracks.set(trackKey, newId);
 	}
@@ -1570,12 +1661,27 @@ async function processNewEvent(
 
 		// 既存イベントのevent_daysをチェック
 		const existingDays = await tx
-			.select({ dayNumber: eventDays.dayNumber })
+			.select({
+				id: eventDays.id,
+				dayNumber: eventDays.dayNumber,
+				date: eventDays.date,
+			})
 			.from(eventDays)
 			.where(eq(eventDays.eventId, existingEvent.id));
 
 		const hasEventDays = existingDays.length > 0;
 		const hasStartDate = !!existingEvent.startDate;
+
+		// 既存の1日目をキャッシュに追加
+		const existingDay1 = existingDays.find(
+			(d: { id: string; dayNumber: number; date: string }) => d.dayNumber === 1,
+		);
+		if (existingDay1) {
+			cache.eventDays.set(existingEvent.id, {
+				id: existingDay1.id,
+				date: existingDay1.date,
+			});
+		}
 
 		// 設定が不完全な場合は更新
 		if (!hasEventDays || !hasStartDate) {
@@ -1602,16 +1708,25 @@ async function processNewEvent(
 				if (!date) continue;
 
 				if (!existingDayNumbers.has(dayNumber)) {
+					const eventDayId = createId.eventDay();
 					await tx
 						.insert(eventDays)
 						.values({
-							id: createId.eventDay(),
+							id: eventDayId,
 							eventId: existingEvent.id,
 							dayNumber,
 							date,
 						})
 						.onConflictDoNothing();
 					result.eventDays.created++;
+
+					// 1日目が新しく作成された場合はキャッシュに追加
+					if (dayNumber === 1) {
+						cache.eventDays.set(existingEvent.id, {
+							id: eventDayId,
+							date,
+						});
+					}
 				}
 			}
 		}
@@ -1653,16 +1768,26 @@ async function processNewEvent(
 		const date = input.eventDates[i];
 		if (!date) continue;
 
+		const eventDayId = createId.eventDay();
+		const dayNumber = i + 1;
 		await tx
 			.insert(eventDays)
 			.values({
-				id: createId.eventDay(),
+				id: eventDayId,
 				eventId: newEventId,
-				dayNumber: i + 1,
+				dayNumber,
 				date,
 			})
 			.onConflictDoNothing();
 		result.eventDays.created++;
+
+		// 1日目のイベント日をキャッシュに追加（リリースの発売日に使用）
+		if (dayNumber === 1) {
+			cache.eventDays.set(newEventId, {
+				id: eventDayId,
+				date,
+			});
+		}
 	}
 }
 

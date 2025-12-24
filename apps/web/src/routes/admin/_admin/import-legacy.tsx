@@ -283,6 +283,7 @@ function LegacyImportPage() {
 			<AdminPageHeader
 				title="レガシーCSVインポート"
 				description="旧システムのCSVデータをインポートします"
+				breadcrumbs={[{ label: "レガシーCSVインポート" }]}
 			/>
 
 			{/* ステップインジケーター */}
