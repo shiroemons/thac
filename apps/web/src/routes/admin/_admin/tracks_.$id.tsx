@@ -17,6 +17,7 @@ import {
 import { useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { ReorderButtons } from "@/components/admin/reorder-buttons";
+import { TrackEditDialog } from "@/components/admin/track-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,7 +46,6 @@ import {
 	creditRolesApi,
 	officialSongsApi,
 	platformsApi,
-	type Track,
 	type TrackCredit,
 	type TrackDerivation,
 	type TrackIsrc,
@@ -106,9 +106,10 @@ function TrackDetailPage() {
 		error,
 	} = useQuery(trackDetailQueryOptions(trackId));
 
-	// 編集関連の状態
-	const [isEditing, setIsEditing] = useState(false);
-	const [editForm, setEditForm] = useState<Partial<Track>>({});
+	// 編集ダイアログ
+	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+	// 各種ダイアログ用（既存のダイアログで使用）
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [mutationError, setMutationError] = useState<string | null>(null);
 
@@ -339,48 +340,9 @@ function TrackDetailPage() {
 		return options.sort((a, b) => a.label.localeCompare(b.label, "ja"));
 	})();
 
-	// 編集開始
-	const startEditing = () => {
-		if (!track) return;
-		setEditForm({
-			name: track.name,
-			nameJa: track.nameJa,
-			nameEn: track.nameEn,
-			trackNumber: track.trackNumber,
-		});
-		setIsEditing(true);
-		setMutationError(null);
-	};
-
-	// 編集キャンセル
-	const cancelEditing = () => {
-		setIsEditing(false);
-		setEditForm({});
-		setMutationError(null);
-	};
-
-	// 保存
-	const handleSave = async () => {
-		if (!track) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-
-		try {
-			await tracksApi.update(track.releaseId, track.id, {
-				name: editForm.name ?? "",
-				nameJa: editForm.nameJa || null,
-				nameEn: editForm.nameEn || null,
-				trackNumber: editForm.trackNumber,
-			});
-			await queryClient.invalidateQueries({ queryKey: ["track", trackId] });
-			setIsEditing(false);
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
+	// トラッククエリ無効化
+	const invalidateTrackQuery = () => {
+		queryClient.invalidateQueries({ queryKey: ["track", trackId] });
 	};
 
 	// クレジット追加ダイアログを開く
@@ -958,205 +920,122 @@ function TrackDetailPage() {
 				<div className="border-base-300 border-b p-4">
 					<div className="flex items-center justify-between">
 						<h2 className="font-bold text-xl">{track.name}</h2>
-						{!isEditing ? (
-							<Button variant="outline" size="sm" onClick={startEditing}>
-								<Pencil className="mr-1 h-4 w-4" />
-								編集
-							</Button>
-						) : (
-							<div className="flex items-center gap-2">
-								<Button
-									variant="ghost"
-									size="sm"
-									onClick={cancelEditing}
-									disabled={isSubmitting}
-								>
-									キャンセル
-								</Button>
-								<Button
-									variant="primary"
-									size="sm"
-									onClick={handleSave}
-									disabled={isSubmitting || !editForm.name}
-								>
-									{isSubmitting ? "保存中..." : "保存"}
-								</Button>
-							</div>
-						)}
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => setIsEditDialogOpen(true)}
+						>
+							<Pencil className="mr-1 h-4 w-4" />
+							編集
+						</Button>
 					</div>
 				</div>
 
 				<div className="p-4">
-					{isEditing ? (
-						<div className="grid gap-4">
-							<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-								<div className="grid gap-2">
-									<Label htmlFor="name">
-										トラック名 <span className="text-error">*</span>
-									</Label>
-									<Input
-										id="name"
-										value={editForm.name || ""}
-										onChange={(e) =>
-											setEditForm({ ...editForm, name: e.target.value })
-										}
-									/>
-								</div>
-								<div className="grid gap-2">
-									<Label htmlFor="trackNumber">
-										トラック番号 <span className="text-error">*</span>
-									</Label>
-									<Input
-										id="trackNumber"
-										type="number"
-										min="1"
-										value={editForm.trackNumber || ""}
-										onChange={(e) =>
-											setEditForm({
-												...editForm,
-												trackNumber: Number.parseInt(e.target.value, 10) || 1,
-											})
-										}
-									/>
-								</div>
+					<div className="grid gap-4">
+						<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+							<div>
+								<p className="text-base-content/60 text-sm">トラック名</p>
+								<p>{track.name}</p>
 							</div>
-							<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-								<div className="grid gap-2">
-									<Label htmlFor="nameJa">日本語名</Label>
-									<Input
-										id="nameJa"
-										value={editForm.nameJa || ""}
-										onChange={(e) =>
-											setEditForm({ ...editForm, nameJa: e.target.value })
-										}
-									/>
-								</div>
-								<div className="grid gap-2">
-									<Label htmlFor="nameEn">英語名</Label>
-									<Input
-										id="nameEn"
-										value={editForm.nameEn || ""}
-										onChange={(e) =>
-											setEditForm({ ...editForm, nameEn: e.target.value })
-										}
-									/>
-								</div>
+							<div>
+								<p className="text-base-content/60 text-sm">トラック番号</p>
+								<p>{track.trackNumber}</p>
+							</div>
+							<div>
+								<p className="text-base-content/60 text-sm">日本語名</p>
+								<p>{track.nameJa || "-"}</p>
+							</div>
+							<div>
+								<p className="text-base-content/60 text-sm">英語名</p>
+								<p>{track.nameEn || "-"}</p>
 							</div>
 						</div>
-					) : (
-						<div className="grid gap-4">
+
+						<div className="border-base-300 border-t pt-4">
 							<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 								<div>
-									<p className="text-base-content/60 text-sm">トラック名</p>
-									<p>{track.name}</p>
+									<p className="text-base-content/60 text-sm">作品</p>
+									{track.release ? (
+										<Link
+											to="/admin/releases/$id"
+											params={{ id: track.release.id }}
+											className="text-primary hover:underline"
+										>
+											{track.release.name}
+										</Link>
+									) : (
+										<p>-</p>
+									)}
 								</div>
 								<div>
-									<p className="text-base-content/60 text-sm">トラック番号</p>
-									<p>{track.trackNumber}</p>
+									<p className="text-base-content/60 text-sm">ディスク</p>
+									<p>
+										{track.disc
+											? `Disc ${track.disc.discNumber}${track.disc.discName ? ` - ${track.disc.discName}` : ""}`
+											: "-"}
+									</p>
 								</div>
 								<div>
-									<p className="text-base-content/60 text-sm">日本語名</p>
-									<p>{track.nameJa || "-"}</p>
+									<p className="text-base-content/60 text-sm">イベント</p>
+									{track.eventId && track.eventName ? (
+										<Link
+											to="/admin/events/$id"
+											params={{ id: track.eventId }}
+											className="text-primary hover:underline"
+										>
+											{track.eventName}
+										</Link>
+									) : (
+										<p>-</p>
+									)}
 								</div>
 								<div>
-									<p className="text-base-content/60 text-sm">英語名</p>
-									<p>{track.nameEn || "-"}</p>
+									<p className="text-base-content/60 text-sm">イベント日</p>
+									<p>
+										{track.eventDayDate
+											? `${track.eventDayDate}${track.eventDayNumber ? ` (Day ${track.eventDayNumber})` : ""}`
+											: "-"}
+									</p>
 								</div>
-							</div>
-
-							<div className="border-base-300 border-t pt-4">
-								<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-									<div>
-										<p className="text-base-content/60 text-sm">作品</p>
-										{track.release ? (
-											<Link
-												to="/admin/releases/$id"
-												params={{ id: track.release.id }}
-												className="text-primary hover:underline"
-											>
-												{track.release.name}
-											</Link>
-										) : (
-											<p>-</p>
-										)}
-									</div>
-									<div>
-										<p className="text-base-content/60 text-sm">ディスク</p>
-										<p>
-											{track.disc
-												? `Disc ${track.disc.discNumber}${track.disc.discName ? ` - ${track.disc.discName}` : ""}`
-												: "-"}
-										</p>
-									</div>
-									<div>
-										<p className="text-base-content/60 text-sm">イベント</p>
-										{track.eventId && track.eventName ? (
-											<Link
-												to="/admin/events/$id"
-												params={{ id: track.eventId }}
-												className="text-primary hover:underline"
-											>
-												{track.eventName}
-											</Link>
-										) : (
-											<p>-</p>
-										)}
-									</div>
-									<div>
-										<p className="text-base-content/60 text-sm">イベント日</p>
-										<p>
-											{track.eventDayDate
-												? `${track.eventDayDate}${track.eventDayNumber ? ` (Day ${track.eventDayNumber})` : ""}`
-												: "-"}
-										</p>
-									</div>
-								</div>
-							</div>
-							<div className="border-base-300 border-t pt-4">
-								<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-									<div>
-										<p className="text-base-content/60 text-sm">
-											リリース年/月/日
-										</p>
-										<p>
-											{track.release?.releaseYear ?? "-"} /{" "}
-											{track.release?.releaseMonth ?? "-"} /{" "}
-											{track.release?.releaseDay ?? "-"}
-										</p>
-									</div>
-									<div>
-										<p className="text-base-content/60 text-sm">作成日時</p>
-										<p className="text-sm">
-											{format(
-												new Date(track.createdAt),
-												"yyyy/MM/dd HH:mm:ss",
-												{
-													locale: ja,
-												},
-											)}
-										</p>
-									</div>
-									<div>
-										<p className="text-base-content/60 text-sm">更新日時</p>
-										<p className="text-sm">
-											{format(
-												new Date(track.updatedAt),
-												"yyyy/MM/dd HH:mm:ss",
-												{
-													locale: ja,
-												},
-											)}
-										</p>
-									</div>
-								</div>
-							</div>
-
-							<div className="border-base-300 border-t pt-4">
-								<p className="text-base-content/60 text-sm">ID</p>
-								<p className="font-mono text-xs">{track.id}</p>
 							</div>
 						</div>
-					)}
+						<div className="border-base-300 border-t pt-4">
+							<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+								<div>
+									<p className="text-base-content/60 text-sm">
+										リリース年/月/日
+									</p>
+									<p>
+										{track.release?.releaseYear ?? "-"} /{" "}
+										{track.release?.releaseMonth ?? "-"} /{" "}
+										{track.release?.releaseDay ?? "-"}
+									</p>
+								</div>
+								<div>
+									<p className="text-base-content/60 text-sm">作成日時</p>
+									<p className="text-sm">
+										{format(new Date(track.createdAt), "yyyy/MM/dd HH:mm:ss", {
+											locale: ja,
+										})}
+									</p>
+								</div>
+								<div>
+									<p className="text-base-content/60 text-sm">更新日時</p>
+									<p className="text-sm">
+										{format(new Date(track.updatedAt), "yyyy/MM/dd HH:mm:ss", {
+											locale: ja,
+										})}
+									</p>
+								</div>
+							</div>
+						</div>
+
+						<div className="border-base-300 border-t pt-4">
+							<p className="text-base-content/60 text-sm">ID</p>
+							<p className="font-mono text-xs">{track.id}</p>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -2190,6 +2069,14 @@ function TrackDetailPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* トラック編集ダイアログ */}
+			<TrackEditDialog
+				open={isEditDialogOpen}
+				onOpenChange={setIsEditDialogOpen}
+				track={track}
+				onSuccess={invalidateTrackQuery}
+			/>
 		</div>
 	);
 }

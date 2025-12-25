@@ -8,8 +8,8 @@
 
 | ファイル | 状態 | ダイアログコンポーネント |
 |----------|------|------------------------|
-| `apps/web/src/routes/admin/_admin/releases_.$id.tsx` | 未着手 | `ReleaseEditDialog`（作成済み） |
-| `apps/web/src/routes/admin/_admin/tracks_.$id.tsx` | 未着手 | `TrackEditDialog`（作成済み） |
+| `apps/web/src/routes/admin/_admin/releases_.$id.tsx` | ✅ 完了 | `ReleaseEditDialog`（作成済み） |
+| `apps/web/src/routes/admin/_admin/tracks_.$id.tsx` | ✅ 完了 | `TrackEditDialog`（作成済み） |
 
 ## 作成済みコンポーネント
 
