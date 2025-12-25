@@ -144,6 +144,9 @@ function ReleasesPage() {
 				nameJa: createForm.nameJa || null,
 				nameEn: createForm.nameEn || null,
 				releaseDate: createForm.releaseDate || null,
+				releaseYear: null,
+				releaseMonth: null,
+				releaseDay: null,
 				releaseType,
 				eventId: createForm.eventId || null,
 				eventDayId: createForm.eventDayId || null,
@@ -418,13 +421,7 @@ function ReleasesPage() {
 											)}
 											{isVisible("name") && (
 												<TableCell className="font-medium">
-													<Link
-														to="/admin/releases/$id"
-														params={{ id: release.id }}
-														className="text-primary hover:underline"
-													>
-														{release.name}
-													</Link>
+													{release.name}
 												</TableCell>
 											)}
 											{isVisible("releaseType") && (

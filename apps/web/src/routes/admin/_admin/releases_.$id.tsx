@@ -1059,7 +1059,7 @@ function ReleaseDetailPage() {
 
 					{isEditing ? (
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>作品名</Label>
 								<Input
 									value={editForm.name || ""}
@@ -1068,7 +1068,7 @@ function ReleaseDetailPage() {
 									}
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>日本語名</Label>
 								<Input
 									value={editForm.nameJa || ""}
@@ -1077,7 +1077,7 @@ function ReleaseDetailPage() {
 									}
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>英語名</Label>
 								<Input
 									value={editForm.nameEn || ""}
@@ -1086,7 +1086,7 @@ function ReleaseDetailPage() {
 									}
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>タイプ</Label>
 								<Select
 									value={editForm.releaseType || ""}
@@ -1105,7 +1105,7 @@ function ReleaseDetailPage() {
 									))}
 								</Select>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>発売日</Label>
 								<Input
 									type="date"
@@ -1115,7 +1115,7 @@ function ReleaseDetailPage() {
 									}
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>イベント</Label>
 								<SearchableSelect
 									value={editForm.eventId || ""}
@@ -1134,7 +1134,7 @@ function ReleaseDetailPage() {
 									clearable
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>イベント日</Label>
 								<SearchableSelect
 									value={editForm.eventDayId || ""}
@@ -1153,7 +1153,7 @@ function ReleaseDetailPage() {
 									clearable
 								/>
 							</div>
-							<div className="form-control md:col-span-2">
+							<div className="grid gap-2 md:col-span-2">
 								<Label>メモ</Label>
 								<Textarea
 									value={editForm.notes || ""}
@@ -1209,6 +1209,13 @@ function ReleaseDetailPage() {
 												locale: ja,
 											})
 										: "-"}
+								</p>
+							</div>
+							<div>
+								<Label className="text-base-content/60">発売年/月/日</Label>
+								<p>
+									{release.releaseYear ?? "-"} / {release.releaseMonth ?? "-"} /{" "}
+									{release.releaseDay ?? "-"}
 								</p>
 							</div>
 							<div>

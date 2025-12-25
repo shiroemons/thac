@@ -1328,6 +1328,9 @@ export interface Release {
 	nameJa: string | null;
 	nameEn: string | null;
 	releaseDate: string | null;
+	releaseYear: number | null;
+	releaseMonth: number | null;
+	releaseDay: number | null;
 	releaseType: ReleaseType | null;
 	eventId: string | null;
 	eventDayId: string | null;

@@ -251,7 +251,7 @@ function OfficialSongDetailPage() {
 
 					{isEditing ? (
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>作品</Label>
 								<SearchableGroupedSelect
 									value={editForm.officialWorkId || ""}
@@ -263,7 +263,7 @@ function OfficialSongDetailPage() {
 									searchPlaceholder="作品名で検索..."
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>トラック番号</Label>
 								<Input
 									type="number"
@@ -279,7 +279,7 @@ function OfficialSongDetailPage() {
 									placeholder="例: 1"
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>名前 *</Label>
 								<Input
 									value={editForm.name || ""}
@@ -289,7 +289,7 @@ function OfficialSongDetailPage() {
 									placeholder="例: A Soul as Red as a Ground Cherry"
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>日本語名</Label>
 								<Input
 									value={editForm.nameJa || ""}
@@ -299,7 +299,7 @@ function OfficialSongDetailPage() {
 									placeholder="例: 赤より紅い夢"
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>英語名</Label>
 								<Input
 									value={editForm.nameEn || ""}
@@ -309,7 +309,7 @@ function OfficialSongDetailPage() {
 									placeholder="例: A Soul as Red as a Ground Cherry"
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>作曲者名</Label>
 								<Input
 									value={editForm.composerName || ""}
@@ -319,7 +319,7 @@ function OfficialSongDetailPage() {
 									placeholder="例: ZUN"
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>編曲者名</Label>
 								<Input
 									value={editForm.arrangerName || ""}
@@ -329,7 +329,7 @@ function OfficialSongDetailPage() {
 									placeholder="例: ZUN"
 								/>
 							</div>
-							<div className="form-control">
+							<div className="grid gap-2">
 								<Label>オリジナル</Label>
 								<Select
 									value={editForm.isOriginal ? "true" : "false"}
@@ -347,7 +347,7 @@ function OfficialSongDetailPage() {
 								</Select>
 							</div>
 							{editForm.isOriginal === false && (
-								<div className="form-control">
+								<div className="grid gap-2">
 									<Label>原曲</Label>
 									<SearchableSelect
 										value={editForm.sourceSongId || ""}
@@ -360,7 +360,7 @@ function OfficialSongDetailPage() {
 									/>
 								</div>
 							)}
-							<div className="form-control md:col-span-2">
+							<div className="grid gap-2 md:col-span-2">
 								<Label>備考</Label>
 								<Textarea
 									value={editForm.notes || ""}

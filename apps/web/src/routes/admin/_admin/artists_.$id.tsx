@@ -416,7 +416,7 @@ function ArtistDetailPage() {
 											<TableRow className="hover:bg-transparent">
 												<TableHead>楽曲名</TableHead>
 												<TableHead>リリース</TableHead>
-												<TableHead className="w-[100px]">リリース日</TableHead>
+												<TableHead className="w-[120px]">リリース日</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
