@@ -143,7 +143,6 @@ function ReleasesPage() {
 				name: createForm.name || "",
 				nameJa: createForm.nameJa || null,
 				nameEn: createForm.nameEn || null,
-				catalogNumber: createForm.catalogNumber || null,
 				releaseDate: createForm.releaseDate || null,
 				releaseType,
 				eventId: createForm.eventId || null,
@@ -181,7 +180,6 @@ function ReleasesPage() {
 				name: editForm.name,
 				nameJa: editForm.nameJa,
 				nameEn: editForm.nameEn,
-				catalogNumber: editForm.catalogNumber,
 				releaseDate: editForm.releaseDate,
 				releaseType: editForm.releaseType as ReleaseType,
 				eventDayId: editForm.eventDayId,
@@ -220,7 +218,6 @@ function ReleasesPage() {
 				name: releaseWithDiscs.name,
 				nameJa: releaseWithDiscs.nameJa,
 				nameEn: releaseWithDiscs.nameEn,
-				catalogNumber: releaseWithDiscs.catalogNumber,
 				releaseDate: releaseWithDiscs.releaseDate,
 				releaseType: releaseWithDiscs.releaseType,
 				eventDayId: releaseWithDiscs.eventDayId,
@@ -606,21 +603,7 @@ function ReleasesPage() {
 								/>
 							</div>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-catalogNumber">カタログ番号</Label>
-								<Input
-									id="create-catalogNumber"
-									value={createForm.catalogNumber || ""}
-									onChange={(e) =>
-										setCreateForm({
-											...createForm,
-											catalogNumber: e.target.value,
-										})
-									}
-									placeholder="例: THCS-0001"
-								/>
-							</div>
+						<div className="grid gap-4">
 							<div className="grid gap-2">
 								<Label htmlFor="create-releaseType">タイプ</Label>
 								<Select
@@ -738,18 +721,7 @@ function ReleasesPage() {
 								/>
 							</div>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-catalogNumber">カタログ番号</Label>
-								<Input
-									id="edit-catalogNumber"
-									value={editForm.catalogNumber || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, catalogNumber: e.target.value })
-									}
-									placeholder="例: THCS-0001"
-								/>
-							</div>
+						<div className="grid gap-4">
 							<div className="grid gap-2">
 								<Label htmlFor="edit-releaseType">タイプ</Label>
 								<Select

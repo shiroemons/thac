@@ -114,19 +114,6 @@ worksRouter.post("/", async (c) => {
 		return c.json({ error: "ID already exists" }, 409);
 	}
 
-	// シリーズコード重複チェック（値がある場合のみ）
-	if (parsed.data.seriesCode) {
-		const existingSeriesCode = await db
-			.select()
-			.from(officialWorks)
-			.where(eq(officialWorks.seriesCode, parsed.data.seriesCode))
-			.limit(1);
-
-		if (existingSeriesCode.length > 0) {
-			return c.json({ error: "Series code already exists" }, 409);
-		}
-	}
-
 	// 作成
 	const result = await db.insert(officialWorks).values(parsed.data).returning();
 
@@ -159,24 +146,6 @@ worksRouter.put("/:id", async (c) => {
 			},
 			400,
 		);
-	}
-
-	// シリーズコード重複チェック（値があり、かつ自身以外に同じ値がある場合）
-	if (parsed.data.seriesCode) {
-		const existingSeriesCode = await db
-			.select()
-			.from(officialWorks)
-			.where(
-				and(
-					eq(officialWorks.seriesCode, parsed.data.seriesCode),
-					eq(officialWorks.id, id) ? undefined : undefined,
-				),
-			)
-			.limit(1);
-
-		if (existingSeriesCode.length > 0 && existingSeriesCode[0]?.id !== id) {
-			return c.json({ error: "Series code already exists" }, 409);
-		}
 	}
 
 	// 更新
@@ -254,7 +223,6 @@ worksRouter.post("/import", async (c) => {
 						nameEn: item.nameEn,
 						shortNameJa: item.shortNameJa,
 						shortNameEn: item.shortNameEn,
-						seriesCode: item.seriesCode,
 						numberInSeries: item.numberInSeries,
 						releaseDate: item.releaseDate,
 						officialOrganization: item.officialOrganization,

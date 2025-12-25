@@ -553,9 +553,6 @@ function CircleDetailPage() {
 													<TableHead>作品名</TableHead>
 													<TableHead className="w-[120px]">発売日</TableHead>
 													<TableHead className="w-[100px]">タイプ</TableHead>
-													<TableHead className="w-[150px]">
-														カタログ番号
-													</TableHead>
 												</TableRow>
 											</TableHeader>
 											<TableBody>
@@ -589,9 +586,6 @@ function CircleDetailPage() {
 															) : (
 																"-"
 															)}
-														</TableCell>
-														<TableCell>
-															{release.catalogNumber || "-"}
 														</TableCell>
 													</TableRow>
 												))}

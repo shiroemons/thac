@@ -53,7 +53,6 @@ export interface OfficialWork {
 	nameEn: string | null;
 	shortNameJa: string | null;
 	shortNameEn: string | null;
-	seriesCode: string | null;
 	numberInSeries: number | null;
 	releaseDate: string | null;
 	officialOrganization: string | null;
@@ -1328,7 +1327,6 @@ export interface Release {
 	name: string;
 	nameJa: string | null;
 	nameEn: string | null;
-	catalogNumber: string | null;
 	releaseDate: string | null;
 	releaseType: ReleaseType | null;
 	eventId: string | null;
@@ -1524,7 +1522,6 @@ export interface CircleReleaseItem {
 	name: string;
 	releaseDate: string | null;
 	releaseType: string | null;
-	catalogNumber: string | null;
 }
 
 export interface CircleReleasesByType {

@@ -101,7 +101,6 @@ releasesRouter.get("/", async (c) => {
 				name: releases.name,
 				nameJa: releases.nameJa,
 				nameEn: releases.nameEn,
-				catalogNumber: releases.catalogNumber,
 				releaseDate: releases.releaseDate,
 				releaseYear: releases.releaseYear,
 				releaseMonth: releases.releaseMonth,

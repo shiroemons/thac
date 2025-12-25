@@ -85,7 +85,6 @@ const COLUMN_CONFIGS = [
 	{ key: "nameJa", label: "作品名" },
 	{ key: "shortNameJa", label: "短縮名", defaultVisible: false },
 	{ key: "categoryCode", label: "カテゴリ" },
-	{ key: "seriesCode", label: "シリーズコード", defaultVisible: false },
 	{ key: "numberInSeries", label: "シリーズ番号", defaultVisible: false },
 	{ key: "releaseDate", label: "発売日", defaultVisible: false },
 	{ key: "position", label: "表示順", defaultVisible: false },
@@ -207,7 +206,6 @@ function OfficialWorksPage() {
 				nameEn: createForm.nameEn || null,
 				shortNameJa: createForm.shortNameJa || null,
 				shortNameEn: createForm.shortNameEn || null,
-				seriesCode: createForm.seriesCode || null,
 				numberInSeries: createForm.numberInSeries ?? null,
 				releaseDate: createForm.releaseDate || null,
 				officialOrganization: createForm.officialOrganization || null,
@@ -235,7 +233,6 @@ function OfficialWorksPage() {
 				nameEn: editForm.nameEn,
 				shortNameJa: editForm.shortNameJa,
 				shortNameEn: editForm.shortNameEn,
-				seriesCode: editForm.seriesCode,
 				numberInSeries: editForm.numberInSeries,
 				releaseDate: editForm.releaseDate,
 				officialOrganization: editForm.officialOrganization,
@@ -356,9 +353,6 @@ function OfficialWorksPage() {
 									{isVisible("categoryCode") && (
 										<TableHead className="w-[140px]">カテゴリ</TableHead>
 									)}
-									{isVisible("seriesCode") && (
-										<TableHead className="w-[100px]">シリーズ</TableHead>
-									)}
 									{isVisible("numberInSeries") && (
 										<TableHead className="w-[60px]">番号</TableHead>
 									)}
@@ -419,11 +413,6 @@ function OfficialWorksPage() {
 													<Badge variant={getCategoryColor(w.categoryCode)}>
 														{getCategoryName(w.categoryCode)}
 													</Badge>
-												</TableCell>
-											)}
-											{isVisible("seriesCode") && (
-												<TableCell className="font-mono text-sm">
-													{w.seriesCode || "-"}
 												</TableCell>
 											)}
 											{isVisible("numberInSeries") && (
@@ -491,7 +480,6 @@ function OfficialWorksPage() {
 																nameEn: w.nameEn,
 																shortNameJa: w.shortNameJa,
 																shortNameEn: w.shortNameEn,
-																seriesCode: w.seriesCode,
 																numberInSeries: w.numberInSeries,
 																releaseDate: w.releaseDate,
 																officialOrganization: w.officialOrganization,
@@ -661,17 +649,6 @@ function OfficialWorksPage() {
 							</div>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-seriesCode">シリーズコード</Label>
-								<Input
-									id="create-seriesCode"
-									value={createForm.seriesCode || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, seriesCode: e.target.value })
-									}
-									placeholder="例: TH06"
-								/>
-							</div>
 							<div className="grid gap-2">
 								<Label htmlFor="create-numberInSeries">シリーズ内番号</Label>
 								<Input
@@ -865,17 +842,6 @@ function OfficialWorksPage() {
 							</div>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-seriesCode">シリーズコード</Label>
-								<Input
-									id="edit-seriesCode"
-									value={editForm.seriesCode || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, seriesCode: e.target.value })
-									}
-									placeholder="例: TH06"
-								/>
-							</div>
 							<div className="grid gap-2">
 								<Label htmlFor="edit-numberInSeries">シリーズ内番号</Label>
 								<Input
