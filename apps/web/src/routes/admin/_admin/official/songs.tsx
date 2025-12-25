@@ -7,21 +7,11 @@ import { useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
+import { OfficialSongEditDialog } from "@/components/admin/official-song-edit-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { SearchableGroupedSelect } from "@/components/ui/searchable-grouped-select";
-import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Select } from "@/components/ui/select";
 import {
 	Table,
 	TableBody,
@@ -30,7 +20,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -93,14 +82,9 @@ function OfficialSongsPage() {
 	);
 
 	const [editingSong, setEditingSong] = useState<OfficialSong | null>(null);
-	const [editForm, setEditForm] = useState<Partial<OfficialSong>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-	const [createForm, setCreateForm] = useState<
-		Record<string, string | boolean>
-	>({});
-	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// 作品一覧を取得（セレクトボックス用）
 	const { data: worksData } = useQuery({
@@ -115,36 +99,6 @@ function OfficialSongsPage() {
 		queryFn: () => officialWorkCategoriesApi.list({ limit: 100 }),
 		staleTime: 300_000,
 	});
-
-	// 楽曲一覧を取得（原曲選択用・ID生成用）
-	const { data: allSongsData } = useQuery({
-		queryKey: ["officialSongs", "all"],
-		queryFn: () => officialSongsApi.list({ limit: 5000 }),
-		staleTime: 60_000,
-	});
-
-	// 次の楽曲IDを生成
-	const generateNextSongId = (workId: string): string => {
-		if (!workId) return "";
-
-		const allSongs = allSongsData?.data ?? [];
-		const workSongs = allSongs.filter((s) => s.officialWorkId === workId);
-
-		if (workSongs.length === 0) {
-			return `${workId}0001`;
-		}
-
-		const maxTrackNumber = Math.max(
-			...workSongs.map((s) => {
-				const trackPart = s.id.slice(4);
-				const num = Number.parseInt(trackPart, 10);
-				return Number.isNaN(num) ? 0 : num;
-			}),
-		);
-
-		const nextNumber = (maxTrackNumber + 1).toString().padStart(4, "0");
-		return `${workId}${nextNumber}`;
-	};
 
 	const { data, isPending, error } = useQuery(
 		officialSongsListQueryOptions({
@@ -202,92 +156,6 @@ function OfficialSongsPage() {
 				options: grouped.get(code) || [],
 			}));
 	}, [worksData, categoriesData]);
-
-	// 原曲選択肢（自身を除外）
-	const sourceSongOptions = useMemo(() => {
-		const currentId = editingSong?.id || (createForm.id as string);
-		return (allSongsData?.data ?? [])
-			.filter((s) => s.id !== currentId)
-			.map((s) => ({
-				value: s.id,
-				label: `${s.nameJa} (${s.workName || "作品なし"})`,
-			}));
-	}, [allSongsData, editingSong?.id, createForm.id]);
-
-	const openCreateDialog = () => {
-		setCreateForm({ isOriginal: true });
-		setMutationError(null);
-		setIsCreateDialogOpen(true);
-	};
-
-	const handleCreate = async () => {
-		if (!createForm.id || !createForm.name || !createForm.nameJa) {
-			setMutationError("ID、名前、日本語名は必須です");
-			return;
-		}
-
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await officialSongsApi.create({
-				id: createForm.id as string,
-				officialWorkId: (createForm.officialWorkId as string) || null,
-				trackNumber: createForm.trackNumber
-					? Number.parseInt(createForm.trackNumber as string, 10)
-					: null,
-				name: createForm.name as string,
-				nameJa: createForm.nameJa as string,
-				nameEn: (createForm.nameEn as string) || null,
-				composerName: (createForm.composerName as string) || null,
-				arrangerName: (createForm.arrangerName as string) || null,
-				isOriginal: createForm.isOriginal !== false,
-				sourceSongId: createForm.isOriginal
-					? null
-					: (createForm.sourceSongId as string) || null,
-				notes: (createForm.notes as string) || null,
-			});
-			setIsCreateDialogOpen(false);
-			setCreateForm({ isOriginal: true });
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "作成に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	const handleUpdate = async () => {
-		if (!editingSong) return;
-
-		// 自己参照チェック
-		if (editForm.sourceSongId === editingSong.id) {
-			setMutationError("自身を原曲に指定することはできません");
-			return;
-		}
-
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await officialSongsApi.update(editingSong.id, {
-				officialWorkId: editForm.officialWorkId,
-				trackNumber: editForm.trackNumber,
-				name: editForm.name,
-				nameJa: editForm.nameJa,
-				nameEn: editForm.nameEn,
-				composerName: editForm.composerName,
-				arrangerName: editForm.arrangerName,
-				isOriginal: editForm.isOriginal,
-				sourceSongId: editForm.isOriginal ? null : editForm.sourceSongId,
-				notes: editForm.notes,
-			});
-			setEditingSong(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
 
 	const handleDelete = async (id: string) => {
 		if (!confirm("この楽曲を削除しますか？")) return;
@@ -351,7 +219,7 @@ function OfficialSongsPage() {
 					}}
 					primaryAction={{
 						label: "新規作成",
-						onClick: openCreateDialog,
+						onClick: () => setIsCreateDialogOpen(true),
 					}}
 					secondaryActions={[
 						{
@@ -527,18 +395,6 @@ function OfficialSongsPage() {
 														size="icon"
 														onClick={() => {
 															setEditingSong(s);
-															setEditForm({
-																officialWorkId: s.officialWorkId,
-																trackNumber: s.trackNumber,
-																name: s.name,
-																nameJa: s.nameJa,
-																nameEn: s.nameEn,
-																composerName: s.composerName,
-																arrangerName: s.arrangerName,
-																isOriginal: s.isOriginal,
-																sourceSongId: s.sourceSongId,
-																notes: s.notes,
-															});
 															setMutationError(null);
 														}}
 													>
@@ -576,379 +432,23 @@ function OfficialSongsPage() {
 			</div>
 
 			{/* 新規作成ダイアログ */}
-			<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-				<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
-					<DialogHeader>
-						<DialogTitle>新規公式楽曲</DialogTitle>
-					</DialogHeader>
-					{mutationError && isCreateDialogOpen && (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{mutationError}
-						</div>
-					)}
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="create-officialWorkId">作品</Label>
-							<SearchableGroupedSelect
-								id="create-officialWorkId"
-								value={(createForm.officialWorkId as string) || ""}
-								onChange={(value) => {
-									const newId = value ? generateNextSongId(value) : "";
-									const trackNumber = newId
-										? Number.parseInt(newId.slice(4), 10)
-										: "";
-									setCreateForm({
-										...createForm,
-										officialWorkId: value,
-										id: newId,
-										trackNumber: trackNumber.toString(),
-									});
-								}}
-								groups={workGroups}
-								placeholder="作品を選択"
-								searchPlaceholder="作品名で検索..."
-							/>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-id">
-									ID *
-									<span className="ml-2 font-normal text-base-content/50 text-xs">
-										（作品選択で自動生成）
-									</span>
-								</Label>
-								<Input
-									id="create-id"
-									value={(createForm.id as string) || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, id: e.target.value })
-									}
-									placeholder="作品を選択してください"
-									className={createForm.id ? "bg-base-200" : ""}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="create-trackNumber">トラック番号</Label>
-								<Input
-									id="create-trackNumber"
-									type="number"
-									value={(createForm.trackNumber as string) || ""}
-									onChange={(e) =>
-										setCreateForm({
-											...createForm,
-											trackNumber: e.target.value,
-										})
-									}
-									placeholder="例: 1"
-								/>
-							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-name">名前 *</Label>
-							<Input
-								id="create-name"
-								value={(createForm.name as string) || ""}
-								onChange={(e) =>
-									setCreateForm({ ...createForm, name: e.target.value })
-								}
-								placeholder="例: A Soul as Red as a Ground Cherry"
-							/>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-nameJa">日本語名 *</Label>
-								<Input
-									id="create-nameJa"
-									value={(createForm.nameJa as string) || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, nameJa: e.target.value })
-									}
-									placeholder="例: 赤より紅い夢"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="create-nameEn">英語名</Label>
-								<Input
-									id="create-nameEn"
-									value={(createForm.nameEn as string) || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, nameEn: e.target.value })
-									}
-									placeholder="例: A Soul as Red as a Ground Cherry"
-								/>
-							</div>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-composerName">作曲者名</Label>
-								<Input
-									id="create-composerName"
-									value={(createForm.composerName as string) || ""}
-									onChange={(e) =>
-										setCreateForm({
-											...createForm,
-											composerName: e.target.value,
-										})
-									}
-									placeholder="例: ZUN"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="create-arrangerName">編曲者名</Label>
-								<Input
-									id="create-arrangerName"
-									value={(createForm.arrangerName as string) || ""}
-									onChange={(e) =>
-										setCreateForm({
-											...createForm,
-											arrangerName: e.target.value,
-										})
-									}
-									placeholder="例: ZUN"
-								/>
-							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-isOriginal">オリジナル</Label>
-							<Select
-								id="create-isOriginal"
-								value={createForm.isOriginal !== false ? "true" : "false"}
-								onChange={(e) => {
-									const isOrig = e.target.value === "true";
-									setCreateForm({
-										...createForm,
-										isOriginal: isOrig,
-										sourceSongId: isOrig
-											? ""
-											: (createForm.sourceSongId as string),
-									});
-								}}
-							>
-								<option value="true">はい</option>
-								<option value="false">いいえ</option>
-							</Select>
-						</div>
-						{createForm.isOriginal === false && (
-							<div className="grid gap-2">
-								<Label htmlFor="create-sourceSongId">原曲</Label>
-								<SearchableSelect
-									id="create-sourceSongId"
-									value={(createForm.sourceSongId as string) || ""}
-									onChange={(value) =>
-										setCreateForm({ ...createForm, sourceSongId: value })
-									}
-									options={sourceSongOptions}
-									placeholder="原曲を選択"
-									searchPlaceholder="楽曲名で検索..."
-								/>
-							</div>
-						)}
-						<div className="grid gap-2">
-							<Label htmlFor="create-notes">備考</Label>
-							<Textarea
-								id="create-notes"
-								value={(createForm.notes as string) || ""}
-								onChange={(e) =>
-									setCreateForm({ ...createForm, notes: e.target.value })
-								}
-								placeholder="備考を入力"
-								rows={3}
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="ghost"
-							onClick={() => setIsCreateDialogOpen(false)}
-							disabled={isSubmitting}
-						>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleCreate}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "作成中..." : "作成"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<OfficialSongEditDialog
+				open={isCreateDialogOpen}
+				onOpenChange={setIsCreateDialogOpen}
+				mode="create"
+				onSuccess={invalidateQuery}
+			/>
 
 			{/* 編集ダイアログ */}
-			<Dialog
+			<OfficialSongEditDialog
 				open={!!editingSong}
-				onOpenChange={(open) => !open && setEditingSong(null)}
-			>
-				<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
-					<DialogHeader>
-						<DialogTitle>公式楽曲の編集</DialogTitle>
-					</DialogHeader>
-					{mutationError && editingSong && (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{mutationError}
-						</div>
-					)}
-					<div className="grid gap-4 py-4">
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label>ID</Label>
-								<Input value={editingSong?.id || ""} disabled />
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-trackNumber">トラック番号</Label>
-								<Input
-									id="edit-trackNumber"
-									type="number"
-									value={editForm.trackNumber ?? ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											trackNumber: e.target.value
-												? Number.parseInt(e.target.value, 10)
-												: null,
-										})
-									}
-									placeholder="例: 1"
-								/>
-							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-officialWorkId">作品</Label>
-							<SearchableGroupedSelect
-								id="edit-officialWorkId"
-								value={editForm.officialWorkId || ""}
-								onChange={(value) =>
-									setEditForm({ ...editForm, officialWorkId: value || null })
-								}
-								groups={workGroups}
-								placeholder="作品を選択"
-								searchPlaceholder="作品名で検索..."
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-name">名前</Label>
-							<Input
-								id="edit-name"
-								value={editForm.name || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, name: e.target.value })
-								}
-								placeholder="例: A Soul as Red as a Ground Cherry"
-							/>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameJa">日本語名</Label>
-								<Input
-									id="edit-nameJa"
-									value={editForm.nameJa || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameJa: e.target.value })
-									}
-									placeholder="例: 赤より紅い夢"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameEn">英語名</Label>
-								<Input
-									id="edit-nameEn"
-									value={editForm.nameEn || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameEn: e.target.value })
-									}
-									placeholder="例: A Soul as Red as a Ground Cherry"
-								/>
-							</div>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-composerName">作曲者名</Label>
-								<Input
-									id="edit-composerName"
-									value={editForm.composerName || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, composerName: e.target.value })
-									}
-									placeholder="例: ZUN"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-arrangerName">編曲者名</Label>
-								<Input
-									id="edit-arrangerName"
-									value={editForm.arrangerName || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, arrangerName: e.target.value })
-									}
-									placeholder="例: ZUN"
-								/>
-							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-isOriginal">オリジナル</Label>
-							<Select
-								id="edit-isOriginal"
-								value={editForm.isOriginal ? "true" : "false"}
-								onChange={(e) => {
-									const isOrig = e.target.value === "true";
-									setEditForm({
-										...editForm,
-										isOriginal: isOrig,
-										sourceSongId: isOrig ? null : editForm.sourceSongId,
-									});
-								}}
-							>
-								<option value="true">はい</option>
-								<option value="false">いいえ</option>
-							</Select>
-						</div>
-						{editForm.isOriginal === false && (
-							<div className="grid gap-2">
-								<Label htmlFor="edit-sourceSongId">原曲</Label>
-								<SearchableSelect
-									id="edit-sourceSongId"
-									value={editForm.sourceSongId || ""}
-									onChange={(value) =>
-										setEditForm({ ...editForm, sourceSongId: value || null })
-									}
-									options={sourceSongOptions}
-									placeholder="原曲を選択"
-									searchPlaceholder="楽曲名で検索..."
-								/>
-							</div>
-						)}
-						<div className="grid gap-2">
-							<Label htmlFor="edit-notes">備考</Label>
-							<Textarea
-								id="edit-notes"
-								value={editForm.notes || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, notes: e.target.value })
-								}
-								placeholder="備考を入力"
-								rows={3}
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="ghost"
-							onClick={() => setEditingSong(null)}
-							disabled={isSubmitting}
-						>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleUpdate}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "保存中..." : "保存"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				onOpenChange={(open) => {
+					if (!open) setEditingSong(null);
+				}}
+				mode="edit"
+				song={editingSong}
+				onSuccess={invalidateQuery}
+			/>
 
 			{/* インポートダイアログ */}
 			<ImportDialog

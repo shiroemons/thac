@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
+import { ReleaseEditDialog } from "@/components/admin/release-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,7 +34,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	artistAliasesApi,
 	artistsApi,
@@ -49,15 +49,12 @@ import {
 	platformsApi,
 	RELEASE_TYPE_COLORS,
 	RELEASE_TYPE_LABELS,
-	type Release,
 	type ReleaseCircleWithCircle,
 	type ReleaseJanCode,
 	type ReleasePublication,
-	type ReleaseType,
 	releaseCirclesApi,
 	releaseJanCodesApi,
 	releasePublicationsApi,
-	releasesApi,
 	type Track,
 	type TrackCredit,
 	type TrackWithCreditCount,
@@ -102,11 +99,6 @@ function getRoleBadgeVariant(
 	return ROLE_COLORS[index];
 }
 
-// 作品タイプのオプション
-const RELEASE_TYPE_OPTIONS = Object.entries(RELEASE_TYPE_LABELS).map(
-	([value, label]) => ({ value, label }),
-);
-
 // 参加形態のオプション
 const PARTICIPATION_TYPE_OPTIONS = Object.entries(
 	PARTICIPATION_TYPE_LABELS,
@@ -116,9 +108,8 @@ function ReleaseDetailPage() {
 	const { id } = Route.useParams();
 	const queryClient = useQueryClient();
 
-	// 編集モード
-	const [isEditing, setIsEditing] = useState(false);
-	const [editForm, setEditForm] = useState<Partial<Release>>({});
+	// 編集ダイアログ
+	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -383,57 +374,6 @@ function ReleaseDetailPage() {
 			queryKey: ["releases", id, "publications"],
 		});
 		queryClient.invalidateQueries({ queryKey: ["releases", id, "jan-codes"] });
-	};
-
-	// 編集開始
-	const startEditing = () => {
-		if (release) {
-			setEditForm({
-				name: release.name,
-				nameJa: release.nameJa,
-				nameEn: release.nameEn,
-				releaseDate: release.releaseDate,
-				releaseType: release.releaseType,
-				eventId: release.eventId,
-				eventDayId: release.eventDayId,
-				notes: release.notes,
-			});
-			setSelectedEventId(release.eventId);
-			setIsEditing(true);
-		}
-	};
-
-	// 編集キャンセル
-	const cancelEditing = () => {
-		setIsEditing(false);
-		setEditForm({});
-		setMutationError(null);
-	};
-
-	// 保存
-	const handleSave = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await releasesApi.update(id, {
-				name: editForm.name,
-				nameJa: editForm.nameJa || null,
-				nameEn: editForm.nameEn || null,
-				releaseDate: editForm.releaseDate || null,
-				releaseType: (editForm.releaseType as ReleaseType) || null,
-				eventId: editForm.eventId || null,
-				eventDayId: editForm.eventDayId || null,
-				notes: editForm.notes || null,
-			});
-			invalidateQuery();
-			setIsEditing(false);
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
 	};
 
 	// ディスク関連
@@ -1044,12 +984,14 @@ function ReleaseDetailPage() {
 						</Badge>
 					)}
 				</div>
-				{!isEditing && (
-					<Button variant="outline" size="sm" onClick={startEditing}>
-						<Pencil className="mr-2 h-4 w-4" />
-						編集
-					</Button>
-				)}
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={() => setIsEditDialogOpen(true)}
+				>
+					<Pencil className="mr-2 h-4 w-4" />
+					編集
+				</Button>
 			</div>
 
 			{/* 基本情報カード */}
@@ -1057,136 +999,7 @@ function ReleaseDetailPage() {
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 
-					{mutationError && (
-						<div className="mb-4 rounded-md bg-error/10 p-3 text-error text-sm">
-							{mutationError}
-						</div>
-					)}
-
-					{isEditing ? (
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div className="grid gap-2">
-								<Label>作品名</Label>
-								<Input
-									value={editForm.name || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, name: e.target.value })
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label>日本語名</Label>
-								<Input
-									value={editForm.nameJa || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameJa: e.target.value })
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label>英語名</Label>
-								<Input
-									value={editForm.nameEn || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameEn: e.target.value })
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label>タイプ</Label>
-								<Select
-									value={editForm.releaseType || ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											releaseType: e.target.value as ReleaseType,
-										})
-									}
-								>
-									<option value="">選択してください</option>
-									{RELEASE_TYPE_OPTIONS.map((option) => (
-										<option key={option.value} value={option.value}>
-											{option.label}
-										</option>
-									))}
-								</Select>
-							</div>
-							<div className="grid gap-2">
-								<Label>発売日</Label>
-								<Input
-									type="date"
-									value={editForm.releaseDate || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, releaseDate: e.target.value })
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label>イベント</Label>
-								<SearchableSelect
-									value={editForm.eventId || ""}
-									onChange={(value) => {
-										setEditForm({
-											...editForm,
-											eventId: value || null,
-											eventDayId: null,
-										});
-										setSelectedEventId(value || null);
-									}}
-									options={eventOptions}
-									placeholder="イベントを選択"
-									searchPlaceholder="イベントを検索..."
-									emptyMessage="イベントが見つかりません"
-									clearable
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label>イベント日</Label>
-								<SearchableSelect
-									value={editForm.eventDayId || ""}
-									onChange={(value) =>
-										setEditForm({ ...editForm, eventDayId: value || null })
-									}
-									options={eventDayOptions}
-									placeholder="イベント日を選択"
-									searchPlaceholder="イベント日を検索..."
-									emptyMessage={
-										selectedEventId
-											? "イベント日が見つかりません"
-											: "先にイベントを選択してください"
-									}
-									disabled={!selectedEventId}
-									clearable
-								/>
-							</div>
-							<div className="grid gap-2 md:col-span-2">
-								<Label>メモ</Label>
-								<Textarea
-									value={editForm.notes || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, notes: e.target.value })
-									}
-								/>
-							</div>
-							<div className="flex justify-end gap-2 md:col-span-2">
-								<Button
-									variant="ghost"
-									onClick={cancelEditing}
-									disabled={isSubmitting}
-								>
-									キャンセル
-								</Button>
-								<Button
-									variant="primary"
-									onClick={handleSave}
-									disabled={isSubmitting}
-								>
-									{isSubmitting ? "保存中..." : "保存"}
-								</Button>
-							</div>
-						</div>
-					) : (
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 							<div>
 								<Label className="text-base-content/60">作品名</Label>
 								<p>{release.name}</p>
@@ -1252,11 +1065,10 @@ function ReleaseDetailPage() {
 								</p>
 							</div>
 							<div className="md:col-span-2">
-								<Label className="text-base-content/60">メモ</Label>
-								<p className="whitespace-pre-wrap">{release.notes || "-"}</p>
-							</div>
+							<Label className="text-base-content/60">メモ</Label>
+							<p className="whitespace-pre-wrap">{release.notes || "-"}</p>
 						</div>
-					)}
+					</div>
 				</div>
 			</div>
 
@@ -2543,6 +2355,14 @@ function ReleaseDetailPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* リリース編集ダイアログ */}
+			<ReleaseEditDialog
+				open={isEditDialogOpen}
+				onOpenChange={setIsEditDialogOpen}
+				release={release}
+				onSuccess={invalidateQuery}
+			/>
 		</div>
 	);
 }

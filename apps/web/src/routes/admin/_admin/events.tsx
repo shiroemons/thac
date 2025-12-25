@@ -4,10 +4,11 @@ import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { Calendar, Eye, Home, Pencil, Plus, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
+import { EventEditDialog } from "@/components/admin/event-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +39,6 @@ import {
 	eventSeriesApi,
 	eventsApi,
 } from "@/lib/api-client";
-import { suggestFromEventName } from "@/lib/event-name-parser";
 import { createPageHead } from "@/lib/head";
 import { eventsListQueryOptions } from "@/lib/query-options";
 
@@ -88,7 +88,6 @@ function EventsPage() {
 	const [editForm, setEditForm] = useState<Partial<Event>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [createForm, setCreateForm] = useState<Partial<Event>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// 開催日編集用
@@ -112,12 +111,6 @@ function EventsPage() {
 		value: s.id,
 		label: s.name,
 	}));
-
-	// シリーズリストをユーティリティ関数で使えるようにラップ
-	const suggest = useCallback(
-		(eventName: string) => suggestFromEventName(eventName, seriesList),
-		[seriesList],
-	);
 
 	const { data, isPending, error } = useQuery(
 		eventsListQueryOptions({
@@ -148,11 +141,9 @@ function EventsPage() {
 			});
 			// シリーズ一覧を更新
 			queryClient.invalidateQueries({ queryKey: ["event-series"] });
-			// 新しいシリーズを選択状態にする（新規作成または編集中のフォーム）
+			// 新しいシリーズを選択状態にする（編集中のフォーム）
 			if (editingEvent) {
 				setEditForm({ ...editForm, eventSeriesId: newSeries.id });
-			} else {
-				setCreateForm({ ...createForm, eventSeriesId: newSeries.id });
 			}
 			setIsSeriesDialogOpen(false);
 			setNewSeriesName("");
@@ -160,31 +151,6 @@ function EventsPage() {
 			setMutationError(
 				e instanceof Error ? e.message : "シリーズの作成に失敗しました",
 			);
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	const handleCreate = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const id = createId.event();
-			await eventsApi.create({
-				id,
-				eventSeriesId: createForm.eventSeriesId || "",
-				name: createForm.name || "",
-				edition: createForm.edition || null,
-				totalDays: createForm.totalDays || null,
-				venue: createForm.venue || null,
-				startDate: createForm.startDate || null,
-				endDate: createForm.endDate || null,
-			});
-			setIsCreateDialogOpen(false);
-			setCreateForm({});
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "作成に失敗しました");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -555,167 +521,12 @@ function EventsPage() {
 			</div>
 
 			{/* 新規作成ダイアログ */}
-			<Dialog
+			<EventEditDialog
 				open={isCreateDialogOpen}
-				onOpenChange={(open) => {
-					if (!open) {
-						setIsCreateDialogOpen(false);
-						setCreateForm({});
-						setMutationError(null);
-					}
-				}}
-			>
-				<DialogContent className="sm:max-w-[500px]">
-					<DialogHeader>
-						<DialogTitle>新規イベント</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="create-name">
-								イベント名 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="create-name"
-								value={createForm.name || ""}
-								onChange={(e) => {
-									const newName = e.target.value;
-									const { seriesId, edition } = suggest(newName);
-									setCreateForm({
-										...createForm,
-										name: newName,
-										// シリーズが未選択の場合のみ自動設定
-										...(seriesId && !createForm.eventSeriesId
-											? { eventSeriesId: seriesId }
-											: {}),
-										// 回次が未入力の場合のみ自動設定
-										...(edition !== null && !createForm.edition
-											? { edition }
-											: {}),
-									});
-								}}
-								placeholder="例: コミックマーケット104"
-							/>
-							<p className="text-base-content/50 text-xs">
-								イベント名からシリーズと回次を自動推察します
-							</p>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-seriesId">シリーズ</Label>
-							<div className="flex items-center gap-2">
-								<SearchableSelect
-									id="create-seriesId"
-									value={createForm.eventSeriesId || ""}
-									onChange={(value) =>
-										setCreateForm({
-											...createForm,
-											eventSeriesId: value,
-										})
-									}
-									options={seriesList.map((s) => ({
-										value: s.id,
-										label: s.name,
-									}))}
-									placeholder="選択してください"
-									searchPlaceholder="シリーズを検索..."
-									className="flex-1"
-								/>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => setIsSeriesDialogOpen(true)}
-								>
-									<Plus className="mr-1 h-4 w-4" />
-									新規シリーズ
-								</Button>
-							</div>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-edition">回次</Label>
-								<Input
-									id="create-edition"
-									type="number"
-									min="1"
-									placeholder="例: 104"
-									value={createForm.edition ?? ""}
-									onChange={(e) =>
-										setCreateForm({
-											...createForm,
-											edition: e.target.value ? Number(e.target.value) : null,
-										})
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="create-totalDays">開催日数</Label>
-								<Input
-									id="create-totalDays"
-									type="number"
-									min="1"
-									placeholder="例: 2"
-									value={createForm.totalDays ?? ""}
-									onChange={(e) =>
-										setCreateForm({
-											...createForm,
-											totalDays: e.target.value ? Number(e.target.value) : null,
-										})
-									}
-								/>
-							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-venue">会場</Label>
-							<Input
-								id="create-venue"
-								placeholder="例: 東京ビッグサイト"
-								value={createForm.venue || ""}
-								onChange={(e) =>
-									setCreateForm({ ...createForm, venue: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-startDate">開始日</Label>
-								<Input
-									id="create-startDate"
-									type="date"
-									value={createForm.startDate || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, startDate: e.target.value })
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="create-endDate">終了日</Label>
-								<Input
-									id="create-endDate"
-									type="date"
-									value={createForm.endDate || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, endDate: e.target.value })
-									}
-								/>
-							</div>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="ghost"
-							onClick={() => setIsCreateDialogOpen(false)}
-						>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleCreate}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "作成中..." : "作成"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				onOpenChange={setIsCreateDialogOpen}
+				mode="create"
+				onSuccess={invalidateQuery}
+			/>
 
 			{/* シリーズ新規作成ダイアログ */}
 			<Dialog

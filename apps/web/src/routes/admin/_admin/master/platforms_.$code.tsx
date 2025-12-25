@@ -1,7 +1,8 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Home, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -12,25 +13,33 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getPlatform } from "@/functions/get-platform";
 import { type Platform, platformsApi } from "@/lib/api-client";
 import { createMasterDetailHead } from "@/lib/head";
+import { platformDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/master/platforms_/$code")({
-	loader: ({ params }) => getPlatform(params.code),
+	loader: ({ context, params }) =>
+		context.queryClient.ensureQueryData(
+			platformDetailQueryOptions(params.code),
+		),
 	head: ({ loaderData }) =>
 		createMasterDetailHead("プラットフォーム", loaderData?.name),
 	component: PlatformDetailPage,
 });
 
 function PlatformDetailPage() {
-	const platform = Route.useLoaderData();
+	const { code } = Route.useParams();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+
+	const { data: platform, isPending } = useQuery(
+		platformDetailQueryOptions(code),
+	);
 
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [editForm, setEditForm] = useState<Partial<Platform>>({});
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	const handleEdit = () => {
@@ -46,6 +55,7 @@ function PlatformDetailPage() {
 
 	const handleUpdate = async () => {
 		if (!platform) return;
+		setIsSubmitting(true);
 		setError(null);
 		try {
 			await platformsApi.update(platform.code, {
@@ -54,11 +64,11 @@ function PlatformDetailPage() {
 				urlPattern: editForm.urlPattern,
 			});
 			setIsEditDialogOpen(false);
-			queryClient.invalidateQueries({ queryKey: ["platforms"] });
-			// ページをリロードして最新データを表示
-			window.location.reload();
+			queryClient.invalidateQueries({ queryKey: ["platform", code] });
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "更新に失敗しました");
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
@@ -86,6 +96,11 @@ function PlatformDetailPage() {
 			setIsDeleting(false);
 		}
 	};
+
+	// ローディング
+	if (isPending && !platform) {
+		return <DetailPageSkeleton cardCount={1} fieldsPerCard={5} />;
+	}
 
 	// エラー・未存在
 	if (!platform) {
@@ -234,7 +249,9 @@ function PlatformDetailPage() {
 						>
 							キャンセル
 						</Button>
-						<Button onClick={handleUpdate}>保存</Button>
+						<Button onClick={handleUpdate} disabled={isSubmitting}>
+							{isSubmitting ? "保存中..." : "保存"}
+						</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

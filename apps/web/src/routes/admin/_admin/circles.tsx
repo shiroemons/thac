@@ -14,6 +14,7 @@ import {
 	Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { CircleEditDialog } from "@/components/admin/circle-edit-dialog";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
@@ -113,9 +114,6 @@ function CirclesPage() {
 	const [editForm, setEditForm] = useState<Partial<Circle>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [createForm, setCreateForm] = useState<Partial<Circle>>({
-		initialScript: "latin",
-	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// リンク編集用
@@ -211,31 +209,6 @@ function CirclesPage() {
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["circles"] });
-	};
-
-	const handleCreate = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const id = createId.circle();
-			await circlesApi.create({
-				id,
-				name: createForm.name || "",
-				nameJa: createForm.nameJa || null,
-				nameEn: createForm.nameEn || null,
-				sortName: createForm.sortName || null,
-				nameInitial: createForm.nameInitial || null,
-				initialScript: (createForm.initialScript as InitialScript) || "latin",
-				notes: createForm.notes || null,
-			});
-			setIsCreateDialogOpen(false);
-			setCreateForm({ initialScript: "latin" });
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "作成に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
 	};
 
 	const handleUpdate = async () => {
@@ -622,103 +595,12 @@ function CirclesPage() {
 			</div>
 
 			{/* 新規作成ダイアログ */}
-			<Dialog
+			<CircleEditDialog
 				open={isCreateDialogOpen}
-				onOpenChange={(open) => {
-					if (!open) {
-						setIsCreateDialogOpen(false);
-						setCreateForm({ initialScript: "latin" });
-						setMutationError(null);
-					}
-				}}
-			>
-				<DialogContent className="sm:max-w-[500px]">
-					<DialogHeader>
-						<DialogTitle>新規サークル</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="create-name">
-								名前 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="create-name"
-								value={createForm.name || ""}
-								onChange={(e) => {
-									const name = e.target.value;
-									const initial = detectInitial(name);
-									setCreateForm({
-										...createForm,
-										name,
-										nameJa: name,
-										sortName: name,
-										initialScript: initial.initialScript as InitialScript,
-										nameInitial: initial.nameInitial,
-									});
-								}}
-							/>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-nameJa">日本語名</Label>
-								<Input
-									id="create-nameJa"
-									value={createForm.nameJa || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, nameJa: e.target.value })
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="create-nameEn">英語名</Label>
-								<Input
-									id="create-nameEn"
-									value={createForm.nameEn || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, nameEn: e.target.value })
-									}
-								/>
-							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-sortName">ソート用名</Label>
-							<Input
-								id="create-sortName"
-								value={createForm.sortName || ""}
-								onChange={(e) =>
-									setCreateForm({ ...createForm, sortName: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-notes">備考</Label>
-							<Textarea
-								id="create-notes"
-								value={createForm.notes || ""}
-								onChange={(e) =>
-									setCreateForm({ ...createForm, notes: e.target.value })
-								}
-								rows={3}
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="ghost"
-							onClick={() => setIsCreateDialogOpen(false)}
-						>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleCreate}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "作成中..." : "作成"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				onOpenChange={setIsCreateDialogOpen}
+				mode="create"
+				onSuccess={invalidateQuery}
+			/>
 
 			{/* 編集ダイアログ（リンク管理含む） */}
 			<Dialog

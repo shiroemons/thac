@@ -6,18 +6,11 @@ import { ArrowLeft, Home, Music, Pencil } from "lucide-react";
 import { useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { OfficialLinksCard } from "@/components/admin/official-links-card";
+import { OfficialWorkEditDialog } from "@/components/admin/official-work-edit-dialog";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import {
-	type OfficialWork,
-	officialSongsApi,
-	officialWorkCategoriesApi,
-	officialWorksApi,
-} from "@/lib/api-client";
+import { officialSongsApi } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 import { officialWorkDetailQueryOptions } from "@/lib/query-options";
 
@@ -51,11 +44,8 @@ function OfficialWorkDetailPage() {
 	const { id } = Route.useParams();
 	const queryClient = useQueryClient();
 
-	// 編集モード
-	const [isEditing, setIsEditing] = useState(false);
-	const [editForm, setEditForm] = useState<Partial<OfficialWork>>({});
-	const [mutationError, setMutationError] = useState<string | null>(null);
-	const [isSubmitting, setIsSubmitting] = useState(false);
+	// 編集ダイアログ
+	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
 	// 作品データ取得（SSRデータをキャッシュとして活用）
 	const {
@@ -63,14 +53,6 @@ function OfficialWorkDetailPage() {
 		isPending,
 		error,
 	} = useQuery(officialWorkDetailQueryOptions(id));
-
-	// カテゴリ一覧取得（編集用）
-	const { data: categoriesData } = useQuery({
-		queryKey: ["officialWorkCategories"],
-		queryFn: () => officialWorkCategoriesApi.list(),
-		staleTime: 300_000,
-		enabled: isEditing,
-	});
 
 	// 関連楽曲取得
 	const { data: songsData } = useQuery({
@@ -87,62 +69,6 @@ function OfficialWorkDetailPage() {
 		queryClient.invalidateQueries({
 			queryKey: ["officialSongs", { workId: id }],
 		});
-	};
-
-	// 編集開始
-	const startEditing = () => {
-		if (work) {
-			setEditForm({
-				name: work.name,
-				nameJa: work.nameJa,
-				nameEn: work.nameEn,
-				shortNameEn: work.shortNameEn,
-				shortNameJa: work.shortNameJa,
-				categoryCode: work.categoryCode,
-				numberInSeries: work.numberInSeries,
-				releaseDate: work.releaseDate,
-				officialOrganization: work.officialOrganization,
-				position: work.position,
-				notes: work.notes,
-			});
-			setIsEditing(true);
-		}
-	};
-
-	// 編集キャンセル
-	const cancelEditing = () => {
-		setIsEditing(false);
-		setEditForm({});
-		setMutationError(null);
-	};
-
-	// 保存
-	const handleSave = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await officialWorksApi.update(id, {
-				name: editForm.name,
-				nameJa: editForm.nameJa,
-				nameEn: editForm.nameEn ?? null,
-				shortNameEn: editForm.shortNameEn ?? null,
-				shortNameJa: editForm.shortNameJa ?? null,
-				categoryCode: editForm.categoryCode,
-				numberInSeries: editForm.numberInSeries,
-				releaseDate: editForm.releaseDate ?? null,
-				officialOrganization: editForm.officialOrganization ?? null,
-				position: editForm.position,
-				notes: editForm.notes ?? null,
-			});
-			invalidateQuery();
-			setIsEditing(false);
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
 	};
 
 	// ローディング（キャッシュがない場合のみスケルトンを表示）
@@ -195,12 +121,14 @@ function OfficialWorkDetailPage() {
 						</Badge>
 					)}
 				</div>
-				{!isEditing && (
-					<Button variant="outline" size="sm" onClick={startEditing}>
-						<Pencil className="mr-2 h-4 w-4" />
-						編集
-					</Button>
-				)}
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={() => setIsEditDialogOpen(true)}
+				>
+					<Pencil className="mr-2 h-4 w-4" />
+					編集
+				</Button>
 			</div>
 
 			{/* 基本情報カード */}
@@ -208,239 +136,70 @@ function OfficialWorkDetailPage() {
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 
-					{mutationError && (
-						<div className="mb-4 rounded-md bg-error/10 p-3 text-error text-sm">
-							{mutationError}
+					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+						<div>
+							<Label className="text-base-content/60">ID</Label>
+							<p className="font-mono text-sm">{work.id}</p>
 						</div>
-					)}
-
-					{isEditing ? (
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-name">名前 *</Label>
-								<Input
-									id="edit-name"
-									value={editForm.name || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, name: e.target.value })
-									}
-									placeholder="例: Embodiment of Scarlet Devil"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameJa">日本語名</Label>
-								<Input
-									id="edit-nameJa"
-									value={editForm.nameJa || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameJa: e.target.value })
-									}
-									placeholder="例: 東方紅魔郷"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameEn">英語名</Label>
-								<Input
-									id="edit-nameEn"
-									value={editForm.nameEn || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameEn: e.target.value })
-									}
-									placeholder="例: Embodiment of Scarlet Devil"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-shortNameJa">短縮名</Label>
-								<Input
-									id="edit-shortNameJa"
-									value={editForm.shortNameJa || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, shortNameJa: e.target.value })
-									}
-									placeholder="例: 紅魔郷"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-shortNameEn">短縮名（英語）</Label>
-								<Input
-									id="edit-shortNameEn"
-									value={editForm.shortNameEn || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, shortNameEn: e.target.value })
-									}
-									placeholder="例: EoSD"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-category">カテゴリ</Label>
-								<Select
-									id="edit-category"
-									value={editForm.categoryCode || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, categoryCode: e.target.value })
-									}
-								>
-									<option value="">選択なし</option>
-									{categoriesData?.data.map((cat) => (
-										<option key={cat.code} value={cat.code}>
-											{cat.name}
-										</option>
-									))}
-								</Select>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-number">シリーズ番号</Label>
-								<Input
-									type="number"
-									value={editForm.numberInSeries ?? ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											numberInSeries: e.target.value
-												? Number.parseInt(e.target.value, 10)
-												: null,
-										})
-									}
-									placeholder="例: 6"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-releaseDate">発売日</Label>
-								<Input
-									id="edit-releaseDate"
-									type="date"
-									value={editForm.releaseDate || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, releaseDate: e.target.value })
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-officialOrganization">発行元</Label>
-								<Input
-									id="edit-officialOrganization"
-									value={editForm.officialOrganization || ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											officialOrganization: e.target.value,
-										})
-									}
-									placeholder="例: 上海アリス幻樂団"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-position">表示順</Label>
-								<Input
-									id="edit-position"
-									type="number"
-									value={editForm.position ?? ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											position: e.target.value
-												? Number.parseInt(e.target.value, 10)
-												: null,
-										})
-									}
-									placeholder="例: 1"
-								/>
-							</div>
-							<div className="grid gap-2 md:col-span-2">
-								<Label htmlFor="edit-notes">備考</Label>
-								<Textarea
-									id="edit-notes"
-									value={editForm.notes || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, notes: e.target.value })
-									}
-									placeholder="備考を入力"
-									rows={3}
-								/>
-							</div>
-							<div className="flex justify-end gap-2 md:col-span-2">
-								<Button
-									variant="ghost"
-									onClick={cancelEditing}
-									disabled={isSubmitting}
-								>
-									キャンセル
-								</Button>
-								<Button
-									variant="primary"
-									onClick={handleSave}
-									disabled={isSubmitting}
-								>
-									{isSubmitting ? "保存中..." : "保存"}
-								</Button>
-							</div>
+						<div>
+							<Label className="text-base-content/60">名前</Label>
+							<p>{work.name}</p>
 						</div>
-					) : (
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div>
-								<Label className="text-base-content/60">ID</Label>
-								<p className="font-mono text-sm">{work.id}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">名前</Label>
-								<p>{work.name}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">日本語名</Label>
-								<p>{work.nameJa || "-"}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">英語名</Label>
-								<p>{work.nameEn || "-"}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">短縮名</Label>
-								<p>{work.shortNameJa || "-"}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">短縮名（英語）</Label>
-								<p>{work.shortNameEn || "-"}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">カテゴリ</Label>
-								<p>
-									{work.categoryCode ? (
-										<Badge variant={getCategoryColor(work.categoryCode)}>
-											{work.categoryCode}
-										</Badge>
-									) : (
-										"-"
-									)}
-								</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">シリーズ番号</Label>
-								<p>{work.numberInSeries ?? "-"}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">発売日</Label>
-								<p>
-									{work.releaseDate
-										? format(new Date(work.releaseDate), "yyyy年M月d日", {
-												locale: ja,
-											})
-										: "-"}
-								</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">発行元</Label>
-								<p>{work.officialOrganization || "-"}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">表示順</Label>
-								<p>{work.position ?? "-"}</p>
-							</div>
-							<div className="md:col-span-2">
-								<Label className="text-base-content/60">備考</Label>
-								<p className="whitespace-pre-wrap">{work.notes || "-"}</p>
-							</div>
+						<div>
+							<Label className="text-base-content/60">日本語名</Label>
+							<p>{work.nameJa || "-"}</p>
 						</div>
-					)}
+						<div>
+							<Label className="text-base-content/60">英語名</Label>
+							<p>{work.nameEn || "-"}</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">短縮名</Label>
+							<p>{work.shortNameJa || "-"}</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">短縮名（英語）</Label>
+							<p>{work.shortNameEn || "-"}</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">カテゴリ</Label>
+							<p>
+								{work.categoryCode ? (
+									<Badge variant={getCategoryColor(work.categoryCode)}>
+										{work.categoryCode}
+									</Badge>
+								) : (
+									"-"
+								)}
+							</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">シリーズ番号</Label>
+							<p>{work.numberInSeries ?? "-"}</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">発売日</Label>
+							<p>
+								{work.releaseDate
+									? format(new Date(work.releaseDate), "yyyy年M月d日", {
+											locale: ja,
+										})
+									: "-"}
+							</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">発行元</Label>
+							<p>{work.officialOrganization || "-"}</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">表示順</Label>
+							<p>{work.position ?? "-"}</p>
+						</div>
+						<div className="md:col-span-2">
+							<Label className="text-base-content/60">備考</Label>
+							<p className="whitespace-pre-wrap">{work.notes || "-"}</p>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -500,6 +259,15 @@ function OfficialWorkDetailPage() {
 					)}
 				</div>
 			</div>
+
+			{/* 編集ダイアログ */}
+			<OfficialWorkEditDialog
+				open={isEditDialogOpen}
+				onOpenChange={setIsEditDialogOpen}
+				mode="edit"
+				work={work}
+				onSuccess={invalidateQuery}
+			/>
 		</div>
 	);
 }

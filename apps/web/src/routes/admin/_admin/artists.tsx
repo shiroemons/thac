@@ -1,26 +1,15 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createId } from "@thac/db";
-import { detectInitial } from "@thac/utils";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { Eye, Home, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { ArtistEditDialog } from "@/components/admin/artist-edit-dialog";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import {
 	Table,
 	TableBody,
@@ -29,7 +18,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -37,7 +25,6 @@ import {
 	artistsApi,
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
-	type InitialScript,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 import { artistsListQueryOptions } from "@/lib/query-options";
@@ -57,10 +44,6 @@ export const Route = createFileRoute("/admin/_admin/artists")({
 const initialScriptOptions = Object.entries(INITIAL_SCRIPT_LABELS).map(
 	([value, label]) => ({ value, label }),
 );
-
-// 頭文字が必須かどうか判定
-const requiresInitial = (initialScript: string) =>
-	["latin", "hiragana", "katakana"].includes(initialScript);
 
 // カラム定義
 const COLUMN_CONFIGS = [
@@ -95,13 +78,8 @@ function ArtistsPage() {
 	);
 
 	const [editingArtist, setEditingArtist] = useState<Artist | null>(null);
-	const [editForm, setEditForm] = useState<Partial<Artist>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [createForm, setCreateForm] = useState<Partial<Artist>>({
-		initialScript: "latin",
-	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// ensureQueryData + queryOptionsパターン
 	// ローダーでプリフェッチしたデータを自動的に使用
@@ -119,54 +97,6 @@ function ArtistsPage() {
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["artists"] });
-	};
-
-	const handleCreate = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const id = createId.artist();
-			await artistsApi.create({
-				id,
-				name: createForm.name || "",
-				nameJa: createForm.nameJa || null,
-				nameEn: createForm.nameEn || null,
-				sortName: createForm.sortName || null,
-				nameInitial: createForm.nameInitial || null,
-				initialScript: (createForm.initialScript as InitialScript) || "latin",
-				notes: createForm.notes || null,
-			});
-			setIsCreateDialogOpen(false);
-			setCreateForm({ initialScript: "latin" });
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "作成に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	const handleUpdate = async () => {
-		if (!editingArtist) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await artistsApi.update(editingArtist.id, {
-				name: editForm.name,
-				nameJa: editForm.nameJa,
-				nameEn: editForm.nameEn,
-				sortName: editForm.sortName,
-				nameInitial: editForm.nameInitial,
-				initialScript: editForm.initialScript,
-				notes: editForm.notes,
-			});
-			setEditingArtist(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
 	};
 
 	const handleDelete = async (artist: Artist) => {
@@ -387,15 +317,6 @@ function ArtistsPage() {
 														size="icon"
 														onClick={() => {
 															setEditingArtist(artist);
-															setEditForm({
-																name: artist.name,
-																nameJa: artist.nameJa,
-																nameEn: artist.nameEn,
-																sortName: artist.sortName,
-																nameInitial: artist.nameInitial,
-																initialScript: artist.initialScript,
-																notes: artist.notes,
-															});
 															setMutationError(null);
 														}}
 													>
@@ -433,243 +354,23 @@ function ArtistsPage() {
 			</div>
 
 			{/* 新規作成ダイアログ */}
-			<Dialog
+			<ArtistEditDialog
 				open={isCreateDialogOpen}
-				onOpenChange={(open) => {
-					if (!open) {
-						setIsCreateDialogOpen(false);
-						setCreateForm({ initialScript: "latin" });
-						setMutationError(null);
-					}
-				}}
-			>
-				<DialogContent className="sm:max-w-[500px]">
-					<DialogHeader>
-						<DialogTitle>新規アーティスト</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="create-name">
-								名前 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="create-name"
-								value={createForm.name || ""}
-								onChange={(e) => {
-									const name = e.target.value;
-									const initial = detectInitial(name);
-									setCreateForm({
-										...createForm,
-										name,
-										nameJa: name,
-										sortName: name,
-										initialScript: initial.initialScript as InitialScript,
-										nameInitial: initial.nameInitial,
-									});
-								}}
-								placeholder="例: ZUN"
-							/>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-nameJa">日本語名</Label>
-								<Input
-									id="create-nameJa"
-									value={createForm.nameJa || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, nameJa: e.target.value })
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="create-nameEn">英語名</Label>
-								<Input
-									id="create-nameEn"
-									value={createForm.nameEn || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, nameEn: e.target.value })
-									}
-								/>
-							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-sortName">ソート用名</Label>
-							<Input
-								id="create-sortName"
-								value={createForm.sortName || ""}
-								onChange={(e) =>
-									setCreateForm({ ...createForm, sortName: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-notes">備考</Label>
-							<Textarea
-								id="create-notes"
-								value={createForm.notes || ""}
-								onChange={(e) =>
-									setCreateForm({ ...createForm, notes: e.target.value })
-								}
-								rows={3}
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="ghost"
-							onClick={() => setIsCreateDialogOpen(false)}
-						>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleCreate}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "作成中..." : "作成"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				onOpenChange={setIsCreateDialogOpen}
+				mode="create"
+				onSuccess={invalidateQuery}
+			/>
 
 			{/* 編集ダイアログ */}
-			<Dialog
+			<ArtistEditDialog
 				open={!!editingArtist}
 				onOpenChange={(open) => {
-					if (!open) {
-						setEditingArtist(null);
-						setMutationError(null);
-					}
+					if (!open) setEditingArtist(null);
 				}}
-			>
-				<DialogContent className="sm:max-w-[500px]">
-					<DialogHeader>
-						<DialogTitle>アーティストの編集</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="edit-name">
-								名前 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="edit-name"
-								value={editForm.name || ""}
-								onChange={(e) => {
-									const name = e.target.value;
-									const initial = detectInitial(name);
-									setEditForm({
-										...editForm,
-										name,
-										initialScript: initial.initialScript as InitialScript,
-										nameInitial: initial.nameInitial,
-									});
-								}}
-							/>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameJa">日本語名</Label>
-								<Input
-									id="edit-nameJa"
-									value={editForm.nameJa || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameJa: e.target.value })
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameEn">英語名</Label>
-								<Input
-									id="edit-nameEn"
-									value={editForm.nameEn || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameEn: e.target.value })
-									}
-								/>
-							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-sortName">ソート用名</Label>
-							<Input
-								id="edit-sortName"
-								value={editForm.sortName || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, sortName: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-initialScript">
-									頭文字の文字種 <span className="text-error">*</span>
-								</Label>
-								<Select
-									id="edit-initialScript"
-									value={editForm.initialScript || "latin"}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											initialScript: e.target.value as InitialScript,
-											nameInitial: requiresInitial(e.target.value)
-												? editForm.nameInitial
-												: null,
-										})
-									}
-								>
-									{initialScriptOptions.map((opt) => (
-										<option key={opt.value} value={opt.value}>
-											{opt.label}
-										</option>
-									))}
-								</Select>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameInitial">
-									頭文字
-									{requiresInitial(editForm.initialScript || "latin") && (
-										<span className="text-error"> *</span>
-									)}
-								</Label>
-								<Input
-									id="edit-nameInitial"
-									value={editForm.nameInitial || ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											nameInitial: e.target.value.slice(0, 1),
-										})
-									}
-									maxLength={1}
-									disabled={!requiresInitial(editForm.initialScript || "latin")}
-								/>
-							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-notes">備考</Label>
-							<Textarea
-								id="edit-notes"
-								value={editForm.notes || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, notes: e.target.value })
-								}
-								rows={3}
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="ghost" onClick={() => setEditingArtist(null)}>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleUpdate}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "保存中..." : "保存"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				mode="edit"
+				artist={editingArtist}
+				onSuccess={invalidateQuery}
+			/>
 		</div>
 	);
 }
