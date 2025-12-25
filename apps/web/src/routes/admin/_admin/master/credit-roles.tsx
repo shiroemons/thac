@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowUpDown, Eye, Home, Pencil, Trash2, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
+import { CreditRoleEditDialog } from "@/components/admin/credit-role-edit-dialog";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
@@ -10,15 +11,6 @@ import { SortIcon } from "@/components/admin/sort-icon";
 import { CreateDialog } from "@/components/create-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	Table,
 	TableBody,
@@ -69,9 +61,10 @@ function CreditRolesPage() {
 		columnConfigs,
 	);
 
-	const [editingItem, setEditingItem] = useState<CreditRole | null>(null);
-	const [editForm, setEditForm] = useState<Partial<CreditRole>>({});
-	const [mutationError, setMutationError] = useState<string | null>(null);
+	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const [editingCreditRole, setEditingCreditRole] = useState<CreditRole | null>(
+		null,
+	);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
@@ -114,9 +107,7 @@ function CreditRolesPage() {
 			await creditRolesApi.update(prevItem.code, { sortOrder: item.sortOrder });
 			invalidateQuery();
 		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "順序変更に失敗しました",
-			);
+			console.error("順序変更に失敗しました", e);
 		}
 	};
 
@@ -129,9 +120,7 @@ function CreditRolesPage() {
 			await creditRolesApi.update(nextItem.code, { sortOrder: item.sortOrder });
 			invalidateQuery();
 		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "順序変更に失敗しました",
-			);
+			console.error("順序変更に失敗しました", e);
 		}
 	};
 
@@ -147,9 +136,7 @@ function CreditRolesPage() {
 			await creditRolesApi.reorder(reorderItems);
 			invalidateQuery();
 		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "順序の整理に失敗しました",
-			);
+			console.error("順序の整理に失敗しました", e);
 		} finally {
 			setIsReordering(false);
 		}
@@ -163,27 +150,14 @@ function CreditRolesPage() {
 		});
 	};
 
-	const handleUpdate = async () => {
-		if (!editingItem) return;
-		try {
-			await creditRolesApi.update(editingItem.code, {
-				label: editForm.label,
-				description: editForm.description,
-			});
-			setEditingItem(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
-		}
-	};
-
 	const handleDelete = async (code: string) => {
 		if (!confirm(`「${code}」を削除しますか？`)) return;
 		try {
 			await creditRolesApi.delete(code);
 			invalidateQuery();
 		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
+			// エラーは共通ダイアログ内で管理されるため、ここでは何もしない
+			console.error("削除に失敗しました", e);
 		}
 	};
 
@@ -201,8 +175,7 @@ function CreditRolesPage() {
 		setPage(1);
 	};
 
-	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+	const displayError = error instanceof Error ? error.message : null;
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -360,11 +333,8 @@ function CreditRolesPage() {
 														variant="ghost"
 														size="icon"
 														onClick={() => {
-															setEditingItem(c);
-															setEditForm({
-																label: c.label,
-																description: c.description,
-															});
+															setEditingCreditRole(c);
+															setIsEditDialogOpen(true);
 														}}
 													>
 														<Pencil className="h-4 w-4" />
@@ -430,48 +400,13 @@ function CreditRolesPage() {
 			/>
 
 			{/* 編集ダイアログ */}
-			<Dialog
-				open={!!editingItem}
-				onOpenChange={(open) => !open && setEditingItem(null)}
-			>
-				<DialogContent className="sm:max-w-[425px]">
-					<DialogHeader>
-						<DialogTitle>クレジット役割の編集</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label>コード</Label>
-							<Input value={editingItem?.code || ""} disabled />
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-label">ラベル</Label>
-							<Input
-								id="edit-label"
-								value={editForm.label || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, label: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-description">説明</Label>
-							<Input
-								id="edit-description"
-								value={editForm.description || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, description: e.target.value })
-								}
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setEditingItem(null)}>
-							キャンセル
-						</Button>
-						<Button onClick={handleUpdate}>保存</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<CreditRoleEditDialog
+				open={isEditDialogOpen}
+				onOpenChange={setIsEditDialogOpen}
+				mode="edit"
+				creditRole={editingCreditRole}
+				onSuccess={invalidateQuery}
+			/>
 
 			{/* インポートダイアログ */}
 			<ImportDialog
