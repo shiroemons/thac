@@ -4,8 +4,9 @@ import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowLeft, Calendar, Home, Pencil, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
+import { EventEditDialog } from "@/components/admin/event-edit-dialog";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -16,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
 	Table,
 	TableBody,
@@ -25,13 +25,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import {
-	type Event,
-	type EventDay,
-	eventDaysApi,
-	eventSeriesApi,
-	eventsApi,
-} from "@/lib/api-client";
+import { type EventDay, eventDaysApi, eventsApi } from "@/lib/api-client";
 import { createEventDetailHead } from "@/lib/head";
 import { eventDetailQueryOptions } from "@/lib/query-options";
 
@@ -47,11 +41,8 @@ function EventDetailPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
-	// 編集モード
-	const [isEditing, setIsEditing] = useState(false);
-	const [editForm, setEditForm] = useState<Partial<Event>>({});
-	const [mutationError, setMutationError] = useState<string | null>(null);
-	const [isSubmitting, setIsSubmitting] = useState(false);
+	// 編集ダイアログ
+	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
 	// イベント日編集用
 	const [isDayDialogOpen, setIsDayDialogOpen] = useState(false);
@@ -63,105 +54,13 @@ function EventDetailPage() {
 		dayNumber: 1,
 		date: "",
 	});
-
-	// 新規シリーズ作成用
-	const [isNewSeriesDialogOpen, setIsNewSeriesDialogOpen] = useState(false);
-	const [newSeriesName, setNewSeriesName] = useState("");
+	const [mutationError, setMutationError] = useState<string | null>(null);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const { data: event, isPending } = useQuery(eventDetailQueryOptions(id));
 
-	// イベントシリーズ一覧取得（編集モード時のみ）
-	const { data: eventSeriesData } = useQuery({
-		queryKey: ["event-series"],
-		queryFn: () => eventSeriesApi.list(),
-		staleTime: 60_000,
-		enabled: isEditing,
-	});
-
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["events", id] });
-	};
-
-	// イベントシリーズオプション
-	const eventSeriesOptions = useMemo(() => {
-		return (
-			eventSeriesData?.data.map((series) => ({
-				value: series.id,
-				label: series.name,
-			})) ?? []
-		);
-	}, [eventSeriesData]);
-
-	// 新規シリーズ作成
-	const handleCreateSeries = async () => {
-		if (!newSeriesName.trim()) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const newSeries = await eventSeriesApi.create({
-				id: createId.eventSeries(),
-				name: newSeriesName.trim(),
-				sortOrder: 0,
-			});
-			// シリーズ一覧を更新
-			queryClient.invalidateQueries({ queryKey: ["event-series"] });
-			// 新しいシリーズを選択
-			setEditForm({ ...editForm, eventSeriesId: newSeries.id });
-			setIsNewSeriesDialogOpen(false);
-			setNewSeriesName("");
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "シリーズの作成に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	// 編集開始
-	const startEditing = () => {
-		if (event) {
-			setEditForm({
-				name: event.name,
-				eventSeriesId: event.eventSeriesId,
-				edition: event.edition,
-				venue: event.venue,
-				startDate: event.startDate,
-				endDate: event.endDate,
-			});
-			setIsEditing(true);
-		}
-	};
-
-	// 編集キャンセル
-	const cancelEditing = () => {
-		setIsEditing(false);
-		setEditForm({});
-		setMutationError(null);
-	};
-
-	// 保存
-	const handleSave = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await eventsApi.update(id, {
-				name: editForm.name,
-				eventSeriesId: editForm.eventSeriesId,
-				edition: editForm.edition ?? null,
-				venue: editForm.venue || null,
-				startDate: editForm.startDate || null,
-				endDate: editForm.endDate || null,
-			});
-			invalidateQuery();
-			setIsEditing(false);
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
 	};
 
 	// イベント削除
@@ -289,23 +188,25 @@ function EventDetailPage() {
 					</Link>
 					<h1 className="font-bold text-2xl">{event.name}</h1>
 				</div>
-				{!isEditing && (
-					<div className="flex items-center gap-2">
-						<Button variant="outline" size="sm" onClick={startEditing}>
-							<Pencil className="mr-2 h-4 w-4" />
-							編集
-						</Button>
-						<Button
-							variant="outline"
-							size="sm"
-							className="text-error hover:text-error"
-							onClick={handleDelete}
-						>
-							<Trash2 className="mr-2 h-4 w-4" />
-							削除
-						</Button>
-					</div>
-				)}
+				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => setIsEditDialogOpen(true)}
+					>
+						<Pencil className="mr-2 h-4 w-4" />
+						編集
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						className="text-error hover:bg-error hover:text-error-content"
+						onClick={handleDelete}
+					>
+						<Trash2 className="mr-2 h-4 w-4" />
+						削除
+					</Button>
+				</div>
 			</div>
 
 			{/* 基本情報カード */}
@@ -313,173 +214,60 @@ function EventDetailPage() {
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 
-					{mutationError && (
-						<div className="mb-4 rounded-md bg-error/10 p-3 text-error text-sm">
-							{mutationError}
+					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+						<div>
+							<Label className="text-base-content/60">名前</Label>
+							<p className="font-medium">{event.name}</p>
 						</div>
-					)}
-
-					{isEditing ? (
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div className="form-control">
-								<Label>
-									名前 <span className="text-error">*</span>
-								</Label>
-								<Input
-									value={editForm.name || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, name: e.target.value })
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-eventSeriesId">イベントシリーズ</Label>
-								<div className="flex gap-2">
-									<div className="flex-1">
-										<SearchableSelect
-											id="edit-eventSeriesId"
-											value={editForm.eventSeriesId || ""}
-											onChange={(value) =>
-												setEditForm({
-													...editForm,
-													eventSeriesId: value || null,
-												})
-											}
-											options={eventSeriesOptions}
-											placeholder="イベントシリーズを選択"
-											searchPlaceholder="イベントシリーズを検索..."
-											emptyMessage="イベントシリーズが見つかりません"
-											clearable
-										/>
-									</div>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => setIsNewSeriesDialogOpen(true)}
-										title="新規シリーズを作成"
+						<div>
+							<Label className="text-base-content/60">イベントシリーズ</Label>
+							<p>
+								{event.eventSeriesId && event.seriesName ? (
+									<Link
+										to="/admin/event-series/$id"
+										params={{ id: event.eventSeriesId }}
+										className="text-primary hover:underline"
 									>
-										<Plus className="h-4 w-4" />
-									</Button>
-								</div>
-							</div>
-							<div className="form-control">
-								<Label>回次</Label>
-								<Input
-									type="number"
-									min={1}
-									value={editForm.edition ?? ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											edition: e.target.value ? Number(e.target.value) : null,
+										{event.seriesName}
+									</Link>
+								) : (
+									"-"
+								)}
+							</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">回次</Label>
+							<p>{event.edition != null ? `第${event.edition}回` : "-"}</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">開催日数</Label>
+							<p>{event.totalDays != null ? `${event.totalDays}日間` : "-"}</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">開始日</Label>
+							<p>
+								{event.startDate
+									? format(new Date(event.startDate), "yyyy年M月d日", {
+											locale: ja,
 										})
-									}
-								/>
-							</div>
-							<div className="form-control">
-								<Label>会場</Label>
-								<Input
-									value={editForm.venue || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, venue: e.target.value })
-									}
-								/>
-							</div>
-							<div className="form-control">
-								<Label>開始日</Label>
-								<Input
-									type="date"
-									value={editForm.startDate || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, startDate: e.target.value })
-									}
-								/>
-							</div>
-							<div className="form-control">
-								<Label>終了日</Label>
-								<Input
-									type="date"
-									value={editForm.endDate || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, endDate: e.target.value })
-									}
-								/>
-							</div>
-							<div className="flex justify-end gap-2 md:col-span-2">
-								<Button
-									variant="ghost"
-									onClick={cancelEditing}
-									disabled={isSubmitting}
-								>
-									キャンセル
-								</Button>
-								<Button
-									variant="primary"
-									onClick={handleSave}
-									disabled={isSubmitting || !editForm.name}
-								>
-									{isSubmitting ? "保存中..." : "保存"}
-								</Button>
-							</div>
+									: "-"}
+							</p>
 						</div>
-					) : (
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div>
-								<Label className="text-base-content/60">名前</Label>
-								<p className="font-medium">{event.name}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">イベントシリーズ</Label>
-								<p>
-									{event.eventSeriesId && event.seriesName ? (
-										<Link
-											to="/admin/event-series/$id"
-											params={{ id: event.eventSeriesId }}
-											className="text-primary hover:underline"
-										>
-											{event.seriesName}
-										</Link>
-									) : (
-										"-"
-									)}
-								</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">回次</Label>
-								<p>{event.edition != null ? `第${event.edition}回` : "-"}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">開催日数</Label>
-								<p>
-									{event.totalDays != null ? `${event.totalDays}日間` : "-"}
-								</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">開始日</Label>
-								<p>
-									{event.startDate
-										? format(new Date(event.startDate), "yyyy年M月d日", {
-												locale: ja,
-											})
-										: "-"}
-								</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">終了日</Label>
-								<p>
-									{event.endDate
-										? format(new Date(event.endDate), "yyyy年M月d日", {
-												locale: ja,
-											})
-										: "-"}
-								</p>
-							</div>
-							<div className="md:col-span-2">
-								<Label className="text-base-content/60">会場</Label>
-								<p>{event.venue || "-"}</p>
-							</div>
+						<div>
+							<Label className="text-base-content/60">終了日</Label>
+							<p>
+								{event.endDate
+									? format(new Date(event.endDate), "yyyy年M月d日", {
+											locale: ja,
+										})
+									: "-"}
+							</p>
 						</div>
-					)}
+						<div className="md:col-span-2">
+							<Label className="text-base-content/60">会場</Label>
+							<p>{event.venue || "-"}</p>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -618,49 +406,14 @@ function EventDetailPage() {
 				</DialogContent>
 			</Dialog>
 
-			{/* 新規シリーズ作成ダイアログ */}
-			<Dialog
-				open={isNewSeriesDialogOpen}
-				onOpenChange={setIsNewSeriesDialogOpen}
-			>
-				<DialogContent className="sm:max-w-[425px]">
-					<DialogHeader>
-						<DialogTitle>新規イベントシリーズの作成</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="new-series-name">シリーズ名</Label>
-							<Input
-								id="new-series-name"
-								value={newSeriesName}
-								onChange={(e) => setNewSeriesName(e.target.value)}
-								placeholder="例: 博麗神社例大祭"
-							/>
-						</div>
-					</div>
-					{mutationError && (
-						<div className="mb-4 text-error text-sm">{mutationError}</div>
-					)}
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => {
-								setIsNewSeriesDialogOpen(false);
-								setNewSeriesName("");
-								setMutationError(null);
-							}}
-						>
-							キャンセル
-						</Button>
-						<Button
-							onClick={handleCreateSeries}
-							disabled={isSubmitting || !newSeriesName.trim()}
-						>
-							{isSubmitting ? "作成中..." : "作成"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			{/* 編集ダイアログ */}
+			<EventEditDialog
+				open={isEditDialogOpen}
+				onOpenChange={setIsEditDialogOpen}
+				mode="edit"
+				event={event}
+				onSuccess={invalidateQuery}
+			/>
 		</div>
 	);
 }

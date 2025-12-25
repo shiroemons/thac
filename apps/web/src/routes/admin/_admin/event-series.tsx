@@ -1,24 +1,15 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowUpDown, Eye, Home, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
+import { EventSeriesEditDialog } from "@/components/admin/event-series-edit-dialog";
 import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { SortIcon } from "@/components/admin/sort-icon";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	Table,
 	TableBody,
@@ -68,10 +59,8 @@ function EventSeriesPage() {
 	);
 
 	const [editingSeries, setEditingSeries] = useState<EventSeries | null>(null);
-	const [editForm, setEditForm] = useState<Partial<EventSeries>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [createForm, setCreateForm] = useState<Partial<EventSeries>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const { data, isPending, error } = useQuery(
@@ -155,44 +144,6 @@ function EventSeriesPage() {
 		}
 	};
 
-	const handleCreate = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const id = createId.eventSeries();
-			await eventSeriesApi.create({
-				id,
-				name: createForm.name || "",
-				sortOrder: seriesList.length, // 末尾に追加
-			});
-			setIsCreateDialogOpen(false);
-			setCreateForm({});
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "作成に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	const handleUpdate = async () => {
-		if (!editingSeries) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await eventSeriesApi.update(editingSeries.id, {
-				name: editForm.name,
-				sortOrder: editForm.sortOrder,
-			});
-			setEditingSeries(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
 	const handleDelete = async (series: EventSeries) => {
 		if (
 			!confirm(
@@ -210,10 +161,6 @@ function EventSeriesPage() {
 
 	const handleEdit = (series: EventSeries) => {
 		setEditingSeries(series);
-		setEditForm({
-			name: series.name,
-			sortOrder: series.sortOrder,
-		});
 		setMutationError(null);
 	};
 
@@ -426,123 +373,24 @@ function EventSeriesPage() {
 			</div>
 
 			{/* 新規作成ダイアログ */}
-			<Dialog
+			<EventSeriesEditDialog
 				open={isCreateDialogOpen}
-				onOpenChange={(open) => {
-					if (!open) {
-						setIsCreateDialogOpen(false);
-						setCreateForm({});
-						setMutationError(null);
-					}
-				}}
-			>
-				<DialogContent className="sm:max-w-[400px]">
-					<DialogHeader>
-						<DialogTitle>新規シリーズ</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="create-name">
-								シリーズ名 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="create-name"
-								value={createForm.name || ""}
-								onChange={(e) =>
-									setCreateForm({ ...createForm, name: e.target.value })
-								}
-								placeholder="例: コミックマーケット"
-							/>
-						</div>
-						{mutationError && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
-							</div>
-						)}
-					</div>
-					<DialogFooter>
-						<Button
-							variant="ghost"
-							onClick={() => setIsCreateDialogOpen(false)}
-						>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleCreate}
-							disabled={isSubmitting || !createForm.name?.trim()}
-						>
-							{isSubmitting ? "作成中..." : "作成"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				onOpenChange={setIsCreateDialogOpen}
+				mode="create"
+				defaultSortOrder={seriesList.length}
+				onSuccess={invalidateQuery}
+			/>
 
 			{/* 編集ダイアログ */}
-			<Dialog
+			<EventSeriesEditDialog
 				open={!!editingSeries}
 				onOpenChange={(open) => {
-					if (!open) {
-						setEditingSeries(null);
-						setMutationError(null);
-					}
+					if (!open) setEditingSeries(null);
 				}}
-			>
-				<DialogContent className="sm:max-w-[400px]">
-					<DialogHeader>
-						<DialogTitle>シリーズの編集</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="edit-name">
-								シリーズ名 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="edit-name"
-								value={editForm.name || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, name: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-sortOrder">表示順序</Label>
-							<Input
-								id="edit-sortOrder"
-								type="number"
-								min="0"
-								value={editForm.sortOrder ?? 0}
-								onChange={(e) =>
-									setEditForm({
-										...editForm,
-										sortOrder: e.target.value ? Number(e.target.value) : 0,
-									})
-								}
-							/>
-							<p className="text-base-content/50 text-xs">
-								小さい値が先に表示されます
-							</p>
-						</div>
-						{mutationError && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
-							</div>
-						)}
-					</div>
-					<DialogFooter>
-						<Button variant="ghost" onClick={() => setEditingSeries(null)}>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleUpdate}
-							disabled={isSubmitting || !editForm.name?.trim()}
-						>
-							{isSubmitting ? "保存中..." : "保存"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				mode="edit"
+				eventSeries={editingSeries}
+				onSuccess={invalidateQuery}
+			/>
 		</div>
 	);
 }

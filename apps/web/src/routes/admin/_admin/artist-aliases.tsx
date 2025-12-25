@@ -1,27 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createId } from "@thac/db";
-import { detectInitial } from "@thac/utils";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Eye, Home, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Home, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { ArtistAliasEditDialog } from "@/components/admin/artist-alias-edit-dialog";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Select } from "@/components/ui/select";
 import {
 	Table,
 	TableBody,
@@ -33,7 +22,6 @@ import {
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
-	type Artist,
 	type ArtistAlias,
 	aliasTypesApi,
 	artistAliasesApi,
@@ -58,13 +46,6 @@ export const Route = createFileRoute("/admin/_admin/artist-aliases")({
 		),
 	component: ArtistAliasesPage,
 });
-
-const initialScriptOptions = Object.entries(INITIAL_SCRIPT_LABELS).map(
-	([value, label]) => ({ value, label }),
-);
-
-const requiresInitial = (initialScript: string) =>
-	["latin", "hiragana", "katakana"].includes(initialScript);
 
 // 名義種別に応じたBadgeのvariantを返す
 const getAliasTypeBadgeVariant = (
@@ -133,21 +114,8 @@ function ArtistAliasesPage() {
 	);
 
 	const [editingAlias, setEditingAlias] = useState<ArtistAlias | null>(null);
-	const [editForm, setEditForm] = useState<Partial<ArtistAlias>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [createForm, setCreateForm] = useState<Partial<ArtistAlias>>({
-		initialScript: "latin",
-		aliasTypeCode: "main",
-	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
-
-	// アーティスト作成用ネストダイアログ
-	const [isArtistCreateDialogOpen, setIsArtistCreateDialogOpen] =
-		useState(false);
-	const [artistCreateForm, setArtistCreateForm] = useState<Partial<Artist>>({
-		initialScript: "latin",
-	});
 
 	// アーティスト一覧取得（セレクト用）
 	const { data: artistsData } = useQuery({
@@ -179,89 +147,6 @@ function ArtistAliasesPage() {
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["artistAliases"] });
-	};
-
-	const invalidateArtists = () => {
-		queryClient.invalidateQueries({ queryKey: ["artists"] });
-	};
-
-	// アーティスト作成（ネストダイアログから）
-	const handleArtistCreate = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const id = createId.artist();
-			const newArtist = await artistsApi.create({
-				id,
-				name: artistCreateForm.name || "",
-				nameJa: artistCreateForm.nameJa || null,
-				nameEn: artistCreateForm.nameEn || null,
-				sortName: artistCreateForm.sortName || null,
-				nameInitial: artistCreateForm.nameInitial || null,
-				initialScript:
-					(artistCreateForm.initialScript as InitialScript) || "latin",
-				notes: artistCreateForm.notes || null,
-			});
-			// 作成したアーティストを自動選択
-			setCreateForm({ ...createForm, artistId: newArtist.id });
-			setIsArtistCreateDialogOpen(false);
-			setArtistCreateForm({ initialScript: "latin" });
-			invalidateArtists();
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "アーティスト作成に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	const handleCreate = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const id = createId.artistAlias();
-			await artistAliasesApi.create({
-				id,
-				artistId: createForm.artistId || "",
-				name: createForm.name || "",
-				aliasTypeCode: createForm.aliasTypeCode || null,
-				nameInitial: createForm.nameInitial || null,
-				initialScript: (createForm.initialScript as InitialScript) || "latin",
-				periodFrom: createForm.periodFrom || null,
-				periodTo: createForm.periodTo || null,
-			});
-			setIsCreateDialogOpen(false);
-			setCreateForm({ initialScript: "latin", aliasTypeCode: "main" });
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "作成に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	const handleUpdate = async () => {
-		if (!editingAlias) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await artistAliasesApi.update(editingAlias.id, {
-				artistId: editForm.artistId,
-				name: editForm.name,
-				aliasTypeCode: editForm.aliasTypeCode,
-				nameInitial: editForm.nameInitial,
-				initialScript: editForm.initialScript,
-				periodFrom: editForm.periodFrom,
-				periodTo: editForm.periodTo,
-			});
-			setEditingAlias(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
 	};
 
 	const handleDelete = async (alias: ArtistAlias) => {
@@ -510,15 +395,6 @@ function ArtistAliasesPage() {
 														size="icon"
 														onClick={() => {
 															setEditingAlias(alias);
-															setEditForm({
-																artistId: alias.artistId,
-																name: alias.name,
-																aliasTypeCode: alias.aliasTypeCode,
-																nameInitial: alias.nameInitial,
-																initialScript: alias.initialScript,
-																periodFrom: alias.periodFrom,
-																periodTo: alias.periodTo,
-															});
 															setMutationError(null);
 														}}
 													>
@@ -556,353 +432,23 @@ function ArtistAliasesPage() {
 			</div>
 
 			{/* 新規作成ダイアログ */}
-			<Dialog
+			<ArtistAliasEditDialog
 				open={isCreateDialogOpen}
-				onOpenChange={(open) => {
-					if (!open) {
-						setIsCreateDialogOpen(false);
-						setCreateForm({ initialScript: "latin", aliasTypeCode: "main" });
-						setMutationError(null);
-					}
-				}}
-			>
-				<DialogContent className="sm:max-w-[500px]">
-					<DialogHeader>
-						<DialogTitle>新規アーティスト名義</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="create-name">
-								名義名 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="create-name"
-								value={createForm.name || ""}
-								onChange={(e) => {
-									const name = e.target.value;
-									const initial = detectInitial(name);
-									setCreateForm({
-										...createForm,
-										name,
-										initialScript: initial.initialScript as InitialScript,
-										nameInitial: initial.nameInitial,
-									});
-								}}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-artistId">
-								アーティスト <span className="text-error">*</span>
-							</Label>
-							<div className="flex gap-2">
-								<SearchableSelect
-									value={createForm.artistId || ""}
-									onChange={(value) =>
-										setCreateForm({ ...createForm, artistId: value })
-									}
-									options={artistFilterOptions}
-									placeholder="アーティストを選択"
-									searchPlaceholder="アーティストを検索..."
-									emptyMessage="該当するアーティストがありません"
-									clearable={false}
-									className="flex-1"
-								/>
-								<Button
-									type="button"
-									variant="outline"
-									className="btn-square"
-									onClick={() => setIsArtistCreateDialogOpen(true)}
-									title="新規アーティスト作成"
-								>
-									<Plus className="h-4 w-4" />
-								</Button>
-							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="create-aliasTypeCode">名義種別</Label>
-							<Select
-								id="create-aliasTypeCode"
-								value={createForm.aliasTypeCode || ""}
-								onChange={(e) =>
-									setCreateForm({
-										...createForm,
-										aliasTypeCode: e.target.value || null,
-									})
-								}
-							>
-								<option value="">選択してください</option>
-								{aliasTypes.map((t) => (
-									<option key={t.code} value={t.code}>
-										{t.label}
-									</option>
-								))}
-							</Select>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-periodFrom">使用開始日</Label>
-								<Input
-									id="create-periodFrom"
-									type="date"
-									value={createForm.periodFrom || ""}
-									onChange={(e) =>
-										setCreateForm({
-											...createForm,
-											periodFrom: e.target.value || null,
-										})
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="create-periodTo">使用終了日</Label>
-								<Input
-									id="create-periodTo"
-									type="date"
-									value={createForm.periodTo || ""}
-									onChange={(e) =>
-										setCreateForm({
-											...createForm,
-											periodTo: e.target.value || null,
-										})
-									}
-								/>
-							</div>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="ghost"
-							onClick={() => setIsCreateDialogOpen(false)}
-						>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleCreate}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "作成中..." : "作成"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* アーティスト新規作成ネストダイアログ */}
-			<Dialog
-				open={isArtistCreateDialogOpen}
-				onOpenChange={(open) => {
-					if (!open) {
-						setIsArtistCreateDialogOpen(false);
-						setArtistCreateForm({ initialScript: "latin" });
-					}
-				}}
-			>
-				<DialogContent className="sm:max-w-[500px]">
-					<DialogHeader>
-						<DialogTitle>新規アーティスト</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="artist-create-name">
-								名前 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="artist-create-name"
-								value={artistCreateForm.name || ""}
-								onChange={(e) => {
-									const name = e.target.value;
-									const initial = detectInitial(name);
-									setArtistCreateForm({
-										...artistCreateForm,
-										name,
-										nameJa: name,
-										sortName: name,
-										initialScript: initial.initialScript as InitialScript,
-										nameInitial: initial.nameInitial,
-									});
-								}}
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="ghost"
-							onClick={() => setIsArtistCreateDialogOpen(false)}
-						>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleArtistCreate}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "作成中..." : "作成"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				onOpenChange={setIsCreateDialogOpen}
+				mode="create"
+				onSuccess={invalidateQuery}
+			/>
 
 			{/* 編集ダイアログ */}
-			<Dialog
+			<ArtistAliasEditDialog
 				open={!!editingAlias}
 				onOpenChange={(open) => {
-					if (!open) {
-						setEditingAlias(null);
-						setMutationError(null);
-					}
+					if (!open) setEditingAlias(null);
 				}}
-			>
-				<DialogContent className="sm:max-w-[500px]">
-					<DialogHeader>
-						<DialogTitle>アーティスト名義の編集</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="edit-name">
-								名義名 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="edit-name"
-								value={editForm.name || ""}
-								onChange={(e) => {
-									const name = e.target.value;
-									const initial = detectInitial(name);
-									setEditForm({
-										...editForm,
-										name,
-										initialScript: initial.initialScript as InitialScript,
-										nameInitial: initial.nameInitial,
-									});
-								}}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-artistId">
-								アーティスト <span className="text-error">*</span>
-							</Label>
-							<SearchableSelect
-								value={editForm.artistId || ""}
-								onChange={(value) =>
-									setEditForm({ ...editForm, artistId: value })
-								}
-								options={artistFilterOptions}
-								placeholder="アーティストを選択"
-								searchPlaceholder="アーティストを検索..."
-								emptyMessage="該当するアーティストがありません"
-								clearable={false}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-aliasTypeCode">名義種別</Label>
-							<Select
-								id="edit-aliasTypeCode"
-								value={editForm.aliasTypeCode || ""}
-								onChange={(e) =>
-									setEditForm({
-										...editForm,
-										aliasTypeCode: e.target.value || null,
-									})
-								}
-							>
-								<option value="">選択してください</option>
-								{aliasTypes.map((t) => (
-									<option key={t.code} value={t.code}>
-										{t.label}
-									</option>
-								))}
-							</Select>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-initialScript">
-									頭文字の文字種 <span className="text-error">*</span>
-								</Label>
-								<Select
-									id="edit-initialScript"
-									value={editForm.initialScript || "latin"}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											initialScript: e.target.value as InitialScript,
-											nameInitial: requiresInitial(e.target.value)
-												? editForm.nameInitial
-												: null,
-										})
-									}
-								>
-									{initialScriptOptions.map((opt) => (
-										<option key={opt.value} value={opt.value}>
-											{opt.label}
-										</option>
-									))}
-								</Select>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameInitial">
-									頭文字
-									{requiresInitial(editForm.initialScript || "latin") && (
-										<span className="text-error"> *</span>
-									)}
-								</Label>
-								<Input
-									id="edit-nameInitial"
-									value={editForm.nameInitial || ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											nameInitial: e.target.value.slice(0, 1),
-										})
-									}
-									maxLength={1}
-									disabled={!requiresInitial(editForm.initialScript || "latin")}
-								/>
-							</div>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-periodFrom">使用開始日</Label>
-								<Input
-									id="edit-periodFrom"
-									type="date"
-									value={editForm.periodFrom || ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											periodFrom: e.target.value || null,
-										})
-									}
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-periodTo">使用終了日</Label>
-								<Input
-									id="edit-periodTo"
-									type="date"
-									value={editForm.periodTo || ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											periodTo: e.target.value || null,
-										})
-									}
-								/>
-							</div>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="ghost" onClick={() => setEditingAlias(null)}>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleUpdate}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "保存中..." : "保存"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				mode="edit"
+				alias={editingAlias}
+				onSuccess={invalidateQuery}
+			/>
 		</div>
 	);
 }

@@ -69,8 +69,7 @@ function EventSeriesDetailPage() {
 				name: editForm.name,
 			});
 			setIsEditDialogOpen(false);
-			queryClient.invalidateQueries({ queryKey: ["eventSeries"] });
-			window.location.reload();
+			queryClient.invalidateQueries({ queryKey: ["eventSeries", { id }] });
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "更新に失敗しました");
 		} finally {
