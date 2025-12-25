@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { detectInitial } from "@thac/utils";
-import { ArrowLeft, Music, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Home, Music, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -229,6 +229,11 @@ function ArtistAliasDetailPage() {
 			{/* パンくずナビゲーション */}
 			<nav className="breadcrumbs text-sm">
 				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
 					<li>
 						<Link to="/admin/artist-aliases">アーティスト名義管理</Link>
 					</li>

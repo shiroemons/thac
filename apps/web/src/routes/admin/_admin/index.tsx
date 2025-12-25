@@ -9,11 +9,11 @@ import {
 	Layers,
 	MonitorSmartphone,
 	Music,
+	Home,
 	UserCog,
 	UserPen,
 	Users,
 } from "lucide-react";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { statsApi } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 
@@ -166,8 +166,21 @@ function AdminDashboard() {
 	];
 
 	return (
-		<div className="container mx-auto py-6">
-			<AdminPageHeader title="ダッシュボード" />
+		<div className="container mx-auto space-y-6 p-6">
+			{/* パンくずナビゲーション */}
+			<nav className="breadcrumbs text-sm">
+				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
+					<li>ダッシュボード</li>
+				</ul>
+			</nav>
+
+			{/* ヘッダー */}
+			<h1 className="font-bold text-2xl">ダッシュボード</h1>
 
 			<div className="space-y-6">
 				{/* ユーザー */}

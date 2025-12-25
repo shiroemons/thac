@@ -1,8 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Home, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -104,33 +103,47 @@ function CreditRoleDetailPage() {
 	}
 
 	return (
-		<div className="container mx-auto space-y-6 py-6">
-			<AdminPageHeader
-				title="クレジット役割詳細"
-				breadcrumbs={[
-					{ label: "マスタ管理" },
-					{ label: "クレジット役割", href: "/admin/master/credit-roles" },
-					{ label: creditRole.label },
-				]}
-				actions={
-					<div className="flex gap-2">
-						<Button variant="outline" size="sm" onClick={handleEdit}>
-							<Pencil className="mr-2 h-4 w-4" />
-							編集
-						</Button>
-						<Button
-							variant="outline"
-							size="sm"
-							className="text-error hover:text-error"
-							onClick={handleDelete}
-							disabled={isDeleting}
-						>
-							<Trash2 className="mr-2 h-4 w-4" />
-							{isDeleting ? "削除中..." : "削除"}
-						</Button>
-					</div>
-				}
-			/>
+		<div className="container mx-auto space-y-6 p-6">
+			{/* パンくずナビゲーション */}
+			<nav className="breadcrumbs text-sm">
+				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
+					<li>
+						<Link to="/admin/master/credit-roles">クレジット役割管理</Link>
+					</li>
+					<li>{creditRole.label}</li>
+				</ul>
+			</nav>
+
+			{/* ヘッダー */}
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-4">
+					<Link to="/admin/master/credit-roles" className="btn btn-ghost btn-sm">
+						<ArrowLeft className="h-4 w-4" />
+					</Link>
+					<h1 className="font-bold text-2xl">{creditRole.label}</h1>
+				</div>
+				<div className="flex gap-2">
+					<Button variant="outline" size="sm" onClick={handleEdit}>
+						<Pencil className="mr-2 h-4 w-4" />
+						編集
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						className="text-error hover:text-error"
+						onClick={handleDelete}
+						disabled={isDeleting}
+					>
+						<Trash2 className="mr-2 h-4 w-4" />
+						{isDeleting ? "削除中..." : "削除"}
+					</Button>
+				</div>
+			</div>
 
 			{error && (
 				<div className="alert alert-error">

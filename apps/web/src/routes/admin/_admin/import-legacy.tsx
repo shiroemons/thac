@@ -9,20 +9,8 @@
  */
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-	AlertCircle,
-	Calendar,
-	CheckCircle,
-	ChevronLeft,
-	ChevronRight,
-	FileUp,
-	Loader2,
-	Music,
-	Upload,
-	XCircle,
-} from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle, ChevronLeft, ChevronRight, FileUp, Home, Loader2, Music, Upload, XCircle } from "lucide-react";
 import { useCallback, useState } from "react";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import {
 	type EntityProgressMap,
 	type ExistingEventWithDays,
@@ -279,12 +267,22 @@ function LegacyImportPage() {
 	const skipEventsStep = !needsEventStep;
 
 	return (
-		<div className="container mx-auto py-6">
-			<AdminPageHeader
-				title="レガシーCSVインポート"
-				description="旧システムのCSVデータをインポートします"
-				breadcrumbs={[{ label: "レガシーCSVインポート" }]}
-			/>
+		<div className="container mx-auto space-y-6 p-6">
+			{/* パンくずナビゲーション */}
+			<nav className="breadcrumbs text-sm">
+				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
+					<li>レガシーCSVインポート</li>
+				</ul>
+			</nav>
+
+			{/* ヘッダー */}
+			<h1 className="font-bold text-2xl">レガシーCSVインポート</h1>
+			<p className="text-base-content/60">旧システムのCSVデータをインポートします</p>
 
 			{/* ステップインジケーター */}
 			<div className="mb-8">
