@@ -2,22 +2,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Home, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { OfficialWorkCategoryEditDialog } from "@/components/admin/official-work-category-edit-dialog";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { getOfficialWorkCategory } from "@/functions/get-official-work-category";
-import {
-	type OfficialWorkCategory,
-	officialWorkCategoriesApi,
-} from "@/lib/api-client";
+import { officialWorkCategoriesApi } from "@/lib/api-client";
 import { createMasterDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute(
@@ -35,34 +24,17 @@ function OfficialWorkCategoryDetailPage() {
 	const queryClient = useQueryClient();
 
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	const [editForm, setEditForm] = useState<Partial<OfficialWorkCategory>>({});
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const handleEdit = () => {
-		if (!category) return;
-		setEditForm({
-			name: category.name,
-			description: category.description,
-		});
-		setError(null);
-		setIsEditDialogOpen(true);
+	const invalidateQuery = () => {
+		queryClient.invalidateQueries({ queryKey: ["officialWorkCategories"] });
 	};
 
-	const handleUpdate = async () => {
+	const handleEdit = () => {
 		if (!category) return;
 		setError(null);
-		try {
-			await officialWorkCategoriesApi.update(category.code, {
-				name: editForm.name,
-				description: editForm.description,
-			});
-			setIsEditDialogOpen(false);
-			queryClient.invalidateQueries({ queryKey: ["officialWorkCategories"] });
-			window.location.reload();
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "更新に失敗しました");
-		}
+		setIsEditDialogOpen(true);
 	};
 
 	const handleDelete = async () => {
@@ -78,7 +50,7 @@ function OfficialWorkCategoryDetailPage() {
 		setError(null);
 		try {
 			await officialWorkCategoriesApi.delete(category.code);
-			queryClient.invalidateQueries({ queryKey: ["officialWorkCategories"] });
+			invalidateQuery();
 			navigate({ to: "/admin/master/official-work-categories" });
 		} catch (e) {
 			setError(
@@ -189,51 +161,16 @@ function OfficialWorkCategoryDetailPage() {
 			</div>
 
 			{/* 編集ダイアログ */}
-			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-				<DialogContent className="sm:max-w-[425px]">
-					<DialogHeader>
-						<DialogTitle>公式作品カテゴリの編集</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label>コード</Label>
-							<Input value={category.code} disabled />
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-name">名前</Label>
-							<Input
-								id="edit-name"
-								value={editForm.name || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, name: e.target.value })
-								}
-								placeholder="例: Windows作品"
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-description">説明</Label>
-							<Textarea
-								id="edit-description"
-								value={editForm.description || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, description: e.target.value })
-								}
-								placeholder="例: Windows向けにリリースされた作品"
-							/>
-						</div>
-					</div>
-					{error && <div className="mb-4 text-error text-sm">{error}</div>}
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setIsEditDialogOpen(false)}
-						>
-							キャンセル
-						</Button>
-						<Button onClick={handleUpdate}>保存</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<OfficialWorkCategoryEditDialog
+				open={isEditDialogOpen}
+				onOpenChange={setIsEditDialogOpen}
+				mode="edit"
+				category={category}
+				onSuccess={() => {
+					invalidateQuery();
+					window.location.reload();
+				}}
+			/>
 		</div>
 	);
 }
