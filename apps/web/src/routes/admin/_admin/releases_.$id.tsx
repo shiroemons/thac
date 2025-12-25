@@ -1000,71 +1000,70 @@ function ReleaseDetailPage() {
 					<h2 className="card-title">基本情報</h2>
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div>
-								<Label className="text-base-content/60">作品名</Label>
-								<p>{release.name}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">日本語名</Label>
-								<p>{release.nameJa || "-"}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">英語名</Label>
-								<p>{release.nameEn || "-"}</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">タイプ</Label>
-								<p>
-									{release.releaseType
-										? RELEASE_TYPE_LABELS[release.releaseType]
-										: "-"}
-								</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">発売日</Label>
-								<p>
-									{release.releaseDate
-										? format(new Date(release.releaseDate), "yyyy年M月d日", {
-												locale: ja,
-											})
-										: "-"}
-								</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">発売年/月/日</Label>
-								<p>
-									{release.releaseYear ?? "-"} / {release.releaseMonth ?? "-"} /{" "}
-									{release.releaseDay ?? "-"}
-								</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">イベント</Label>
-								<p>
-									{release.eventId ? (
-										<Link
-											to="/admin/events/$id"
-											params={{ id: release.eventId }}
-											className="text-primary hover:underline"
-										>
-											{eventOptions.find((e) => e.value === release.eventId)
-												?.label || release.eventId}
-										</Link>
-									) : (
-										"-"
-									)}
-								</p>
-							</div>
-							<div>
-								<Label className="text-base-content/60">イベント日</Label>
-								<p>
-									{release.eventDayId
-										? eventDayOptions.find(
-												(d) => d.value === release.eventDayId,
-											)?.label || release.eventDayId
-										: "-"}
-								</p>
-							</div>
-							<div className="md:col-span-2">
+						<div>
+							<Label className="text-base-content/60">作品名</Label>
+							<p>{release.name}</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">日本語名</Label>
+							<p>{release.nameJa || "-"}</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">英語名</Label>
+							<p>{release.nameEn || "-"}</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">タイプ</Label>
+							<p>
+								{release.releaseType
+									? RELEASE_TYPE_LABELS[release.releaseType]
+									: "-"}
+							</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">発売日</Label>
+							<p>
+								{release.releaseDate
+									? format(new Date(release.releaseDate), "yyyy年M月d日", {
+											locale: ja,
+										})
+									: "-"}
+							</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">発売年/月/日</Label>
+							<p>
+								{release.releaseYear ?? "-"} / {release.releaseMonth ?? "-"} /{" "}
+								{release.releaseDay ?? "-"}
+							</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">イベント</Label>
+							<p>
+								{release.eventId ? (
+									<Link
+										to="/admin/events/$id"
+										params={{ id: release.eventId }}
+										className="text-primary hover:underline"
+									>
+										{eventOptions.find((e) => e.value === release.eventId)
+											?.label || release.eventId}
+									</Link>
+								) : (
+									"-"
+								)}
+							</p>
+						</div>
+						<div>
+							<Label className="text-base-content/60">イベント日</Label>
+							<p>
+								{release.eventDayId
+									? eventDayOptions.find((d) => d.value === release.eventDayId)
+											?.label || release.eventDayId
+									: "-"}
+							</p>
+						</div>
+						<div className="md:col-span-2">
 							<Label className="text-base-content/60">メモ</Label>
 							<p className="whitespace-pre-wrap">{release.notes || "-"}</p>
 						</div>

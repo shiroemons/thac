@@ -25,11 +25,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import {
-	type EventDay,
-	eventDaysApi,
-	eventsApi,
-} from "@/lib/api-client";
+import { type EventDay, eventDaysApi, eventsApi } from "@/lib/api-client";
 import { createEventDetailHead } from "@/lib/head";
 import { eventDetailQueryOptions } from "@/lib/query-options";
 
@@ -245,9 +241,7 @@ function EventDetailPage() {
 						</div>
 						<div>
 							<Label className="text-base-content/60">開催日数</Label>
-							<p>
-								{event.totalDays != null ? `${event.totalDays}日間` : "-"}
-							</p>
+							<p>{event.totalDays != null ? `${event.totalDays}日間` : "-"}</p>
 						</div>
 						<div>
 							<Label className="text-base-content/60">開始日</Label>

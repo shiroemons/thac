@@ -299,9 +299,7 @@ function CircleDetailPage() {
 							<Label className="text-base-content/60">文字種</Label>
 							<p>
 								<Badge
-									variant={
-										INITIAL_SCRIPT_BADGE_VARIANTS[circle.initialScript]
-									}
+									variant={INITIAL_SCRIPT_BADGE_VARIANTS[circle.initialScript]}
 								>
 									{INITIAL_SCRIPT_LABELS[circle.initialScript]}
 								</Badge>
