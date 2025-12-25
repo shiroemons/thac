@@ -1568,6 +1568,9 @@ export interface TrackDetail extends Track {
 	release: Release | null;
 	disc: Disc | null;
 	credits: TrackCredit[];
+	eventName: string | null;
+	eventDayNumber: number | null;
+	eventDayDate: string | null;
 }
 
 export interface TrackCreditRole {

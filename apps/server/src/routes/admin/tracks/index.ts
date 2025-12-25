@@ -239,16 +239,21 @@ tracksAdminRouter.get("/", async (c) => {
 tracksAdminRouter.get("/:trackId", async (c) => {
 	const trackId = c.req.param("trackId");
 
-	// トラック取得
+	// トラック取得（イベント情報を含む）
 	const trackResult = await db
 		.select({
 			track: tracks,
 			release: releases,
 			disc: discs,
+			eventName: events.name,
+			eventDayNumber: eventDays.dayNumber,
+			eventDayDate: eventDays.date,
 		})
 		.from(tracks)
 		.leftJoin(releases, eq(tracks.releaseId, releases.id))
 		.leftJoin(discs, eq(tracks.discId, discs.id))
+		.leftJoin(events, eq(tracks.eventId, events.id))
+		.leftJoin(eventDays, eq(tracks.eventDayId, eventDays.id))
 		.where(eq(tracks.id, trackId))
 		.limit(1);
 
@@ -303,6 +308,9 @@ tracksAdminRouter.get("/:trackId", async (c) => {
 		release: row.release,
 		disc: row.disc,
 		credits: creditsWithRoles,
+		eventName: row.eventName ?? null,
+		eventDayNumber: row.eventDayNumber ?? null,
+		eventDayDate: row.eventDayDate ?? null,
 	});
 });
 
