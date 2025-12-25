@@ -2,19 +2,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Home, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { AliasTypeEditDialog } from "@/components/admin/alias-type-edit-dialog";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { getAliasType } from "@/functions/get-alias-type";
-import { type AliasType, aliasTypesApi } from "@/lib/api-client";
+import { aliasTypesApi } from "@/lib/api-client";
 import { createMasterDetailHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/master/alias-types_/$code")(
@@ -32,34 +24,12 @@ function AliasTypeDetailPage() {
 	const queryClient = useQueryClient();
 
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	const [editForm, setEditForm] = useState<Partial<AliasType>>({});
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const handleEdit = () => {
-		if (!aliasType) return;
-		setEditForm({
-			label: aliasType.label,
-			description: aliasType.description,
-		});
-		setError(null);
-		setIsEditDialogOpen(true);
-	};
-
-	const handleUpdate = async () => {
-		if (!aliasType) return;
-		setError(null);
-		try {
-			await aliasTypesApi.update(aliasType.code, {
-				label: editForm.label,
-				description: editForm.description,
-			});
-			setIsEditDialogOpen(false);
-			queryClient.invalidateQueries({ queryKey: ["aliasTypes"] });
-			window.location.reload();
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "更新に失敗しました");
-		}
+	const handleEditSuccess = () => {
+		queryClient.invalidateQueries({ queryKey: ["aliasTypes"] });
+		window.location.reload();
 	};
 
 	const handleDelete = async () => {
@@ -128,7 +98,11 @@ function AliasTypeDetailPage() {
 					<h1 className="font-bold text-2xl">{aliasType.label}</h1>
 				</div>
 				<div className="flex gap-2">
-					<Button variant="outline" size="sm" onClick={handleEdit}>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => setIsEditDialogOpen(true)}
+					>
 						<Pencil className="mr-2 h-4 w-4" />
 						編集
 					</Button>
@@ -178,51 +152,13 @@ function AliasTypeDetailPage() {
 			</div>
 
 			{/* 編集ダイアログ */}
-			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-				<DialogContent className="sm:max-w-[425px]">
-					<DialogHeader>
-						<DialogTitle>名義種別の編集</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label>コード</Label>
-							<Input value={aliasType.code} disabled />
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-label">ラベル</Label>
-							<Input
-								id="edit-label"
-								value={editForm.label || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, label: e.target.value })
-								}
-								placeholder="例: メイン名義"
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-description">説明</Label>
-							<Textarea
-								id="edit-description"
-								value={editForm.description || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, description: e.target.value })
-								}
-								placeholder="例: アーティストのメインとなる活動名義"
-							/>
-						</div>
-					</div>
-					{error && <div className="mb-4 text-error text-sm">{error}</div>}
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setIsEditDialogOpen(false)}
-						>
-							キャンセル
-						</Button>
-						<Button onClick={handleUpdate}>保存</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<AliasTypeEditDialog
+				open={isEditDialogOpen}
+				onOpenChange={setIsEditDialogOpen}
+				mode="edit"
+				aliasType={aliasType}
+				onSuccess={handleEditSuccess}
+			/>
 		</div>
 	);
 }
