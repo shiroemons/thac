@@ -84,7 +84,7 @@ songsRouter.get("/", async (c) => {
 			.where(whereCondition)
 			.limit(limit)
 			.offset(offset)
-			.orderBy(officialSongs.id),
+			.orderBy(officialSongs.name),
 		db.select({ count: count() }).from(officialSongs).where(whereCondition),
 	]);
 

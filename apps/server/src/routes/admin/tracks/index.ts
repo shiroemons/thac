@@ -7,6 +7,8 @@ import {
 	db,
 	discs,
 	eq,
+	eventDays,
+	events,
 	officialSongs,
 	or,
 	releases,
@@ -64,16 +66,21 @@ tracksAdminRouter.get("/", async (c) => {
 	const whereCondition =
 		searchConditions.length > 0 ? and(...searchConditions) : undefined;
 
-	// トラック一覧取得（リリース名、ディスク番号付き）
+	// トラック一覧取得（リリース名、ディスク番号、イベント情報付き）
 	const result = await db
 		.select({
 			track: tracks,
 			releaseName: releases.name,
 			discNumber: discs.discNumber,
+			eventName: events.name,
+			eventDayNumber: eventDays.dayNumber,
+			eventDayDate: eventDays.date,
 		})
 		.from(tracks)
 		.leftJoin(releases, eq(tracks.releaseId, releases.id))
 		.leftJoin(discs, eq(tracks.discId, discs.id))
+		.leftJoin(events, eq(tracks.eventId, events.id))
+		.leftJoin(eventDays, eq(tracks.eventDayId, eventDays.id))
 		.where(whereCondition)
 		.orderBy(releases.name, discs.discNumber, tracks.trackNumber)
 		.limit(limit)
@@ -201,6 +208,9 @@ tracksAdminRouter.get("/", async (c) => {
 			...row.track,
 			releaseName: row.releaseName ?? null,
 			discNumber: row.discNumber ?? null,
+			eventName: row.eventName ?? null,
+			eventDayNumber: row.eventDayNumber ?? null,
+			eventDayDate: row.eventDayDate ?? null,
 			creditCount: creditCountByTrack.get(row.track.id) ?? 0,
 			vocalists: trackCreditsInfo
 				? Array.from(trackCreditsInfo.vocalists).join(", ")

@@ -385,7 +385,7 @@ function OfficialSongsPage() {
 									)}
 									{isVisible("nameJa") && <TableHead>楽曲名</TableHead>}
 									{isVisible("workName") && (
-										<TableHead className="w-[200px]">作品</TableHead>
+										<TableHead className="min-w-[250px]">作品</TableHead>
 									)}
 									{isVisible("trackNumber") && (
 										<TableHead className="w-[80px]">トラック</TableHead>
@@ -442,7 +442,7 @@ function OfficialSongsPage() {
 											)}
 											{isVisible("workName") && (
 												<TableCell
-													className="max-w-[200px] truncate text-sm"
+													className="min-w-[250px] text-sm"
 													title={s.workName || undefined}
 												>
 													{s.workName || "-"}
@@ -699,27 +699,25 @@ function OfficialSongsPage() {
 								/>
 							</div>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-isOriginal">オリジナル</Label>
-								<Select
-									id="create-isOriginal"
-									value={createForm.isOriginal !== false ? "true" : "false"}
-									onChange={(e) => {
-										const isOrig = e.target.value === "true";
-										setCreateForm({
-											...createForm,
-											isOriginal: isOrig,
-											sourceSongId: isOrig
-												? ""
-												: (createForm.sourceSongId as string),
-										});
-									}}
-								>
-									<option value="true">はい</option>
-									<option value="false">いいえ</option>
-								</Select>
-							</div>
+						<div className="grid gap-2">
+							<Label htmlFor="create-isOriginal">オリジナル</Label>
+							<Select
+								id="create-isOriginal"
+								value={createForm.isOriginal !== false ? "true" : "false"}
+								onChange={(e) => {
+									const isOrig = e.target.value === "true";
+									setCreateForm({
+										...createForm,
+										isOriginal: isOrig,
+										sourceSongId: isOrig
+											? ""
+											: (createForm.sourceSongId as string),
+									});
+								}}
+							>
+								<option value="true">はい</option>
+								<option value="false">いいえ</option>
+							</Select>
 						</div>
 						{createForm.isOriginal === false && (
 							<div className="grid gap-2">
@@ -878,25 +876,23 @@ function OfficialSongsPage() {
 								/>
 							</div>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-isOriginal">オリジナル</Label>
-								<Select
-									id="edit-isOriginal"
-									value={editForm.isOriginal ? "true" : "false"}
-									onChange={(e) => {
-										const isOrig = e.target.value === "true";
-										setEditForm({
-											...editForm,
-											isOriginal: isOrig,
-											sourceSongId: isOrig ? null : editForm.sourceSongId,
-										});
-									}}
-								>
-									<option value="true">はい</option>
-									<option value="false">いいえ</option>
-								</Select>
-							</div>
+						<div className="grid gap-2">
+							<Label htmlFor="edit-isOriginal">オリジナル</Label>
+							<Select
+								id="edit-isOriginal"
+								value={editForm.isOriginal ? "true" : "false"}
+								onChange={(e) => {
+									const isOrig = e.target.value === "true";
+									setEditForm({
+										...editForm,
+										isOriginal: isOrig,
+										sourceSongId: isOrig ? null : editForm.sourceSongId,
+									});
+								}}
+							>
+								<option value="true">はい</option>
+								<option value="false">いいえ</option>
+							</Select>
 						</div>
 						{editForm.isOriginal === false && (
 							<div className="grid gap-2">

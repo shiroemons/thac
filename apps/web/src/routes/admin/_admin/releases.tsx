@@ -65,9 +65,10 @@ export const Route = createFileRoute("/admin/_admin/releases")({
 const COLUMN_CONFIGS = [
 	{ key: "id", label: "ID", defaultVisible: false },
 	{ key: "name", label: "作品名" },
-	{ key: "catalogNumber", label: "カタログ番号" },
 	{ key: "releaseType", label: "タイプ" },
 	{ key: "releaseDate", label: "発売日" },
+	{ key: "event", label: "イベント" },
+	{ key: "eventDay", label: "イベント日" },
 	{ key: "discCount", label: "ディスク数" },
 	{ key: "trackCount", label: "トラック数" },
 	{ key: "createdAt", label: "作成日時", defaultVisible: false },
@@ -145,6 +146,7 @@ function ReleasesPage() {
 				catalogNumber: createForm.catalogNumber || null,
 				releaseDate: createForm.releaseDate || null,
 				releaseType,
+				eventId: createForm.eventId || null,
 				eventDayId: createForm.eventDayId || null,
 				notes: createForm.notes || null,
 			});
@@ -372,14 +374,17 @@ function ReleasesPage() {
 									{isVisible("name") && (
 										<TableHead className="min-w-[200px]">作品名</TableHead>
 									)}
-									{isVisible("catalogNumber") && (
-										<TableHead className="w-[140px]">カタログ番号</TableHead>
-									)}
 									{isVisible("releaseType") && (
 										<TableHead className="w-[120px]">タイプ</TableHead>
 									)}
 									{isVisible("releaseDate") && (
 										<TableHead className="w-[120px]">発売日</TableHead>
+									)}
+									{isVisible("event") && (
+										<TableHead className="min-w-[180px]">イベント</TableHead>
+									)}
+									{isVisible("eventDay") && (
+										<TableHead className="w-[120px]">イベント日</TableHead>
 									)}
 									{isVisible("discCount") && (
 										<TableHead className="w-[100px]">ディスク数</TableHead>
@@ -425,11 +430,6 @@ function ReleasesPage() {
 													</Link>
 												</TableCell>
 											)}
-											{isVisible("catalogNumber") && (
-												<TableCell className="text-base-content/70">
-													{release.catalogNumber || "-"}
-												</TableCell>
-											)}
 											{isVisible("releaseType") && (
 												<TableCell>
 													{release.releaseType ? (
@@ -446,6 +446,28 @@ function ReleasesPage() {
 											{isVisible("releaseDate") && (
 												<TableCell className="whitespace-nowrap text-base-content/70">
 													{release.releaseDate || "-"}
+												</TableCell>
+											)}
+											{isVisible("event") && (
+												<TableCell>
+													{release.eventId && release.eventName ? (
+														<Link
+															to="/admin/events/$id"
+															params={{ id: release.eventId }}
+															className="text-primary hover:underline"
+														>
+															{release.eventName}
+														</Link>
+													) : (
+														"-"
+													)}
+												</TableCell>
+											)}
+											{isVisible("eventDay") && (
+												<TableCell className="whitespace-nowrap text-base-content/70">
+													{release.eventDayDate
+														? `${release.eventDayDate}${release.eventDayNumber ? ` (Day ${release.eventDayNumber})` : ""}`
+														: "-"}
 												</TableCell>
 											)}
 											{isVisible("discCount") && (

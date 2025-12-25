@@ -99,7 +99,6 @@ function OfficialWorkDetailPage() {
 				shortNameEn: work.shortNameEn,
 				shortNameJa: work.shortNameJa,
 				categoryCode: work.categoryCode,
-				seriesCode: work.seriesCode,
 				numberInSeries: work.numberInSeries,
 				releaseDate: work.releaseDate,
 				officialOrganization: work.officialOrganization,
@@ -129,7 +128,6 @@ function OfficialWorkDetailPage() {
 				shortNameEn: editForm.shortNameEn ?? null,
 				shortNameJa: editForm.shortNameJa ?? null,
 				categoryCode: editForm.categoryCode,
-				seriesCode: editForm.seriesCode ?? null,
 				numberInSeries: editForm.numberInSeries,
 				releaseDate: editForm.releaseDate ?? null,
 				officialOrganization: editForm.officialOrganization ?? null,
@@ -213,9 +211,10 @@ function OfficialWorkDetailPage() {
 
 					{isEditing ? (
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div className="form-control">
-								<Label>名前 *</Label>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-name">名前 *</Label>
 								<Input
+									id="edit-name"
 									value={editForm.name || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, name: e.target.value })
@@ -223,9 +222,10 @@ function OfficialWorkDetailPage() {
 									placeholder="例: Embodiment of Scarlet Devil"
 								/>
 							</div>
-							<div className="form-control">
-								<Label>日本語名</Label>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-nameJa">日本語名</Label>
 								<Input
+									id="edit-nameJa"
 									value={editForm.nameJa || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, nameJa: e.target.value })
@@ -233,9 +233,10 @@ function OfficialWorkDetailPage() {
 									placeholder="例: 東方紅魔郷"
 								/>
 							</div>
-							<div className="form-control">
-								<Label>英語名</Label>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-nameEn">英語名</Label>
 								<Input
+									id="edit-nameEn"
 									value={editForm.nameEn || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, nameEn: e.target.value })
@@ -243,9 +244,10 @@ function OfficialWorkDetailPage() {
 									placeholder="例: Embodiment of Scarlet Devil"
 								/>
 							</div>
-							<div className="form-control">
-								<Label>短縮名</Label>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-shortNameJa">短縮名</Label>
 								<Input
+									id="edit-shortNameJa"
 									value={editForm.shortNameJa || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, shortNameJa: e.target.value })
@@ -253,9 +255,10 @@ function OfficialWorkDetailPage() {
 									placeholder="例: 紅魔郷"
 								/>
 							</div>
-							<div className="form-control">
-								<Label>短縮名（英語）</Label>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-shortNameEn">短縮名（英語）</Label>
 								<Input
+									id="edit-shortNameEn"
 									value={editForm.shortNameEn || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, shortNameEn: e.target.value })
@@ -263,9 +266,10 @@ function OfficialWorkDetailPage() {
 									placeholder="例: EoSD"
 								/>
 							</div>
-							<div className="form-control">
-								<Label>カテゴリ</Label>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-category">カテゴリ</Label>
 								<Select
+									id="edit-category"
 									value={editForm.categoryCode || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, categoryCode: e.target.value })
@@ -279,18 +283,8 @@ function OfficialWorkDetailPage() {
 									))}
 								</Select>
 							</div>
-							<div className="form-control">
-								<Label>シリーズコード</Label>
-								<Input
-									value={editForm.seriesCode || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, seriesCode: e.target.value })
-									}
-									placeholder="例: th"
-								/>
-							</div>
-							<div className="form-control">
-								<Label>シリーズ番号</Label>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-number">シリーズ番号</Label>
 								<Input
 									type="number"
 									value={editForm.numberInSeries ?? ""}
@@ -305,9 +299,10 @@ function OfficialWorkDetailPage() {
 									placeholder="例: 6"
 								/>
 							</div>
-							<div className="form-control">
-								<Label>発売日</Label>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-releaseDate">発売日</Label>
 								<Input
+									id="edit-releaseDate"
 									type="date"
 									value={editForm.releaseDate || ""}
 									onChange={(e) =>
@@ -315,9 +310,10 @@ function OfficialWorkDetailPage() {
 									}
 								/>
 							</div>
-							<div className="form-control">
-								<Label>発行元</Label>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-officialOrganization">発行元</Label>
 								<Input
+									id="edit-officialOrganization"
 									value={editForm.officialOrganization || ""}
 									onChange={(e) =>
 										setEditForm({
@@ -328,9 +324,10 @@ function OfficialWorkDetailPage() {
 									placeholder="例: 上海アリス幻樂団"
 								/>
 							</div>
-							<div className="form-control">
-								<Label>表示順</Label>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-position">表示順</Label>
 								<Input
+									id="edit-position"
 									type="number"
 									value={editForm.position ?? ""}
 									onChange={(e) =>
@@ -344,9 +341,10 @@ function OfficialWorkDetailPage() {
 									placeholder="例: 1"
 								/>
 							</div>
-							<div className="form-control md:col-span-2">
-								<Label>備考</Label>
+							<div className="grid gap-2 md:col-span-2">
+								<Label htmlFor="edit-notes">備考</Label>
 								<Textarea
+									id="edit-notes"
 									value={editForm.notes || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, notes: e.target.value })
@@ -411,12 +409,8 @@ function OfficialWorkDetailPage() {
 								</p>
 							</div>
 							<div>
-								<Label className="text-base-content/60">シリーズ</Label>
-								<p>
-									{work.seriesCode
-										? `${work.seriesCode}${work.numberInSeries ? ` #${work.numberInSeries}` : ""}`
-										: "-"}
-								</p>
+								<Label className="text-base-content/60">シリーズ番号</Label>
+								<p>{work.numberInSeries ?? "-"}</p>
 							</div>
 							<div>
 								<Label className="text-base-content/60">発売日</Label>

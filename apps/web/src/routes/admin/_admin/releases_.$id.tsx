@@ -16,7 +16,7 @@ import {
 	Trash2,
 	Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,8 @@ import {
 	creditRolesApi,
 	type Disc,
 	discsApi,
+	eventDaysApi,
+	eventsApi,
 	PARTICIPATION_TYPE_COLORS,
 	PARTICIPATION_TYPE_LABELS,
 	type ParticipationType,
@@ -282,6 +284,51 @@ function ReleaseDetailPage() {
 		enabled: isPublicationDialogOpen,
 	});
 
+	// イベント一覧取得
+	const { data: eventsData } = useQuery({
+		queryKey: ["events"],
+		queryFn: () => eventsApi.list({ limit: 500 }),
+		staleTime: 300_000,
+	});
+
+	// イベント日一覧（選択中のイベント用）
+	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+	// リリースのeventIdが設定されている場合、selectedEventIdを初期化
+	useEffect(() => {
+		if (release?.eventId && !selectedEventId) {
+			setSelectedEventId(release.eventId);
+		}
+	}, [release?.eventId, selectedEventId]);
+
+	const { data: eventDaysData } = useQuery({
+		queryKey: ["events", selectedEventId, "days"],
+		queryFn: () =>
+			selectedEventId
+				? eventDaysApi.list(selectedEventId)
+				: Promise.resolve([]),
+		staleTime: 300_000,
+		enabled: !!selectedEventId,
+	});
+
+	// イベントオプション
+	const eventOptions = useMemo(() => {
+		const events = eventsData?.data ?? [];
+		return events.map((e) => ({
+			value: e.id,
+			label: e.seriesName ? `${e.seriesName} ${e.name}` : e.name,
+		}));
+	}, [eventsData?.data]);
+
+	// イベント日オプション
+	const eventDayOptions = useMemo(() => {
+		const days = eventDaysData ?? [];
+		return days.map((d) => ({
+			value: d.id,
+			label: `Day ${d.dayNumber} (${d.date})`,
+		}));
+	}, [eventDaysData]);
+
 	// プラットフォームのグループ化オプション（日本語ラベル・順序付き）
 	const platformOptions = useMemo(() => {
 		const platforms = platformsData?.data ?? [];
@@ -344,11 +391,13 @@ function ReleaseDetailPage() {
 				name: release.name,
 				nameJa: release.nameJa,
 				nameEn: release.nameEn,
-				catalogNumber: release.catalogNumber,
 				releaseDate: release.releaseDate,
 				releaseType: release.releaseType,
+				eventId: release.eventId,
+				eventDayId: release.eventDayId,
 				notes: release.notes,
 			});
+			setSelectedEventId(release.eventId);
 			setIsEditing(true);
 		}
 	};
@@ -369,9 +418,10 @@ function ReleaseDetailPage() {
 				name: editForm.name,
 				nameJa: editForm.nameJa || null,
 				nameEn: editForm.nameEn || null,
-				catalogNumber: editForm.catalogNumber || null,
 				releaseDate: editForm.releaseDate || null,
 				releaseType: (editForm.releaseType as ReleaseType) || null,
+				eventId: editForm.eventId || null,
+				eventDayId: editForm.eventDayId || null,
 				notes: editForm.notes || null,
 			});
 			invalidateQuery();
@@ -576,6 +626,8 @@ function ReleaseDetailPage() {
 					nameJa: trackForm.nameJa || null,
 					nameEn: trackForm.nameEn || null,
 					discId: trackForm.discId || null,
+					eventId: null,
+					eventDayId: null,
 				});
 			} else {
 				await tracksApi.create(id, {
@@ -585,6 +637,8 @@ function ReleaseDetailPage() {
 					nameJa: trackForm.nameJa || null,
 					nameEn: trackForm.nameEn || null,
 					discId: trackForm.discId || null,
+					eventId: null,
+					eventDayId: null,
 				});
 			}
 			invalidateQuery();
@@ -1033,15 +1087,6 @@ function ReleaseDetailPage() {
 								/>
 							</div>
 							<div className="form-control">
-								<Label>カタログ番号</Label>
-								<Input
-									value={editForm.catalogNumber || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, catalogNumber: e.target.value })
-									}
-								/>
-							</div>
-							<div className="form-control">
 								<Label>タイプ</Label>
 								<Select
 									value={editForm.releaseType || ""}
@@ -1068,6 +1113,44 @@ function ReleaseDetailPage() {
 									onChange={(e) =>
 										setEditForm({ ...editForm, releaseDate: e.target.value })
 									}
+								/>
+							</div>
+							<div className="form-control">
+								<Label>イベント</Label>
+								<SearchableSelect
+									value={editForm.eventId || ""}
+									onChange={(value) => {
+										setEditForm({
+											...editForm,
+											eventId: value || null,
+											eventDayId: null,
+										});
+										setSelectedEventId(value || null);
+									}}
+									options={eventOptions}
+									placeholder="イベントを選択"
+									searchPlaceholder="イベントを検索..."
+									emptyMessage="イベントが見つかりません"
+									clearable
+								/>
+							</div>
+							<div className="form-control">
+								<Label>イベント日</Label>
+								<SearchableSelect
+									value={editForm.eventDayId || ""}
+									onChange={(value) =>
+										setEditForm({ ...editForm, eventDayId: value || null })
+									}
+									options={eventDayOptions}
+									placeholder="イベント日を選択"
+									searchPlaceholder="イベント日を検索..."
+									emptyMessage={
+										selectedEventId
+											? "イベント日が見つかりません"
+											: "先にイベントを選択してください"
+									}
+									disabled={!selectedEventId}
+									clearable
 								/>
 							</div>
 							<div className="form-control md:col-span-2">
@@ -1111,10 +1194,6 @@ function ReleaseDetailPage() {
 								<p>{release.nameEn || "-"}</p>
 							</div>
 							<div>
-								<Label className="text-base-content/60">カタログ番号</Label>
-								<p>{release.catalogNumber || "-"}</p>
-							</div>
-							<div>
 								<Label className="text-base-content/60">タイプ</Label>
 								<p>
 									{release.releaseType
@@ -1129,6 +1208,33 @@ function ReleaseDetailPage() {
 										? format(new Date(release.releaseDate), "yyyy年M月d日", {
 												locale: ja,
 											})
+										: "-"}
+								</p>
+							</div>
+							<div>
+								<Label className="text-base-content/60">イベント</Label>
+								<p>
+									{release.eventId ? (
+										<Link
+											to="/admin/events/$id"
+											params={{ id: release.eventId }}
+											className="text-primary hover:underline"
+										>
+											{eventOptions.find((e) => e.value === release.eventId)
+												?.label || release.eventId}
+										</Link>
+									) : (
+										"-"
+									)}
+								</p>
+							</div>
+							<div>
+								<Label className="text-base-content/60">イベント日</Label>
+								<p>
+									{release.eventDayId
+										? eventDayOptions.find(
+												(d) => d.value === release.eventDayId,
+											)?.label || release.eventDayId
 										: "-"}
 								</p>
 							</div>

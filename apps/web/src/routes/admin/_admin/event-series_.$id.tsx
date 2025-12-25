@@ -1,10 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
+import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
 	Table,
@@ -14,6 +24,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { type EventSeries, eventSeriesApi } from "@/lib/api-client";
 import { createEventSeriesDetailHead } from "@/lib/head";
 import { eventSeriesDetailQueryOptions } from "@/lib/query-options";
 
@@ -28,9 +39,70 @@ export const Route = createFileRoute("/admin/_admin/event-series_/$id")({
 
 function EventSeriesDetailPage() {
 	const { id } = Route.useParams();
+	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+
+	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const [editForm, setEditForm] = useState<Partial<EventSeries>>({});
+	const [isDeleting, setIsDeleting] = useState(false);
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
 	const { data: series, isPending } = useQuery(
 		eventSeriesDetailQueryOptions(id),
 	);
+
+	const handleEdit = () => {
+		if (!series) return;
+		setEditForm({
+			name: series.name,
+		});
+		setError(null);
+		setIsEditDialogOpen(true);
+	};
+
+	const handleUpdate = async () => {
+		if (!series) return;
+		setIsSubmitting(true);
+		setError(null);
+		try {
+			await eventSeriesApi.update(id, {
+				name: editForm.name,
+			});
+			setIsEditDialogOpen(false);
+			queryClient.invalidateQueries({ queryKey: ["eventSeries"] });
+			window.location.reload();
+		} catch (e) {
+			setError(e instanceof Error ? e.message : "更新に失敗しました");
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const handleDelete = async () => {
+		if (!series) return;
+		if (
+			!confirm(
+				`「${series.name}」を削除しますか？\n\n※ イベントが紐付いている場合は削除できません。`,
+			)
+		)
+			return;
+
+		setIsDeleting(true);
+		setError(null);
+		try {
+			await eventSeriesApi.delete(id);
+			queryClient.invalidateQueries({ queryKey: ["eventSeries"] });
+			navigate({ to: "/admin/event-series" });
+		} catch (e) {
+			setError(
+				e instanceof Error
+					? e.message
+					: "削除に失敗しました。イベントが紐付いている可能性があります。",
+			);
+			setIsDeleting(false);
+		}
+	};
 
 	// ローディング
 	if (isPending && !series) {
@@ -68,7 +140,31 @@ function EventSeriesDetailPage() {
 					{ label: "イベントシリーズ", href: "/admin/event-series" },
 					{ label: series.name },
 				]}
+				actions={
+					<div className="flex gap-2">
+						<Button variant="outline" size="sm" onClick={handleEdit}>
+							<Pencil className="mr-2 h-4 w-4" />
+							編集
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							className="text-error hover:text-error"
+							onClick={handleDelete}
+							disabled={isDeleting}
+						>
+							<Trash2 className="mr-2 h-4 w-4" />
+							{isDeleting ? "削除中..." : "削除"}
+						</Button>
+					</div>
+				}
 			/>
+
+			{error && (
+				<div className="alert alert-error">
+					<span>{error}</span>
+				</div>
+			)}
 
 			{/* 基本情報カード */}
 			<div className="card bg-base-100 shadow-xl">
@@ -143,6 +239,40 @@ function EventSeriesDetailPage() {
 					)}
 				</div>
 			</div>
+
+			{/* 編集ダイアログ */}
+			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+				<DialogContent className="sm:max-w-[425px]">
+					<DialogHeader>
+						<DialogTitle>イベントシリーズの編集</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						<div className="grid gap-2">
+							<Label htmlFor="edit-name">名前</Label>
+							<Input
+								id="edit-name"
+								value={editForm.name || ""}
+								onChange={(e) =>
+									setEditForm({ ...editForm, name: e.target.value })
+								}
+								placeholder="例: 博麗神社例大祭"
+							/>
+						</div>
+					</div>
+					{error && <div className="mb-4 text-error text-sm">{error}</div>}
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setIsEditDialogOpen(false)}
+						>
+							キャンセル
+						</Button>
+						<Button onClick={handleUpdate} disabled={isSubmitting}>
+							{isSubmitting ? "保存中..." : "保存"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

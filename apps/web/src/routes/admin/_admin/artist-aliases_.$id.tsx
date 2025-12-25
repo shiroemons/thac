@@ -535,7 +535,7 @@ function ArtistAliasDetailPage() {
 											<TableRow className="hover:bg-transparent">
 												<TableHead>楽曲名</TableHead>
 												<TableHead>リリース</TableHead>
-												<TableHead className="w-[100px]">リリース日</TableHead>
+												<TableHead className="w-[130px]">リリース日</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>

@@ -1161,7 +1161,7 @@ export interface EventSeries {
 
 export interface Event {
 	id: string;
-	eventSeriesId: string;
+	eventSeriesId: string | null;
 	name: string;
 	edition: number | null;
 	totalDays: number | null;
@@ -1331,6 +1331,7 @@ export interface Release {
 	catalogNumber: string | null;
 	releaseDate: string | null;
 	releaseType: ReleaseType | null;
+	eventId: string | null;
 	eventDayId: string | null;
 	notes: string | null;
 	createdAt: string;
@@ -1340,6 +1341,9 @@ export interface Release {
 export interface ReleaseWithCounts extends Release {
 	discCount: number;
 	trackCount: number;
+	eventName: string | null;
+	eventDayNumber: number | null;
+	eventDayDate: string | null;
 }
 
 export interface Disc {
@@ -1545,6 +1549,8 @@ export interface Track {
 	name: string;
 	nameJa: string | null;
 	nameEn: string | null;
+	eventId: string | null;
+	eventDayId: string | null;
 	createdAt: string;
 	updatedAt: string;
 	releaseName?: string | null;
@@ -1590,6 +1596,9 @@ export interface TrackCredit {
 export interface TrackListItem extends Track {
 	releaseName: string | null;
 	discNumber: number | null;
+	eventName: string | null;
+	eventDayNumber: number | null;
+	eventDayDate: string | null;
 	creditCount: number;
 	vocalists: string | null;
 	arrangers: string | null;
