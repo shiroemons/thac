@@ -65,9 +65,10 @@ export const Route = createFileRoute("/admin/_admin/releases")({
 const COLUMN_CONFIGS = [
 	{ key: "id", label: "ID", defaultVisible: false },
 	{ key: "name", label: "作品名" },
-	{ key: "catalogNumber", label: "カタログ番号" },
 	{ key: "releaseType", label: "タイプ" },
 	{ key: "releaseDate", label: "発売日" },
+	{ key: "event", label: "イベント" },
+	{ key: "eventDay", label: "イベント日" },
 	{ key: "discCount", label: "ディスク数" },
 	{ key: "trackCount", label: "トラック数" },
 	{ key: "createdAt", label: "作成日時", defaultVisible: false },
@@ -142,9 +143,12 @@ function ReleasesPage() {
 				name: createForm.name || "",
 				nameJa: createForm.nameJa || null,
 				nameEn: createForm.nameEn || null,
-				catalogNumber: createForm.catalogNumber || null,
 				releaseDate: createForm.releaseDate || null,
+				releaseYear: null,
+				releaseMonth: null,
+				releaseDay: null,
 				releaseType,
+				eventId: createForm.eventId || null,
 				eventDayId: createForm.eventDayId || null,
 				notes: createForm.notes || null,
 			});
@@ -179,7 +183,6 @@ function ReleasesPage() {
 				name: editForm.name,
 				nameJa: editForm.nameJa,
 				nameEn: editForm.nameEn,
-				catalogNumber: editForm.catalogNumber,
 				releaseDate: editForm.releaseDate,
 				releaseType: editForm.releaseType as ReleaseType,
 				eventDayId: editForm.eventDayId,
@@ -218,7 +221,6 @@ function ReleasesPage() {
 				name: releaseWithDiscs.name,
 				nameJa: releaseWithDiscs.nameJa,
 				nameEn: releaseWithDiscs.nameEn,
-				catalogNumber: releaseWithDiscs.catalogNumber,
 				releaseDate: releaseWithDiscs.releaseDate,
 				releaseType: releaseWithDiscs.releaseType,
 				eventDayId: releaseWithDiscs.eventDayId,
@@ -372,14 +374,17 @@ function ReleasesPage() {
 									{isVisible("name") && (
 										<TableHead className="min-w-[200px]">作品名</TableHead>
 									)}
-									{isVisible("catalogNumber") && (
-										<TableHead className="w-[140px]">カタログ番号</TableHead>
-									)}
 									{isVisible("releaseType") && (
 										<TableHead className="w-[120px]">タイプ</TableHead>
 									)}
 									{isVisible("releaseDate") && (
 										<TableHead className="w-[120px]">発売日</TableHead>
+									)}
+									{isVisible("event") && (
+										<TableHead className="min-w-[180px]">イベント</TableHead>
+									)}
+									{isVisible("eventDay") && (
+										<TableHead className="w-[120px]">イベント日</TableHead>
 									)}
 									{isVisible("discCount") && (
 										<TableHead className="w-[100px]">ディスク数</TableHead>
@@ -416,18 +421,7 @@ function ReleasesPage() {
 											)}
 											{isVisible("name") && (
 												<TableCell className="font-medium">
-													<Link
-														to="/admin/releases/$id"
-														params={{ id: release.id }}
-														className="text-primary hover:underline"
-													>
-														{release.name}
-													</Link>
-												</TableCell>
-											)}
-											{isVisible("catalogNumber") && (
-												<TableCell className="text-base-content/70">
-													{release.catalogNumber || "-"}
+													{release.name}
 												</TableCell>
 											)}
 											{isVisible("releaseType") && (
@@ -446,6 +440,28 @@ function ReleasesPage() {
 											{isVisible("releaseDate") && (
 												<TableCell className="whitespace-nowrap text-base-content/70">
 													{release.releaseDate || "-"}
+												</TableCell>
+											)}
+											{isVisible("event") && (
+												<TableCell>
+													{release.eventId && release.eventName ? (
+														<Link
+															to="/admin/events/$id"
+															params={{ id: release.eventId }}
+															className="text-primary hover:underline"
+														>
+															{release.eventName}
+														</Link>
+													) : (
+														"-"
+													)}
+												</TableCell>
+											)}
+											{isVisible("eventDay") && (
+												<TableCell className="whitespace-nowrap text-base-content/70">
+													{release.eventDayDate
+														? `${release.eventDayDate}${release.eventDayNumber ? ` (Day ${release.eventDayNumber})` : ""}`
+														: "-"}
 												</TableCell>
 											)}
 											{isVisible("discCount") && (
@@ -584,21 +600,7 @@ function ReleasesPage() {
 								/>
 							</div>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-catalogNumber">カタログ番号</Label>
-								<Input
-									id="create-catalogNumber"
-									value={createForm.catalogNumber || ""}
-									onChange={(e) =>
-										setCreateForm({
-											...createForm,
-											catalogNumber: e.target.value,
-										})
-									}
-									placeholder="例: THCS-0001"
-								/>
-							</div>
+						<div className="grid gap-4">
 							<div className="grid gap-2">
 								<Label htmlFor="create-releaseType">タイプ</Label>
 								<Select
@@ -716,18 +718,7 @@ function ReleasesPage() {
 								/>
 							</div>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-catalogNumber">カタログ番号</Label>
-								<Input
-									id="edit-catalogNumber"
-									value={editForm.catalogNumber || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, catalogNumber: e.target.value })
-									}
-									placeholder="例: THCS-0001"
-								/>
-							</div>
+						<div className="grid gap-4">
 							<div className="grid gap-2">
 								<Label htmlFor="edit-releaseType">タイプ</Label>
 								<Select

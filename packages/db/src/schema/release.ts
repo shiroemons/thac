@@ -40,7 +40,6 @@ export const releases = sqliteTable(
 		name: text("name").notNull(),
 		nameJa: text("name_ja"),
 		nameEn: text("name_en"),
-		catalogNumber: text("catalog_number"),
 		releaseDate: text("release_date"),
 		releaseYear: integer("release_year"),
 		releaseMonth: integer("release_month"),
@@ -68,7 +67,6 @@ export const releases = sqliteTable(
 		index("idx_releases_type").on(table.releaseType),
 		index("idx_releases_event").on(table.eventId),
 		index("idx_releases_event_day").on(table.eventDayId),
-		index("idx_releases_catalog").on(table.catalogNumber),
 	],
 );
 

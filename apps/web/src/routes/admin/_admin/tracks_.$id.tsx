@@ -1074,6 +1074,42 @@ function TrackDetailPage() {
 										</p>
 									</div>
 									<div>
+										<p className="text-base-content/60 text-sm">イベント</p>
+										{track.eventId && track.eventName ? (
+											<Link
+												to="/admin/events/$id"
+												params={{ id: track.eventId }}
+												className="text-primary hover:underline"
+											>
+												{track.eventName}
+											</Link>
+										) : (
+											<p>-</p>
+										)}
+									</div>
+									<div>
+										<p className="text-base-content/60 text-sm">イベント日</p>
+										<p>
+											{track.eventDayDate
+												? `${track.eventDayDate}${track.eventDayNumber ? ` (Day ${track.eventDayNumber})` : ""}`
+												: "-"}
+										</p>
+									</div>
+								</div>
+							</div>
+							<div className="border-base-300 border-t pt-4">
+								<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+									<div>
+										<p className="text-base-content/60 text-sm">
+											リリース年/月/日
+										</p>
+										<p>
+											{track.release?.releaseYear ?? "-"} /{" "}
+											{track.release?.releaseMonth ?? "-"} /{" "}
+											{track.release?.releaseDay ?? "-"}
+										</p>
+									</div>
+									<div>
 										<p className="text-base-content/60 text-sm">作成日時</p>
 										<p className="text-sm">
 											{format(

@@ -33,7 +33,6 @@ circleReleasesRouter.get("/:circleId/releases", async (c) => {
 			releaseName: releases.name,
 			releaseDate: releases.releaseDate,
 			releaseType: releases.releaseType,
-			catalogNumber: releases.catalogNumber,
 			participationType: releaseCircles.participationType,
 		})
 		.from(releaseCircles)
@@ -60,7 +59,6 @@ circleReleasesRouter.get("/:circleId/releases", async (c) => {
 					name: d.releaseName,
 					releaseDate: d.releaseDate,
 					releaseType: d.releaseType,
-					catalogNumber: d.catalogNumber,
 				})),
 		}))
 		.filter((g) => g.releases.length > 0);

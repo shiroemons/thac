@@ -4,7 +4,7 @@ import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowLeft, Calendar, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +64,10 @@ function EventDetailPage() {
 		date: "",
 	});
 
+	// 新規シリーズ作成用
+	const [isNewSeriesDialogOpen, setIsNewSeriesDialogOpen] = useState(false);
+	const [newSeriesName, setNewSeriesName] = useState("");
+
 	const { data: event, isPending } = useQuery(eventDetailQueryOptions(id));
 
 	// イベントシリーズ一覧取得（編集モード時のみ）
@@ -76,6 +80,42 @@ function EventDetailPage() {
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["events", id] });
+	};
+
+	// イベントシリーズオプション
+	const eventSeriesOptions = useMemo(() => {
+		return (
+			eventSeriesData?.data.map((series) => ({
+				value: series.id,
+				label: series.name,
+			})) ?? []
+		);
+	}, [eventSeriesData]);
+
+	// 新規シリーズ作成
+	const handleCreateSeries = async () => {
+		if (!newSeriesName.trim()) return;
+		setIsSubmitting(true);
+		setMutationError(null);
+		try {
+			const newSeries = await eventSeriesApi.create({
+				id: createId.eventSeries(),
+				name: newSeriesName.trim(),
+				sortOrder: 0,
+			});
+			// シリーズ一覧を更新
+			queryClient.invalidateQueries({ queryKey: ["event-series"] });
+			// 新しいシリーズを選択
+			setEditForm({ ...editForm, eventSeriesId: newSeries.id });
+			setIsNewSeriesDialogOpen(false);
+			setNewSeriesName("");
+		} catch (err) {
+			setMutationError(
+				err instanceof Error ? err.message : "シリーズの作成に失敗しました",
+			);
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
 
 	// 編集開始
@@ -287,29 +327,35 @@ function EventDetailPage() {
 									}
 								/>
 							</div>
-							<div className="form-control">
-								<Label>
-									イベントシリーズ <span className="text-error">*</span>
-								</Label>
-								<SearchableSelect
-									value={editForm.eventSeriesId || ""}
-									onChange={(value) =>
-										setEditForm({
-											...editForm,
-											eventSeriesId: value || "",
-										})
-									}
-									options={
-										eventSeriesData?.data.map((series) => ({
-											value: series.id,
-											label: series.name,
-										})) ?? []
-									}
-									placeholder="イベントシリーズを選択"
-									searchPlaceholder="イベントシリーズを検索..."
-									emptyMessage="イベントシリーズが見つかりません"
-									clearable={false}
-								/>
+							<div className="grid gap-2">
+								<Label htmlFor="edit-eventSeriesId">イベントシリーズ</Label>
+								<div className="flex gap-2">
+									<div className="flex-1">
+										<SearchableSelect
+											id="edit-eventSeriesId"
+											value={editForm.eventSeriesId || ""}
+											onChange={(value) =>
+												setEditForm({
+													...editForm,
+													eventSeriesId: value || null,
+												})
+											}
+											options={eventSeriesOptions}
+											placeholder="イベントシリーズを選択"
+											searchPlaceholder="イベントシリーズを検索..."
+											emptyMessage="イベントシリーズが見つかりません"
+											clearable
+										/>
+									</div>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => setIsNewSeriesDialogOpen(true)}
+										title="新規シリーズを作成"
+									>
+										<Plus className="h-4 w-4" />
+									</Button>
+								</div>
 							</div>
 							<div className="form-control">
 								<Label>回次</Label>
@@ -365,9 +411,7 @@ function EventDetailPage() {
 								<Button
 									variant="primary"
 									onClick={handleSave}
-									disabled={
-										isSubmitting || !editForm.name || !editForm.eventSeriesId
-									}
+									disabled={isSubmitting || !editForm.name}
 								>
 									{isSubmitting ? "保存中..." : "保存"}
 								</Button>
@@ -382,7 +426,7 @@ function EventDetailPage() {
 							<div>
 								<Label className="text-base-content/60">イベントシリーズ</Label>
 								<p>
-									{event.seriesName ? (
+									{event.eventSeriesId && event.seriesName ? (
 										<Link
 											to="/admin/event-series/$id"
 											params={{ id: event.eventSeriesId }}
@@ -564,6 +608,50 @@ function EventDetailPage() {
 								: editingDay
 									? "更新"
 									: "追加"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* 新規シリーズ作成ダイアログ */}
+			<Dialog
+				open={isNewSeriesDialogOpen}
+				onOpenChange={setIsNewSeriesDialogOpen}
+			>
+				<DialogContent className="sm:max-w-[425px]">
+					<DialogHeader>
+						<DialogTitle>新規イベントシリーズの作成</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						<div className="grid gap-2">
+							<Label htmlFor="new-series-name">シリーズ名</Label>
+							<Input
+								id="new-series-name"
+								value={newSeriesName}
+								onChange={(e) => setNewSeriesName(e.target.value)}
+								placeholder="例: 博麗神社例大祭"
+							/>
+						</div>
+					</div>
+					{mutationError && (
+						<div className="mb-4 text-error text-sm">{mutationError}</div>
+					)}
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => {
+								setIsNewSeriesDialogOpen(false);
+								setNewSeriesName("");
+								setMutationError(null);
+							}}
+						>
+							キャンセル
+						</Button>
+						<Button
+							onClick={handleCreateSeries}
+							disabled={isSubmitting || !newSeriesName.trim()}
+						>
+							{isSubmitting ? "作成中..." : "作成"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

@@ -76,6 +76,22 @@ const navItems: NavEntry[] = [
 		],
 	},
 	{
+		label: "イベント管理",
+		icon: Calendar,
+		items: [
+			{
+				to: "/admin/event-series",
+				label: "イベントシリーズ",
+				icon: Layers,
+			},
+			{
+				to: "/admin/events",
+				label: "イベント",
+				icon: Calendar,
+			},
+		],
+	},
+	{
 		label: "アーティスト・サークル",
 		icon: Users,
 		items: [
@@ -93,22 +109,6 @@ const navItems: NavEntry[] = [
 				to: "/admin/circles",
 				label: "サークル",
 				icon: Circle,
-			},
-		],
-	},
-	{
-		label: "イベント管理",
-		icon: Calendar,
-		items: [
-			{
-				to: "/admin/event-series",
-				label: "イベントシリーズ",
-				icon: Layers,
-			},
-			{
-				to: "/admin/events",
-				label: "イベント",
-				icon: Calendar,
 			},
 		],
 	},

@@ -19,12 +19,14 @@ interface AdminPageHeaderProps extends React.ComponentProps<"div"> {
 	title: string;
 	description?: string;
 	breadcrumbs?: BreadcrumbItemData[];
+	actions?: React.ReactNode;
 }
 
 function AdminPageHeader({
 	title,
 	description,
 	breadcrumbs,
+	actions,
 	className,
 	children,
 	...props
@@ -73,8 +75,8 @@ function AdminPageHeader({
 								))}
 						</BreadcrumbList>
 					</Breadcrumb>
-					{children && (
-						<div className="flex items-center gap-2">{children}</div>
+					{(children || actions) && (
+						<div className="flex items-center gap-2">{children || actions}</div>
 					)}
 				</div>
 			</div>

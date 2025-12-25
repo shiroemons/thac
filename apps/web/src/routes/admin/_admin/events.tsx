@@ -591,9 +591,7 @@ function EventsPage() {
 							</p>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="create-seriesId">
-								シリーズ <span className="text-error">*</span>
-							</Label>
+							<Label htmlFor="create-seriesId">シリーズ</Label>
 							<div className="flex items-center gap-2">
 								<SearchableSelect
 									id="create-seriesId"
@@ -789,9 +787,7 @@ function EventsPage() {
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="edit-seriesId">
-								シリーズ <span className="text-error">*</span>
-							</Label>
+							<Label htmlFor="edit-seriesId">シリーズ</Label>
 							<div className="flex items-center gap-2">
 								<SearchableSelect
 									id="edit-seriesId"

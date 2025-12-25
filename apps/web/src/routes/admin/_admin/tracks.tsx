@@ -51,6 +51,8 @@ const COLUMN_CONFIGS = [
 	{ key: "releaseName", label: "作品" },
 	{ key: "discNumber", label: "ディスク" },
 	{ key: "trackNumber", label: "No." },
+	{ key: "event", label: "イベント", defaultVisible: false },
+	{ key: "eventDay", label: "イベント日", defaultVisible: false },
 	{ key: "vocalists", label: "ボーカル" },
 	{ key: "arrangers", label: "編曲" },
 	{ key: "lyricists", label: "作詞" },
@@ -127,6 +129,8 @@ function TracksPage() {
 				nameJa: createForm.nameJa || null,
 				nameEn: createForm.nameEn || null,
 				discId: createForm.discId || null,
+				eventId: null,
+				eventDayId: null,
 			});
 			setIsCreateDialogOpen(false);
 			setCreateForm({});
@@ -282,6 +286,12 @@ function TracksPage() {
 									{isVisible("trackNumber") && (
 										<TableHead className="w-[60px]">No.</TableHead>
 									)}
+									{isVisible("event") && (
+										<TableHead className="min-w-[150px]">イベント</TableHead>
+									)}
+									{isVisible("eventDay") && (
+										<TableHead className="w-[150px]">イベント日</TableHead>
+									)}
 									{isVisible("vocalists") && (
 										<TableHead className="min-w-[150px]">ボーカル</TableHead>
 									)}
@@ -349,6 +359,28 @@ function TracksPage() {
 											{isVisible("trackNumber") && (
 												<TableCell className="text-base-content/70">
 													{track.trackNumber}
+												</TableCell>
+											)}
+											{isVisible("event") && (
+												<TableCell>
+													{track.eventId && track.eventName ? (
+														<Link
+															to="/admin/events/$id"
+															params={{ id: track.eventId }}
+															className="text-primary hover:underline"
+														>
+															{track.eventName}
+														</Link>
+													) : (
+														"-"
+													)}
+												</TableCell>
+											)}
+											{isVisible("eventDay") && (
+												<TableCell className="whitespace-nowrap text-base-content/70">
+													{track.eventDayDate
+														? `${track.eventDayDate}${track.eventDayNumber ? ` (Day ${track.eventDayNumber})` : ""}`
+														: "-"}
 												</TableCell>
 											)}
 											{isVisible("vocalists") && (

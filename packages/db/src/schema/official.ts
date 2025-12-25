@@ -22,7 +22,6 @@ export const officialWorks = sqliteTable(
 		nameEn: text("name_en"),
 		shortNameJa: text("short_name_ja"),
 		shortNameEn: text("short_name_en"),
-		seriesCode: text("series_code"),
 		numberInSeries: real("number_in_series"),
 		releaseDate: text("release_date"),
 		officialOrganization: text("official_organization"),
@@ -40,7 +39,6 @@ export const officialWorks = sqliteTable(
 		index("idx_official_works_category").on(table.categoryCode),
 		index("idx_official_works_release_date").on(table.releaseDate),
 		index("idx_official_works_position").on(table.position),
-		uniqueIndex("uq_official_works_series_code").on(table.seriesCode),
 	],
 );
 

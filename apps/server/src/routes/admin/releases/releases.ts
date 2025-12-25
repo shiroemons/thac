@@ -5,6 +5,7 @@ import {
 	discs,
 	eq,
 	eventDays,
+	events,
 	insertReleaseSchema,
 	like,
 	releases,
@@ -100,7 +101,6 @@ releasesRouter.get("/", async (c) => {
 				name: releases.name,
 				nameJa: releases.nameJa,
 				nameEn: releases.nameEn,
-				catalogNumber: releases.catalogNumber,
 				releaseDate: releases.releaseDate,
 				releaseYear: releases.releaseYear,
 				releaseMonth: releases.releaseMonth,
@@ -108,11 +108,16 @@ releasesRouter.get("/", async (c) => {
 				releaseType: releases.releaseType,
 				eventId: releases.eventId,
 				eventDayId: releases.eventDayId,
+				eventName: events.name,
+				eventDayNumber: eventDays.dayNumber,
+				eventDayDate: eventDays.date,
 				notes: releases.notes,
 				createdAt: releases.createdAt,
 				updatedAt: releases.updatedAt,
 			})
 			.from(releases)
+			.leftJoin(events, eq(releases.eventId, events.id))
+			.leftJoin(eventDays, eq(releases.eventDayId, eventDays.id))
 			.where(whereCondition)
 			.limit(limit)
 			.offset(offset)
