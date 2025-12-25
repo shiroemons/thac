@@ -3,7 +3,20 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ArrowLeft, Barcode, ChevronDown, ChevronUp, Disc3, ExternalLink, Home, Music, Pencil, Plus, Trash2, Users } from "lucide-react";
+import {
+	ArrowLeft,
+	Barcode,
+	ChevronDown,
+	ChevronUp,
+	Disc3,
+	ExternalLink,
+	Home,
+	Music,
+	Pencil,
+	Plus,
+	Trash2,
+	Users,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";

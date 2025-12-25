@@ -4,7 +4,15 @@ import { createId } from "@thac/db";
 import { detectInitial } from "@thac/utils";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ExternalLink, Eye, Home, Link2, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+	ExternalLink,
+	Eye,
+	Home,
+	Link2,
+	Pencil,
+	Plus,
+	Trash2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";

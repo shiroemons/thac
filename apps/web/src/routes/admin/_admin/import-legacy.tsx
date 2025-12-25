@@ -9,7 +9,19 @@
  */
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertCircle, Calendar, CheckCircle, ChevronLeft, ChevronRight, FileUp, Home, Loader2, Music, Upload, XCircle } from "lucide-react";
+import {
+	AlertCircle,
+	Calendar,
+	CheckCircle,
+	ChevronLeft,
+	ChevronRight,
+	FileUp,
+	Home,
+	Loader2,
+	Music,
+	Upload,
+	XCircle,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 import {
 	type EntityProgressMap,
@@ -282,7 +294,9 @@ function LegacyImportPage() {
 
 			{/* ヘッダー */}
 			<h1 className="font-bold text-2xl">レガシーCSVインポート</h1>
-			<p className="text-base-content/60">旧システムのCSVデータをインポートします</p>
+			<p className="text-base-content/60">
+				旧システムのCSVデータをインポートします
+			</p>
 
 			{/* ステップインジケーター */}
 			<div className="mb-8">

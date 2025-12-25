@@ -1,7 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createId } from "@thac/db";
-import { ArrowLeft, ExternalLink, Home, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+	ArrowLeft,
+	ExternalLink,
+	Home,
+	Pencil,
+	Plus,
+	Trash2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";

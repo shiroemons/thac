@@ -3,7 +3,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ArrowLeft, Disc3, ExternalLink, GitFork, Home, Music, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+	ArrowLeft,
+	Disc3,
+	ExternalLink,
+	GitFork,
+	Home,
+	Music,
+	Pencil,
+	Plus,
+	Trash2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { ReorderButtons } from "@/components/admin/reorder-buttons";

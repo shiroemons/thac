@@ -122,7 +122,10 @@ function CreditRoleDetailPage() {
 			{/* ヘッダー */}
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-4">
-					<Link to="/admin/master/credit-roles" className="btn btn-ghost btn-sm">
+					<Link
+						to="/admin/master/credit-roles"
+						className="btn btn-ghost btn-sm"
+					>
 						<ArrowLeft className="h-4 w-4" />
 					</Link>
 					<h1 className="font-bold text-2xl">{creditRole.label}</h1>
