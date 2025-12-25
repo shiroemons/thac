@@ -1,7 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createId } from "@thac/db";
-import { ArrowLeft, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+	ArrowLeft,
+	ExternalLink,
+	Home,
+	Pencil,
+	Plus,
+	Trash2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -269,6 +276,11 @@ function CircleDetailPage() {
 			{/* パンくずナビゲーション */}
 			<nav className="breadcrumbs text-sm">
 				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
 					<li>
 						<Link to="/admin/circles">サークル管理</Link>
 					</li>

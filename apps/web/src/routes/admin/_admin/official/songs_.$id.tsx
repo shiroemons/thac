@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Home, Pencil } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { OfficialLinksCard } from "@/components/admin/official-links-card";
@@ -210,6 +210,11 @@ function OfficialSongDetailPage() {
 			{/* パンくずナビゲーション */}
 			<nav className="breadcrumbs text-sm">
 				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
 					<li>
 						<Link to="/admin/official/songs">公式楽曲管理</Link>
 					</li>

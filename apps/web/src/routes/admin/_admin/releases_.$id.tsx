@@ -10,6 +10,7 @@ import {
 	ChevronUp,
 	Disc3,
 	ExternalLink,
+	Home,
 	Music,
 	Pencil,
 	Plus,
@@ -1018,6 +1019,11 @@ function ReleaseDetailPage() {
 			{/* パンくずナビゲーション */}
 			<nav className="breadcrumbs text-sm">
 				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
 					<li>
 						<Link to="/admin/releases">作品管理</Link>
 					</li>

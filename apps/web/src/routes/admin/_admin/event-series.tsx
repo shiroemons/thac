@@ -3,9 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ArrowUpDown, Eye, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpDown, Eye, Home, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { ReorderButtons } from "@/components/admin/reorder-buttons";
@@ -226,14 +225,21 @@ function EventSeriesPage() {
 		mutationError || (error instanceof Error ? error.message : null);
 
 	return (
-		<div className="container mx-auto py-6">
-			<AdminPageHeader
-				title="イベントシリーズ管理"
-				breadcrumbs={[
-					{ label: "イベント管理", href: "/admin/events" },
-					{ label: "シリーズ" },
-				]}
-			/>
+		<div className="container mx-auto space-y-6 p-6">
+			{/* パンくずナビゲーション */}
+			<nav className="breadcrumbs text-sm">
+				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
+					<li>イベントシリーズ管理</li>
+				</ul>
+			</nav>
+
+			{/* ヘッダー */}
+			<h1 className="font-bold text-2xl">イベントシリーズ管理</h1>
 
 			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
 				<DataTableActionBar

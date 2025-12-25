@@ -4,9 +4,8 @@ import { createId } from "@thac/db";
 import { detectInitial } from "@thac/utils";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Home, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
@@ -313,11 +312,21 @@ function ArtistAliasesPage() {
 		mutationError || (error instanceof Error ? error.message : null);
 
 	return (
-		<div className="container mx-auto py-6">
-			<AdminPageHeader
-				title="アーティスト名義管理"
-				breadcrumbs={[{ label: "アーティスト名義" }]}
-			/>
+		<div className="container mx-auto space-y-6 p-6">
+			{/* パンくずナビゲーション */}
+			<nav className="breadcrumbs text-sm">
+				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
+					<li>アーティスト名義管理</li>
+				</ul>
+			</nav>
+
+			{/* ヘッダー */}
+			<h1 className="font-bold text-2xl">アーティスト名義管理</h1>
 
 			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
 				<DataTableActionBar

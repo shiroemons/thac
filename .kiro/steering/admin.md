@@ -10,7 +10,9 @@
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ AdminPageHeader（タイトル + パンくずナビ）         │
+│ パンくずナビゲーション（nav.breadcrumbs）          │
+├─────────────────────────────────────────────────┤
+│ h1 タイトル                                      │
 ├─────────────────────────────────────────────────┤
 │ ┌─────────────────────────────────────────────┐ │
 │ │ DataTableActionBar                          │ │
@@ -33,7 +35,9 @@
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ AdminPageHeader（タイトル + パンくずナビ）         │
+│ パンくずナビゲーション（nav.breadcrumbs）          │
+├─────────────────────────────────────────────────┤
+│ [←] h1 タイトル [Badge]     [編集] [削除]       │
 ├─────────────────────────────────────────────────┤
 │ ┌─────────────────────────────────────────────┐ │
 │ │ 基本情報セクション                           │ │
@@ -54,7 +58,7 @@
 
 | コンポーネント | 用途 |
 |--------------|------|
-| `AdminPageHeader` | タイトル、説明、パンくずナビゲーション |
+| `nav.breadcrumbs` | daisyUIパンくずナビゲーション |
 | `DataTableActionBar` | 検索、フィルター、カラム表示制御、新規作成ボタン |
 | `Table` | データ一覧表示（zebraスタイル） |
 | `DataTablePagination` | ページネーション、ページサイズ選択 |
@@ -130,51 +134,91 @@ export const Route = createFileRoute("/admin/_admin/releases_/$id")({
 | 作品詳細 | 作品詳細：{作品名} \| 東方編曲録 |
 | トラック詳細 | トラック詳細：{トラック名} - {作品名} \| 東方編曲録 |
 
-### AdminPageHeader（画面内タイトル）
+### パンくずナビゲーション（daisyUI breadcrumbs）
+
+全画面でdaisyUI breadcrumbsパターンを使用する。
 
 #### 一覧画面
 
-**形式**: `{エンティティ名}管理`
-
 ```tsx
-<AdminPageHeader
-  title="アーティスト管理"
-  breadcrumbs={[{ label: "アーティスト" }]}
-/>
+<div className="container mx-auto space-y-6 p-6">
+  {/* パンくずナビゲーション */}
+  <nav className="breadcrumbs text-sm">
+    <ul>
+      <li>
+        <Link to="/admin">
+          <Home className="h-4 w-4" />
+        </Link>
+      </li>
+      <li>アーティスト管理</li>
+    </ul>
+  </nav>
+
+  {/* ヘッダー */}
+  <h1 className="font-bold text-2xl">アーティスト管理</h1>
+  ...
+</div>
 ```
 
-| ページ | title | breadcrumbs |
-|--------|-------|-------------|
-| アーティスト一覧 | `アーティスト管理` | `[{ label: "アーティスト" }]` |
-| サークル一覧 | `サークル管理` | `[{ label: "サークル" }]` |
-| イベント一覧 | `イベント管理` | `[{ label: "イベント" }]` |
-| トラック一覧 | `トラック管理` | `[{ label: "トラック" }]` |
-| 作品一覧 | `作品管理` | `[{ label: "作品" }]` |
+| ページ | パンくず |
+|--------|---------|
+| ダッシュボード | ホーム > ダッシュボード |
+| アーティスト一覧 | ホーム > アーティスト管理 |
+| サークル一覧 | ホーム > サークル管理 |
+| イベントシリーズ一覧 | ホーム > イベントシリーズ管理 |
+| 公式作品一覧 | ホーム > 公式作品管理 |
+| プラットフォーム一覧 | ホーム > プラットフォーム管理 |
 
 #### 詳細画面
 
-**形式**: `{エンティティ名}詳細`
-
 ```tsx
-<AdminPageHeader
-  title="トラック詳細"
-  breadcrumbs={[
-    { label: "トラック", href: "/admin/tracks" },
-    { label: track.name },
-  ]}
-/>
+<div className="container mx-auto space-y-6 p-6">
+  {/* パンくずナビゲーション */}
+  <nav className="breadcrumbs text-sm">
+    <ul>
+      <li>
+        <Link to="/admin">
+          <Home className="h-4 w-4" />
+        </Link>
+      </li>
+      <li>
+        <Link to="/admin/artists">アーティスト管理</Link>
+      </li>
+      <li>{artist.name}</li>
+    </ul>
+  </nav>
+
+  {/* ヘッダー */}
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-4">
+      <Link to="/admin/artists" className="btn btn-ghost btn-sm">
+        <ArrowLeft className="h-4 w-4" />
+      </Link>
+      <h1 className="font-bold text-2xl">{artist.name}</h1>
+      <Badge>...</Badge>
+    </div>
+    <div className="flex gap-2">
+      <Button variant="outline" size="sm">編集</Button>
+      <Button variant="outline" size="sm" className="text-error">削除</Button>
+    </div>
+  </div>
+  ...
+</div>
 ```
 
-| ページ | title | breadcrumbs |
-|--------|-------|-------------|
-| 作品詳細 | `作品詳細` | `[{ label: "作品", href: "/admin/releases" }, { label: release.name }]` |
-| トラック詳細 | `トラック詳細` | `[{ label: "トラック", href: "/admin/tracks" }, { label: track.name }]` |
+| ページ | パンくず |
+|--------|---------|
+| アーティスト詳細 | ホーム > アーティスト管理（リンク） > 個別名 |
+| トラック詳細 | ホーム > トラック管理（リンク） > 個別名 |
+| 公式作品詳細 | ホーム > 公式作品管理（リンク） > 個別名 |
+| プラットフォーム詳細 | ホーム > プラットフォーム管理（リンク） > 個別名 |
 
 ### パンくずナビゲーション規則
 
-- ホームアイコンは常に表示（AdminPageHeader内で自動付与）
-- 一覧画面: ホーム → エンティティ名（現在地、リンクなし）
-- 詳細画面: ホーム → エンティティ名（一覧へのリンク） → 個別名（現在地、リンクなし）
+- ホームアイコンは常に先頭に表示（`<Home className="h-4 w-4" />`）
+- 一覧画面: ホーム → エンティティ管理（現在地、リンクなし）
+- 詳細画面: ホーム → エンティティ管理（リンク） → 個別名（現在地、リンクなし）
+- パンくずのテキストは一覧ページと詳細ページで統一（例: 両方とも「アーティスト管理」）
 
 ---
 

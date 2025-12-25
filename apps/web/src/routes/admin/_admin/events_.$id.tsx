@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ArrowLeft, Calendar, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, Home, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Button } from "@/components/ui/button";
@@ -269,6 +269,11 @@ function EventDetailPage() {
 			{/* パンくずナビゲーション */}
 			<nav className="breadcrumbs text-sm">
 				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
 					<li>
 						<Link to="/admin/events">イベント管理</Link>
 					</li>

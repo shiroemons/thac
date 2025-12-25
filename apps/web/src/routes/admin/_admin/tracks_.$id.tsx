@@ -8,13 +8,13 @@ import {
 	Disc3,
 	ExternalLink,
 	GitFork,
+	Home,
 	Music,
 	Pencil,
 	Plus,
 	Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { Badge } from "@/components/ui/badge";
@@ -925,14 +925,29 @@ function TrackDetailPage() {
 	}
 
 	return (
-		<div className="container mx-auto py-6">
-			<AdminPageHeader
-				title="トラック詳細"
-				breadcrumbs={[
-					{ label: "トラック", href: "/admin/tracks" },
-					{ label: track.name },
-				]}
-			/>
+		<div className="container mx-auto space-y-6 p-6">
+			{/* パンくずナビゲーション */}
+			<nav className="breadcrumbs text-sm">
+				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
+					<li>
+						<Link to="/admin/tracks">トラック管理</Link>
+					</li>
+					<li>{track.name}</li>
+				</ul>
+			</nav>
+
+			{/* ヘッダー */}
+			<div className="flex items-center gap-4">
+				<Link to="/admin/tracks" className="btn btn-ghost btn-sm">
+					<ArrowLeft className="h-4 w-4" />
+				</Link>
+				<h1 className="font-bold text-2xl">{track.name}</h1>
+			</div>
 
 			{mutationError && (
 				<div className="alert alert-error mb-4">{mutationError}</div>

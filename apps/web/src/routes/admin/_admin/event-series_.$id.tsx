@@ -2,9 +2,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Home, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -133,32 +132,47 @@ function EventSeriesDetailPage() {
 	});
 
 	return (
-		<div className="container mx-auto space-y-6 py-6">
-			<AdminPageHeader
-				title="イベントシリーズ詳細"
-				breadcrumbs={[
-					{ label: "イベントシリーズ", href: "/admin/event-series" },
-					{ label: series.name },
-				]}
-				actions={
-					<div className="flex gap-2">
-						<Button variant="outline" size="sm" onClick={handleEdit}>
-							<Pencil className="mr-2 h-4 w-4" />
-							編集
-						</Button>
-						<Button
-							variant="outline"
-							size="sm"
-							className="text-error hover:text-error"
-							onClick={handleDelete}
-							disabled={isDeleting}
-						>
-							<Trash2 className="mr-2 h-4 w-4" />
-							{isDeleting ? "削除中..." : "削除"}
-						</Button>
-					</div>
-				}
-			/>
+		<div className="container mx-auto space-y-6 p-6">
+			{/* パンくずナビゲーション */}
+			<nav className="breadcrumbs text-sm">
+				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
+					<li>
+						<Link to="/admin/event-series">イベントシリーズ管理</Link>
+					</li>
+					<li>{series.name}</li>
+				</ul>
+			</nav>
+
+			{/* ヘッダー */}
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-4">
+					<Link to="/admin/event-series" className="btn btn-ghost btn-sm">
+						<ArrowLeft className="h-4 w-4" />
+					</Link>
+					<h1 className="font-bold text-2xl">{series.name}</h1>
+				</div>
+				<div className="flex gap-2">
+					<Button variant="outline" size="sm" onClick={handleEdit}>
+						<Pencil className="mr-2 h-4 w-4" />
+						編集
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						className="text-error hover:text-error"
+						onClick={handleDelete}
+						disabled={isDeleting}
+					>
+						<Trash2 className="mr-2 h-4 w-4" />
+						{isDeleting ? "削除中..." : "削除"}
+					</Button>
+				</div>
+			</div>
 
 			{error && (
 				<div className="alert alert-error">

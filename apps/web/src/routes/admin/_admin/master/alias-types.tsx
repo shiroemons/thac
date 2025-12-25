@@ -1,8 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpDown, Eye, Pencil, Trash2, Upload } from "lucide-react";
+import { ArrowUpDown, Eye, Home, Pencil, Trash2, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
@@ -206,11 +205,21 @@ function AliasTypesPage() {
 		mutationError || (error instanceof Error ? error.message : null);
 
 	return (
-		<div className="container mx-auto py-6">
-			<AdminPageHeader
-				title="名義種別管理"
-				breadcrumbs={[{ label: "マスタ管理" }, { label: "名義種別" }]}
-			/>
+		<div className="container mx-auto space-y-6 p-6">
+			{/* パンくずナビゲーション */}
+			<nav className="breadcrumbs text-sm">
+				<ul>
+					<li>
+						<Link to="/admin">
+							<Home className="h-4 w-4" />
+						</Link>
+					</li>
+					<li>名義種別管理</li>
+				</ul>
+			</nav>
+
+			{/* ヘッダー */}
+			<h1 className="font-bold text-2xl">名義種別管理</h1>
 
 			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
 				<DataTableActionBar
