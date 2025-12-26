@@ -174,7 +174,7 @@ export function ArtistEditDialog({
 							disabled={isSubmitting}
 						/>
 					</div>
-					<div className="grid grid-cols-2 gap-4">
+					<div className="grid gap-4">
 						<div className="grid gap-2">
 							<Label htmlFor="artist-nameJa">日本語名</Label>
 							<Input
@@ -183,6 +183,7 @@ export function ArtistEditDialog({
 								onChange={(e) =>
 									setForm({ ...form, nameJa: e.target.value || null })
 								}
+								placeholder="例: ZUN"
 								disabled={isSubmitting}
 							/>
 						</div>
@@ -194,6 +195,7 @@ export function ArtistEditDialog({
 								onChange={(e) =>
 									setForm({ ...form, nameEn: e.target.value || null })
 								}
+								placeholder="例: ZUN"
 								disabled={isSubmitting}
 							/>
 						</div>
@@ -206,6 +208,7 @@ export function ArtistEditDialog({
 							onChange={(e) =>
 								setForm({ ...form, sortName: e.target.value || null })
 							}
+							placeholder="例: ZUN"
 							disabled={isSubmitting}
 						/>
 					</div>
@@ -217,6 +220,7 @@ export function ArtistEditDialog({
 							onChange={(e) =>
 								setForm({ ...form, notes: e.target.value || null })
 							}
+							placeholder="例: 来歴、特記事項など"
 							rows={3}
 							disabled={isSubmitting}
 						/>
