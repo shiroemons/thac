@@ -450,18 +450,13 @@ function TrackDetailPage() {
 
 		try {
 			if (editingCredit) {
-				await trackCreditsApi.update(
-					releaseId,
-					track.id,
-					editingCredit.id,
-					{
-						artistId: creditForm.artistId,
-						artistAliasId: creditForm.artistAliasId || null,
-						creditName: creditForm.creditName,
-						creditPosition: creditForm.creditPosition,
-						rolesCodes: creditForm.selectedRoles,
-					},
-				);
+				await trackCreditsApi.update(releaseId, track.id, editingCredit.id, {
+					artistId: creditForm.artistId,
+					artistAliasId: creditForm.artistAliasId || null,
+					creditName: creditForm.creditName,
+					creditPosition: creditForm.creditPosition,
+					rolesCodes: creditForm.selectedRoles,
+				});
 				closeCreditEditDialog();
 			} else {
 				await trackCreditsApi.create(releaseId, track.id, {
