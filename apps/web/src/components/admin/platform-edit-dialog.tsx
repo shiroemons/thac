@@ -29,6 +29,7 @@ export interface PlatformEditDialogProps {
 }
 
 const categoryOptions = [
+	{ value: "", label: "未選択" },
 	{ value: "streaming", label: "ストリーミング" },
 	{ value: "video", label: "動画" },
 	{ value: "download", label: "ダウンロード" },
@@ -47,7 +48,7 @@ export function PlatformEditDialog({
 	const [form, setForm] = useState<PlatformFormData>({
 		code: "",
 		name: "",
-		category: "streaming",
+		category: "",
 		urlPattern: "",
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,14 +61,14 @@ export function PlatformEditDialog({
 				setForm({
 					code: platform.code,
 					name: platform.name,
-					category: platform.category ?? "streaming",
+					category: platform.category ?? "",
 					urlPattern: platform.urlPattern ?? "",
 				});
 			} else {
 				setForm({
 					code: "",
 					name: "",
-					category: "streaming",
+					category: "",
 					urlPattern: "",
 				});
 			}
