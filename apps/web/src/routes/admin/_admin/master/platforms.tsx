@@ -18,19 +18,10 @@ import { useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
-import { CreateDialog } from "@/components/create-dialog";
+import { PlatformEditDialog } from "@/components/admin/platform-edit-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	Table,
 	TableBody,
@@ -107,7 +98,6 @@ function PlatformsPage() {
 	);
 
 	const [editingPlatform, setEditingPlatform] = useState<Platform | null>(null);
-	const [editForm, setEditForm] = useState<Partial<Platform>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -200,31 +190,6 @@ function PlatformsPage() {
 			);
 		} finally {
 			setIsReordering(false);
-		}
-	};
-
-	const handleCreate = async (formData: Record<string, string>) => {
-		await platformsApi.create({
-			code: formData.code,
-			name: formData.name,
-			category: formData.category || null,
-			urlPattern: formData.urlPattern || null,
-			sortOrder: platforms.length,
-		});
-	};
-
-	const handleUpdate = async () => {
-		if (!editingPlatform) return;
-		try {
-			await platformsApi.update(editingPlatform.code, {
-				name: editForm.name,
-				category: editForm.category,
-				urlPattern: editForm.urlPattern,
-			});
-			setEditingPlatform(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
 		}
 	};
 
@@ -511,14 +476,7 @@ function PlatformsPage() {
 													<Button
 														variant="ghost"
 														size="icon"
-														onClick={() => {
-															setEditingPlatform(p);
-															setEditForm({
-																name: p.name,
-																category: p.category,
-																urlPattern: p.urlPattern,
-															});
-														}}
+														onClick={() => setEditingPlatform(p)}
 													>
 														<Pencil className="h-4 w-4" />
 														<span className="sr-only">編集</span>
@@ -554,92 +512,22 @@ function PlatformsPage() {
 			</div>
 
 			{/* 新規作成ダイアログ */}
-			<CreateDialog
-				title="新規プラットフォーム"
-				description="新しいプラットフォームを登録します"
-				fields={[
-					{
-						name: "code",
-						label: "コード",
-						placeholder: "例: spotify",
-						required: true,
-					},
-					{
-						name: "name",
-						label: "名前",
-						placeholder: "例: Spotify",
-						required: true,
-					},
-					{
-						name: "category",
-						label: "カテゴリ",
-						placeholder: "例: streaming",
-					},
-					{
-						name: "urlPattern",
-						label: "URLパターン",
-						placeholder: "例: ^https?://open\\.spotify\\.com/",
-					},
-				]}
-				onCreate={handleCreate}
-				onSuccess={invalidateQuery}
+			<PlatformEditDialog
+				mode="create"
 				open={isCreateDialogOpen}
 				onOpenChange={setIsCreateDialogOpen}
+				currentPlatformsCount={platforms.length}
+				onSuccess={invalidateQuery}
 			/>
 
 			{/* 編集ダイアログ */}
-			<Dialog
+			<PlatformEditDialog
+				mode="edit"
 				open={!!editingPlatform}
 				onOpenChange={(open) => !open && setEditingPlatform(null)}
-			>
-				<DialogContent className="sm:max-w-[425px]">
-					<DialogHeader>
-						<DialogTitle>プラットフォームの編集</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label>コード</Label>
-							<Input value={editingPlatform?.code || ""} disabled />
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-name">名前</Label>
-							<Input
-								id="edit-name"
-								value={editForm.name || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, name: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-category">カテゴリ</Label>
-							<Input
-								id="edit-category"
-								value={editForm.category || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, category: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-urlPattern">URLパターン</Label>
-							<Input
-								id="edit-urlPattern"
-								value={editForm.urlPattern || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, urlPattern: e.target.value })
-								}
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setEditingPlatform(null)}>
-							キャンセル
-						</Button>
-						<Button onClick={handleUpdate}>保存</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				platform={editingPlatform}
+				onSuccess={invalidateQuery}
+			/>
 
 			{/* インポートダイアログ */}
 			<ImportDialog

@@ -3,17 +3,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Home, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
+import { PlatformEditDialog } from "@/components/admin/platform-edit-dialog";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { type Platform, platformsApi } from "@/lib/api-client";
+import { platformsApi } from "@/lib/api-client";
 import { createMasterDetailHead } from "@/lib/head";
 import { platformDetailQueryOptions } from "@/lib/query-options";
 
@@ -37,39 +30,13 @@ function PlatformDetailPage() {
 	);
 
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	const [editForm, setEditForm] = useState<Partial<Platform>>({});
 	const [isDeleting, setIsDeleting] = useState(false);
-	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	const handleEdit = () => {
 		if (!platform) return;
-		setEditForm({
-			name: platform.name,
-			category: platform.category,
-			urlPattern: platform.urlPattern,
-		});
 		setError(null);
 		setIsEditDialogOpen(true);
-	};
-
-	const handleUpdate = async () => {
-		if (!platform) return;
-		setIsSubmitting(true);
-		setError(null);
-		try {
-			await platformsApi.update(platform.code, {
-				name: editForm.name,
-				category: editForm.category,
-				urlPattern: editForm.urlPattern,
-			});
-			setIsEditDialogOpen(false);
-			queryClient.invalidateQueries({ queryKey: ["platform", code] });
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "更新に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
 	};
 
 	const handleDelete = async () => {
@@ -197,64 +164,15 @@ function PlatformDetailPage() {
 			</div>
 
 			{/* 編集ダイアログ */}
-			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-				<DialogContent className="sm:max-w-[425px]">
-					<DialogHeader>
-						<DialogTitle>プラットフォームの編集</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label>コード</Label>
-							<Input value={platform.code} disabled />
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-name">名前</Label>
-							<Input
-								id="edit-name"
-								value={editForm.name || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, name: e.target.value })
-								}
-								placeholder="例: Spotify"
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-category">カテゴリ</Label>
-							<Input
-								id="edit-category"
-								value={editForm.category || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, category: e.target.value })
-								}
-								placeholder="例: streaming"
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-urlPattern">URLパターン</Label>
-							<Input
-								id="edit-urlPattern"
-								value={editForm.urlPattern || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, urlPattern: e.target.value })
-								}
-								placeholder="例: ^https?://open\.spotify\.com/"
-							/>
-						</div>
-					</div>
-					{error && <div className="mb-4 text-error text-sm">{error}</div>}
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setIsEditDialogOpen(false)}
-						>
-							キャンセル
-						</Button>
-						<Button onClick={handleUpdate} disabled={isSubmitting}>
-							{isSubmitting ? "保存中..." : "保存"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<PlatformEditDialog
+				mode="edit"
+				open={isEditDialogOpen}
+				onOpenChange={setIsEditDialogOpen}
+				platform={platform}
+				onSuccess={() => {
+					queryClient.invalidateQueries({ queryKey: ["platform", code] });
+				}}
+			/>
 		</div>
 	);
 }
