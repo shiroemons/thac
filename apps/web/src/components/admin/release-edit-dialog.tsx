@@ -83,6 +83,8 @@ export function ReleaseEditDialog({
 	});
 
 	// イベント日が取得されたら1日目を自動設定
+	// editForm.eventDayIdを依存配列に含めると無限ループが発生するため、意図的に省略
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Intentionally omitted to prevent infinite loop
 	useEffect(() => {
 		if (
 			selectedEventId &&

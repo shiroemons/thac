@@ -152,8 +152,14 @@ function TracksPage() {
 			)
 		)
 			return;
+		if (!track.releaseId) {
+			setMutationError(
+				"作品に紐づかないトラックの削除は現在サポートされていません",
+			);
+			return;
+		}
 		try {
-			await tracksApi.delete(track.releaseId!, track.id);
+			await tracksApi.delete(track.releaseId, track.id);
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");

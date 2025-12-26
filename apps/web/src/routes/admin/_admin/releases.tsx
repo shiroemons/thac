@@ -170,6 +170,8 @@ function ReleasesPage() {
 	}, [eventDaysDataForCreate]);
 
 	// 新規作成用：イベント日が取得されたら1日目を自動設定
+	// createForm.eventDayIdを依存配列に含めると無限ループが発生するため、意図的に省略
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Intentionally omitted to prevent infinite loop
 	useEffect(() => {
 		if (
 			isCreateDialogOpen &&

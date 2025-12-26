@@ -4,7 +4,13 @@ import { trackCreditRoles, trackCredits, tracks } from "./track";
 
 // Helper: 空文字列を拒否するスキーマ
 const nonEmptyString = z.string().trim().min(1, "必須項目です");
-const optionalString = z.string().trim().optional().nullable();
+// 空文字列をnullに変換するoptionalスキーマ
+const optionalString = z
+	.string()
+	.trim()
+	.transform((val) => (val === "" ? null : val))
+	.nullable()
+	.optional();
 
 // 日付バリデーション（YYYY-MM-DD形式）
 const dateSchema = z
