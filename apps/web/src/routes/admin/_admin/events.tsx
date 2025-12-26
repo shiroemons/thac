@@ -607,31 +607,30 @@ function EventsPage() {
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="edit-seriesId">シリーズ</Label>
-							<div className="flex items-center gap-2">
-								<SearchableSelect
-									id="edit-seriesId"
-									value={editForm.eventSeriesId || ""}
-									onChange={(value) =>
-										setEditForm({ ...editForm, eventSeriesId: value })
-									}
-									options={seriesList.map((s) => ({
-										value: s.id,
-										label: s.name,
-									}))}
-									placeholder="選択してください"
-									searchPlaceholder="シリーズを検索..."
-									className="flex-1"
-								/>
+							<div className="flex items-center justify-between">
+								<Label htmlFor="edit-seriesId">シリーズ</Label>
 								<Button
-									type="button"
-									variant="outline"
+									variant="ghost"
+									size="sm"
+									className="h-auto p-0 text-primary text-xs hover:underline"
 									onClick={() => setIsSeriesDialogOpen(true)}
 								>
-									<Plus className="mr-1 h-4 w-4" />
-									新規シリーズ
+									+ 新規シリーズ作成
 								</Button>
 							</div>
+							<SearchableSelect
+								id="edit-seriesId"
+								value={editForm.eventSeriesId || ""}
+								onChange={(value) =>
+									setEditForm({ ...editForm, eventSeriesId: value })
+								}
+								options={seriesList.map((s) => ({
+									value: s.id,
+									label: s.name,
+								}))}
+								placeholder="選択してください"
+								searchPlaceholder="シリーズを検索..."
+							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
