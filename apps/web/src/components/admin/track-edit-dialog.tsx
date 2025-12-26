@@ -75,58 +75,57 @@ export function TrackEditDialog({
 							{mutationError}
 						</div>
 					)}
-					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-						<div className="grid gap-2">
-							<Label htmlFor="name">
-								トラック名 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="name"
-								value={editForm.name || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, name: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="trackNumber">
-								トラック番号 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="trackNumber"
-								type="number"
-								min="1"
-								value={editForm.trackNumber || ""}
-								onChange={(e) =>
-									setEditForm({
-										...editForm,
-										trackNumber: Number.parseInt(e.target.value, 10) || 1,
-									})
-								}
-							/>
-						</div>
+					<div className="grid gap-2">
+						<Label htmlFor="name">
+							トラック名 <span className="text-error">*</span>
+						</Label>
+						<Input
+							id="name"
+							value={editForm.name || ""}
+							onChange={(e) =>
+								setEditForm({ ...editForm, name: e.target.value })
+							}
+							placeholder="例: ネイティブフェイス"
+						/>
 					</div>
-					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-						<div className="grid gap-2">
-							<Label htmlFor="nameJa">日本語名</Label>
-							<Input
-								id="nameJa"
-								value={editForm.nameJa || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, nameJa: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="nameEn">英語名</Label>
-							<Input
-								id="nameEn"
-								value={editForm.nameEn || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, nameEn: e.target.value })
-								}
-							/>
-						</div>
+					<div className="grid gap-2">
+						<Label htmlFor="trackNumber">
+							トラック番号 <span className="text-error">*</span>
+						</Label>
+						<Input
+							id="trackNumber"
+							type="number"
+							min="1"
+							value={editForm.trackNumber || ""}
+							onChange={(e) =>
+								setEditForm({
+									...editForm,
+									trackNumber: Number.parseInt(e.target.value, 10) || 1,
+								})
+							}
+						/>
+					</div>
+					<div className="grid gap-2">
+						<Label htmlFor="nameJa">日本語名</Label>
+						<Input
+							id="nameJa"
+							value={editForm.nameJa || ""}
+							onChange={(e) =>
+								setEditForm({ ...editForm, nameJa: e.target.value })
+							}
+							placeholder="例: ネイティブフェイス"
+						/>
+					</div>
+					<div className="grid gap-2">
+						<Label htmlFor="nameEn">英語名</Label>
+						<Input
+							id="nameEn"
+							value={editForm.nameEn || ""}
+							onChange={(e) =>
+								setEditForm({ ...editForm, nameEn: e.target.value })
+							}
+							placeholder="例: Native Face"
+						/>
 					</div>
 				</div>
 				<DialogFooter>
