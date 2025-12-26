@@ -588,29 +588,27 @@ function ReleasesPage() {
 								placeholder="例: 東方紅魔郷オリジナルサウンドトラック"
 							/>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-nameJa">日本語名</Label>
-								<Input
-									id="create-nameJa"
-									value={createForm.nameJa || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, nameJa: e.target.value })
-									}
-									placeholder="例: 東方紅魔郷"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="create-nameEn">英語名</Label>
-								<Input
-									id="create-nameEn"
-									value={createForm.nameEn || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, nameEn: e.target.value })
-									}
-									placeholder="例: Touhou Koumakyou"
-								/>
-							</div>
+						<div className="grid gap-2">
+							<Label htmlFor="create-nameJa">日本語名</Label>
+							<Input
+								id="create-nameJa"
+								value={createForm.nameJa || ""}
+								onChange={(e) =>
+									setCreateForm({ ...createForm, nameJa: e.target.value })
+								}
+								placeholder="例: 東方紅魔郷"
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="create-nameEn">英語名</Label>
+							<Input
+								id="create-nameEn"
+								value={createForm.nameEn || ""}
+								onChange={(e) =>
+									setCreateForm({ ...createForm, nameEn: e.target.value })
+								}
+								placeholder="例: Touhou Koumakyou"
+							/>
 						</div>
 						<div className="grid gap-4">
 							<div className="grid gap-2">
@@ -654,6 +652,7 @@ function ReleasesPage() {
 									setCreateForm({ ...createForm, notes: e.target.value })
 								}
 								rows={3}
+								placeholder="例: 来歴、特記事項など"
 							/>
 						</div>
 					</div>
@@ -706,29 +705,27 @@ function ReleasesPage() {
 								placeholder="例: 東方紅魔郷オリジナルサウンドトラック"
 							/>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameJa">日本語名</Label>
-								<Input
-									id="edit-nameJa"
-									value={editForm.nameJa || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameJa: e.target.value })
-									}
-									placeholder="例: 東方紅魔郷"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameEn">英語名</Label>
-								<Input
-									id="edit-nameEn"
-									value={editForm.nameEn || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameEn: e.target.value })
-									}
-									placeholder="例: Touhou Koumakyou"
-								/>
-							</div>
+						<div className="grid gap-2">
+							<Label htmlFor="edit-nameJa">日本語名</Label>
+							<Input
+								id="edit-nameJa"
+								value={editForm.nameJa || ""}
+								onChange={(e) =>
+									setEditForm({ ...editForm, nameJa: e.target.value })
+								}
+								placeholder="例: 東方紅魔郷"
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="edit-nameEn">英語名</Label>
+							<Input
+								id="edit-nameEn"
+								value={editForm.nameEn || ""}
+								onChange={(e) =>
+									setEditForm({ ...editForm, nameEn: e.target.value })
+								}
+								placeholder="例: Touhou Koumakyou"
+							/>
 						</div>
 						<div className="grid gap-4">
 							<div className="grid gap-2">
@@ -772,6 +769,7 @@ function ReleasesPage() {
 									setEditForm({ ...editForm, notes: e.target.value })
 								}
 								rows={3}
+								placeholder="例: 来歴、特記事項など"
 							/>
 						</div>
 
