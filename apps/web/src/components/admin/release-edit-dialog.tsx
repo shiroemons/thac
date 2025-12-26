@@ -138,7 +138,7 @@ export function ReleaseEditDialog({
 							{mutationError}
 						</div>
 					)}
-					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+					<div className="grid gap-4">
 						<div className="grid gap-2">
 							<Label>
 								作品名 <span className="text-error">*</span>
@@ -148,6 +148,7 @@ export function ReleaseEditDialog({
 								onChange={(e) =>
 									setEditForm({ ...editForm, name: e.target.value })
 								}
+								placeholder="例: 東方紅魔郷オリジナルサウンドトラック"
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -157,6 +158,7 @@ export function ReleaseEditDialog({
 								onChange={(e) =>
 									setEditForm({ ...editForm, nameJa: e.target.value })
 								}
+								placeholder="例: 東方紅魔郷"
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -166,6 +168,7 @@ export function ReleaseEditDialog({
 								onChange={(e) =>
 									setEditForm({ ...editForm, nameEn: e.target.value })
 								}
+								placeholder="例: Touhou Koumakyou"
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -216,7 +219,7 @@ export function ReleaseEditDialog({
 								clearable
 							/>
 						</div>
-						<div className="grid gap-2 md:col-span-2">
+						<div className="grid gap-2">
 							<Label>イベント日</Label>
 							<SearchableSelect
 								value={editForm.eventDayId || ""}
@@ -235,13 +238,14 @@ export function ReleaseEditDialog({
 								clearable
 							/>
 						</div>
-						<div className="grid gap-2 md:col-span-2">
+						<div className="grid gap-2">
 							<Label>メモ</Label>
 							<Textarea
 								value={editForm.notes || ""}
 								onChange={(e) =>
 									setEditForm({ ...editForm, notes: e.target.value })
 								}
+								placeholder="例: 来歴、特記事項など"
 							/>
 						</div>
 					</div>
