@@ -634,9 +634,10 @@ function CirclesPage() {
 										nameInitial: initial.nameInitial,
 									});
 								}}
+								placeholder="例: 上海アリス幻樂団"
 							/>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
+						<div className="grid gap-4">
 							<div className="grid gap-2">
 								<Label htmlFor="edit-nameJa">日本語名</Label>
 								<Input
@@ -645,6 +646,7 @@ function CirclesPage() {
 									onChange={(e) =>
 										setEditForm({ ...editForm, nameJa: e.target.value })
 									}
+									placeholder="例: 上海アリス幻樂団"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -655,6 +657,7 @@ function CirclesPage() {
 									onChange={(e) =>
 										setEditForm({ ...editForm, nameEn: e.target.value })
 									}
+									placeholder="例: Team Shanghai Alice"
 								/>
 							</div>
 						</div>
@@ -666,6 +669,7 @@ function CirclesPage() {
 								onChange={(e) =>
 									setEditForm({ ...editForm, sortName: e.target.value })
 								}
+								placeholder="例: 上海アリス幻樂団"
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -722,6 +726,7 @@ function CirclesPage() {
 								onChange={(e) =>
 									setEditForm({ ...editForm, notes: e.target.value })
 								}
+								placeholder="例: 来歴、特記事項など"
 								rows={2}
 							/>
 						</div>
