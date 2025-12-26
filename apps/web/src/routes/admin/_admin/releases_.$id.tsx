@@ -308,16 +308,17 @@ function ReleaseDetailPage() {
 		const events = eventsData?.data ?? [];
 		return events.map((e) => ({
 			value: e.id,
-			label: e.seriesName ? `${e.seriesName} ${e.name}` : e.name,
+			label: e.seriesName ? `【${e.seriesName}】${e.name}` : e.name,
 		}));
 	}, [eventsData?.data]);
 
 	// イベント日オプション
 	const eventDayOptions = useMemo(() => {
 		const days = eventDaysData ?? [];
+		const hasMultipleDays = days.length > 1;
 		return days.map((d) => ({
 			value: d.id,
-			label: `Day ${d.dayNumber} (${d.date})`,
+			label: hasMultipleDays ? `${d.dayNumber}日目（${d.date}）` : d.date,
 		}));
 	}, [eventDaysData]);
 
