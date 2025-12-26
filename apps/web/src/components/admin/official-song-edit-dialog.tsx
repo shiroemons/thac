@@ -284,28 +284,26 @@ export function OfficialSongEditDialog({
 							{error}
 						</div>
 					)}
-					<div className="grid grid-cols-2 gap-4">
-						<div className="grid gap-2">
-							<Label>作品</Label>
-							<SearchableGroupedSelect
-								value={form.officialWorkId || ""}
-								onChange={(val) => handleWorkChange(val || null)}
-								groups={workGroups}
-								placeholder="作品を選択..."
-								searchPlaceholder="作品を検索..."
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="song-id">
-								ID {mode === "create" && "(自動生成)"}
-							</Label>
-							<Input
-								id="song-id"
-								value={form.id}
-								disabled
-								className="font-mono"
-							/>
-						</div>
+					<div className="grid gap-2">
+						<Label htmlFor="song-id">
+							ID {mode === "create" && "(自動生成)"}
+						</Label>
+						<Input
+							id="song-id"
+							value={form.id}
+							disabled
+							className="font-mono"
+						/>
+					</div>
+					<div className="grid gap-2">
+						<Label>作品</Label>
+						<SearchableGroupedSelect
+							value={form.officialWorkId || ""}
+							onChange={(val) => handleWorkChange(val || null)}
+							groups={workGroups}
+							placeholder="作品を選択..."
+							searchPlaceholder="作品を検索..."
+						/>
 					</div>
 					<div className="grid gap-2">
 						<Label htmlFor="song-name">
@@ -340,6 +338,7 @@ export function OfficialSongEditDialog({
 								onChange={(e) =>
 									setForm({ ...form, nameEn: e.target.value || null })
 								}
+								placeholder="例: A Sacred Lot"
 								disabled={isSubmitting}
 							/>
 						</div>
@@ -420,6 +419,7 @@ export function OfficialSongEditDialog({
 								onChange={(e) =>
 									setForm({ ...form, arrangerName: e.target.value || null })
 								}
+								placeholder="例: ZUN"
 								disabled={isSubmitting}
 							/>
 						</div>
@@ -432,6 +432,7 @@ export function OfficialSongEditDialog({
 							onChange={(e) =>
 								setForm({ ...form, notes: e.target.value || null })
 							}
+							placeholder="例: アレンジバージョン、特記事項など"
 							rows={3}
 							disabled={isSubmitting}
 						/>
