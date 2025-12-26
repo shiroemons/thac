@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
+import { TrackEditDialog } from "@/components/admin/track-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,7 +80,6 @@ function TracksPage() {
 	);
 
 	const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
-	const [editForm, setEditForm] = useState<Partial<Track>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [createForm, setCreateForm] = useState<
@@ -128,6 +128,10 @@ function TracksPage() {
 				nameJa: createForm.nameJa || null,
 				nameEn: createForm.nameEn || null,
 				discId: createForm.discId || null,
+				releaseDate: null,
+				releaseYear: null,
+				releaseMonth: null,
+				releaseDay: null,
 				eventId: null,
 				eventDayId: null,
 			});
@@ -141,27 +145,6 @@ function TracksPage() {
 		}
 	};
 
-	const handleUpdate = async () => {
-		if (!editingTrack) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await tracksApi.update(editingTrack.releaseId, editingTrack.id, {
-				trackNumber: editForm.trackNumber,
-				name: editForm.name,
-				nameJa: editForm.nameJa,
-				nameEn: editForm.nameEn,
-				discId: editForm.discId,
-			});
-			setEditingTrack(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
 	const handleDelete = async (track: TrackListItem) => {
 		if (
 			!confirm(
@@ -169,6 +152,12 @@ function TracksPage() {
 			)
 		)
 			return;
+		if (!track.releaseId) {
+			setMutationError(
+				"作品に紐づかないトラックの削除は現在サポートされていません",
+			);
+			return;
+		}
 		try {
 			await tracksApi.delete(track.releaseId, track.id);
 			invalidateQuery();
@@ -179,14 +168,6 @@ function TracksPage() {
 
 	const handleEdit = (track: TrackListItem) => {
 		setEditingTrack(track);
-		setEditForm({
-			trackNumber: track.trackNumber,
-			name: track.name,
-			nameJa: track.nameJa,
-			nameEn: track.nameEn,
-			discId: track.discId,
-		});
-		setMutationError(null);
 	};
 
 	const handlePageChange = (newPage: number) => {
@@ -606,109 +587,20 @@ function TracksPage() {
 			</Dialog>
 
 			{/* 編集ダイアログ */}
-			<Dialog
-				open={!!editingTrack}
-				onOpenChange={(open) => {
-					if (!open) {
-						setEditingTrack(null);
-						setMutationError(null);
-					}
-				}}
-			>
-				<DialogContent className="sm:max-w-[500px]">
-					<DialogHeader>
-						<DialogTitle>トラックの編集</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label>作品</Label>
-							<p className="text-base-content/70">
-								{editingTrack?.releaseName}
-							</p>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-name">
-								トラック名 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="edit-name"
-								value={editForm.name || ""}
-								onChange={(e) => {
-									const newName = e.target.value;
-									setEditForm({
-										...editForm,
-										name: newName,
-										nameJa:
-											!editForm.nameJa || editForm.nameJa === editForm.name
-												? newName
-												: editForm.nameJa,
-									});
-								}}
-								placeholder="例: ネイティブフェイス"
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-nameJa">日本語名</Label>
-							<Input
-								id="edit-nameJa"
-								value={editForm.nameJa || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, nameJa: e.target.value })
-								}
-								placeholder="例: ネイティブフェイス"
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-nameEn">英語名</Label>
-							<Input
-								id="edit-nameEn"
-								value={editForm.nameEn || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, nameEn: e.target.value })
-								}
-								placeholder="例: Native Face"
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-trackNumber">
-								トラック番号 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="edit-trackNumber"
-								type="number"
-								min={1}
-								value={editForm.trackNumber ?? ""}
-								onChange={(e) =>
-									setEditForm({
-										...editForm,
-										trackNumber: e.target.value
-											? Number(e.target.value)
-											: undefined,
-									})
-								}
-								placeholder="1"
-							/>
-						</div>
-						{mutationError && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
-							</div>
-						)}
-					</div>
-					<DialogFooter>
-						<Button variant="ghost" onClick={() => setEditingTrack(null)}>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleUpdate}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "保存中..." : "保存"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			{editingTrack && (
+				<TrackEditDialog
+					open={!!editingTrack}
+					onOpenChange={(open) => {
+						if (!open) {
+							setEditingTrack(null);
+						}
+					}}
+					track={editingTrack}
+					onSuccess={() => {
+						invalidateQuery();
+					}}
+				/>
+			)}
 		</div>
 	);
 }

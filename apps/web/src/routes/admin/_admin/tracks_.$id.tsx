@@ -443,14 +443,15 @@ function TrackDetailPage() {
 
 	// クレジット追加・更新
 	const handleCreditSubmit = async () => {
-		if (!track) return;
+		if (!track?.releaseId) return;
+		const releaseId = track.releaseId;
 		setIsSubmitting(true);
 		setMutationError(null);
 
 		try {
 			if (editingCredit) {
 				await trackCreditsApi.update(
-					track.releaseId,
+					releaseId,
 					track.id,
 					editingCredit.id,
 					{
@@ -463,7 +464,7 @@ function TrackDetailPage() {
 				);
 				closeCreditEditDialog();
 			} else {
-				await trackCreditsApi.create(track.releaseId, track.id, {
+				await trackCreditsApi.create(releaseId, track.id, {
 					id: creditForm.id,
 					artistId: creditForm.artistId,
 					artistAliasId: creditForm.artistAliasId || null,
@@ -485,13 +486,14 @@ function TrackDetailPage() {
 
 	// クレジット削除
 	const handleCreditDelete = async (credit: TrackCredit) => {
-		if (!track) return;
+		if (!track?.releaseId) return;
+		const releaseId = track.releaseId;
 		if (!confirm(`クレジット "${credit.creditName}" を削除しますか？`)) {
 			return;
 		}
 
 		try {
-			await trackCreditsApi.delete(track.releaseId, track.id, credit.id);
+			await trackCreditsApi.delete(releaseId, track.id, credit.id);
 			await queryClient.invalidateQueries({ queryKey: ["track", trackId] });
 		} catch (err) {
 			setMutationError(
@@ -502,7 +504,8 @@ function TrackDetailPage() {
 
 	// クレジット順序変更（上へ）
 	const handleCreditMoveUp = async (credit: TrackCredit, index: number) => {
-		if (!track || index === 0) return;
+		if (!track?.releaseId || index === 0) return;
+		const releaseId = track.releaseId;
 		const sortedCredits = [...track.credits].sort(
 			(a, b) => (a.creditPosition ?? 0) - (b.creditPosition ?? 0),
 		);
@@ -510,10 +513,10 @@ function TrackDetailPage() {
 
 		try {
 			await Promise.all([
-				trackCreditsApi.update(track.releaseId, track.id, credit.id, {
+				trackCreditsApi.update(releaseId, track.id, credit.id, {
 					creditPosition: prevCredit.creditPosition,
 				}),
-				trackCreditsApi.update(track.releaseId, track.id, prevCredit.id, {
+				trackCreditsApi.update(releaseId, track.id, prevCredit.id, {
 					creditPosition: credit.creditPosition,
 				}),
 			]);
@@ -527,7 +530,8 @@ function TrackDetailPage() {
 
 	// クレジット順序変更（下へ）
 	const handleCreditMoveDown = async (credit: TrackCredit, index: number) => {
-		if (!track) return;
+		if (!track?.releaseId) return;
+		const releaseId = track.releaseId;
 		const sortedCredits = [...track.credits].sort(
 			(a, b) => (a.creditPosition ?? 0) - (b.creditPosition ?? 0),
 		);
@@ -536,10 +540,10 @@ function TrackDetailPage() {
 
 		try {
 			await Promise.all([
-				trackCreditsApi.update(track.releaseId, track.id, credit.id, {
+				trackCreditsApi.update(releaseId, track.id, credit.id, {
 					creditPosition: nextCredit.creditPosition,
 				}),
-				trackCreditsApi.update(track.releaseId, track.id, nextCredit.id, {
+				trackCreditsApi.update(releaseId, track.id, nextCredit.id, {
 					creditPosition: credit.creditPosition,
 				}),
 			]);
@@ -881,6 +885,16 @@ function TrackDetailPage() {
 			<div className="container mx-auto py-6">
 				<div className="alert alert-error">
 					{error instanceof Error ? error.message : "トラックが見つかりません"}
+				</div>
+			</div>
+		);
+	}
+
+	if (!track.releaseId) {
+		return (
+			<div className="container mx-auto py-6">
+				<div className="alert alert-error">
+					作品に紐づかないトラックの詳細表示は現在サポートされていません
 				</div>
 			</div>
 		);

@@ -4,7 +4,13 @@ import { trackCreditRoles, trackCredits, tracks } from "./track";
 
 // Helper: 空文字列を拒否するスキーマ
 const nonEmptyString = z.string().trim().min(1, "必須項目です");
-const optionalString = z.string().trim().optional().nullable();
+// 空文字列をnullに変換するoptionalスキーマ
+const optionalString = z
+	.string()
+	.trim()
+	.transform((val) => (val === "" ? null : val))
+	.nullable()
+	.optional();
 
 // 日付バリデーション（YYYY-MM-DD形式）
 const dateSchema = z
@@ -17,7 +23,7 @@ const dateSchema = z
 // Note: releaseDate, releaseYear/Month/Day, eventId, eventDayId are auto-set from parent release
 export const insertTrackSchema = createInsertSchema(tracks, {
 	id: nonEmptyString,
-	releaseId: nonEmptyString,
+	releaseId: optionalString,
 	discId: optionalString,
 	trackNumber: z.number().int().positive("1以上の整数を入力してください"),
 	name: nonEmptyString.max(200, "200文字以内で入力してください"),
@@ -41,6 +47,14 @@ export const updateTrackSchema = z.object({
 	name: nonEmptyString.max(200, "200文字以内で入力してください").optional(),
 	nameJa: optionalString,
 	nameEn: optionalString,
+	// リリース日関連
+	releaseDate: dateSchema,
+	releaseYear: z.number().int().min(1900).max(2100).optional().nullable(),
+	releaseMonth: z.number().int().min(1).max(12).optional().nullable(),
+	releaseDay: z.number().int().min(1).max(31).optional().nullable(),
+	// イベント関連
+	eventId: optionalString,
+	eventDayId: optionalString,
 });
 
 export const selectTrackSchema = createSelectSchema(tracks);

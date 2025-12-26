@@ -136,34 +136,10 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 	const releaseId = c.req.param("releaseId");
 	const body = await c.req.json();
 
-	// リリース存在チェック
-	const existingRelease = await db
-		.select()
-		.from(releases)
-		.where(eq(releases.id, releaseId))
-		.limit(1);
-
-	if (existingRelease.length === 0) {
-		return c.json({ error: "Release not found" }, 404);
-	}
-
-	// ディスク存在チェック（指定された場合）
-	if (body.discId) {
-		const existingDisc = await db
-			.select()
-			.from(discs)
-			.where(and(eq(discs.id, body.discId), eq(discs.releaseId, releaseId)))
-			.limit(1);
-
-		if (existingDisc.length === 0) {
-			return c.json({ error: "Disc not found" }, 404);
-		}
-	}
-
-	// バリデーション
+	// バリデーション（releaseIdはoptionalなので、bodyに含まれていればそれを使用、なければパスパラメータ）
 	const parsed = insertTrackSchema.safeParse({
 		...body,
-		releaseId,
+		releaseId: body.releaseId || releaseId,
 	});
 	if (!parsed.success) {
 		return c.json(
@@ -173,6 +149,40 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 			},
 			400,
 		);
+	}
+
+	// リリース存在チェック（releaseIdが指定されている場合のみ）
+	if (parsed.data.releaseId) {
+		const existingRelease = await db
+			.select()
+			.from(releases)
+			.where(eq(releases.id, parsed.data.releaseId))
+			.limit(1);
+
+		if (existingRelease.length === 0) {
+			return c.json({ error: "Release not found" }, 404);
+		}
+	}
+
+	// ディスク存在チェック（指定された場合）
+	if (parsed.data.discId) {
+		if (!parsed.data.releaseId) {
+			return c.json({ error: "Disc cannot be set without a release" }, 400);
+		}
+		const existingDisc = await db
+			.select()
+			.from(discs)
+			.where(
+				and(
+					eq(discs.id, parsed.data.discId),
+					eq(discs.releaseId, parsed.data.releaseId),
+				),
+			)
+			.limit(1);
+
+		if (existingDisc.length === 0) {
+			return c.json({ error: "Disc not found" }, 404);
+		}
 	}
 
 	// ID重複チェック
@@ -202,19 +212,22 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 				),
 			)
 			.limit(1);
-	} else {
+	} else if (parsed.data.releaseId) {
 		// ディスクなし（単曲）の場合、リリース内でトラック番号の一意性チェック
 		duplicateCheck = await db
 			.select()
 			.from(tracks)
 			.where(
 				and(
-					eq(tracks.releaseId, releaseId),
+					eq(tracks.releaseId, parsed.data.releaseId),
 					isNull(tracks.discId),
 					eq(tracks.trackNumber, parsed.data.trackNumber),
 				),
 			)
 			.limit(1);
+	} else {
+		// releaseIdもdiscIdもない場合は重複チェック不要
+		duplicateCheck = [];
 	}
 
 	if (duplicateCheck.length > 0) {
@@ -228,20 +241,27 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 		);
 	}
 
-	// 親リリースから日付・イベント情報を取得して自動設定
-	const release = existingRelease[0];
-	if (!release) {
-		return c.json({ error: "Release not found" }, 404);
+	// 親リリースから日付・イベント情報を取得して自動設定（releaseIdがある場合のみ）
+	let insertData = { ...parsed.data };
+	if (parsed.data.releaseId) {
+		const release = await db
+			.select()
+			.from(releases)
+			.where(eq(releases.id, parsed.data.releaseId))
+			.limit(1);
+
+		if (release.length > 0 && release[0]) {
+			insertData = {
+				...insertData,
+				releaseDate: release[0].releaseDate,
+				releaseYear: release[0].releaseYear,
+				releaseMonth: release[0].releaseMonth,
+				releaseDay: release[0].releaseDay,
+				eventId: release[0].eventId,
+				eventDayId: release[0].eventDayId,
+			};
+		}
 	}
-	const insertData = {
-		...parsed.data,
-		releaseDate: release.releaseDate,
-		releaseYear: release.releaseYear,
-		releaseMonth: release.releaseMonth,
-		releaseDay: release.releaseDay,
-		eventId: release.eventId,
-		eventDayId: release.eventDayId,
-	};
 
 	// 作成
 	const result = await db.insert(tracks).values(insertData).returning();
@@ -342,10 +362,22 @@ tracksRouter.put("/:releaseId/tracks/:trackId", async (c) => {
 		}
 	}
 
+	// 日付フィールドが変更された場合、year/month/dayも自動設定
+	let updateData = { ...parsed.data };
+	if (parsed.data.releaseDate !== undefined) {
+		const { year, month, day } = parseDateString(parsed.data.releaseDate);
+		updateData = {
+			...updateData,
+			releaseYear: year,
+			releaseMonth: month,
+			releaseDay: day,
+		};
+	}
+
 	// 更新
 	const result = await db
 		.update(tracks)
-		.set(parsed.data)
+		.set(updateData)
 		.where(eq(tracks.id, trackId))
 		.returning();
 
@@ -465,5 +497,27 @@ tracksRouter.patch("/:releaseId/tracks/:trackId/reorder", async (c) => {
 
 	return c.json(updatedTracks);
 });
+
+// ユーティリティ関数: 日付文字列から年月日を抽出
+function parseDateString(dateString: string | null): {
+	year: number | null;
+	month: number | null;
+	day: number | null;
+} {
+	if (!dateString) {
+		return { year: null, month: null, day: null };
+	}
+
+	const dateParts = dateString.split("-");
+	if (dateParts.length >= 3) {
+		return {
+			year: Number.parseInt(dateParts[0] ?? "0", 10) || null,
+			month: Number.parseInt(dateParts[1] ?? "0", 10) || null,
+			day: Number.parseInt(dateParts[2] ?? "0", 10) || null,
+		};
+	}
+
+	return { year: null, month: null, day: null };
+}
 
 export { tracksRouter };

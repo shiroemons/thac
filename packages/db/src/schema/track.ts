@@ -20,9 +20,9 @@ export const tracks = sqliteTable(
 	"tracks",
 	{
 		id: text("id").primaryKey(),
-		releaseId: text("release_id")
-			.notNull()
-			.references(() => releases.id, { onDelete: "cascade" }),
+		releaseId: text("release_id").references(() => releases.id, {
+			onDelete: "cascade",
+		}),
 		discId: text("disc_id").references(() => discs.id, { onDelete: "cascade" }),
 		trackNumber: integer("track_number").notNull(),
 		name: text("name").notNull(),
