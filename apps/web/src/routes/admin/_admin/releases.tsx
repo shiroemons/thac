@@ -3,11 +3,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Disc3, Eye, Home, Pencil, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Eye, Home, Pencil, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
+import { ReleaseEditDialog } from "@/components/admin/release-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select } from "@/components/ui/select";
 import {
 	Table,
@@ -32,8 +34,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
-	type Disc,
 	discsApi,
+	eventDaysApi,
+	eventsApi,
 	RELEASE_TYPE_COLORS,
 	RELEASE_TYPE_LABELS,
 	type Release,
@@ -102,18 +105,15 @@ function ReleasesPage() {
 	const [editingRelease, setEditingRelease] = useState<ReleaseWithDiscs | null>(
 		null,
 	);
-	const [editForm, setEditForm] = useState<Partial<Release>>({});
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [createForm, setCreateForm] = useState<Partial<Release>>({
 		releaseType: "album",
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
-
-	// ディスク編集用
-	const [isDiscDialogOpen, setIsDiscDialogOpen] = useState(false);
-	const [editingDisc, setEditingDisc] = useState<Disc | null>(null);
-	const [discForm, setDiscForm] = useState<Partial<Disc>>({});
+	const [selectedEventIdForCreate, setSelectedEventIdForCreate] = useState<
+		string | null
+	>(null);
 
 	const { data, isPending, error } = useQuery(
 		releasesListQueryOptions({
@@ -130,6 +130,66 @@ function ReleasesPage() {
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["releases"] });
 	};
+
+	// 新規作成用：イベント一覧取得
+	const { data: eventsDataForCreate } = useQuery({
+		queryKey: ["events"],
+		queryFn: () => eventsApi.list({ limit: 500 }),
+		staleTime: 300_000,
+		enabled: isCreateDialogOpen,
+	});
+
+	// 新規作成用：イベント日一覧取得
+	const { data: eventDaysDataForCreate } = useQuery({
+		queryKey: ["events", selectedEventIdForCreate, "days"],
+		queryFn: () =>
+			selectedEventIdForCreate
+				? eventDaysApi.list(selectedEventIdForCreate)
+				: Promise.resolve([]),
+		staleTime: 300_000,
+		enabled: isCreateDialogOpen && !!selectedEventIdForCreate,
+	});
+
+	// 新規作成用：イベントオプション
+	const eventOptionsForCreate = useMemo(() => {
+		const events = eventsDataForCreate?.data ?? [];
+		return events.map((e) => ({
+			value: e.id,
+			label: e.seriesName ? `【${e.seriesName}】${e.name}` : e.name,
+		}));
+	}, [eventsDataForCreate?.data]);
+
+	// 新規作成用：イベント日オプション
+	const eventDayOptionsForCreate = useMemo(() => {
+		const days = eventDaysDataForCreate ?? [];
+		const hasMultipleDays = days.length > 1;
+		return days.map((d) => ({
+			value: d.id,
+			label: hasMultipleDays ? `${d.dayNumber}日目（${d.date}）` : d.date,
+		}));
+	}, [eventDaysDataForCreate]);
+
+	// 新規作成用：イベント日が取得されたら1日目を自動設定
+	useEffect(() => {
+		if (
+			isCreateDialogOpen &&
+			selectedEventIdForCreate &&
+			eventDaysDataForCreate &&
+			eventDaysDataForCreate.length > 0 &&
+			!createForm.eventDayId
+		) {
+			const firstDay =
+				eventDaysDataForCreate.find((d) => d.dayNumber === 1) ||
+				eventDaysDataForCreate[0];
+			if (firstDay) {
+				setCreateForm((prev) => ({
+					...prev,
+					eventDayId: firstDay.id,
+					releaseDate: firstDay.date,
+				}));
+			}
+		}
+	}, [isCreateDialogOpen, selectedEventIdForCreate, eventDaysDataForCreate]);
 
 	const handleCreate = async () => {
 		setIsSubmitting(true);
@@ -173,29 +233,6 @@ function ReleasesPage() {
 		}
 	};
 
-	const handleUpdate = async () => {
-		if (!editingRelease) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await releasesApi.update(editingRelease.id, {
-				name: editForm.name,
-				nameJa: editForm.nameJa,
-				nameEn: editForm.nameEn,
-				releaseDate: editForm.releaseDate,
-				releaseType: editForm.releaseType as ReleaseType,
-				eventDayId: editForm.eventDayId,
-				notes: editForm.notes,
-			});
-			setEditingRelease(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
 	const handleDelete = async (release: ReleaseWithCounts) => {
 		if (
 			!confirm(
@@ -214,90 +251,12 @@ function ReleasesPage() {
 	// 作品を編集モードで開く（詳細取得）
 	const handleEdit = async (release: ReleaseWithCounts) => {
 		try {
-			const releaseWithDiscs = await releasesApi.get(release.id);
-			setEditingRelease(releaseWithDiscs);
-			setEditForm({
-				name: releaseWithDiscs.name,
-				nameJa: releaseWithDiscs.nameJa,
-				nameEn: releaseWithDiscs.nameEn,
-				releaseDate: releaseWithDiscs.releaseDate,
-				releaseType: releaseWithDiscs.releaseType,
-				eventDayId: releaseWithDiscs.eventDayId,
-				notes: releaseWithDiscs.notes,
-			});
+			const releaseDetail = await releasesApi.get(release.id);
+			setEditingRelease(releaseDetail);
 			setMutationError(null);
 		} catch (e) {
 			setMutationError(
 				e instanceof Error ? e.message : "作品情報の取得に失敗しました",
-			);
-		}
-	};
-
-	// ディスク追加ダイアログを開く
-	const handleOpenAddDiscDialog = () => {
-		setEditingDisc(null);
-		setDiscForm({
-			discNumber: (editingRelease?.discs?.length ?? 0) + 1,
-			discName: "",
-		});
-		setIsDiscDialogOpen(true);
-	};
-
-	// ディスク編集ダイアログを開く
-	const handleOpenEditDiscDialog = (disc: Disc) => {
-		setEditingDisc(disc);
-		setDiscForm({
-			discNumber: disc.discNumber,
-			discName: disc.discName,
-		});
-		setIsDiscDialogOpen(true);
-	};
-
-	// ディスク保存
-	const handleSaveDisc = async () => {
-		if (!editingRelease) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			if (editingDisc) {
-				// 更新
-				await discsApi.update(editingRelease.id, editingDisc.id, {
-					discNumber: discForm.discNumber,
-					discName: discForm.discName,
-				});
-			} else {
-				// 新規作成
-				const id = createId.disc();
-				await discsApi.create(editingRelease.id, {
-					id,
-					discNumber: discForm.discNumber || 1,
-					discName: discForm.discName || null,
-				});
-			}
-			setIsDiscDialogOpen(false);
-			// 作品詳細を再取得
-			const updated = await releasesApi.get(editingRelease.id);
-			setEditingRelease(updated);
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "ディスクの保存に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	// ディスク削除
-	const handleDeleteDisc = async (disc: Disc) => {
-		if (!editingRelease) return;
-		if (!confirm(`Disc ${disc.discNumber}を削除しますか？`)) return;
-		try {
-			await discsApi.delete(editingRelease.id, disc.id);
-			const updated = await releasesApi.get(editingRelease.id);
-			setEditingRelease(updated);
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "ディスクの削除に失敗しました",
 			);
 		}
 	};
@@ -559,6 +518,7 @@ function ReleasesPage() {
 					if (!open) {
 						setIsCreateDialogOpen(false);
 						setCreateForm({ releaseType: "album" });
+						setSelectedEventIdForCreate(null);
 						setMutationError(null);
 					}
 				}}
@@ -633,6 +593,57 @@ function ReleasesPage() {
 							</div>
 						</div>
 						<div className="grid gap-2">
+							<Label htmlFor="create-event">イベント</Label>
+							<SearchableSelect
+								id="create-event"
+								value={createForm.eventId || ""}
+								onChange={(value) => {
+									const newEventId = value || null;
+									setCreateForm({
+										...createForm,
+										eventId: newEventId,
+										eventDayId: null,
+									});
+									setSelectedEventIdForCreate(newEventId);
+								}}
+								options={eventOptionsForCreate}
+								placeholder="イベントを選択"
+								searchPlaceholder="イベントを検索..."
+								emptyMessage="イベントが見つかりません"
+								clearable
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="create-eventDay">イベント日</Label>
+							<SearchableSelect
+								id="create-eventDay"
+								value={createForm.eventDayId || ""}
+								onChange={(value) => {
+									const selectedDay = eventDaysDataForCreate?.find(
+										(d) => d.id === value,
+									);
+									setCreateForm({
+										...createForm,
+										eventDayId: value || null,
+										releaseDate: selectedDay?.date || createForm.releaseDate,
+									});
+								}}
+								options={eventDayOptionsForCreate}
+								placeholder="イベント日を選択"
+								searchPlaceholder="イベント日を検索..."
+								emptyMessage={
+									selectedEventIdForCreate
+										? "イベント日が見つかりません"
+										: "先にイベントを選択してください"
+								}
+								disabled={
+									!selectedEventIdForCreate ||
+									(eventDaysDataForCreate?.length ?? 0) <= 1
+								}
+								clearable
+							/>
+						</div>
+						<div className="grid gap-2">
 							<Label htmlFor="create-releaseDate">発売日</Label>
 							<Input
 								id="create-releaseDate"
@@ -641,6 +652,7 @@ function ReleasesPage() {
 								onChange={(e) =>
 									setCreateForm({ ...createForm, releaseDate: e.target.value })
 								}
+								disabled={!!createForm.eventDayId}
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -674,246 +686,20 @@ function ReleasesPage() {
 				</DialogContent>
 			</Dialog>
 
-			{/* 編集ダイアログ（ディスク管理含む） */}
-			<Dialog
-				open={!!editingRelease}
-				onOpenChange={(open) => {
-					if (!open) {
-						setEditingRelease(null);
-						setMutationError(null);
-					}
-				}}
-			>
-				<DialogContent className="sm:max-w-[600px]">
-					<DialogHeader>
-						<DialogTitle>作品の編集</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="edit-name">
-								作品名 <span className="text-error">*</span>
-							</Label>
-							<p className="text-base-content/60 text-xs">
-								アルバム名、シングル名、EP名などを入力してください
-							</p>
-							<Input
-								id="edit-name"
-								value={editForm.name || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, name: e.target.value })
-								}
-								placeholder="例: 東方紅魔郷オリジナルサウンドトラック"
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-nameJa">日本語名</Label>
-							<Input
-								id="edit-nameJa"
-								value={editForm.nameJa || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, nameJa: e.target.value })
-								}
-								placeholder="例: 東方紅魔郷"
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-nameEn">英語名</Label>
-							<Input
-								id="edit-nameEn"
-								value={editForm.nameEn || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, nameEn: e.target.value })
-								}
-								placeholder="例: Touhou Koumakyou"
-							/>
-						</div>
-						<div className="grid gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-releaseType">タイプ</Label>
-								<Select
-									id="edit-releaseType"
-									value={editForm.releaseType || ""}
-									onChange={(e) =>
-										setEditForm({
-											...editForm,
-											releaseType: e.target.value as ReleaseType,
-										})
-									}
-								>
-									<option value="">選択してください</option>
-									{RELEASE_TYPE_OPTIONS.map((option) => (
-										<option key={option.value} value={option.value}>
-											{option.label}
-										</option>
-									))}
-								</Select>
-							</div>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-releaseDate">発売日</Label>
-							<Input
-								id="edit-releaseDate"
-								type="date"
-								value={editForm.releaseDate || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, releaseDate: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="edit-notes">メモ</Label>
-							<Textarea
-								id="edit-notes"
-								value={editForm.notes || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, notes: e.target.value })
-								}
-								rows={3}
-								placeholder="例: 来歴、特記事項など"
-							/>
-						</div>
-
-						{/* ディスク一覧 */}
-						<div className="mt-2 border-base-300 border-t pt-4">
-							<div className="mb-2 flex items-center justify-between">
-								<Label className="flex items-center gap-2">
-									<Disc3 className="h-4 w-4" />
-									ディスク
-								</Label>
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									onClick={handleOpenAddDiscDialog}
-								>
-									<Plus className="mr-1 h-4 w-4" />
-									追加
-								</Button>
-							</div>
-							{editingRelease?.discs && editingRelease.discs.length > 0 ? (
-								<div className="space-y-2">
-									{editingRelease.discs.map((disc) => (
-										<div
-											key={disc.id}
-											className="flex items-center justify-between rounded border border-base-300 p-2"
-										>
-											<div className="flex items-center gap-2">
-												<Badge variant="primary">Disc {disc.discNumber}</Badge>
-												<span className="text-sm">
-													{disc.discName || "(名称なし)"}
-												</span>
-											</div>
-											<div className="flex items-center gap-1">
-												<Button
-													variant="ghost"
-													size="icon"
-													onClick={() => handleOpenEditDiscDialog(disc)}
-												>
-													<Pencil className="h-4 w-4" />
-												</Button>
-												<Button
-													variant="ghost"
-													size="icon"
-													className="text-error hover:text-error"
-													onClick={() => handleDeleteDisc(disc)}
-												>
-													<Trash2 className="h-4 w-4" />
-												</Button>
-											</div>
-										</div>
-									))}
-								</div>
-							) : (
-								<p className="text-base-content/50 text-sm">
-									ディスクが登録されていません
-								</p>
-							)}
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="ghost" onClick={() => setEditingRelease(null)}>
-							閉じる
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleUpdate}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "保存中..." : "保存"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-
-			{/* ディスク追加・編集ダイアログ */}
-			<Dialog
-				open={isDiscDialogOpen}
-				onOpenChange={(open) => {
-					if (!open) {
-						setIsDiscDialogOpen(false);
-						setEditingDisc(null);
-						setDiscForm({});
-						setMutationError(null);
-					}
-				}}
-			>
-				<DialogContent className="sm:max-w-[400px]">
-					<DialogHeader>
-						<DialogTitle>
-							{editingDisc ? "ディスクの編集" : "ディスクの追加"}
-						</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2">
-							<Label htmlFor="disc-discNumber">
-								ディスク番号 <span className="text-error">*</span>
-							</Label>
-							<Input
-								id="disc-discNumber"
-								type="number"
-								min="1"
-								value={discForm.discNumber ?? ""}
-								onChange={(e) =>
-									setDiscForm({
-										...discForm,
-										discNumber: e.target.value
-											? Number(e.target.value)
-											: undefined,
-									})
-								}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="disc-discName">ディスク名</Label>
-							<Input
-								id="disc-discName"
-								value={discForm.discName || ""}
-								onChange={(e) =>
-									setDiscForm({ ...discForm, discName: e.target.value })
-								}
-								placeholder="例: オリジナルサウンドトラック"
-							/>
-						</div>
-						{mutationError && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
-							</div>
-						)}
-					</div>
-					<DialogFooter>
-						<Button variant="ghost" onClick={() => setIsDiscDialogOpen(false)}>
-							キャンセル
-						</Button>
-						<Button
-							variant="primary"
-							onClick={handleSaveDisc}
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? "保存中..." : "保存"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			{/* 編集ダイアログ */}
+			{editingRelease && (
+				<ReleaseEditDialog
+					open={!!editingRelease}
+					onOpenChange={(open) => {
+						if (!open) {
+							setEditingRelease(null);
+							setMutationError(null);
+						}
+					}}
+					release={editingRelease}
+					onSuccess={invalidateQuery}
+				/>
+			)}
 		</div>
 	);
 }

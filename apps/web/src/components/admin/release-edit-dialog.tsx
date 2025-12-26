@@ -82,21 +82,42 @@ export function ReleaseEditDialog({
 		enabled: open && !!selectedEventId,
 	});
 
+	// イベント日が取得されたら1日目を自動設定
+	useEffect(() => {
+		if (
+			selectedEventId &&
+			eventDaysData &&
+			eventDaysData.length > 0 &&
+			!editForm.eventDayId
+		) {
+			const firstDay =
+				eventDaysData.find((d) => d.dayNumber === 1) || eventDaysData[0];
+			if (firstDay) {
+				setEditForm((prev) => ({
+					...prev,
+					eventDayId: firstDay.id,
+					releaseDate: firstDay.date,
+				}));
+			}
+		}
+	}, [selectedEventId, eventDaysData]);
+
 	// イベントオプション
 	const eventOptions = useMemo(() => {
 		const events = eventsData?.data ?? [];
 		return events.map((e) => ({
 			value: e.id,
-			label: e.seriesName ? `${e.seriesName} ${e.name}` : e.name,
+			label: e.seriesName ? `【${e.seriesName}】${e.name}` : e.name,
 		}));
 	}, [eventsData?.data]);
 
 	// イベント日オプション
 	const eventDayOptions = useMemo(() => {
 		const days = eventDaysData ?? [];
+		const hasMultipleDays = days.length > 1;
 		return days.map((d) => ({
 			value: d.id,
-			label: `Day ${d.dayNumber} (${d.date})`,
+			label: hasMultipleDays ? `${d.dayNumber}日目（${d.date}）` : d.date,
 		}));
 	}, [eventDaysData]);
 
@@ -191,16 +212,6 @@ export function ReleaseEditDialog({
 							</Select>
 						</div>
 						<div className="grid gap-2">
-							<Label>発売日</Label>
-							<Input
-								type="date"
-								value={editForm.releaseDate || ""}
-								onChange={(e) =>
-									setEditForm({ ...editForm, releaseDate: e.target.value })
-								}
-							/>
-						</div>
-						<div className="grid gap-2">
 							<Label>イベント</Label>
 							<SearchableSelect
 								value={editForm.eventId || ""}
@@ -223,9 +234,16 @@ export function ReleaseEditDialog({
 							<Label>イベント日</Label>
 							<SearchableSelect
 								value={editForm.eventDayId || ""}
-								onChange={(value) =>
-									setEditForm({ ...editForm, eventDayId: value || null })
-								}
+								onChange={(value) => {
+									const selectedDay = eventDaysData?.find(
+										(d) => d.id === value,
+									);
+									setEditForm({
+										...editForm,
+										eventDayId: value || null,
+										releaseDate: selectedDay?.date || editForm.releaseDate,
+									});
+								}}
 								options={eventDayOptions}
 								placeholder="イベント日を選択"
 								searchPlaceholder="イベント日を検索..."
@@ -234,8 +252,19 @@ export function ReleaseEditDialog({
 										? "イベント日が見つかりません"
 										: "先にイベントを選択してください"
 								}
-								disabled={!selectedEventId}
+								disabled={!selectedEventId || (eventDaysData?.length ?? 0) <= 1}
 								clearable
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label>発売日</Label>
+							<Input
+								type="date"
+								value={editForm.releaseDate || ""}
+								onChange={(e) =>
+									setEditForm({ ...editForm, releaseDate: e.target.value })
+								}
+								disabled={!!editForm.eventDayId}
 							/>
 						</div>
 						<div className="grid gap-2">
