@@ -534,32 +534,30 @@ function TracksPage() {
 												: createForm.nameJa,
 									});
 								}}
-								placeholder="トラック名を入力"
+								placeholder="例: ネイティブフェイス"
 							/>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="create-nameJa">日本語名</Label>
-								<Input
-									id="create-nameJa"
-									value={createForm.nameJa || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, nameJa: e.target.value })
-									}
-									placeholder="日本語名を入力"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="create-nameEn">英語名</Label>
-								<Input
-									id="create-nameEn"
-									value={createForm.nameEn || ""}
-									onChange={(e) =>
-										setCreateForm({ ...createForm, nameEn: e.target.value })
-									}
-									placeholder="英語名を入力"
-								/>
-							</div>
+						<div className="grid gap-2">
+							<Label htmlFor="create-nameJa">日本語名</Label>
+							<Input
+								id="create-nameJa"
+								value={createForm.nameJa || ""}
+								onChange={(e) =>
+									setCreateForm({ ...createForm, nameJa: e.target.value })
+								}
+								placeholder="例: ネイティブフェイス"
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="create-nameEn">英語名</Label>
+							<Input
+								id="create-nameEn"
+								value={createForm.nameEn || ""}
+								onChange={(e) =>
+									setCreateForm({ ...createForm, nameEn: e.target.value })
+								}
+								placeholder="例: Native Face"
+							/>
 						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="create-trackNumber">
@@ -578,6 +576,7 @@ function TracksPage() {
 											: undefined,
 									})
 								}
+								placeholder="1"
 							/>
 						</div>
 						{mutationError && (
@@ -645,32 +644,30 @@ function TracksPage() {
 												: editForm.nameJa,
 									});
 								}}
-								placeholder="トラック名を入力"
+								placeholder="例: ネイティブフェイス"
 							/>
 						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameJa">日本語名</Label>
-								<Input
-									id="edit-nameJa"
-									value={editForm.nameJa || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameJa: e.target.value })
-									}
-									placeholder="日本語名を入力"
-								/>
-							</div>
-							<div className="grid gap-2">
-								<Label htmlFor="edit-nameEn">英語名</Label>
-								<Input
-									id="edit-nameEn"
-									value={editForm.nameEn || ""}
-									onChange={(e) =>
-										setEditForm({ ...editForm, nameEn: e.target.value })
-									}
-									placeholder="英語名を入力"
-								/>
-							</div>
+						<div className="grid gap-2">
+							<Label htmlFor="edit-nameJa">日本語名</Label>
+							<Input
+								id="edit-nameJa"
+								value={editForm.nameJa || ""}
+								onChange={(e) =>
+									setEditForm({ ...editForm, nameJa: e.target.value })
+								}
+								placeholder="例: ネイティブフェイス"
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="edit-nameEn">英語名</Label>
+							<Input
+								id="edit-nameEn"
+								value={editForm.nameEn || ""}
+								onChange={(e) =>
+									setEditForm({ ...editForm, nameEn: e.target.value })
+								}
+								placeholder="例: Native Face"
+							/>
 						</div>
 						<div className="grid gap-2">
 							<Label htmlFor="edit-trackNumber">
@@ -689,6 +686,7 @@ function TracksPage() {
 											: undefined,
 									})
 								}
+								placeholder="1"
 							/>
 						</div>
 						{mutationError && (
