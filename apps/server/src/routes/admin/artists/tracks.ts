@@ -59,8 +59,14 @@ artistTracksRouter.get("/:artistId/tracks", async (c) => {
 		.where(inArray(tracks.id, trackIds))
 		.orderBy(tracks.name);
 
-	// リリース情報を取得
-	const releaseIds = [...new Set(trackList.map((t) => t.releaseId))];
+	// リリース情報を取得（nullを除外）
+	const releaseIds = [
+		...new Set(
+			trackList
+				.map((t) => t.releaseId)
+				.filter((id): id is string => id !== null),
+		),
+	];
 	const releaseList = await db
 		.select({
 			id: releases.id,
@@ -98,7 +104,7 @@ artistTracksRouter.get("/:artistId/tracks", async (c) => {
 
 	// トラック情報を整形
 	const tracksWithRelease = trackList.map((t) => {
-		const release = releaseMap.get(t.releaseId);
+		const release = t.releaseId ? releaseMap.get(t.releaseId) : undefined;
 		return {
 			id: t.id,
 			name: t.name,

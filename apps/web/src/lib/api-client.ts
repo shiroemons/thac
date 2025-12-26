@@ -1543,12 +1543,16 @@ export const circleReleasesApi = {
 
 export interface Track {
 	id: string;
-	releaseId: string;
+	releaseId: string | null;
 	discId: string | null;
 	trackNumber: number;
 	name: string;
 	nameJa: string | null;
 	nameEn: string | null;
+	releaseDate: string | null;
+	releaseYear: number | null;
+	releaseMonth: number | null;
+	releaseDay: number | null;
 	eventId: string | null;
 	eventDayId: string | null;
 	createdAt: string;

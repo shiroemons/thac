@@ -450,7 +450,7 @@ function TrackDetailPage() {
 		try {
 			if (editingCredit) {
 				await trackCreditsApi.update(
-					track.releaseId,
+					track.releaseId!,
 					track.id,
 					editingCredit.id,
 					{
@@ -463,7 +463,7 @@ function TrackDetailPage() {
 				);
 				closeCreditEditDialog();
 			} else {
-				await trackCreditsApi.create(track.releaseId, track.id, {
+				await trackCreditsApi.create(track.releaseId!, track.id, {
 					id: creditForm.id,
 					artistId: creditForm.artistId,
 					artistAliasId: creditForm.artistAliasId || null,
@@ -491,7 +491,7 @@ function TrackDetailPage() {
 		}
 
 		try {
-			await trackCreditsApi.delete(track.releaseId, track.id, credit.id);
+			await trackCreditsApi.delete(track.releaseId!, track.id, credit.id);
 			await queryClient.invalidateQueries({ queryKey: ["track", trackId] });
 		} catch (err) {
 			setMutationError(
@@ -510,10 +510,10 @@ function TrackDetailPage() {
 
 		try {
 			await Promise.all([
-				trackCreditsApi.update(track.releaseId, track.id, credit.id, {
+				trackCreditsApi.update(track.releaseId!, track.id, credit.id, {
 					creditPosition: prevCredit.creditPosition,
 				}),
-				trackCreditsApi.update(track.releaseId, track.id, prevCredit.id, {
+				trackCreditsApi.update(track.releaseId!, track.id, prevCredit.id, {
 					creditPosition: credit.creditPosition,
 				}),
 			]);
@@ -536,10 +536,10 @@ function TrackDetailPage() {
 
 		try {
 			await Promise.all([
-				trackCreditsApi.update(track.releaseId, track.id, credit.id, {
+				trackCreditsApi.update(track.releaseId!, track.id, credit.id, {
 					creditPosition: nextCredit.creditPosition,
 				}),
-				trackCreditsApi.update(track.releaseId, track.id, nextCredit.id, {
+				trackCreditsApi.update(track.releaseId!, track.id, nextCredit.id, {
 					creditPosition: credit.creditPosition,
 				}),
 			]);

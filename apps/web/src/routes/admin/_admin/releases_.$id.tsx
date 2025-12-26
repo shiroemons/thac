@@ -579,6 +579,10 @@ function ReleaseDetailPage() {
 					nameJa: trackForm.nameJa || null,
 					nameEn: trackForm.nameEn || null,
 					discId: trackForm.discId || null,
+					releaseDate: null,
+					releaseYear: null,
+					releaseMonth: null,
+					releaseDay: null,
 					eventId: null,
 					eventDayId: null,
 				});
