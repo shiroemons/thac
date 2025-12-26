@@ -29,7 +29,6 @@ export interface PlatformEditDialogProps {
 }
 
 const categoryOptions = [
-	{ value: "", label: "未選択" },
 	{ value: "streaming", label: "ストリーミング" },
 	{ value: "video", label: "動画" },
 	{ value: "download", label: "ダウンロード" },
@@ -48,7 +47,7 @@ export function PlatformEditDialog({
 	const [form, setForm] = useState<PlatformFormData>({
 		code: "",
 		name: "",
-		category: "",
+		category: "streaming",
 		urlPattern: "",
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,14 +60,14 @@ export function PlatformEditDialog({
 				setForm({
 					code: platform.code,
 					name: platform.name,
-					category: platform.category ?? "",
+					category: platform.category ?? "streaming",
 					urlPattern: platform.urlPattern ?? "",
 				});
 			} else {
 				setForm({
 					code: "",
 					name: "",
-					category: "",
+					category: "streaming",
 					urlPattern: "",
 				});
 			}
@@ -85,6 +84,10 @@ export function PlatformEditDialog({
 			setError("名前を入力してください");
 			return;
 		}
+		if (!form.category.trim()) {
+			setError("カテゴリを選択してください");
+			return;
+		}
 
 		setIsSubmitting(true);
 		setError(null);
@@ -94,14 +97,14 @@ export function PlatformEditDialog({
 				await platformsApi.create({
 					code: form.code,
 					name: form.name,
-					category: form.category || null,
+					category: form.category,
 					urlPattern: form.urlPattern || null,
 					sortOrder: currentPlatformsCount ?? 0,
 				});
 			} else if (platform) {
 				await platformsApi.update(platform.code, {
 					name: form.name,
-					category: form.category || null,
+					category: form.category,
 					urlPattern: form.urlPattern || null,
 				});
 			}
@@ -165,7 +168,9 @@ export function PlatformEditDialog({
 						/>
 					</div>
 					<div className="grid gap-2">
-						<Label htmlFor="platform-category">カテゴリ</Label>
+						<Label htmlFor="platform-category">
+							カテゴリ <span className="text-error">*</span>
+						</Label>
 						<Select
 							id="platform-category"
 							value={form.category}
@@ -201,7 +206,12 @@ export function PlatformEditDialog({
 					<Button
 						variant="primary"
 						onClick={handleSubmit}
-						disabled={isSubmitting || !form.code.trim() || !form.name.trim()}
+						disabled={
+							isSubmitting ||
+							!form.code.trim() ||
+							!form.name.trim() ||
+							!form.category.trim()
+						}
 					>
 						{isSubmitting
 							? mode === "create"
