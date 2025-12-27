@@ -1,7 +1,9 @@
 import {
+	circles,
 	db,
 	eq,
 	inArray,
+	releaseCircles,
 	releases,
 	trackCreditRoles,
 	trackCredits,
@@ -31,6 +33,11 @@ artistTracksRouter.get("/:artistId/tracks", async (c) => {
 			totalUniqueTrackCount: 0,
 			byRole: {},
 			tracks: [],
+			statistics: {
+				releaseCount: 0,
+				earliestReleaseDate: null,
+				latestReleaseDate: null,
+			},
 		});
 	}
 
@@ -78,6 +85,46 @@ artistTracksRouter.get("/:artistId/tracks", async (c) => {
 
 	const releaseMap = new Map(releaseList.map((r) => [r.id, r]));
 
+	// リリースサークル情報を取得
+	const releaseCirclesList =
+		releaseIds.length > 0
+			? await db
+					.select({
+						releaseId: releaseCircles.releaseId,
+						circleId: releaseCircles.circleId,
+					})
+					.from(releaseCircles)
+					.where(inArray(releaseCircles.releaseId, releaseIds))
+			: [];
+
+	// サークル情報を取得
+	const circleIds = [...new Set(releaseCirclesList.map((rc) => rc.circleId))];
+	const circleList =
+		circleIds.length > 0
+			? await db
+					.select({
+						id: circles.id,
+						name: circles.name,
+					})
+					.from(circles)
+					.where(inArray(circles.id, circleIds))
+			: [];
+
+	const circleMap = new Map(circleList.map((c) => [c.id, c.name]));
+
+	// リリースIDからサークル名一覧へのマップを作成
+	const releaseCircleNamesMap = new Map<string, string[]>();
+	for (const rc of releaseCirclesList) {
+		const circleName = circleMap.get(rc.circleId);
+		if (circleName) {
+			const names = releaseCircleNamesMap.get(rc.releaseId) || [];
+			if (!names.includes(circleName)) {
+				names.push(circleName);
+			}
+			releaseCircleNamesMap.set(rc.releaseId, names);
+		}
+	}
+
 	// クレジットIDからトラックIDへのマップ
 	const creditToTrack = new Map(credits.map((c) => [c.creditId, c.trackId]));
 
@@ -103,27 +150,66 @@ artistTracksRouter.get("/:artistId/tracks", async (c) => {
 	}
 
 	// トラック情報を整形
-	const tracksWithRelease = trackList.map((t) => {
-		const release = t.releaseId ? releaseMap.get(t.releaseId) : undefined;
-		return {
-			id: t.id,
-			name: t.name,
-			nameJa: t.nameJa,
-			trackNumber: t.trackNumber,
-			release: release
-				? {
-						id: release.id,
-						name: release.name,
-						releaseDate: release.releaseDate,
-					}
-				: null,
-		};
-	});
+	const tracksWithRelease = trackList
+		.map((t) => {
+			const release = t.releaseId ? releaseMap.get(t.releaseId) : undefined;
+			const circleNames = t.releaseId
+				? releaseCircleNamesMap.get(t.releaseId)
+				: undefined;
+			return {
+				id: t.id,
+				name: t.name,
+				nameJa: t.nameJa,
+				trackNumber: t.trackNumber,
+				release: release
+					? {
+							id: release.id,
+							name: release.name,
+							releaseDate: release.releaseDate,
+							circleNames: circleNames ? circleNames.join(" / ") : null,
+						}
+					: null,
+			};
+		})
+		// 作品名 → トラック番号でソート
+		.sort((a, b) => {
+			// 作品なしは後ろへ
+			if (!a.release && b.release) return 1;
+			if (a.release && !b.release) return -1;
+			if (!a.release && !b.release) return a.name.localeCompare(b.name);
+
+			// ここに到達した時点で両方ともreleaseが存在する（上記の条件で除外済み）
+			// biome-ignore lint/style/noNonNullAssertion: 上記の条件分岐で両方ともnullでないことが保証済み
+			const releaseA = a.release!;
+			// biome-ignore lint/style/noNonNullAssertion: 上記の条件分岐で両方ともnullでないことが保証済み
+			const releaseB = b.release!;
+
+			// 作品名でソート
+			const releaseCompare = releaseA.name.localeCompare(releaseB.name);
+			if (releaseCompare !== 0) return releaseCompare;
+
+			// 同じ作品内ではトラック番号でソート
+			return a.trackNumber - b.trackNumber;
+		});
+
+	// 統計情報を計算
+	const releaseDates = releaseList
+		.map((r) => r.releaseDate)
+		.filter((d): d is string => d !== null)
+		.sort();
+
+	const statistics = {
+		releaseCount: releaseList.length,
+		earliestReleaseDate: releaseDates.length > 0 ? releaseDates[0] : null,
+		latestReleaseDate:
+			releaseDates.length > 0 ? releaseDates[releaseDates.length - 1] : null,
+	};
 
 	return c.json({
 		totalUniqueTrackCount: trackIds.length,
 		byRole: roleCount,
 		tracks: tracksWithRelease,
+		statistics,
 	});
 });
 

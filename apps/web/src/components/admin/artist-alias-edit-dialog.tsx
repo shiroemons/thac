@@ -29,6 +29,8 @@ export interface ArtistAliasFormData {
 	aliasTypeCode: string | null;
 	initialScript: InitialScript;
 	nameInitial: string | null;
+	periodFrom: string | null;
+	periodTo: string | null;
 }
 
 export interface ArtistAliasEditDialogProps {
@@ -56,6 +58,8 @@ export function ArtistAliasEditDialog({
 		aliasTypeCode: "main",
 		initialScript: "latin",
 		nameInitial: null,
+		periodFrom: null,
+		periodTo: null,
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -98,6 +102,8 @@ export function ArtistAliasEditDialog({
 					aliasTypeCode: alias.aliasTypeCode,
 					initialScript: alias.initialScript,
 					nameInitial: alias.nameInitial,
+					periodFrom: alias.periodFrom,
+					periodTo: alias.periodTo,
 				});
 			} else {
 				setForm({
@@ -106,6 +112,8 @@ export function ArtistAliasEditDialog({
 					aliasTypeCode: "main",
 					initialScript: "latin",
 					nameInitial: null,
+					periodFrom: null,
+					periodTo: null,
 				});
 			}
 			setError(null);
@@ -175,8 +183,8 @@ export function ArtistAliasEditDialog({
 					aliasTypeCode: form.aliasTypeCode,
 					initialScript: form.initialScript,
 					nameInitial: form.nameInitial,
-					periodFrom: null,
-					periodTo: null,
+					periodFrom: form.periodFrom || null,
+					periodTo: form.periodTo || null,
 				});
 			} else if (alias) {
 				await artistAliasesApi.update(alias.id, {
@@ -185,6 +193,8 @@ export function ArtistAliasEditDialog({
 					aliasTypeCode: form.aliasTypeCode,
 					initialScript: form.initialScript,
 					nameInitial: form.nameInitial,
+					periodFrom: form.periodFrom || null,
+					periodTo: form.periodTo || null,
 				});
 			}
 			onOpenChange(false);
@@ -272,6 +282,32 @@ export function ArtistAliasEditDialog({
 									</option>
 								))}
 							</Select>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label htmlFor="period-from">活動開始</Label>
+								<Input
+									id="period-from"
+									type="month"
+									value={form.periodFrom || ""}
+									onChange={(e) =>
+										setForm({ ...form, periodFrom: e.target.value || null })
+									}
+									disabled={isSubmitting}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="period-to">活動終了</Label>
+								<Input
+									id="period-to"
+									type="month"
+									value={form.periodTo || ""}
+									onChange={(e) =>
+										setForm({ ...form, periodTo: e.target.value || null })
+									}
+									disabled={isSubmitting}
+								/>
+							</div>
 						</div>
 					</div>
 					<DialogFooter>
