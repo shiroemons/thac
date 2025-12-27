@@ -27,6 +27,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { EnhancedTrackSelect } from "@/components/ui/enhanced-track-select";
 import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1862,7 +1863,7 @@ function TrackDetailPage() {
 				open={isDerivationDialogOpen}
 				onOpenChange={setIsDerivationDialogOpen}
 			>
-				<DialogContent className="sm:max-w-[500px]">
+				<DialogContent className="sm:max-w-[700px]">
 					<DialogHeader>
 						<DialogTitle>派生元トラックの追加</DialogTitle>
 					</DialogHeader>
@@ -1871,21 +1872,15 @@ function TrackDetailPage() {
 							<Label>
 								派生元トラック <span className="text-error">*</span>
 							</Label>
-							<SearchableSelect
+							<EnhancedTrackSelect
 								value={derivationForm.parentTrackId}
 								onChange={(val) =>
 									setDerivationForm({ ...derivationForm, parentTrackId: val })
 								}
-								options={(allTracksData?.data ?? [])
-									.filter((t) => t.id !== trackId)
-									.map((t) => ({
-										value: t.id,
-										label: t.releaseName
-											? `${t.name}（${t.releaseName}）`
-											: t.name,
-									}))}
+								tracks={allTracksData?.data ?? []}
+								excludeTrackIds={[trackId]}
 								placeholder="トラックを選択"
-								searchPlaceholder="トラックを検索..."
+								searchPlaceholder="トラック名、作品名、サークル名で検索..."
 								emptyMessage="トラックが見つかりません"
 							/>
 						</div>

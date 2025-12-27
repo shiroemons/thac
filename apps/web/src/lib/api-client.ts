@@ -1611,6 +1611,7 @@ export interface TrackListItem extends Track {
 	arrangers: string | null;
 	lyricists: string | null;
 	originalSongs: string | null;
+	circles: string | null;
 }
 
 // Tracks
