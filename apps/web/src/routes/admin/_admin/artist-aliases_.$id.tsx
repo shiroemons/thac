@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Home, Music, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Home, Music, Pencil, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { ArtistAliasEditDialog } from "@/components/admin/artist-alias-edit-dialog";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
@@ -23,6 +23,7 @@ import {
 } from "@/lib/api-client";
 import { createArtistAliasDetailHead } from "@/lib/head";
 import {
+	artistAliasCirclesQueryOptions,
 	artistAliasDetailQueryOptions,
 	artistAliasTracksQueryOptions,
 } from "@/lib/query-options";
@@ -78,12 +79,17 @@ function ArtistAliasDetailPage() {
 	const navigate = useNavigate();
 
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const [tracksPage, setTracksPage] = useState(1);
+	const tracksPageSize = 20;
 
 	const { data: alias, isPending } = useQuery(
 		artistAliasDetailQueryOptions(id),
 	);
 	const { data: tracksData, isPending: isTracksPending } = useQuery(
 		artistAliasTracksQueryOptions(id),
+	);
+	const { data: circlesData, isPending: isCirclesPending } = useQuery(
+		artistAliasCirclesQueryOptions(id),
 	);
 
 	// 名義種別一覧取得
@@ -250,6 +256,140 @@ function ArtistAliasDetailPage() {
 				</div>
 			</div>
 
+			{/* 統計情報カード */}
+			<div className="card bg-base-100 shadow-xl">
+				<div className="card-body">
+					<h2 className="card-title">統計情報</h2>
+
+					{isTracksPending ? (
+						<div className="flex items-center justify-center py-8">
+							<span className="loading loading-spinner loading-md" />
+						</div>
+					) : !tracksData ? (
+						<p className="text-base-content/60">統計情報を取得できません</p>
+					) : (
+						<div className="space-y-4">
+							{/* 基本統計 */}
+							<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+								<div className="rounded-lg bg-base-200/50 p-4">
+									<Label className="text-base-content/60">参加トラック数</Label>
+									<p className="font-bold text-2xl">
+										{tracksData.totalUniqueTrackCount}
+										<span className="font-normal text-base-content/60 text-sm">
+											{" "}
+											曲
+										</span>
+									</p>
+								</div>
+								<div className="rounded-lg bg-base-200/50 p-4">
+									<Label className="text-base-content/60">参加リリース数</Label>
+									<p className="font-bold text-2xl">
+										{tracksData.statistics.releaseCount}
+										<span className="font-normal text-base-content/60 text-sm">
+											{" "}
+											作品
+										</span>
+									</p>
+								</div>
+								<div className="rounded-lg bg-base-200/50 p-4">
+									<Label className="text-base-content/60">活動期間</Label>
+									<p className="font-medium">
+										{tracksData.statistics.earliestReleaseDate &&
+										tracksData.statistics.latestReleaseDate
+											? `${tracksData.statistics.earliestReleaseDate} 〜 ${tracksData.statistics.latestReleaseDate}`
+											: tracksData.statistics.earliestReleaseDate ||
+												tracksData.statistics.latestReleaseDate ||
+												"-"}
+									</p>
+								</div>
+							</div>
+
+							{/* 役割別内訳 */}
+							{Object.keys(tracksData.byRole).length > 0 && (
+								<div>
+									<h3 className="mb-3 font-medium text-base-content/80">
+										役割別内訳
+									</h3>
+									<div className="flex flex-wrap gap-2">
+										{Object.entries(tracksData.byRole)
+											.sort((a, b) => b[1] - a[1])
+											.map(([roleCode, count]) => (
+												<Badge key={roleCode} variant="outline">
+													{ROLE_LABELS[roleCode] || roleCode}: {count}曲
+												</Badge>
+											))}
+									</div>
+								</div>
+							)}
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* 参加サークルカード */}
+			<div className="card bg-base-100 shadow-xl">
+				<div className="card-body">
+					<div className="flex items-center gap-2">
+						<Users className="h-5 w-5" />
+						<h2 className="card-title">参加サークル</h2>
+						{circlesData && circlesData.length > 0 && (
+							<Badge variant="secondary">{circlesData.length}件</Badge>
+						)}
+					</div>
+
+					{isCirclesPending ? (
+						<div className="flex items-center justify-center py-8">
+							<span className="loading loading-spinner loading-md" />
+						</div>
+					) : !circlesData || circlesData.length === 0 ? (
+						<p className="text-base-content/60">参加サークルがありません</p>
+					) : (
+						<div className="overflow-x-auto">
+							<Table zebra>
+								<TableHeader>
+									<TableRow className="hover:bg-transparent">
+										<TableHead>サークル名</TableHead>
+										<TableHead className="w-[160px]">参加形態</TableHead>
+										<TableHead className="w-[100px]">リリース数</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{circlesData.map((circle) => (
+										<TableRow key={circle.circleId}>
+											<TableCell className="font-medium">
+												<Link
+													to="/admin/circles/$id"
+													params={{ id: circle.circleId }}
+													className="link link-hover"
+												>
+													{circle.circleName}
+												</Link>
+											</TableCell>
+											<TableCell>
+												<div className="flex flex-wrap gap-1">
+													{circle.participationTypes.map((type) => (
+														<Badge key={type} variant="outline">
+															{type === "host"
+																? "主催"
+																: type === "contributor"
+																	? "参加"
+																	: type}
+														</Badge>
+													))}
+												</div>
+											</TableCell>
+											<TableCell className="text-base-content/70">
+												{circle.releaseCount}作品
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						</div>
+					)}
+				</div>
+			</div>
+
 			{/* 関連楽曲カード */}
 			<div className="card bg-base-100 shadow-xl">
 				<div className="card-body">
@@ -270,40 +410,42 @@ function ArtistAliasDetailPage() {
 					) : !tracksData || tracksData.totalUniqueTrackCount === 0 ? (
 						<p className="text-base-content/60">関連する楽曲がありません</p>
 					) : (
-						<div className="space-y-6">
-							{/* 役割別カウント */}
-							<div>
-								<h3 className="mb-3 font-medium text-base-content/80">
-									役割別カウント
-								</h3>
-								<div className="flex flex-wrap gap-2">
-									{Object.entries(tracksData.byRole)
-										.sort((a, b) => b[1] - a[1])
-										.map(([roleCode, count]) => (
-											<Badge key={roleCode} variant="outline">
-												{ROLE_LABELS[roleCode] || roleCode}: {count}曲
-											</Badge>
-										))}
-								</div>
-							</div>
-
-							{/* 楽曲一覧 */}
-							<div>
-								<h3 className="mb-3 font-medium text-base-content/80">
-									楽曲一覧
-								</h3>
-								<div className="overflow-x-auto">
-									<Table zebra>
-										<TableHeader>
-											<TableRow className="hover:bg-transparent">
-												<TableHead>楽曲名</TableHead>
-												<TableHead>リリース</TableHead>
-												<TableHead className="w-[130px]">リリース日</TableHead>
-											</TableRow>
-										</TableHeader>
-										<TableBody>
-											{tracksData.tracks.map((track) => (
+						<div className="space-y-4">
+							<div className="overflow-x-auto">
+								<Table zebra>
+									<TableHeader>
+										<TableRow className="hover:bg-transparent">
+											<TableHead>作品</TableHead>
+											<TableHead className="w-[60px]">No.</TableHead>
+											<TableHead>トラック名</TableHead>
+											<TableHead className="w-[120px]">リリース日</TableHead>
+											<TableHead>サークル</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{tracksData.tracks
+											.slice(
+												(tracksPage - 1) * tracksPageSize,
+												tracksPage * tracksPageSize,
+											)
+											.map((track) => (
 												<TableRow key={track.id}>
+													<TableCell>
+														{track.release ? (
+															<Link
+																to="/admin/releases/$id"
+																params={{ id: track.release.id }}
+																className="link link-hover"
+															>
+																{track.release.name}
+															</Link>
+														) : (
+															"-"
+														)}
+													</TableCell>
+													<TableCell className="text-center text-base-content/70">
+														{track.trackNumber}
+													</TableCell>
 													<TableCell className="font-medium">
 														<Link
 															to="/admin/tracks/$id"
@@ -318,28 +460,68 @@ function ArtistAliasDetailPage() {
 															</span>
 														)}
 													</TableCell>
-													<TableCell>
-														{track.release ? (
-															<Link
-																to="/admin/releases/$id"
-																params={{ id: track.release.id }}
-																className="link link-hover"
-															>
-																{track.release.name}
-															</Link>
-														) : (
-															"-"
-														)}
-													</TableCell>
 													<TableCell className="text-base-content/70">
 														{track.release?.releaseDate || "-"}
 													</TableCell>
+													<TableCell className="text-base-content/70">
+														{track.release?.circleNames || "-"}
+													</TableCell>
 												</TableRow>
 											))}
-										</TableBody>
-									</Table>
-								</div>
+									</TableBody>
+								</Table>
 							</div>
+
+							{/* ページネーション */}
+							{tracksData.tracks.length > tracksPageSize && (
+								<div className="flex items-center justify-between">
+									<p className="text-base-content/60 text-sm">
+										全{tracksData.tracks.length}件中{" "}
+										{(tracksPage - 1) * tracksPageSize + 1}〜
+										{Math.min(
+											tracksPage * tracksPageSize,
+											tracksData.tracks.length,
+										)}
+										件を表示
+									</p>
+									<div className="join">
+										<Button
+											variant="outline"
+											size="sm"
+											className="join-item"
+											disabled={tracksPage === 1}
+											onClick={() => setTracksPage((p) => Math.max(1, p - 1))}
+										>
+											前へ
+										</Button>
+										<span className="join-item flex items-center border border-base-300 px-4 text-sm">
+											{tracksPage} /{" "}
+											{Math.ceil(tracksData.tracks.length / tracksPageSize)}
+										</span>
+										<Button
+											variant="outline"
+											size="sm"
+											className="join-item"
+											disabled={
+												tracksPage >=
+												Math.ceil(tracksData.tracks.length / tracksPageSize)
+											}
+											onClick={() =>
+												setTracksPage((p) =>
+													Math.min(
+														Math.ceil(
+															tracksData.tracks.length / tracksPageSize,
+														),
+														p + 1,
+													),
+												)
+											}
+										>
+											次へ
+										</Button>
+									</div>
+								</div>
+							)}
 						</div>
 					)}
 				</div>

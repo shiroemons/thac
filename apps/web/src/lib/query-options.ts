@@ -178,6 +178,17 @@ export const artistAliasTracksQueryOptions = (id: string) =>
 		staleTime: STALE_TIME.SHORT,
 	});
 
+/**
+ * アーティストエイリアスの参加サークルのqueryOptions
+ */
+export const artistAliasCirclesQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["artistAlias", id, "circles"],
+		queryFn: () =>
+			ssrFetch<ArtistCircle[]>(`/api/admin/artist-aliases/${id}/circles`),
+		staleTime: STALE_TIME.SHORT,
+	});
+
 // ===== サークル =====
 
 interface CircleListParams {
