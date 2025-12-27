@@ -1556,6 +1556,36 @@ export const circleReleasesApi = {
 		),
 };
 
+// ===== サークルのアーティスト一覧 =====
+
+export interface CircleArtist {
+	artistId: string;
+	artistName: string;
+	trackCount: number;
+	releaseCount: number;
+	roles: string[];
+}
+
+export interface CircleStatistics {
+	totalArtistCount: number;
+	totalTrackCount: number;
+	releaseCount: number;
+	earliestReleaseDate: string | null;
+	latestReleaseDate: string | null;
+}
+
+export interface CircleArtistsResponse {
+	artists: CircleArtist[];
+	statistics: CircleStatistics;
+}
+
+export const circleArtistsApi = {
+	list: (circleId: string) =>
+		fetchWithAuth<CircleArtistsResponse>(
+			`/api/admin/circles/${circleId}/artists`,
+		),
+};
+
 // ===== トラック管理 =====
 
 export interface Track {
