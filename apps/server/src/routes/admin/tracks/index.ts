@@ -2,6 +2,7 @@ import {
 	and,
 	artistAliases,
 	artists,
+	circles,
 	count,
 	creditRoles,
 	db,
@@ -11,6 +12,7 @@ import {
 	events,
 	officialSongs,
 	or,
+	releaseCircles,
 	releases,
 	sql,
 	trackCreditRoles,
@@ -191,6 +193,40 @@ tracksAdminRouter.get("/", async (c) => {
 		}
 	}
 
+	// リリースIDリスト（サークル情報取得用）
+	const releaseIds = [
+		...new Set(result.map((r) => r.track.releaseId).filter(Boolean)),
+	] as string[];
+
+	// サークル情報を一括取得
+	const circlesData =
+		releaseIds.length > 0
+			? await db
+					.select({
+						releaseId: releaseCircles.releaseId,
+						circleName: circles.name,
+						position: releaseCircles.position,
+					})
+					.from(releaseCircles)
+					.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
+					.where(
+						sql`${releaseCircles.releaseId} IN (${sql.join(
+							releaseIds.map((id) => sql`${id}`),
+							sql`, `,
+						)})`,
+					)
+					.orderBy(releaseCircles.position)
+			: [];
+
+	// リリースごとのサークル情報をマップに集約
+	const circlesByRelease = new Map<string, string[]>();
+	for (const circle of circlesData) {
+		if (!circlesByRelease.has(circle.releaseId)) {
+			circlesByRelease.set(circle.releaseId, []);
+		}
+		circlesByRelease.get(circle.releaseId)?.push(circle.circleName);
+	}
+
 	// 総件数を取得
 	const [totalResult] = await db
 		.select({ count: count() })
@@ -204,6 +240,9 @@ tracksAdminRouter.get("/", async (c) => {
 	const data = result.map((row) => {
 		const trackCreditsInfo = creditsByTrack.get(row.track.id);
 		const originalSongs = originalSongsByTrack.get(row.track.id);
+		const releaseCircleNames = row.track.releaseId
+			? circlesByRelease.get(row.track.releaseId)
+			: null;
 		return {
 			...row.track,
 			releaseName: row.releaseName ?? null,
@@ -224,6 +263,7 @@ tracksAdminRouter.get("/", async (c) => {
 			originalSongs: originalSongs
 				? Array.from(originalSongs).join(", ")
 				: null,
+			circles: releaseCircleNames ? releaseCircleNames.join(" / ") : null,
 		};
 	});
 
