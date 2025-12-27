@@ -19,6 +19,7 @@ import type {
 	AliasType,
 	Artist,
 	ArtistAlias,
+	ArtistCircle,
 	ArtistTracksResponse,
 	ArtistWithAliases,
 	Circle,
@@ -106,6 +107,16 @@ export const artistTracksQueryOptions = (id: string) =>
 		queryKey: ["artist", id, "tracks"],
 		queryFn: () =>
 			ssrFetch<ArtistTracksResponse>(`/api/admin/artists/${id}/tracks`),
+		staleTime: STALE_TIME.SHORT,
+	});
+
+/**
+ * アーティストの参加サークルのqueryOptions
+ */
+export const artistCirclesQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["artist", id, "circles"],
+		queryFn: () => ssrFetch<ArtistCircle[]>(`/api/admin/artists/${id}/circles`),
 		staleTime: STALE_TIME.SHORT,
 	});
 

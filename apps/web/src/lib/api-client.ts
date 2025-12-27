@@ -964,6 +964,7 @@ export interface ArtistTrackRelease {
 	id: string;
 	name: string;
 	releaseDate: string | null;
+	circleNames: string | null;
 }
 
 export interface ArtistTrack {
@@ -974,10 +975,24 @@ export interface ArtistTrack {
 	release: ArtistTrackRelease | null;
 }
 
+export interface ArtistStatistics {
+	releaseCount: number;
+	earliestReleaseDate: string | null;
+	latestReleaseDate: string | null;
+}
+
 export interface ArtistTracksResponse {
 	totalUniqueTrackCount: number;
 	byRole: Record<string, number>;
 	tracks: ArtistTrack[];
+	statistics: ArtistStatistics;
+}
+
+export interface ArtistCircle {
+	circleId: string;
+	circleName: string;
+	releaseCount: number;
+	participationTypes: string[];
 }
 
 // Artists
@@ -1003,6 +1018,8 @@ export const artistsApi = {
 		fetchWithAuth<ArtistWithAliases>(`/api/admin/artists/${id}`),
 	getTracks: (id: string) =>
 		fetchWithAuth<ArtistTracksResponse>(`/api/admin/artists/${id}/tracks`),
+	getCircles: (id: string) =>
+		fetchWithAuth<ArtistCircle[]>(`/api/admin/artists/${id}/circles`),
 	create: (data: Omit<Artist, "createdAt" | "updatedAt">) =>
 		fetchWithAuth<Artist>("/api/admin/artists", {
 			method: "POST",

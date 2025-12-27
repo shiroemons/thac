@@ -14,12 +14,14 @@ import {
 } from "@thac/db";
 import { Hono } from "hono";
 import type { AdminContext } from "../../../middleware/admin-auth";
+import { artistCirclesRouter } from "./circles";
 import { artistTracksRouter } from "./tracks";
 
 const artistsRouter = new Hono<AdminContext>();
 
 // サブルーターをマウント
 artistsRouter.route("/", artistTracksRouter);
+artistsRouter.route("/", artistCirclesRouter);
 
 // 一覧取得（ページネーション、検索、頭文字フィルタ対応）
 artistsRouter.get("/", async (c) => {
