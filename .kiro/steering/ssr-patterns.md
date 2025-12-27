@@ -271,4 +271,4 @@ export const getRouter = () => {
 ```
 
 ---
-_Last updated: 2024-12_
+_Last updated: 2025-12_

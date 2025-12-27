@@ -455,7 +455,71 @@ const isReorderDisabled =
 
 ---
 
-## フォームパターン
+## Selectコンポーネントのバリエーション
+
+用途に応じて適切なSelectコンポーネントを選択する。
+
+| コンポーネント | 用途 | 特徴 |
+|--------------|------|------|
+| `Select` | 単純な選択 | 基本的なドロップダウン |
+| `SearchableSelect` | 検索可能な選択 | テキスト検索付き |
+| `GroupedSearchableSelect` | グループ化選択 | 2階層グループ |
+| `NestedGroupedSearchableSelect` | 3階層選択 | 原曲選択など複雑な階層 |
+| `EnhancedTrackSelect` | トラック選択 | 詳細情報カード表示 |
+
+### Portalレンダリングパターン
+
+モーダル内でドロップダウンが切れる問題を解決するため、`NestedGroupedSearchableSelect`と`EnhancedTrackSelect`はReact Portalを使用してドロップダウンを描画する。
+
+```tsx
+// Portal使用パターン
+const [portalContainer, setPortalContainer] = useState<Element | null>(null);
+
+useEffect(() => {
+  // モーダル要素またはdocument.bodyにポータル
+  const modal = document.querySelector('.modal');
+  setPortalContainer(modal || document.body);
+}, [isOpen]);
+
+// ドロップダウンをPortalで描画
+{isOpen && portalContainer && createPortal(
+  <div style={dropdownStyle} className="fixed ...">
+    {/* ドロップダウンコンテンツ */}
+  </div>,
+  portalContainer
+)}
+```
+
+---
+
+## 編集ダイアログパターン
+
+管理画面の各エンティティは統一された編集ダイアログコンポーネントを持つ。
+
+### ファイル構成
+
+```
+components/admin/
+├── artist-edit-dialog.tsx      # アーティスト
+├── circle-edit-dialog.tsx      # サークル
+├── release-edit-dialog.tsx     # 作品
+├── track-edit-dialog.tsx       # トラック
+├── event-edit-dialog.tsx       # イベント
+├── event-series-edit-dialog.tsx # イベントシリーズ
+├── official-work-edit-dialog.tsx # 公式作品
+├── official-song-edit-dialog.tsx # 公式楽曲
+├── artist-alias-edit-dialog.tsx  # アーティスト別名
+├── platform-edit-dialog.tsx    # プラットフォーム（マスタ）
+├── alias-type-edit-dialog.tsx  # 別名種別（マスタ）
+├── credit-role-edit-dialog.tsx # クレジット種別（マスタ）
+└── official-work-category-edit-dialog.tsx # 作品カテゴリ（マスタ）
+```
+
+### 命名規則
+
+- **ファイル名**: `{entity}-edit-dialog.tsx`
+- **コンポーネント名**: `{Entity}EditDialog`
+- **Props**: `data`（編集対象、nullで新規作成）、`open`、`onOpenChange`
 
 ### 基本構成
 
@@ -477,6 +541,10 @@ const isReorderDisabled =
   </DialogContent>
 </Dialog>
 ```
+
+---
+
+## フォームパターン
 
 ### フィールドパターン
 

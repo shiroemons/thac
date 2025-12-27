@@ -26,6 +26,12 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 **Purpose**: Reactコンポーネント
 **Example**: `components/ui/`（daisyUIベースのカスタムコンポーネント）、カスタムコンポーネント
 
+### Admin Components (`apps/web/src/components/admin/`)
+**Location**: `/apps/web/src/components/admin/`
+**Purpose**: 管理画面用コンポーネント
+**Pattern**: `{entity}-edit-dialog.tsx`（編集ダイアログ）、`data-table-*.tsx`（テーブル関連）
+**Example**: `artist-edit-dialog.tsx`, `track-edit-dialog.tsx`, `data-table-pagination.tsx`
+
 ### Database Schema (`packages/db/src/schema/`)
 **Location**: `/packages/db/src/schema/`
 **Purpose**: Drizzle ORMスキーマ定義

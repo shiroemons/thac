@@ -28,9 +28,10 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 - **ORM**: Drizzle ORM
 - **Database**: SQLite（Turso/libsql）
 - **Auth**: Better-Auth
-- **Validation**: Zod
+- **Validation**: Zod v4
 - **ID生成**: nanoid（プレフィックス付きID）
 - **日付処理**: date-fns
+- **トースト通知**: sonner
 
 ## Development Standards
 
