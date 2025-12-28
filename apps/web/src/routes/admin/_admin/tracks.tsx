@@ -11,6 +11,8 @@ import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { TrackEditDialog } from "@/components/admin/track-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -31,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useRowSelection } from "@/hooks/use-row-selection";
 import {
 	releasesApi,
 	type Track,
@@ -86,6 +89,23 @@ function TracksPage() {
 		Partial<Track & { releaseId: string }>
 	>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// 選択状態管理
+	const {
+		selectedItems,
+		isSelected,
+		isAllSelected,
+		isIndeterminate,
+		toggleItem,
+		toggleAll,
+		clearSelection,
+		selectedCount,
+	} = useRowSelection<TrackListItem>();
+
+	// 一括削除ダイアログ状態
+	const [isBatchDeleteDialogOpen, setIsBatchDeleteDialogOpen] = useState(false);
+	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
 	// 作品一覧取得（フィルター用・新規作成用）
 	const { data: releasesData } = useQuery({
@@ -166,6 +186,45 @@ function TracksPage() {
 		}
 	};
 
+	const handleBatchDelete = async () => {
+		setIsBatchDeleting(true);
+		setBatchDeleteError(null);
+
+		try {
+			// 選択されたアイテムからreleaseIdとtrackIdを抽出
+			const items = Array.from(selectedItems.values())
+				.filter((item) => item.releaseId)
+				.map((item) => ({
+					trackId: item.id,
+					releaseId: item.releaseId as string,
+				}));
+
+			if (items.length === 0) {
+				setBatchDeleteError("削除可能なトラックがありません");
+				return;
+			}
+
+			const result = await tracksApi.batchDelete(items);
+
+			if (result.failed.length > 0) {
+				setBatchDeleteError(
+					`${result.deleted}件削除、${result.failed.length}件失敗`,
+				);
+			} else {
+				setIsBatchDeleteDialogOpen(false);
+				clearSelection();
+			}
+
+			invalidateQuery();
+		} catch (e) {
+			setBatchDeleteError(
+				e instanceof Error ? e.message : "一括削除に失敗しました",
+			);
+		} finally {
+			setIsBatchDeleting(false);
+		}
+	};
+
 	const handleEdit = (track: TrackListItem) => {
 		setEditingTrack(track);
 	};
@@ -230,7 +289,28 @@ function TracksPage() {
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
+					secondaryActions={
+						selectedCount > 0
+							? [
+									{
+										label: `選択中の${selectedCount}件を削除`,
+										icon: <Trash2 className="mr-2 h-4 w-4" />,
+										onClick: () => setIsBatchDeleteDialogOpen(true),
+									},
+								]
+							: undefined
+					}
 				>
+					{selectedCount > 0 && (
+						<div className="flex items-center gap-2">
+							<span className="text-base-content/70 text-sm">
+								{selectedCount}件選択中
+							</span>
+							<Button variant="ghost" size="sm" onClick={clearSelection}>
+								選択解除
+							</Button>
+						</div>
+					)}
 					<SearchableSelect
 						value={releaseFilter}
 						onChange={(value) => handleReleaseFilterChange(value || "")}
@@ -261,6 +341,14 @@ function TracksPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
+									<TableHead className="w-[50px]">
+										<Checkbox
+											checked={isAllSelected(tracks)}
+											indeterminate={isIndeterminate(tracks)}
+											onCheckedChange={() => toggleAll(tracks)}
+											aria-label="すべて選択"
+										/>
+									</TableHead>
 									{isVisible("id") && (
 										<TableHead className="w-[220px]">ID</TableHead>
 									)}
@@ -310,7 +398,7 @@ function TracksPage() {
 								{tracks.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={visibleColumns.size + 1}
+											colSpan={visibleColumns.size + 2}
 											className="h-24 text-center text-base-content/50"
 										>
 											該当するトラックが見つかりません
@@ -318,7 +406,19 @@ function TracksPage() {
 									</TableRow>
 								) : (
 									tracks.map((track) => (
-										<TableRow key={track.id}>
+										<TableRow
+											key={track.id}
+											className={
+												isSelected(track.id) ? "bg-primary/5" : undefined
+											}
+										>
+											<TableCell>
+												<Checkbox
+													checked={isSelected(track.id)}
+													onCheckedChange={() => toggleItem(track)}
+													aria-label={`${track.name}を選択`}
+												/>
+											</TableCell>
 											{isVisible("id") && (
 												<TableCell className="font-mono text-base-content/50 text-xs">
 													{track.id}
@@ -601,6 +701,33 @@ function TracksPage() {
 					}}
 				/>
 			)}
+
+			{/* 一括削除確認ダイアログ */}
+			<ConfirmDialog
+				open={isBatchDeleteDialogOpen}
+				onOpenChange={(open) => {
+					setIsBatchDeleteDialogOpen(open);
+					if (!open) {
+						setBatchDeleteError(null);
+					}
+				}}
+				title="トラックの一括削除"
+				description={
+					<div>
+						<p>選択した{selectedCount}件のトラックを削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※関連するクレジット情報も削除されます。この操作は取り消せません。
+						</p>
+						{batchDeleteError && (
+							<p className="mt-2 text-error text-sm">{batchDeleteError}</p>
+						)}
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleBatchDelete}
+				isLoading={isBatchDeleting}
+			/>
 		</div>
 	);
 }

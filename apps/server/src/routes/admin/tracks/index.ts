@@ -354,4 +354,63 @@ tracksAdminRouter.get("/:trackId", async (c) => {
 	});
 });
 
+// トラック一括削除
+tracksAdminRouter.delete("/batch", async (c) => {
+	const body = await c.req.json();
+	const { items } = body as {
+		items: Array<{ trackId: string; releaseId: string }>;
+	};
+
+	if (!Array.isArray(items) || items.length === 0) {
+		return c.json(
+			{ error: "items is required and must be a non-empty array" },
+			400,
+		);
+	}
+
+	// 上限チェック（一度に100件まで）
+	if (items.length > 100) {
+		return c.json({ error: "Maximum 100 items per batch" }, 400);
+	}
+
+	const deleted: string[] = [];
+	const failed: Array<{ trackId: string; error: string }> = [];
+
+	for (const item of items) {
+		try {
+			// 存在チェック
+			const existing = await db
+				.select()
+				.from(tracks)
+				.where(
+					and(
+						eq(tracks.id, item.trackId),
+						eq(tracks.releaseId, item.releaseId),
+					),
+				)
+				.limit(1);
+
+			if (existing.length === 0) {
+				failed.push({ trackId: item.trackId, error: "Not found" });
+				continue;
+			}
+
+			// 削除（カスケードでクレジット等も削除される）
+			await db.delete(tracks).where(eq(tracks.id, item.trackId));
+			deleted.push(item.trackId);
+		} catch (e) {
+			failed.push({
+				trackId: item.trackId,
+				error: e instanceof Error ? e.message : "Unknown error",
+			});
+		}
+	}
+
+	return c.json({
+		success: failed.length === 0,
+		deleted: deleted.length,
+		failed,
+	});
+});
+
 export { tracksAdminRouter };

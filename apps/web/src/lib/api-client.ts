@@ -1717,6 +1717,15 @@ export const tracksApi = {
 				body: JSON.stringify({ direction }),
 			},
 		),
+	batchDelete: (items: Array<{ trackId: string; releaseId: string }>) =>
+		fetchWithAuth<{
+			success: boolean;
+			deleted: number;
+			failed: Array<{ trackId: string; error: string }>;
+		}>("/api/admin/tracks/batch", {
+			method: "DELETE",
+			body: JSON.stringify({ items }),
+		}),
 };
 
 // Track Credits
