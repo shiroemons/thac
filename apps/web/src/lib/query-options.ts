@@ -23,6 +23,7 @@ import type {
 	ArtistTracksResponse,
 	ArtistWithAliases,
 	Circle,
+	CircleArtistsResponse,
 	CircleWithLinks,
 	CreditRole,
 	Event,
@@ -232,6 +233,17 @@ export const circleDetailQueryOptions = (id: string) =>
 	queryOptions({
 		queryKey: ["circle", id],
 		queryFn: () => ssrFetch<CircleWithLinks>(`/api/admin/circles/${id}`),
+		staleTime: STALE_TIME.SHORT,
+	});
+
+/**
+ * サークルの参加アーティストのqueryOptions
+ */
+export const circleArtistsQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["circle", id, "artists"],
+		queryFn: () =>
+			ssrFetch<CircleArtistsResponse>(`/api/admin/circles/${id}/artists`),
 		staleTime: STALE_TIME.SHORT,
 	});
 

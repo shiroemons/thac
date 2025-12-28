@@ -3,11 +3,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import {
 	ArrowLeft,
+	BarChart3,
 	ExternalLink,
 	Home,
 	Pencil,
 	Plus,
 	Trash2,
+	Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CircleEditDialog } from "@/components/admin/circle-edit-dialog";
@@ -34,6 +36,7 @@ import {
 } from "@/components/ui/table";
 import {
 	type CircleLink,
+	circleArtistsApi,
 	circleLinksApi,
 	circleReleasesApi,
 	circlesApi,
@@ -91,6 +94,16 @@ function CircleDetailPage() {
 		enabled: !!circle,
 	});
 
+	const { data: artistsData, isPending: isArtistsPending } = useQuery({
+		queryKey: ["circles", id, "artists"],
+		queryFn: () => circleArtistsApi.list(id),
+		enabled: !!circle,
+	});
+
+	// ページネーション用のstate
+	const [artistsPage, setArtistsPage] = useState(1);
+	const artistsPageSize = 20;
+
 	// プラットフォーム一覧取得
 	const { data: platformsData } = useQuery({
 		queryKey: ["platforms"],
@@ -121,6 +134,21 @@ function CircleDetailPage() {
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["circles", id] });
 		queryClient.invalidateQueries({ queryKey: ["circles", id, "releases"] });
+		queryClient.invalidateQueries({ queryKey: ["circles", id, "artists"] });
+	};
+
+	// 役割ラベル
+	const ROLE_LABELS: Record<string, string> = {
+		vocal: "ボーカル",
+		chorus: "コーラス",
+		compose: "作曲",
+		arrange: "編曲",
+		lyrics: "作詞",
+		instrument: "演奏",
+		mix: "ミックス",
+		master: "マスタリング",
+		produce: "プロデュース",
+		other: "その他",
 	};
 
 	// サークル削除
@@ -409,6 +437,170 @@ function CircleDetailPage() {
 									))}
 								</TableBody>
 							</Table>
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* 統計情報カード */}
+			<div className="card bg-base-100 shadow-xl">
+				<div className="card-body">
+					<div className="flex items-center gap-2">
+						<BarChart3 className="h-5 w-5" />
+						<h2 className="card-title">統計情報</h2>
+					</div>
+
+					{isArtistsPending ? (
+						<div className="flex items-center justify-center py-8">
+							<span className="loading loading-spinner loading-md" />
+						</div>
+					) : !artistsData ? (
+						<p className="text-base-content/60">統計情報を取得できません</p>
+					) : (
+						<div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+							<div className="rounded-lg bg-base-200/50 p-4">
+								<Label className="text-base-content/60">参加作品数</Label>
+								<p className="font-bold text-2xl">
+									{artistsData.statistics.releaseCount}
+									<span className="font-normal text-base-content/60 text-sm">
+										{" "}
+										作品
+									</span>
+								</p>
+							</div>
+							<div className="rounded-lg bg-base-200/50 p-4">
+								<Label className="text-base-content/60">トラック総数</Label>
+								<p className="font-bold text-2xl">
+									{artistsData.statistics.totalTrackCount}
+									<span className="font-normal text-base-content/60 text-sm">
+										{" "}
+										曲
+									</span>
+								</p>
+							</div>
+							<div className="rounded-lg bg-base-200/50 p-4">
+								<Label className="text-base-content/60">
+									参加アーティスト数
+								</Label>
+								<p className="font-bold text-2xl">
+									{artistsData.statistics.totalArtistCount}
+									<span className="font-normal text-base-content/60 text-sm">
+										{" "}
+										名
+									</span>
+								</p>
+							</div>
+							<div className="rounded-lg bg-base-200/50 p-4">
+								<Label className="text-base-content/60">活動期間</Label>
+								<p className="font-medium">
+									{artistsData.statistics.earliestReleaseDate &&
+									artistsData.statistics.latestReleaseDate
+										? `${artistsData.statistics.earliestReleaseDate} 〜 ${artistsData.statistics.latestReleaseDate}`
+										: artistsData.statistics.earliestReleaseDate ||
+											artistsData.statistics.latestReleaseDate ||
+											"-"}
+								</p>
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* 参加アーティストカード */}
+			<div className="card bg-base-100 shadow-xl">
+				<div className="card-body">
+					<div className="flex items-center gap-2">
+						<Users className="h-5 w-5" />
+						<h2 className="card-title">参加アーティスト</h2>
+						{artistsData && artistsData.artists.length > 0 && (
+							<Badge variant="secondary">{artistsData.artists.length}名</Badge>
+						)}
+					</div>
+
+					{isArtistsPending ? (
+						<div className="flex items-center justify-center py-8">
+							<span className="loading loading-spinner loading-md" />
+						</div>
+					) : !artistsData || artistsData.artists.length === 0 ? (
+						<p className="text-base-content/60">参加アーティストがいません</p>
+					) : (
+						<div className="space-y-4">
+							<div className="overflow-x-auto">
+								<Table zebra>
+									<TableHeader>
+										<TableRow className="hover:bg-transparent">
+											<TableHead>アーティスト名</TableHead>
+											<TableHead className="w-[100px]">作品数</TableHead>
+											<TableHead className="w-[100px]">トラック数</TableHead>
+											<TableHead>役割</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{artistsData.artists
+											.slice(
+												(artistsPage - 1) * artistsPageSize,
+												artistsPage * artistsPageSize,
+											)
+											.map((artist) => (
+												<TableRow key={artist.artistId}>
+													<TableCell className="font-medium">
+														<Link
+															to="/admin/artists/$id"
+															params={{ id: artist.artistId }}
+															className="link link-hover"
+														>
+															{artist.artistName}
+														</Link>
+													</TableCell>
+													<TableCell className="text-base-content/70">
+														{artist.releaseCount}作品
+													</TableCell>
+													<TableCell className="text-base-content/70">
+														{artist.trackCount}曲
+													</TableCell>
+													<TableCell>
+														<div className="flex flex-wrap gap-1">
+															{artist.roles.map((role) => (
+																<Badge key={role} variant="outline">
+																	{ROLE_LABELS[role] || role}
+																</Badge>
+															))}
+														</div>
+													</TableCell>
+												</TableRow>
+											))}
+									</TableBody>
+								</Table>
+							</div>
+
+							{/* ページネーション */}
+							{artistsData.artists.length > artistsPageSize && (
+								<div className="flex items-center justify-center gap-2">
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={artistsPage === 1}
+										onClick={() => setArtistsPage((p) => p - 1)}
+									>
+										前へ
+									</Button>
+									<span className="text-base-content/60 text-sm">
+										{artistsPage} /{" "}
+										{Math.ceil(artistsData.artists.length / artistsPageSize)}
+									</span>
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={
+											artistsPage >=
+											Math.ceil(artistsData.artists.length / artistsPageSize)
+										}
+										onClick={() => setArtistsPage((p) => p + 1)}
+									>
+										次へ
+									</Button>
+								</div>
+							)}
 						</div>
 					)}
 				</div>
