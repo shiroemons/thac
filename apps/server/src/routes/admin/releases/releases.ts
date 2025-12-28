@@ -311,32 +311,42 @@ releasesRouter.put("/:id", async (c) => {
 		releaseDay: dateComponents?.day ?? parsed.data.releaseDay,
 	};
 
-	// 更新
-	const result = await db
-		.update(releases)
-		.set(updateData)
-		.where(eq(releases.id, id))
-		.returning();
+	// トランザクションでリリースと関連トラックを更新
+	try {
+		const updatedRelease = await db.transaction(async (tx) => {
+			// リリース更新
+			const result = await tx
+				.update(releases)
+				.set(updateData)
+				.where(eq(releases.id, id))
+				.returning();
 
-	const updatedRelease = result[0];
-	if (!updatedRelease) {
+			const release = result[0];
+			if (!release) {
+				throw new Error("Update failed");
+			}
+
+			// 関連トラックの日付・イベント情報も更新
+			await tx
+				.update(tracks)
+				.set({
+					releaseDate: release.releaseDate,
+					releaseYear: release.releaseYear,
+					releaseMonth: release.releaseMonth,
+					releaseDay: release.releaseDay,
+					eventId: release.eventId,
+					eventDayId: release.eventDayId,
+				})
+				.where(eq(tracks.releaseId, id));
+
+			return release;
+		});
+
+		return c.json(updatedRelease);
+	} catch (error) {
+		console.error("Release update failed:", error);
 		return c.json({ error: "Update failed" }, 500);
 	}
-
-	// 関連トラックの日付・イベント情報も更新
-	await db
-		.update(tracks)
-		.set({
-			releaseDate: updatedRelease.releaseDate,
-			releaseYear: updatedRelease.releaseYear,
-			releaseMonth: updatedRelease.releaseMonth,
-			releaseDay: updatedRelease.releaseDay,
-			eventId: updatedRelease.eventId,
-			eventDayId: updatedRelease.eventDayId,
-		})
-		.where(eq(tracks.releaseId, id));
-
-	return c.json(updatedRelease);
 });
 
 // リリース削除（ディスクはCASCADE削除）
