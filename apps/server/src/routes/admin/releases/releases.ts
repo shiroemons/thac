@@ -13,6 +13,7 @@ import {
 	updateReleaseSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -190,7 +191,7 @@ releasesRouter.get("/:id", async (c) => {
 			.limit(1);
 
 		if (result.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
 		// 関連ディスクを取得（ディスク番号順）
@@ -219,7 +220,7 @@ releasesRouter.post("/", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -234,7 +235,7 @@ releasesRouter.post("/", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// event_id と event_day_id の整合性チェック
@@ -283,7 +284,7 @@ releasesRouter.put("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -291,7 +292,7 @@ releasesRouter.put("/:id", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -375,7 +376,7 @@ releasesRouter.delete("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
 		// 削除（ディスクはCASCADE削除）

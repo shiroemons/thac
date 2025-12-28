@@ -10,6 +10,7 @@ import {
 	platforms,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { parseAndValidate } from "../../../utils/import-parser";
@@ -23,7 +24,7 @@ importRouter.post("/platforms/import", async (c) => {
 		const file = body.file;
 
 		if (!(file instanceof File)) {
-			return c.json({ error: "ファイルが指定されていません" }, 400);
+			return c.json({ error: ERROR_MESSAGES.FILE_NOT_SPECIFIED }, 400);
 		}
 
 		const content = await file.text();
@@ -32,7 +33,7 @@ importRouter.post("/platforms/import", async (c) => {
 		if (!result.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					rows: result.errors,
 				},
 				400,
@@ -41,7 +42,7 @@ importRouter.post("/platforms/import", async (c) => {
 
 		const data = result.data;
 		if (!data) {
-			return c.json({ error: "データの取得に失敗しました" }, 500);
+			return c.json({ error: ERROR_MESSAGES.DATA_FETCH_FAILED }, 500);
 		}
 
 		let created = 0;
@@ -83,7 +84,7 @@ importRouter.post("/alias-types/import", async (c) => {
 		const file = body.file;
 
 		if (!(file instanceof File)) {
-			return c.json({ error: "ファイルが指定されていません" }, 400);
+			return c.json({ error: ERROR_MESSAGES.FILE_NOT_SPECIFIED }, 400);
 		}
 
 		const content = await file.text();
@@ -92,7 +93,7 @@ importRouter.post("/alias-types/import", async (c) => {
 		if (!result.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					rows: result.errors,
 				},
 				400,
@@ -101,7 +102,7 @@ importRouter.post("/alias-types/import", async (c) => {
 
 		const data = result.data;
 		if (!data) {
-			return c.json({ error: "データの取得に失敗しました" }, 500);
+			return c.json({ error: ERROR_MESSAGES.DATA_FETCH_FAILED }, 500);
 		}
 
 		let created = 0;
@@ -141,7 +142,7 @@ importRouter.post("/credit-roles/import", async (c) => {
 		const file = body.file;
 
 		if (!(file instanceof File)) {
-			return c.json({ error: "ファイルが指定されていません" }, 400);
+			return c.json({ error: ERROR_MESSAGES.FILE_NOT_SPECIFIED }, 400);
 		}
 
 		const content = await file.text();
@@ -150,7 +151,7 @@ importRouter.post("/credit-roles/import", async (c) => {
 		if (!result.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					rows: result.errors,
 				},
 				400,
@@ -159,7 +160,7 @@ importRouter.post("/credit-roles/import", async (c) => {
 
 		const data = result.data;
 		if (!data) {
-			return c.json({ error: "データの取得に失敗しました" }, 500);
+			return c.json({ error: ERROR_MESSAGES.DATA_FETCH_FAILED }, 500);
 		}
 
 		let created = 0;
@@ -199,7 +200,7 @@ importRouter.post("/official-work-categories/import", async (c) => {
 		const file = body.file;
 
 		if (!(file instanceof File)) {
-			return c.json({ error: "ファイルが指定されていません" }, 400);
+			return c.json({ error: ERROR_MESSAGES.FILE_NOT_SPECIFIED }, 400);
 		}
 
 		const content = await file.text();
@@ -212,7 +213,7 @@ importRouter.post("/official-work-categories/import", async (c) => {
 		if (!result.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					rows: result.errors,
 				},
 				400,
@@ -221,7 +222,7 @@ importRouter.post("/official-work-categories/import", async (c) => {
 
 		const data = result.data;
 		if (!data) {
-			return c.json({ error: "データの取得に失敗しました" }, 500);
+			return c.json({ error: ERROR_MESSAGES.DATA_FETCH_FAILED }, 500);
 		}
 
 		let created = 0;

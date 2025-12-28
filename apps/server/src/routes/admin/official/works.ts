@@ -14,6 +14,7 @@ import {
 	updateOfficialWorkSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { parseAndValidate } from "../../../utils/import-parser";
@@ -88,7 +89,7 @@ worksRouter.get("/:id", async (c) => {
 			.limit(1);
 
 		if (result.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.WORK_NOT_FOUND }, 404);
 		}
 
 		return c.json(result[0]);
@@ -107,7 +108,7 @@ worksRouter.post("/", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -122,7 +123,7 @@ worksRouter.post("/", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// 作成
@@ -151,7 +152,7 @@ worksRouter.put("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.WORK_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -159,7 +160,7 @@ worksRouter.put("/:id", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -192,7 +193,7 @@ worksRouter.delete("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.WORK_NOT_FOUND }, 404);
 		}
 
 		// 削除（関連楽曲はCASCADE削除）
@@ -211,7 +212,7 @@ worksRouter.post("/import", async (c) => {
 		const file = body.file;
 
 		if (!(file instanceof File)) {
-			return c.json({ error: "ファイルが指定されていません" }, 400);
+			return c.json({ error: ERROR_MESSAGES.FILE_NOT_SPECIFIED }, 400);
 		}
 
 		const content = await file.text();
@@ -224,7 +225,7 @@ worksRouter.post("/import", async (c) => {
 		if (!result.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					rows: result.errors,
 				},
 				400,
@@ -233,7 +234,7 @@ worksRouter.post("/import", async (c) => {
 
 		const data = result.data;
 		if (!data) {
-			return c.json({ error: "データの取得に失敗しました" }, 500);
+			return c.json({ error: ERROR_MESSAGES.DATA_FETCH_FAILED }, 500);
 		}
 
 		let created = 0;
@@ -290,7 +291,7 @@ worksRouter.get("/:workId/links", async (c) => {
 			.limit(1);
 
 		if (existingWork.length === 0) {
-			return c.json({ error: "Work not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.WORK_NOT_FOUND }, 404);
 		}
 
 		const links = await db
@@ -329,7 +330,7 @@ worksRouter.post("/:workId/links", async (c) => {
 			.limit(1);
 
 		if (existingWork.length === 0) {
-			return c.json({ error: "Work not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.WORK_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -340,7 +341,7 @@ worksRouter.post("/:workId/links", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -355,7 +356,7 @@ worksRouter.post("/:workId/links", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// URL重複チェック（同一作品内）
@@ -371,7 +372,7 @@ worksRouter.post("/:workId/links", async (c) => {
 			.limit(1);
 
 		if (existingUrl.length > 0) {
-			return c.json({ error: "URL already exists for this work" }, 409);
+			return c.json({ error: ERROR_MESSAGES.URL_ALREADY_EXISTS_FOR_WORK }, 409);
 		}
 
 		// 作成
@@ -405,7 +406,7 @@ worksRouter.put("/:workId/links/:linkId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.WORK_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -413,7 +414,7 @@ worksRouter.put("/:workId/links/:linkId", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -434,7 +435,10 @@ worksRouter.put("/:workId/links/:linkId", async (c) => {
 				.limit(1);
 
 			if (existingUrl.length > 0 && existingUrl[0]?.id !== linkId) {
-				return c.json({ error: "URL already exists for this work" }, 409);
+				return c.json(
+					{ error: ERROR_MESSAGES.URL_ALREADY_EXISTS_FOR_WORK },
+					409,
+				);
 			}
 		}
 
@@ -473,7 +477,7 @@ worksRouter.delete("/:workId/links/:linkId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.WORK_NOT_FOUND }, 404);
 		}
 
 		// 削除
@@ -509,13 +513,13 @@ worksRouter.put("/:workId/links/:linkId/reorder", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.WORK_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
 		const sortOrder = Number(body.sortOrder);
 		if (Number.isNaN(sortOrder) || sortOrder < 0) {
-			return c.json({ error: "Invalid sortOrder" }, 400);
+			return c.json({ error: ERROR_MESSAGES.INVALID_SORT_ORDER }, 400);
 		}
 
 		// 更新

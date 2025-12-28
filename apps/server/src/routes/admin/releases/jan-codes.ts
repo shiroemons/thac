@@ -8,6 +8,7 @@ import {
 	updateReleaseJanCodeSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -26,7 +27,7 @@ releaseJanCodesRouter.get("/:releaseId/jan-codes", async (c) => {
 			.limit(1);
 
 		if (existingRelease.length === 0) {
-			return c.json({ error: "Release not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
 		// JANコード一覧取得
@@ -55,7 +56,7 @@ releaseJanCodesRouter.post("/:releaseId/jan-codes", async (c) => {
 			.limit(1);
 
 		if (existingRelease.length === 0) {
-			return c.json({ error: "Release not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -66,7 +67,7 @@ releaseJanCodesRouter.post("/:releaseId/jan-codes", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -81,7 +82,7 @@ releaseJanCodesRouter.post("/:releaseId/jan-codes", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// JANコードのグローバル一意性チェック
@@ -92,7 +93,7 @@ releaseJanCodesRouter.post("/:releaseId/jan-codes", async (c) => {
 			.limit(1);
 
 		if (janDuplicateCheck.length > 0) {
-			return c.json({ error: "JAN code already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.JAN_CODE_ALREADY_EXISTS }, 409);
 		}
 
 		// isPrimary制約チェック（同一リリース内でisPrimaryは1件のみ）
@@ -110,7 +111,7 @@ releaseJanCodesRouter.post("/:releaseId/jan-codes", async (c) => {
 
 			if (primaryCheck.length > 0) {
 				return c.json(
-					{ error: "Primary JAN code already exists for this release" },
+					{ error: ERROR_MESSAGES.PRIMARY_JAN_CODE_ALREADY_EXISTS },
 					409,
 				);
 			}
@@ -148,7 +149,7 @@ releaseJanCodesRouter.put("/:releaseId/jan-codes/:id", async (c) => {
 			.limit(1);
 
 		if (existingJanCode.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.JAN_CODE_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -156,7 +157,7 @@ releaseJanCodesRouter.put("/:releaseId/jan-codes/:id", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -178,7 +179,7 @@ releaseJanCodesRouter.put("/:releaseId/jan-codes/:id", async (c) => {
 
 			if (primaryCheck.length > 0 && primaryCheck[0]?.id !== id) {
 				return c.json(
-					{ error: "Primary JAN code already exists for this release" },
+					{ error: ERROR_MESSAGES.PRIMARY_JAN_CODE_ALREADY_EXISTS },
 					409,
 				);
 			}
@@ -220,7 +221,7 @@ releaseJanCodesRouter.delete("/:releaseId/jan-codes/:id", async (c) => {
 			.limit(1);
 
 		if (existingJanCode.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.JAN_CODE_NOT_FOUND }, 404);
 		}
 
 		// 削除

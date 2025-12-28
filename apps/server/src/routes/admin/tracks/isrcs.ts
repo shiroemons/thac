@@ -8,6 +8,7 @@ import {
 	updateTrackIsrcSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -26,7 +27,7 @@ trackIsrcsRouter.get("/:trackId/isrcs", async (c) => {
 			.limit(1);
 
 		if (existingTrack.length === 0) {
-			return c.json({ error: "Track not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// ISRC一覧取得
@@ -55,7 +56,7 @@ trackIsrcsRouter.post("/:trackId/isrcs", async (c) => {
 			.limit(1);
 
 		if (existingTrack.length === 0) {
-			return c.json({ error: "Track not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -66,7 +67,7 @@ trackIsrcsRouter.post("/:trackId/isrcs", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -81,7 +82,7 @@ trackIsrcsRouter.post("/:trackId/isrcs", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// トラック×ISRCの一意性チェック
@@ -97,7 +98,7 @@ trackIsrcsRouter.post("/:trackId/isrcs", async (c) => {
 			.limit(1);
 
 		if (isrcDuplicateCheck.length > 0) {
-			return c.json({ error: "ISRC already exists for this track" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ISRC_ALREADY_EXISTS }, 409);
 		}
 
 		// isPrimary制約チェック（同一トラック内でisPrimaryは1件のみ）
@@ -112,7 +113,7 @@ trackIsrcsRouter.post("/:trackId/isrcs", async (c) => {
 
 			if (primaryCheck.length > 0) {
 				return c.json(
-					{ error: "Primary ISRC already exists for this track" },
+					{ error: ERROR_MESSAGES.PRIMARY_ISRC_ALREADY_EXISTS },
 					409,
 				);
 			}
@@ -142,7 +143,7 @@ trackIsrcsRouter.put("/:trackId/isrcs/:id", async (c) => {
 			.limit(1);
 
 		if (existingIsrc.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -150,7 +151,7 @@ trackIsrcsRouter.put("/:trackId/isrcs/:id", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -169,7 +170,7 @@ trackIsrcsRouter.put("/:trackId/isrcs/:id", async (c) => {
 
 			if (primaryCheck.length > 0 && primaryCheck[0]?.id !== id) {
 				return c.json(
-					{ error: "Primary ISRC already exists for this track" },
+					{ error: ERROR_MESSAGES.PRIMARY_ISRC_ALREADY_EXISTS },
 					409,
 				);
 			}
@@ -202,7 +203,7 @@ trackIsrcsRouter.delete("/:trackId/isrcs/:id", async (c) => {
 			.limit(1);
 
 		if (existingIsrc.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.NOT_FOUND }, 404);
 		}
 
 		// 削除

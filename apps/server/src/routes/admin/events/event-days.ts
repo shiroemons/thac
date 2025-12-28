@@ -8,6 +8,7 @@ import {
 	updateEventDaySchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -26,7 +27,7 @@ eventDaysRouter.get("/:eventId/days", async (c) => {
 			.limit(1);
 
 		if (existingEvent.length === 0) {
-			return c.json({ error: "Event not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.EVENT_NOT_FOUND }, 404);
 		}
 
 		const days = await db
@@ -55,7 +56,7 @@ eventDaysRouter.post("/:eventId/days", async (c) => {
 			.limit(1);
 
 		if (existingEvent.length === 0) {
-			return c.json({ error: "Event not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.EVENT_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -66,7 +67,7 @@ eventDaysRouter.post("/:eventId/days", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -81,7 +82,7 @@ eventDaysRouter.post("/:eventId/days", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// 日番号重複チェック（同一イベント内）
@@ -97,7 +98,7 @@ eventDaysRouter.post("/:eventId/days", async (c) => {
 			.limit(1);
 
 		if (existingDayNumber.length > 0) {
-			return c.json({ error: "Day number already exists for this event" }, 409);
+			return c.json({ error: ERROR_MESSAGES.DAY_NUMBER_ALREADY_EXISTS }, 409);
 		}
 
 		// 日付重複チェック（同一イベント内）
@@ -113,7 +114,7 @@ eventDaysRouter.post("/:eventId/days", async (c) => {
 			.limit(1);
 
 		if (existingDate.length > 0) {
-			return c.json({ error: "Date already exists for this event" }, 409);
+			return c.json({ error: ERROR_MESSAGES.DATE_ALREADY_EXISTS }, 409);
 		}
 
 		// 作成
@@ -140,7 +141,7 @@ eventDaysRouter.put("/:eventId/days/:dayId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.EVENT_DAY_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -148,7 +149,7 @@ eventDaysRouter.put("/:eventId/days/:dayId", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -169,10 +170,7 @@ eventDaysRouter.put("/:eventId/days/:dayId", async (c) => {
 				.limit(1);
 
 			if (existingDayNumber.length > 0 && existingDayNumber[0]?.id !== dayId) {
-				return c.json(
-					{ error: "Day number already exists for this event" },
-					409,
-				);
+				return c.json({ error: ERROR_MESSAGES.DAY_NUMBER_ALREADY_EXISTS }, 409);
 			}
 		}
 
@@ -190,7 +188,7 @@ eventDaysRouter.put("/:eventId/days/:dayId", async (c) => {
 				.limit(1);
 
 			if (existingDate.length > 0 && existingDate[0]?.id !== dayId) {
-				return c.json({ error: "Date already exists for this event" }, 409);
+				return c.json({ error: ERROR_MESSAGES.DATE_ALREADY_EXISTS }, 409);
 			}
 		}
 
@@ -221,7 +219,7 @@ eventDaysRouter.delete("/:eventId/days/:dayId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.EVENT_DAY_NOT_FOUND }, 404);
 		}
 
 		// 削除

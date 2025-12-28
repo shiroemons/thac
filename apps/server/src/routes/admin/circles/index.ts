@@ -15,6 +15,7 @@ import {
 	updateCircleSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { circleArtistsRouter } from "./artists";
@@ -94,7 +95,7 @@ circlesRouter.get("/:id", async (c) => {
 			.limit(1);
 
 		if (result.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.CIRCLE_NOT_FOUND }, 404);
 		}
 
 		// 関連リンクを取得
@@ -136,7 +137,7 @@ circlesRouter.post("/", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -151,7 +152,7 @@ circlesRouter.post("/", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// 名前重複チェック（大文字小文字無視）
@@ -162,7 +163,7 @@ circlesRouter.post("/", async (c) => {
 			.limit(1);
 
 		if (existingName.length > 0) {
-			return c.json({ error: "Name already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.NAME_ALREADY_EXISTS }, 409);
 		}
 
 		// 作成
@@ -188,7 +189,7 @@ circlesRouter.put("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.CIRCLE_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -196,7 +197,7 @@ circlesRouter.put("/:id", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -212,7 +213,7 @@ circlesRouter.put("/:id", async (c) => {
 				.limit(1);
 
 			if (existingName.length > 0 && existingName[0]?.id !== id) {
-				return c.json({ error: "Name already exists" }, 409);
+				return c.json({ error: ERROR_MESSAGES.NAME_ALREADY_EXISTS }, 409);
 			}
 		}
 
@@ -242,7 +243,7 @@ circlesRouter.delete("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.CIRCLE_NOT_FOUND }, 404);
 		}
 
 		// 削除（関連リンクはCASCADE削除）
@@ -269,7 +270,7 @@ circlesRouter.get("/:circleId/links", async (c) => {
 			.limit(1);
 
 		if (existingCircle.length === 0) {
-			return c.json({ error: "Circle not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.CIRCLE_NOT_FOUND }, 404);
 		}
 
 		const links = await db
@@ -311,7 +312,7 @@ circlesRouter.post("/:circleId/links", async (c) => {
 			.limit(1);
 
 		if (existingCircle.length === 0) {
-			return c.json({ error: "Circle not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.CIRCLE_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -322,7 +323,7 @@ circlesRouter.post("/:circleId/links", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -337,7 +338,7 @@ circlesRouter.post("/:circleId/links", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// URL重複チェック（同一サークル内）
@@ -353,7 +354,10 @@ circlesRouter.post("/:circleId/links", async (c) => {
 			.limit(1);
 
 		if (existingUrl.length > 0) {
-			return c.json({ error: "URL already exists for this circle" }, 409);
+			return c.json(
+				{ error: ERROR_MESSAGES.URL_ALREADY_EXISTS_FOR_CIRCLE },
+				409,
+			);
 		}
 
 		// プラットフォームのURLパターンを取得してバリデーション
@@ -367,10 +371,7 @@ circlesRouter.post("/:circleId/links", async (c) => {
 			try {
 				const regex = new RegExp(platform[0].urlPattern);
 				if (!regex.test(parsed.data.url)) {
-					return c.json(
-						{ error: "URLが選択されたプラットフォームの形式と一致しません" },
-						400,
-					);
+					return c.json({ error: ERROR_MESSAGES.URL_PATTERN_MISMATCH }, 400);
 				}
 			} catch (e) {
 				// 無効な正規表現パターンの場合はスキップ
@@ -403,7 +404,7 @@ circlesRouter.put("/:circleId/links/:linkId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.CIRCLE_NOT_FOUND }, 404);
 		}
 
 		// biome-ignore lint/style/noNonNullAssertion: existing.length > 0 is guaranteed by the check above
@@ -414,7 +415,7 @@ circlesRouter.put("/:circleId/links/:linkId", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -435,7 +436,10 @@ circlesRouter.put("/:circleId/links/:linkId", async (c) => {
 				.limit(1);
 
 			if (existingUrl.length > 0 && existingUrl[0]?.id !== linkId) {
-				return c.json({ error: "URL already exists for this circle" }, 409);
+				return c.json(
+					{ error: ERROR_MESSAGES.URL_ALREADY_EXISTS_FOR_CIRCLE },
+					409,
+				);
 			}
 		}
 
@@ -455,10 +459,7 @@ circlesRouter.put("/:circleId/links/:linkId", async (c) => {
 				try {
 					const regex = new RegExp(platform[0].urlPattern);
 					if (!regex.test(url)) {
-						return c.json(
-							{ error: "URLが選択されたプラットフォームの形式と一致しません" },
-							400,
-						);
+						return c.json({ error: ERROR_MESSAGES.URL_PATTERN_MISMATCH }, 400);
 					}
 				} catch (e) {
 					// 無効な正規表現パターンの場合はスキップ
@@ -499,7 +500,7 @@ circlesRouter.delete("/:circleId/links/:linkId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.CIRCLE_NOT_FOUND }, 404);
 		}
 
 		// 削除

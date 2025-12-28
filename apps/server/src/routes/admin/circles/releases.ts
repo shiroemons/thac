@@ -7,6 +7,7 @@ import {
 	releases,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -25,7 +26,7 @@ circleReleasesRouter.get("/:circleId/releases", async (c) => {
 			.limit(1);
 
 		if (existingCircle.length === 0) {
-			return c.json({ error: "Circle not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.CIRCLE_NOT_FOUND }, 404);
 		}
 
 		// リリースを参加形態別に取得
