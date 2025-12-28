@@ -4,6 +4,7 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import {
 	checkNewEventsNeeded,
@@ -67,7 +68,7 @@ legacyImportRouter.post("/preview", async (c) => {
 			return c.json(
 				{
 					success: false,
-					error: "ファイルがアップロードされていません",
+					error: ERROR_MESSAGES.FILE_NOT_UPLOADED,
 				},
 				400,
 			);
@@ -78,7 +79,7 @@ legacyImportRouter.post("/preview", async (c) => {
 			return c.json(
 				{
 					success: false,
-					error: "CSVファイルのみアップロード可能です",
+					error: ERROR_MESSAGES.ONLY_CSV_ALLOWED,
 				},
 				400,
 			);
@@ -89,7 +90,7 @@ legacyImportRouter.post("/preview", async (c) => {
 			return c.json(
 				{
 					success: false,
-					error: `ファイルサイズが${MAX_FILE_SIZE / 1024 / 1024}MBを超えています`,
+					error: ERROR_MESSAGES.FILE_SIZE_EXCEEDED(MAX_FILE_SIZE / 1024 / 1024),
 				},
 				400,
 			);
@@ -158,7 +159,7 @@ legacyImportRouter.post("/preview", async (c) => {
 				error:
 					error instanceof Error
 						? error.message
-						: "予期しないエラーが発生しました",
+						: ERROR_MESSAGES.UNEXPECTED_ERROR,
 			},
 			500,
 		);
@@ -182,7 +183,7 @@ legacyImportRouter.post("/execute", async (c) => {
 			return c.json(
 				{
 					success: false,
-					error: "リクエストデータが不正です",
+					error: ERROR_MESSAGES.INVALID_REQUEST_DATA,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -255,7 +256,7 @@ legacyImportRouter.post("/execute", async (c) => {
 				error:
 					error instanceof Error
 						? error.message
-						: "予期しないエラーが発生しました",
+						: ERROR_MESSAGES.UNEXPECTED_ERROR,
 			},
 			500,
 		);

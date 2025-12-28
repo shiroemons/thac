@@ -9,6 +9,7 @@ import {
 	updateReleaseCircleSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -27,7 +28,7 @@ releaseCirclesRouter.get("/:releaseId/circles", async (c) => {
 			.limit(1);
 
 		if (existingRelease.length === 0) {
-			return c.json({ error: "Release not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
 		// 関連サークル一覧取得（サークル情報を含む）
@@ -69,7 +70,7 @@ releaseCirclesRouter.post("/:releaseId/circles", async (c) => {
 			.limit(1);
 
 		if (existingRelease.length === 0) {
-			return c.json({ error: "Release not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -80,7 +81,7 @@ releaseCirclesRouter.post("/:releaseId/circles", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -95,7 +96,7 @@ releaseCirclesRouter.post("/:releaseId/circles", async (c) => {
 			.limit(1);
 
 		if (existingCircle.length === 0) {
-			return c.json({ error: "Circle not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.CIRCLE_NOT_FOUND }, 404);
 		}
 
 		// 重複チェック（同一作品・同一サークル・同一参加形態）
@@ -112,7 +113,7 @@ releaseCirclesRouter.post("/:releaseId/circles", async (c) => {
 			.limit(1);
 
 		if (existingAssociation.length > 0) {
-			return c.json({ error: "Association already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ASSOCIATION_ALREADY_EXISTS }, 409);
 		}
 
 		// positionが未指定の場合、最大値+1を設定
@@ -154,10 +155,7 @@ releaseCirclesRouter.patch("/:releaseId/circles/:circleId", async (c) => {
 
 		// 参加形態が指定されていない場合はエラー
 		if (!participationType) {
-			return c.json(
-				{ error: "participationType query parameter is required" },
-				400,
-			);
+			return c.json({ error: ERROR_MESSAGES.PARTICIPATION_TYPE_REQUIRED }, 400);
 		}
 
 		// 存在チェック
@@ -174,7 +172,7 @@ releaseCirclesRouter.patch("/:releaseId/circles/:circleId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -182,7 +180,7 @@ releaseCirclesRouter.patch("/:releaseId/circles/:circleId", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -221,10 +219,7 @@ releaseCirclesRouter.delete("/:releaseId/circles/:circleId", async (c) => {
 
 		// 参加形態が指定されていない場合はエラー
 		if (!participationType) {
-			return c.json(
-				{ error: "participationType query parameter is required" },
-				400,
-			);
+			return c.json({ error: ERROR_MESSAGES.PARTICIPATION_TYPE_REQUIRED }, 400);
 		}
 
 		// 存在チェック
@@ -241,7 +236,7 @@ releaseCirclesRouter.delete("/:releaseId/circles/:circleId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.NOT_FOUND }, 404);
 		}
 
 		// 削除

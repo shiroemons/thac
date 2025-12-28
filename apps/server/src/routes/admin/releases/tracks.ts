@@ -16,6 +16,7 @@ import {
 	updateTrackSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -34,7 +35,7 @@ tracksRouter.get("/:releaseId/tracks", async (c) => {
 			.limit(1);
 
 		if (existingRelease.length === 0) {
-			return c.json({ error: "Release not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
 		// トラック一覧取得（クレジット数を含む）
@@ -153,7 +154,7 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -169,14 +170,14 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 				.limit(1);
 
 			if (existingRelease.length === 0) {
-				return c.json({ error: "Release not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 			}
 		}
 
 		// ディスク存在チェック（指定された場合）
 		if (parsed.data.discId) {
 			if (!parsed.data.releaseId) {
-				return c.json({ error: "Disc cannot be set without a release" }, 400);
+				return c.json({ error: ERROR_MESSAGES.DISC_REQUIRES_RELEASE }, 400);
 			}
 			const existingDisc = await db
 				.select()
@@ -190,7 +191,7 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 				.limit(1);
 
 			if (existingDisc.length === 0) {
-				return c.json({ error: "Disc not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.DISC_NOT_FOUND }, 404);
 			}
 		}
 
@@ -202,7 +203,7 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// トラック番号重複チェック（ディスク有無で分岐）
@@ -243,8 +244,8 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 			return c.json(
 				{
 					error: discId
-						? "Track number already exists for this disc"
-						: "Track number already exists for this release",
+						? ERROR_MESSAGES.TRACK_NUMBER_ALREADY_EXISTS_FOR_DISC
+						: ERROR_MESSAGES.TRACK_NUMBER_ALREADY_EXISTS_FOR_RELEASE,
 				},
 				409,
 			);
@@ -296,7 +297,7 @@ tracksRouter.put("/:releaseId/tracks/:trackId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// ディスク存在チェック（指定された場合）
@@ -308,7 +309,7 @@ tracksRouter.put("/:releaseId/tracks/:trackId", async (c) => {
 				.limit(1);
 
 			if (existingDisc.length === 0) {
-				return c.json({ error: "Disc not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.DISC_NOT_FOUND }, 404);
 			}
 		}
 
@@ -317,7 +318,7 @@ tracksRouter.put("/:releaseId/tracks/:trackId", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -367,8 +368,8 @@ tracksRouter.put("/:releaseId/tracks/:trackId", async (c) => {
 				return c.json(
 					{
 						error: newDiscId
-							? "Track number already exists for this disc"
-							: "Track number already exists for this release",
+							? ERROR_MESSAGES.TRACK_NUMBER_ALREADY_EXISTS_FOR_DISC
+							: ERROR_MESSAGES.TRACK_NUMBER_ALREADY_EXISTS_FOR_RELEASE,
 					},
 					409,
 				);
@@ -418,7 +419,7 @@ tracksRouter.delete("/:releaseId/tracks/:trackId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// 削除
@@ -444,7 +445,7 @@ tracksRouter.patch("/:releaseId/tracks/:trackId/reorder", async (c) => {
 		const { direction } = body as { direction: "up" | "down" };
 
 		if (direction !== "up" && direction !== "down") {
-			return c.json({ error: "Invalid direction. Use 'up' or 'down'" }, 400);
+			return c.json({ error: ERROR_MESSAGES.INVALID_DIRECTION }, 400);
 		}
 
 		// 対象トラック取得
@@ -455,12 +456,12 @@ tracksRouter.patch("/:releaseId/tracks/:trackId/reorder", async (c) => {
 			.limit(1);
 
 		if (targetTrack.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		const target = targetTrack[0];
 		if (!target) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// 同じスコープ内（同じディスクまたはディスクなし）のトラック取得
@@ -487,14 +488,19 @@ tracksRouter.patch("/:releaseId/tracks/:trackId/reorder", async (c) => {
 
 		if (swapIndex < 0 || swapIndex >= scopeTracks.length) {
 			return c.json(
-				{ error: direction === "up" ? "Already at top" : "Already at bottom" },
+				{
+					error:
+						direction === "up"
+							? ERROR_MESSAGES.ALREADY_AT_TOP
+							: ERROR_MESSAGES.ALREADY_AT_BOTTOM,
+				},
 				400,
 			);
 		}
 
 		const swapTrack = scopeTracks[swapIndex];
 		if (!swapTrack) {
-			return c.json({ error: "Swap target not found" }, 400);
+			return c.json({ error: ERROR_MESSAGES.SWAP_TARGET_NOT_FOUND }, 400);
 		}
 
 		// トラック番号を入れ替え

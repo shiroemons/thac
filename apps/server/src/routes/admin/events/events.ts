@@ -12,6 +12,7 @@ import {
 	updateEventSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -107,7 +108,7 @@ eventsRouter.get("/:id", async (c) => {
 			.limit(1);
 
 		if (result.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.EVENT_NOT_FOUND }, 404);
 		}
 
 		// 関連開催日を取得（日番号順）
@@ -136,7 +137,7 @@ eventsRouter.post("/", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -151,7 +152,7 @@ eventsRouter.post("/", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// シリーズ存在チェック（eventSeriesIdが指定されている場合のみ）
@@ -163,7 +164,7 @@ eventsRouter.post("/", async (c) => {
 				.limit(1);
 
 			if (existingSeries.length === 0) {
-				return c.json({ error: "Event series not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.EVENT_SERIES_NOT_FOUND }, 404);
 			}
 
 			// 回次重複チェック（同一シリーズ内）
@@ -180,10 +181,7 @@ eventsRouter.post("/", async (c) => {
 					.limit(1);
 
 				if (existingEdition.length > 0) {
-					return c.json(
-						{ error: "Edition already exists in this series" },
-						409,
-					);
+					return c.json({ error: ERROR_MESSAGES.EDITION_ALREADY_EXISTS }, 409);
 				}
 			}
 		}
@@ -211,7 +209,7 @@ eventsRouter.put("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.EVENT_NOT_FOUND }, 404);
 		}
 
 		// biome-ignore lint/style/noNonNullAssertion: existing.length > 0 is guaranteed by the check above
@@ -222,7 +220,7 @@ eventsRouter.put("/:id", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -238,7 +236,7 @@ eventsRouter.put("/:id", async (c) => {
 				.limit(1);
 
 			if (existingSeries.length === 0) {
-				return c.json({ error: "Event series not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.EVENT_SERIES_NOT_FOUND }, 404);
 			}
 		}
 
@@ -265,7 +263,7 @@ eventsRouter.put("/:id", async (c) => {
 				.limit(1);
 
 			if (existingEdition.length > 0 && existingEdition[0]?.id !== id) {
-				return c.json({ error: "Edition already exists in this series" }, 409);
+				return c.json({ error: ERROR_MESSAGES.EDITION_ALREADY_EXISTS }, 409);
 			}
 		}
 
@@ -295,7 +293,7 @@ eventsRouter.delete("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.EVENT_NOT_FOUND }, 404);
 		}
 
 		// 削除（開催日はCASCADE削除）

@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { ERROR_MESSAGES } from "../constants/error-messages";
 
 /**
  * 統一エラーレスポンス形式
@@ -42,7 +43,7 @@ export function handleDbError(c: Context, error: unknown, operation: string) {
 
 	const isDev = process.env.NODE_ENV === "development";
 	const response: ApiErrorResponse = {
-		error: "データベースエラーが発生しました",
+		error: ERROR_MESSAGES.DB_ERROR,
 		code: ErrorCodes.DB_ERROR,
 	};
 

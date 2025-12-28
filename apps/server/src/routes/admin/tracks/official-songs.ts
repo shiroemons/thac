@@ -10,6 +10,7 @@ import {
 	updateTrackOfficialSongSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -28,7 +29,7 @@ trackOfficialSongsRouter.get("/:trackId/official-songs", async (c) => {
 			.limit(1);
 
 		if (existingTrack.length === 0) {
-			return c.json({ error: "Track not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// 原曲紐付け一覧取得（公式楽曲情報を結合）
@@ -70,7 +71,7 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 			.limit(1);
 
 		if (existingTrack.length === 0) {
-			return c.json({ error: "Track not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// 公式楽曲存在チェック（officialSongIdが指定されている場合のみ）
@@ -82,7 +83,7 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 				.limit(1);
 
 			if (existingOfficialSong.length === 0) {
-				return c.json({ error: "Official song not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.SONG_NOT_FOUND }, 404);
 			}
 		}
 
@@ -105,7 +106,7 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -120,7 +121,7 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// 一意性チェック（トラック × 公式楽曲 × 順序、公式楽曲が指定されている場合のみ）
@@ -142,8 +143,7 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 			if (duplicateCheck.length > 0) {
 				return c.json(
 					{
-						error:
-							"This official song is already linked to the track with the same part position",
+						error: ERROR_MESSAGES.OFFICIAL_SONG_ALREADY_LINKED,
 					},
 					409,
 				);
@@ -186,7 +186,7 @@ trackOfficialSongsRouter.put("/:trackId/official-songs/:id", async (c) => {
 			.limit(1);
 
 		if (existingRelation.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -194,7 +194,7 @@ trackOfficialSongsRouter.put("/:trackId/official-songs/:id", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -228,8 +228,7 @@ trackOfficialSongsRouter.put("/:trackId/official-songs/:id", async (c) => {
 			if (duplicateCheck.length > 0 && duplicateCheck[0]?.id !== id) {
 				return c.json(
 					{
-						error:
-							"This official song is already linked to the track with the same part position",
+						error: ERROR_MESSAGES.OFFICIAL_SONG_ALREADY_LINKED,
 					},
 					409,
 				);
@@ -272,7 +271,7 @@ trackOfficialSongsRouter.delete("/:trackId/official-songs/:id", async (c) => {
 			.limit(1);
 
 		if (existingRelation.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.NOT_FOUND }, 404);
 		}
 
 		// 削除
@@ -306,20 +305,20 @@ trackOfficialSongsRouter.patch(
 
 			const currentIndex = relations.findIndex((r) => r.id === id);
 			if (currentIndex === -1) {
-				return c.json({ error: "Not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.NOT_FOUND }, 404);
 			}
 
 			const swapIndex =
 				body.direction === "up" ? currentIndex - 1 : currentIndex + 1;
 			if (swapIndex < 0 || swapIndex >= relations.length) {
-				return c.json({ error: "Cannot move further" }, 400);
+				return c.json({ error: ERROR_MESSAGES.CANNOT_MOVE_FURTHER }, 400);
 			}
 
 			const currentItem = relations[currentIndex];
 			const swapItem = relations[swapIndex];
 
 			if (!currentItem || !swapItem) {
-				return c.json({ error: "Invalid state" }, 500);
+				return c.json({ error: ERROR_MESSAGES.INVALID_STATE }, 500);
 			}
 
 			// 順序を入れ替え

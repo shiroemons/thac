@@ -22,6 +22,7 @@ import {
 	tracks,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { trackDerivationsRouter } from "./derivations";
@@ -305,12 +306,12 @@ tracksAdminRouter.get("/:trackId", async (c) => {
 			.limit(1);
 
 		if (trackResult.length === 0) {
-			return c.json({ error: "Track not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		const row = trackResult[0];
 		if (!row) {
-			return c.json({ error: "Track not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// クレジット一覧取得（アーティスト・別名義・役割情報を結合）
@@ -399,15 +400,12 @@ tracksAdminRouter.delete("/batch", async (c) => {
 		};
 
 		if (!Array.isArray(items) || items.length === 0) {
-			return c.json(
-				{ error: "items is required and must be a non-empty array" },
-				400,
-			);
+			return c.json({ error: ERROR_MESSAGES.ITEMS_REQUIRED_NON_EMPTY }, 400);
 		}
 
 		// 上限チェック（一度に100件まで）
 		if (items.length > 100) {
-			return c.json({ error: "Maximum 100 items per batch" }, 400);
+			return c.json({ error: ERROR_MESSAGES.MAXIMUM_BATCH_ITEMS }, 400);
 		}
 
 		const deleted: string[] = [];
@@ -428,7 +426,10 @@ tracksAdminRouter.delete("/batch", async (c) => {
 					.limit(1);
 
 				if (existing.length === 0) {
-					failed.push({ trackId: item.trackId, error: "Not found" });
+					failed.push({
+						trackId: item.trackId,
+						error: ERROR_MESSAGES.TRACK_NOT_FOUND,
+					});
 					continue;
 				}
 

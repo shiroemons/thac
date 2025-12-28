@@ -13,6 +13,7 @@ import {
 	updateArtistSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { artistCirclesRouter } from "./circles";
@@ -94,7 +95,7 @@ artistsRouter.get("/:id", async (c) => {
 			.limit(1);
 
 		if (result.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.ARTIST_NOT_FOUND }, 404);
 		}
 
 		// 別名義一覧取得
@@ -123,7 +124,7 @@ artistsRouter.post("/", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -138,7 +139,7 @@ artistsRouter.post("/", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// 名前重複チェック（大文字小文字無視）
@@ -149,7 +150,7 @@ artistsRouter.post("/", async (c) => {
 			.limit(1);
 
 		if (existingName.length > 0) {
-			return c.json({ error: "Name already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.NAME_ALREADY_EXISTS }, 409);
 		}
 
 		// 作成
@@ -175,7 +176,7 @@ artistsRouter.put("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.ARTIST_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -183,7 +184,7 @@ artistsRouter.put("/:id", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -199,7 +200,7 @@ artistsRouter.put("/:id", async (c) => {
 				.limit(1);
 
 			if (existingName.length > 0 && existingName[0]?.id !== id) {
-				return c.json({ error: "Name already exists" }, 409);
+				return c.json({ error: ERROR_MESSAGES.NAME_ALREADY_EXISTS }, 409);
 			}
 		}
 
@@ -229,7 +230,7 @@ artistsRouter.delete("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.ARTIST_NOT_FOUND }, 404);
 		}
 
 		// 削除（関連別名義はCASCADE削除）

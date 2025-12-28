@@ -9,6 +9,7 @@ import {
 	tracks,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -39,7 +40,7 @@ trackCreditRolesRouter.post(
 				.limit(1);
 
 			if (existingCredit.length === 0) {
-				return c.json({ error: "Credit not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.CREDIT_NOT_FOUND }, 404);
 			}
 
 			// 役割マスター存在チェック
@@ -50,7 +51,7 @@ trackCreditRolesRouter.post(
 				.limit(1);
 
 			if (existingRole.length === 0) {
-				return c.json({ error: "Role not found in master data" }, 400);
+				return c.json({ error: ERROR_MESSAGES.ROLE_NOT_FOUND_IN_MASTER }, 400);
 			}
 
 			// バリデーション
@@ -61,7 +62,7 @@ trackCreditRolesRouter.post(
 			if (!parsed.success) {
 				return c.json(
 					{
-						error: "Validation failed",
+						error: ERROR_MESSAGES.VALIDATION_FAILED,
 						details: parsed.error.flatten().fieldErrors,
 					},
 					400,
@@ -84,8 +85,7 @@ trackCreditRolesRouter.post(
 			if (existingRoleAssignment.length > 0) {
 				return c.json(
 					{
-						error:
-							"This role with the same position already exists for this credit",
+						error: ERROR_MESSAGES.ROLE_ALREADY_EXISTS_FOR_CREDIT,
 					},
 					409,
 				);
@@ -136,7 +136,7 @@ trackCreditRolesRouter.delete(
 			const rolePosition = Number.parseInt(c.req.param("rolePosition"), 10);
 
 			if (Number.isNaN(rolePosition)) {
-				return c.json({ error: "Invalid role position" }, 400);
+				return c.json({ error: ERROR_MESSAGES.INVALID_ROLE_POSITION }, 400);
 			}
 
 			// クレジット存在チェック（トラック・リリースとの関連確認含む）
@@ -154,7 +154,7 @@ trackCreditRolesRouter.delete(
 				.limit(1);
 
 			if (existingCredit.length === 0) {
-				return c.json({ error: "Credit not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.CREDIT_NOT_FOUND }, 404);
 			}
 
 			// 役割存在チェック
@@ -171,7 +171,7 @@ trackCreditRolesRouter.delete(
 				.limit(1);
 
 			if (existingRoleAssignment.length === 0) {
-				return c.json({ error: "Role not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.ROLE_NOT_FOUND }, 404);
 			}
 
 			// 削除

@@ -15,6 +15,7 @@ import {
 	updateTrackCreditSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -34,7 +35,7 @@ trackCreditsRouter.get("/:releaseId/tracks/:trackId/credits", async (c) => {
 			.limit(1);
 
 		if (existingTrack.length === 0) {
-			return c.json({ error: "Track not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// クレジット一覧取得（アーティスト・別名義・役割情報を結合）
@@ -102,7 +103,7 @@ trackCreditsRouter.post("/:releaseId/tracks/:trackId/credits", async (c) => {
 			.limit(1);
 
 		if (existingTrack.length === 0) {
-			return c.json({ error: "Track not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// アーティスト存在チェック
@@ -113,7 +114,7 @@ trackCreditsRouter.post("/:releaseId/tracks/:trackId/credits", async (c) => {
 			.limit(1);
 
 		if (existingArtist.length === 0) {
-			return c.json({ error: "Artist not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.ARTIST_NOT_FOUND }, 404);
 		}
 
 		// 別名義存在チェック（指定された場合）
@@ -131,7 +132,7 @@ trackCreditsRouter.post("/:releaseId/tracks/:trackId/credits", async (c) => {
 
 			if (existingAlias.length === 0) {
 				return c.json(
-					{ error: "Artist alias not found or does not belong to the artist" },
+					{ error: ERROR_MESSAGES.ARTIST_ALIAS_NOT_BELONG_TO_ARTIST },
 					404,
 				);
 			}
@@ -145,7 +146,7 @@ trackCreditsRouter.post("/:releaseId/tracks/:trackId/credits", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -160,7 +161,7 @@ trackCreditsRouter.post("/:releaseId/tracks/:trackId/credits", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// 同一アーティスト・同一別名義の重複チェック
@@ -194,8 +195,7 @@ trackCreditsRouter.post("/:releaseId/tracks/:trackId/credits", async (c) => {
 		if (duplicateCheck.length > 0) {
 			return c.json(
 				{
-					error:
-						"Credit for this artist (with same alias) already exists on this track",
+					error: ERROR_MESSAGES.CREDIT_ALREADY_EXISTS_FOR_TRACK,
 				},
 				409,
 			);
@@ -268,7 +268,7 @@ trackCreditsRouter.put(
 				.limit(1);
 
 			if (existingCredit.length === 0) {
-				return c.json({ error: "Not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.CREDIT_NOT_FOUND }, 404);
 			}
 
 			// アーティスト存在チェック（変更される場合）
@@ -280,7 +280,7 @@ trackCreditsRouter.put(
 					.limit(1);
 
 				if (existingArtist.length === 0) {
-					return c.json({ error: "Artist not found" }, 404);
+					return c.json({ error: ERROR_MESSAGES.ARTIST_NOT_FOUND }, 404);
 				}
 			}
 
@@ -302,7 +302,7 @@ trackCreditsRouter.put(
 				if (existingAlias.length === 0) {
 					return c.json(
 						{
-							error: "Artist alias not found or does not belong to the artist",
+							error: ERROR_MESSAGES.ARTIST_ALIAS_NOT_BELONG_TO_ARTIST,
 						},
 						404,
 					);
@@ -314,7 +314,7 @@ trackCreditsRouter.put(
 			if (!parsed.success) {
 				return c.json(
 					{
-						error: "Validation failed",
+						error: ERROR_MESSAGES.VALIDATION_FAILED,
 						details: parsed.error.flatten().fieldErrors,
 					},
 					400,
@@ -360,8 +360,7 @@ trackCreditsRouter.put(
 				if (duplicateCheck.length > 0 && duplicateCheck[0]?.id !== creditId) {
 					return c.json(
 						{
-							error:
-								"Credit for this artist (with same alias) already exists on this track",
+							error: ERROR_MESSAGES.CREDIT_ALREADY_EXISTS_FOR_TRACK,
 						},
 						409,
 					);
@@ -441,7 +440,7 @@ trackCreditsRouter.delete(
 				.limit(1);
 
 			if (existingCredit.length === 0) {
-				return c.json({ error: "Not found" }, 404);
+				return c.json({ error: ERROR_MESSAGES.CREDIT_NOT_FOUND }, 404);
 			}
 
 			// 削除（役割はCASCADEで自動削除）

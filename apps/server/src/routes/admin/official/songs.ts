@@ -16,6 +16,7 @@ import {
 	updateOfficialSongSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { parseAndValidate } from "../../../utils/import-parser";
@@ -135,7 +136,7 @@ songsRouter.get("/:id", async (c) => {
 			.limit(1);
 
 		if (result.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.SONG_NOT_FOUND }, 404);
 		}
 
 		return c.json(result[0]);
@@ -154,7 +155,7 @@ songsRouter.post("/", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -169,12 +170,15 @@ songsRouter.post("/", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// sourceSongIdの自己参照チェック
 		if (parsed.data.sourceSongId === parsed.data.id) {
-			return c.json({ error: "Source song cannot reference itself" }, 400);
+			return c.json(
+				{ error: ERROR_MESSAGES.SOURCE_SONG_CANNOT_REFERENCE_ITSELF },
+				400,
+			);
 		}
 
 		// 作成
@@ -203,7 +207,7 @@ songsRouter.put("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.SONG_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -211,7 +215,7 @@ songsRouter.put("/:id", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -220,7 +224,10 @@ songsRouter.put("/:id", async (c) => {
 
 		// sourceSongIdの自己参照チェック
 		if (parsed.data.sourceSongId === id) {
-			return c.json({ error: "Source song cannot reference itself" }, 400);
+			return c.json(
+				{ error: ERROR_MESSAGES.SOURCE_SONG_CANNOT_REFERENCE_ITSELF },
+				400,
+			);
 		}
 
 		// 更新
@@ -249,7 +256,7 @@ songsRouter.delete("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.SONG_NOT_FOUND }, 404);
 		}
 
 		// 削除
@@ -268,7 +275,7 @@ songsRouter.post("/import", async (c) => {
 		const file = body.file;
 
 		if (!(file instanceof File)) {
-			return c.json({ error: "ファイルが指定されていません" }, 400);
+			return c.json({ error: ERROR_MESSAGES.FILE_NOT_SPECIFIED }, 400);
 		}
 
 		const content = await file.text();
@@ -281,7 +288,7 @@ songsRouter.post("/import", async (c) => {
 		if (!result.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					rows: result.errors,
 				},
 				400,
@@ -290,7 +297,7 @@ songsRouter.post("/import", async (c) => {
 
 		const data = result.data;
 		if (!data) {
-			return c.json({ error: "データの取得に失敗しました" }, 500);
+			return c.json({ error: ERROR_MESSAGES.DATA_FETCH_FAILED }, 500);
 		}
 
 		// 自己参照チェック
@@ -308,7 +315,7 @@ songsRouter.post("/import", async (c) => {
 		if (selfRefErrors.length > 0) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					rows: selfRefErrors,
 				},
 				400,
@@ -368,7 +375,7 @@ songsRouter.get("/:songId/links", async (c) => {
 			.limit(1);
 
 		if (existingSong.length === 0) {
-			return c.json({ error: "Song not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.SONG_NOT_FOUND }, 404);
 		}
 
 		const links = await db
@@ -407,7 +414,7 @@ songsRouter.post("/:songId/links", async (c) => {
 			.limit(1);
 
 		if (existingSong.length === 0) {
-			return c.json({ error: "Song not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.SONG_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -418,7 +425,7 @@ songsRouter.post("/:songId/links", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -433,7 +440,7 @@ songsRouter.post("/:songId/links", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// URL重複チェック（同一楽曲内）
@@ -449,7 +456,7 @@ songsRouter.post("/:songId/links", async (c) => {
 			.limit(1);
 
 		if (existingUrl.length > 0) {
-			return c.json({ error: "URL already exists for this song" }, 409);
+			return c.json({ error: ERROR_MESSAGES.URL_ALREADY_EXISTS_FOR_SONG }, 409);
 		}
 
 		// 作成
@@ -483,7 +490,7 @@ songsRouter.put("/:songId/links/:linkId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.SONG_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -491,7 +498,7 @@ songsRouter.put("/:songId/links/:linkId", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -512,7 +519,10 @@ songsRouter.put("/:songId/links/:linkId", async (c) => {
 				.limit(1);
 
 			if (existingUrl.length > 0 && existingUrl[0]?.id !== linkId) {
-				return c.json({ error: "URL already exists for this song" }, 409);
+				return c.json(
+					{ error: ERROR_MESSAGES.URL_ALREADY_EXISTS_FOR_SONG },
+					409,
+				);
 			}
 		}
 
@@ -551,7 +561,7 @@ songsRouter.delete("/:songId/links/:linkId", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.SONG_NOT_FOUND }, 404);
 		}
 
 		// 削除
@@ -587,13 +597,13 @@ songsRouter.put("/:songId/links/:linkId/reorder", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.SONG_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
 		const sortOrder = Number(body.sortOrder);
 		if (Number.isNaN(sortOrder) || sortOrder < 0) {
-			return c.json({ error: "Invalid sortOrder" }, 400);
+			return c.json({ error: ERROR_MESSAGES.INVALID_SORT_ORDER }, 400);
 		}
 
 		// 更新

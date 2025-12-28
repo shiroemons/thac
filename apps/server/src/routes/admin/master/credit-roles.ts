@@ -12,6 +12,7 @@ import {
 	updateCreditRoleSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -77,12 +78,15 @@ creditRolesRouter.put("/reorder", async (c) => {
 		const body = await c.req.json();
 
 		if (!body.items || !Array.isArray(body.items)) {
-			return c.json({ error: "items array is required" }, 400);
+			return c.json({ error: ERROR_MESSAGES.ITEMS_ARRAY_REQUIRED }, 400);
 		}
 
 		for (const item of body.items) {
 			if (!item.code || typeof item.sortOrder !== "number") {
-				return c.json({ error: "Each item must have code and sortOrder" }, 400);
+				return c.json(
+					{ error: ERROR_MESSAGES.ITEMS_MUST_HAVE_CODE_AND_SORT_ORDER },
+					400,
+				);
 			}
 			await db
 				.update(creditRoles)
@@ -108,7 +112,7 @@ creditRolesRouter.get("/:code", async (c) => {
 			.limit(1);
 
 		if (result.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.CREDIT_ROLE_NOT_FOUND }, 404);
 		}
 
 		return c.json(result[0]);
@@ -127,7 +131,7 @@ creditRolesRouter.post("/", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -142,7 +146,7 @@ creditRolesRouter.post("/", async (c) => {
 			.limit(1);
 
 		if (existing.length > 0) {
-			return c.json({ error: "Code already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.CODE_ALREADY_EXISTS }, 409);
 		}
 
 		// sortOrder が未指定の場合は最大値 + 1 を設定
@@ -180,7 +184,7 @@ creditRolesRouter.put("/:code", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.CREDIT_ROLE_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -188,7 +192,7 @@ creditRolesRouter.put("/:code", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -220,7 +224,7 @@ creditRolesRouter.delete("/:code", async (c) => {
 		.limit(1);
 
 	if (existing.length === 0) {
-		return c.json({ error: "Not found" }, 404);
+		return c.json({ error: ERROR_MESSAGES.CREDIT_ROLE_NOT_FOUND }, 404);
 	}
 
 	// 削除

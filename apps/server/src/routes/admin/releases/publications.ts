@@ -9,6 +9,7 @@ import {
 	updateReleasePublicationSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -27,7 +28,7 @@ releasePublicationsRouter.get("/:releaseId/publications", async (c) => {
 			.limit(1);
 
 		if (existingRelease.length === 0) {
-			return c.json({ error: "Release not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
 		// 公開リンク一覧取得（プラットフォーム情報を結合）
@@ -69,7 +70,7 @@ releasePublicationsRouter.post("/:releaseId/publications", async (c) => {
 			.limit(1);
 
 		if (existingRelease.length === 0) {
-			return c.json({ error: "Release not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
 		// プラットフォーム存在チェック
@@ -80,7 +81,7 @@ releasePublicationsRouter.post("/:releaseId/publications", async (c) => {
 			.limit(1);
 
 		if (existingPlatform.length === 0) {
-			return c.json({ error: "Platform not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.PLATFORM_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -91,7 +92,7 @@ releasePublicationsRouter.post("/:releaseId/publications", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -106,7 +107,7 @@ releasePublicationsRouter.post("/:releaseId/publications", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// URL重複チェック
@@ -117,7 +118,7 @@ releasePublicationsRouter.post("/:releaseId/publications", async (c) => {
 			.limit(1);
 
 		if (urlDuplicateCheck.length > 0) {
-			return c.json({ error: "URL already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.URL_ALREADY_EXISTS }, 409);
 		}
 
 		// 作成
@@ -156,7 +157,7 @@ releasePublicationsRouter.put("/:releaseId/publications/:id", async (c) => {
 			.limit(1);
 
 		if (existingPublication.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.PUBLICATION_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -164,7 +165,7 @@ releasePublicationsRouter.put("/:releaseId/publications/:id", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -180,7 +181,7 @@ releasePublicationsRouter.put("/:releaseId/publications/:id", async (c) => {
 				.limit(1);
 
 			if (urlDuplicateCheck.length > 0 && urlDuplicateCheck[0]?.id !== id) {
-				return c.json({ error: "URL already exists" }, 409);
+				return c.json({ error: ERROR_MESSAGES.URL_ALREADY_EXISTS }, 409);
 			}
 		}
 
@@ -220,7 +221,7 @@ releasePublicationsRouter.delete("/:releaseId/publications/:id", async (c) => {
 			.limit(1);
 
 		if (existingPublication.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.PUBLICATION_NOT_FOUND }, 404);
 		}
 
 		// 削除

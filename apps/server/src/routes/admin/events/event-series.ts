@@ -13,6 +13,7 @@ import {
 	updateEventSeriesSchema,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -72,7 +73,7 @@ eventSeriesRouter.post("/", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -87,7 +88,7 @@ eventSeriesRouter.post("/", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// 名前重複チェック（大文字小文字無視）
@@ -98,7 +99,7 @@ eventSeriesRouter.post("/", async (c) => {
 			.limit(1);
 
 		if (existingName.length > 0) {
-			return c.json({ error: "Name already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.NAME_ALREADY_EXISTS }, 409);
 		}
 
 		// sortOrderが明示的に指定されていない場合は自動設定（最大値 + 1）
@@ -131,13 +132,16 @@ eventSeriesRouter.put("/reorder", async (c) => {
 
 		// バリデーション: { items: [{ id: string, sortOrder: number }] }
 		if (!body.items || !Array.isArray(body.items)) {
-			return c.json({ error: "items array is required" }, 400);
+			return c.json({ error: ERROR_MESSAGES.ITEMS_ARRAY_REQUIRED }, 400);
 		}
 
 		// 各アイテムのソート順序を更新
 		for (const item of body.items) {
 			if (!item.id || typeof item.sortOrder !== "number") {
-				return c.json({ error: "Each item must have id and sortOrder" }, 400);
+				return c.json(
+					{ error: ERROR_MESSAGES.ITEMS_MUST_HAVE_ID_AND_SORT_ORDER },
+					400,
+				);
 			}
 			await db
 				.update(eventSeries)
@@ -164,7 +168,7 @@ eventSeriesRouter.get("/:id", async (c) => {
 			.limit(1);
 
 		if (series.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.EVENT_SERIES_NOT_FOUND }, 404);
 		}
 
 		// 所属イベント一覧取得（回次順）
@@ -197,7 +201,7 @@ eventSeriesRouter.put("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.EVENT_SERIES_NOT_FOUND }, 404);
 		}
 
 		// バリデーション
@@ -205,7 +209,7 @@ eventSeriesRouter.put("/:id", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -221,7 +225,7 @@ eventSeriesRouter.put("/:id", async (c) => {
 				.limit(1);
 
 			if (existingName.length > 0 && existingName[0]?.id !== id) {
-				return c.json({ error: "Name already exists" }, 409);
+				return c.json({ error: ERROR_MESSAGES.NAME_ALREADY_EXISTS }, 409);
 			}
 		}
 
@@ -251,7 +255,7 @@ eventSeriesRouter.delete("/:id", async (c) => {
 			.limit(1);
 
 		if (existing.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.EVENT_SERIES_NOT_FOUND }, 404);
 		}
 
 		// イベント紐付きチェック（RESTRICT制約）
@@ -261,7 +265,10 @@ eventSeriesRouter.delete("/:id", async (c) => {
 			.where(eq(events.eventSeriesId, id));
 
 		if ((linkedEvents[0]?.count ?? 0) > 0) {
-			return c.json({ error: "Cannot delete series with linked events" }, 409);
+			return c.json(
+				{ error: ERROR_MESSAGES.CANNOT_DELETE_SERIES_WITH_EVENTS },
+				409,
+			);
 		}
 
 		// 削除

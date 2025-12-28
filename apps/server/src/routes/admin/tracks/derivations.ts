@@ -8,6 +8,7 @@ import {
 	tracks,
 } from "@thac/db";
 import { Hono } from "hono";
+import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
@@ -26,7 +27,7 @@ trackDerivationsRouter.get("/:trackId/derivations", async (c) => {
 			.limit(1);
 
 		if (existingTrack.length === 0) {
-			return c.json({ error: "Track not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// 派生関係一覧取得（派生元トラック情報・リリース情報を結合）
@@ -71,7 +72,7 @@ trackDerivationsRouter.post("/:trackId/derivations", async (c) => {
 			.limit(1);
 
 		if (existingTrack.length === 0) {
-			return c.json({ error: "Track not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// 親トラック存在チェック
@@ -82,7 +83,7 @@ trackDerivationsRouter.post("/:trackId/derivations", async (c) => {
 			.limit(1);
 
 		if (existingParentTrack.length === 0) {
-			return c.json({ error: "Parent track not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.PARENT_TRACK_NOT_FOUND }, 404);
 		}
 
 		// バリデーション（自己参照チェックを含む）
@@ -93,7 +94,7 @@ trackDerivationsRouter.post("/:trackId/derivations", async (c) => {
 		if (!parsed.success) {
 			return c.json(
 				{
-					error: "Validation failed",
+					error: ERROR_MESSAGES.VALIDATION_FAILED,
 					details: parsed.error.flatten().fieldErrors,
 				},
 				400,
@@ -108,7 +109,7 @@ trackDerivationsRouter.post("/:trackId/derivations", async (c) => {
 			.limit(1);
 
 		if (existingId.length > 0) {
-			return c.json({ error: "ID already exists" }, 409);
+			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
 		// 一意性チェック（子トラック × 親トラック）
@@ -124,10 +125,7 @@ trackDerivationsRouter.post("/:trackId/derivations", async (c) => {
 			.limit(1);
 
 		if (duplicateCheck.length > 0) {
-			return c.json(
-				{ error: "This derivation relationship already exists" },
-				409,
-			);
+			return c.json({ error: ERROR_MESSAGES.DERIVATION_ALREADY_EXISTS }, 409);
 		}
 
 		// 作成
@@ -161,7 +159,7 @@ trackDerivationsRouter.delete("/:trackId/derivations/:id", async (c) => {
 			.limit(1);
 
 		if (existingDerivation.length === 0) {
-			return c.json({ error: "Not found" }, 404);
+			return c.json({ error: ERROR_MESSAGES.NOT_FOUND }, 404);
 		}
 
 		// 削除
