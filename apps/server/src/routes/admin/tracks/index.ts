@@ -10,6 +10,7 @@ import {
 	eq,
 	eventDays,
 	events,
+	inArray,
 	officialSongs,
 	or,
 	releaseCircles,
@@ -319,29 +320,55 @@ tracksAdminRouter.get("/:trackId", async (c) => {
 		.where(eq(trackCredits.trackId, trackId))
 		.orderBy(trackCredits.creditPosition);
 
-	// 各クレジットの役割を取得
-	const creditsWithRoles = await Promise.all(
-		creditsResult.map(async (creditRow) => {
-			const roles = await db
-				.select({
-					trackCreditId: trackCreditRoles.trackCreditId,
-					roleCode: trackCreditRoles.roleCode,
-					rolePosition: trackCreditRoles.rolePosition,
-					role: creditRoles,
-				})
-				.from(trackCreditRoles)
-				.leftJoin(creditRoles, eq(trackCreditRoles.roleCode, creditRoles.code))
-				.where(eq(trackCreditRoles.trackCreditId, creditRow.credit.id))
-				.orderBy(trackCreditRoles.rolePosition);
+	// クレジットIDリストを取得
+	const creditIds = creditsResult.map((r) => r.credit.id);
 
-			return {
-				...creditRow.credit,
-				artist: creditRow.artist,
-				artistAlias: creditRow.artistAlias,
-				roles,
-			};
-		}),
-	);
+	// 役割情報を一括取得（N+1解消）
+	const allRoles =
+		creditIds.length > 0
+			? await db
+					.select({
+						trackCreditId: trackCreditRoles.trackCreditId,
+						roleCode: trackCreditRoles.roleCode,
+						rolePosition: trackCreditRoles.rolePosition,
+						role: creditRoles,
+					})
+					.from(trackCreditRoles)
+					.leftJoin(
+						creditRoles,
+						eq(trackCreditRoles.roleCode, creditRoles.code),
+					)
+					.where(inArray(trackCreditRoles.trackCreditId, creditIds))
+					.orderBy(
+						trackCreditRoles.trackCreditId,
+						trackCreditRoles.rolePosition,
+					)
+			: [];
+
+	// 役割情報をクレジットIDごとにグループ化
+	const rolesByCredit = new Map<
+		string,
+		Array<{
+			trackCreditId: string;
+			roleCode: string;
+			rolePosition: number;
+			role: (typeof allRoles)[number]["role"];
+		}>
+	>();
+	for (const role of allRoles) {
+		if (!rolesByCredit.has(role.trackCreditId)) {
+			rolesByCredit.set(role.trackCreditId, []);
+		}
+		rolesByCredit.get(role.trackCreditId)?.push(role);
+	}
+
+	// クレジットに役割情報を紐付け
+	const creditsWithRoles = creditsResult.map((creditRow) => ({
+		...creditRow.credit,
+		artist: creditRow.artist,
+		artistAlias: creditRow.artistAlias,
+		roles: rolesByCredit.get(creditRow.credit.id) ?? [],
+	}));
 
 	return c.json({
 		...row.track,
