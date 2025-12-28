@@ -274,4 +274,60 @@ artistAliasesRouter.delete("/:id", async (c) => {
 	}
 });
 
+// 一括削除
+artistAliasesRouter.delete("/batch", async (c) => {
+	try {
+		const body = await c.req.json();
+		const { ids } = body as { ids: string[] };
+
+		if (!Array.isArray(ids) || ids.length === 0) {
+			return c.json({ error: ERROR_MESSAGES.ITEMS_REQUIRED_NON_EMPTY }, 400);
+		}
+
+		// 上限チェック（一度に100件まで）
+		if (ids.length > 100) {
+			return c.json({ error: ERROR_MESSAGES.MAXIMUM_BATCH_ITEMS }, 400);
+		}
+
+		const deleted: string[] = [];
+		const failed: Array<{ id: string; error: string }> = [];
+
+		for (const id of ids) {
+			try {
+				// 存在チェック
+				const existing = await db
+					.select()
+					.from(artistAliases)
+					.where(eq(artistAliases.id, id))
+					.limit(1);
+
+				if (existing.length === 0) {
+					failed.push({
+						id,
+						error: ERROR_MESSAGES.ARTIST_ALIAS_NOT_FOUND,
+					});
+					continue;
+				}
+
+				// 削除
+				await db.delete(artistAliases).where(eq(artistAliases.id, id));
+				deleted.push(id);
+			} catch (e) {
+				failed.push({
+					id,
+					error: e instanceof Error ? e.message : "Unknown error",
+				});
+			}
+		}
+
+		return c.json({
+			success: failed.length === 0,
+			deleted: deleted.length,
+			failed,
+		});
+	} catch (error) {
+		return handleDbError(c, error, "DELETE /admin/artist-aliases/batch");
+	}
+});
+
 export { artistAliasesRouter };

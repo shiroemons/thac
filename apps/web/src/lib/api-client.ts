@@ -1037,6 +1037,15 @@ export const artistsApi = {
 		fetchWithAuth<{ success: boolean }>(`/api/admin/artists/${id}`, {
 			method: "DELETE",
 		}),
+	batchDelete: (ids: string[]) =>
+		fetchWithAuth<{
+			success: boolean;
+			deleted: number;
+			failed: Array<{ id: string; error: string }>;
+		}>("/api/admin/artists/batch", {
+			method: "DELETE",
+			body: JSON.stringify({ ids }),
+		}),
 };
 
 // Artist Aliases
@@ -1082,6 +1091,15 @@ export const artistAliasesApi = {
 		fetchWithAuth<{ success: boolean }>(`/api/admin/artist-aliases/${id}`, {
 			method: "DELETE",
 		}),
+	batchDelete: (ids: string[]) =>
+		fetchWithAuth<{
+			success: boolean;
+			deleted: number;
+			failed: Array<{ id: string; error: string }>;
+		}>("/api/admin/artist-aliases/batch", {
+			method: "DELETE",
+			body: JSON.stringify({ ids }),
+		}),
 };
 
 // Circles
@@ -1121,6 +1139,15 @@ export const circlesApi = {
 	delete: (id: string) =>
 		fetchWithAuth<{ success: boolean }>(`/api/admin/circles/${id}`, {
 			method: "DELETE",
+		}),
+	batchDelete: (ids: string[]) =>
+		fetchWithAuth<{
+			success: boolean;
+			deleted: number;
+			failed: Array<{ id: string; error: string }>;
+		}>("/api/admin/circles/batch", {
+			method: "DELETE",
+			body: JSON.stringify({ ids }),
 		}),
 };
 
@@ -1414,6 +1441,15 @@ export const releasesApi = {
 	delete: (id: string) =>
 		fetchWithAuth<{ success: boolean }>(`/api/admin/releases/${id}`, {
 			method: "DELETE",
+		}),
+	batchDelete: (ids: string[]) =>
+		fetchWithAuth<{
+			success: boolean;
+			deleted: number;
+			failed: Array<{ id: string; error: string }>;
+		}>("/api/admin/releases/batch", {
+			method: "DELETE",
+			body: JSON.stringify({ ids }),
 		}),
 };
 

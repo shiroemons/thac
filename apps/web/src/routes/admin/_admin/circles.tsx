@@ -21,6 +21,7 @@ import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -43,6 +44,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useRowSelection } from "@/hooks/use-row-selection";
 import {
 	type Circle,
 	type CircleLink,
@@ -123,6 +125,23 @@ function CirclesPage() {
 		isOfficial: true,
 		isPrimary: false,
 	});
+
+	// 選択状態管理
+	const {
+		selectedItems,
+		isSelected,
+		isAllSelected,
+		isIndeterminate,
+		toggleItem,
+		toggleAll,
+		clearSelection,
+		selectedCount,
+	} = useRowSelection<Circle>();
+
+	// 一括削除ダイアログ状態
+	const [isBatchDeleteDialogOpen, setIsBatchDeleteDialogOpen] = useState(false);
+	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
 	// プラットフォーム一覧取得
 	const { data: platformsData } = useQuery({
@@ -248,6 +267,39 @@ function CirclesPage() {
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
+		}
+	};
+
+	const handleBatchDelete = async () => {
+		setIsBatchDeleting(true);
+		setBatchDeleteError(null);
+
+		try {
+			const ids = Array.from(selectedItems.values()).map((item) => item.id);
+
+			if (ids.length === 0) {
+				setBatchDeleteError("削除可能なサークルがありません");
+				return;
+			}
+
+			const result = await circlesApi.batchDelete(ids);
+
+			if (result.failed.length > 0) {
+				setBatchDeleteError(
+					`${result.deleted}件削除、${result.failed.length}件失敗`,
+				);
+			} else {
+				setIsBatchDeleteDialogOpen(false);
+				clearSelection();
+			}
+
+			invalidateQuery();
+		} catch (e) {
+			setBatchDeleteError(
+				e instanceof Error ? e.message : "一括削除に失敗しました",
+			);
+		} finally {
+			setIsBatchDeleting(false);
 		}
 	};
 
@@ -416,7 +468,29 @@ function CirclesPage() {
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
-				/>
+					secondaryActions={
+						selectedCount > 0
+							? [
+									{
+										label: `選択中の${selectedCount}件を削除`,
+										icon: <Trash2 className="mr-2 h-4 w-4" />,
+										onClick: () => setIsBatchDeleteDialogOpen(true),
+									},
+								]
+							: undefined
+					}
+				>
+					{selectedCount > 0 && (
+						<div className="flex items-center gap-2">
+							<span className="text-base-content/70 text-sm">
+								{selectedCount}件選択中
+							</span>
+							<Button variant="ghost" size="sm" onClick={clearSelection}>
+								選択解除
+							</Button>
+						</div>
+					)}
+				</DataTableActionBar>
 
 				{displayError && (
 					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
@@ -436,6 +510,14 @@ function CirclesPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
+									<TableHead className="w-[50px]">
+										<Checkbox
+											checked={isAllSelected(circles)}
+											indeterminate={isIndeterminate(circles)}
+											onCheckedChange={() => toggleAll(circles)}
+											aria-label="すべて選択"
+										/>
+									</TableHead>
 									{isVisible("id") && (
 										<TableHead className="w-[220px]">ID</TableHead>
 									)}
@@ -471,7 +553,7 @@ function CirclesPage() {
 								{circles.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={visibleColumns.size + 1}
+											colSpan={visibleColumns.size + 2}
 											className="h-24 text-center text-base-content/50"
 										>
 											該当するサークルが見つかりません
@@ -479,7 +561,19 @@ function CirclesPage() {
 									</TableRow>
 								) : (
 									circles.map((circle) => (
-										<TableRow key={circle.id}>
+										<TableRow
+											key={circle.id}
+											className={
+												isSelected(circle.id) ? "bg-primary/5" : undefined
+											}
+										>
+											<TableCell>
+												<Checkbox
+													checked={isSelected(circle.id)}
+													onCheckedChange={() => toggleItem(circle)}
+													aria-label={`${circle.name}を選択`}
+												/>
+											</TableCell>
 											{isVisible("id") && (
 												<TableCell className="font-mono text-base-content/50 text-xs">
 													{circle.id}
@@ -960,6 +1054,33 @@ function CirclesPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* 一括削除確認ダイアログ */}
+			<ConfirmDialog
+				open={isBatchDeleteDialogOpen}
+				onOpenChange={(open) => {
+					setIsBatchDeleteDialogOpen(open);
+					if (!open) {
+						setBatchDeleteError(null);
+					}
+				}}
+				title="サークルの一括削除"
+				description={
+					<div>
+						<p>選択した{selectedCount}件のサークルを削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※関連する外部リンクも削除されます。この操作は取り消せません。
+						</p>
+						{batchDeleteError && (
+							<p className="mt-2 text-error text-sm">{batchDeleteError}</p>
+						)}
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleBatchDelete}
+				isLoading={isBatchDeleting}
+			/>
 		</div>
 	);
 }

@@ -301,16 +301,6 @@ function TracksPage() {
 							: undefined
 					}
 				>
-					{selectedCount > 0 && (
-						<div className="flex items-center gap-2">
-							<span className="text-base-content/70 text-sm">
-								{selectedCount}件選択中
-							</span>
-							<Button variant="ghost" size="sm" onClick={clearSelection}>
-								選択解除
-							</Button>
-						</div>
-					)}
 					<SearchableSelect
 						value={releaseFilter}
 						onChange={(value) => handleReleaseFilterChange(value || "")}
@@ -321,6 +311,16 @@ function TracksPage() {
 						clearable={true}
 						className="w-[200px]"
 					/>
+					{selectedCount > 0 && (
+						<div className="flex items-center gap-2">
+							<span className="text-base-content/70 text-sm">
+								{selectedCount}件選択中
+							</span>
+							<Button variant="ghost" size="sm" onClick={clearSelection}>
+								選択解除
+							</Button>
+						</div>
+					)}
 				</DataTableActionBar>
 
 				{displayError && (

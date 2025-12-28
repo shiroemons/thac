@@ -10,6 +10,8 @@ import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
 	Table,
@@ -21,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useRowSelection } from "@/hooks/use-row-selection";
 import {
 	type ArtistAlias,
 	aliasTypesApi,
@@ -117,6 +120,23 @@ function ArtistAliasesPage() {
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
+	// 選択状態管理
+	const {
+		selectedItems,
+		isSelected,
+		isAllSelected,
+		isIndeterminate,
+		toggleItem,
+		toggleAll,
+		clearSelection,
+		selectedCount,
+	} = useRowSelection<ArtistAlias>();
+
+	// 一括削除ダイアログ状態
+	const [isBatchDeleteDialogOpen, setIsBatchDeleteDialogOpen] = useState(false);
+	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
+
 	// アーティスト一覧取得（セレクト用）
 	const { data: artistsData } = useQuery({
 		queryKey: ["artists", "all"],
@@ -156,6 +176,39 @@ function ArtistAliasesPage() {
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
+		}
+	};
+
+	const handleBatchDelete = async () => {
+		setIsBatchDeleting(true);
+		setBatchDeleteError(null);
+
+		try {
+			const ids = Array.from(selectedItems.values()).map((item) => item.id);
+
+			if (ids.length === 0) {
+				setBatchDeleteError("削除可能な名義がありません");
+				return;
+			}
+
+			const result = await artistAliasesApi.batchDelete(ids);
+
+			if (result.failed.length > 0) {
+				setBatchDeleteError(
+					`${result.deleted}件削除、${result.failed.length}件失敗`,
+				);
+			} else {
+				setIsBatchDeleteDialogOpen(false);
+				clearSelection();
+			}
+
+			invalidateQuery();
+		} catch (e) {
+			setBatchDeleteError(
+				e instanceof Error ? e.message : "一括削除に失敗しました",
+			);
+		} finally {
+			setIsBatchDeleting(false);
 		}
 	};
 
@@ -228,6 +281,17 @@ function ArtistAliasesPage() {
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
+					secondaryActions={
+						selectedCount > 0
+							? [
+									{
+										label: `選択中の${selectedCount}件を削除`,
+										icon: <Trash2 className="mr-2 h-4 w-4" />,
+										onClick: () => setIsBatchDeleteDialogOpen(true),
+									},
+								]
+							: undefined
+					}
 				>
 					<SearchableSelect
 						value={artistIdFilter}
@@ -238,6 +302,16 @@ function ArtistAliasesPage() {
 						emptyMessage="該当するアーティストがありません"
 						className="w-56"
 					/>
+					{selectedCount > 0 && (
+						<div className="flex items-center gap-2">
+							<span className="text-base-content/70 text-sm">
+								{selectedCount}件選択中
+							</span>
+							<Button variant="ghost" size="sm" onClick={clearSelection}>
+								選択解除
+							</Button>
+						</div>
+					)}
 				</DataTableActionBar>
 
 				{displayError && (
@@ -258,6 +332,14 @@ function ArtistAliasesPage() {
 						<Table zebra>
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
+									<TableHead className="w-[50px]">
+										<Checkbox
+											checked={isAllSelected(aliases)}
+											indeterminate={isIndeterminate(aliases)}
+											onCheckedChange={() => toggleAll(aliases)}
+											aria-label="すべて選択"
+										/>
+									</TableHead>
 									{isVisible("id") && (
 										<TableHead className="w-[220px]">ID</TableHead>
 									)}
@@ -290,7 +372,7 @@ function ArtistAliasesPage() {
 								{aliases.length === 0 ? (
 									<TableRow>
 										<TableCell
-											colSpan={visibleColumns.size + 1}
+											colSpan={visibleColumns.size + 2}
 											className="h-24 text-center text-base-content/50"
 										>
 											該当する名義が見つかりません
@@ -298,7 +380,19 @@ function ArtistAliasesPage() {
 									</TableRow>
 								) : (
 									aliases.map((alias) => (
-										<TableRow key={alias.id}>
+										<TableRow
+											key={alias.id}
+											className={
+												isSelected(alias.id) ? "bg-primary/5" : undefined
+											}
+										>
+											<TableCell>
+												<Checkbox
+													checked={isSelected(alias.id)}
+													onCheckedChange={() => toggleItem(alias)}
+													aria-label={`${alias.name}を選択`}
+												/>
+											</TableCell>
 											{isVisible("id") && (
 												<TableCell className="font-mono text-base-content/50 text-xs">
 													{alias.id}
@@ -448,6 +542,33 @@ function ArtistAliasesPage() {
 				mode="edit"
 				alias={editingAlias}
 				onSuccess={invalidateQuery}
+			/>
+
+			{/* 一括削除確認ダイアログ */}
+			<ConfirmDialog
+				open={isBatchDeleteDialogOpen}
+				onOpenChange={(open) => {
+					setIsBatchDeleteDialogOpen(open);
+					if (!open) {
+						setBatchDeleteError(null);
+					}
+				}}
+				title="アーティスト名義の一括削除"
+				description={
+					<div>
+						<p>選択した{selectedCount}件の名義を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							この操作は取り消せません。
+						</p>
+						{batchDeleteError && (
+							<p className="mt-2 text-error text-sm">{batchDeleteError}</p>
+						)}
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleBatchDelete}
+				isLoading={isBatchDeleting}
 			/>
 		</div>
 	);
