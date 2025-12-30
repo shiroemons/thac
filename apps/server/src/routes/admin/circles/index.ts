@@ -249,7 +249,7 @@ circlesRouter.delete("/:id", async (c) => {
 		// 削除（関連リンクはCASCADE削除）
 		await db.delete(circles).where(eq(circles.id, id));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id });
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/circles/:id");
 	}
@@ -506,7 +506,7 @@ circlesRouter.delete("/:circleId/links/:linkId", async (c) => {
 		// 削除
 		await db.delete(circleLinks).where(eq(circleLinks.id, linkId));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id: linkId });
 	} catch (error) {
 		return handleDbError(
 			c,
@@ -564,7 +564,7 @@ circlesRouter.delete("/batch", async (c) => {
 
 		return c.json({
 			success: failed.length === 0,
-			deleted: deleted.length,
+			deleted,
 			failed,
 		});
 	} catch (error) {

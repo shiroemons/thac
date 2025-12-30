@@ -250,7 +250,7 @@ releaseCirclesRouter.delete("/:releaseId/circles/:circleId", async (c) => {
 				),
 			);
 
-		return c.json({ success: true });
+		return c.json({ success: true, id: circleId });
 	} catch (error) {
 		return handleDbError(
 			c,

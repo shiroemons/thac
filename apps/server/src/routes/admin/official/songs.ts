@@ -262,7 +262,7 @@ songsRouter.delete("/:id", async (c) => {
 		// 削除
 		await db.delete(officialSongs).where(eq(officialSongs.id, id));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id });
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/official/songs/:id");
 	}
@@ -567,7 +567,7 @@ songsRouter.delete("/:songId/links/:linkId", async (c) => {
 		// 削除
 		await db.delete(officialSongLinks).where(eq(officialSongLinks.id, linkId));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id: linkId });
 	} catch (error) {
 		return handleDbError(
 			c,

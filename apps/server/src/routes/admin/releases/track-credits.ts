@@ -446,7 +446,7 @@ trackCreditsRouter.delete(
 			// 削除（役割はCASCADEで自動削除）
 			await db.delete(trackCredits).where(eq(trackCredits.id, creditId));
 
-			return c.json({ success: true });
+			return c.json({ success: true, id: creditId });
 		} catch (error) {
 			return handleDbError(
 				c,

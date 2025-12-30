@@ -225,7 +225,7 @@ eventDaysRouter.delete("/:eventId/days/:dayId", async (c) => {
 		// 削除
 		await db.delete(eventDays).where(eq(eventDays.id, dayId));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id: dayId });
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/events/:eventId/days/:dayId");
 	}

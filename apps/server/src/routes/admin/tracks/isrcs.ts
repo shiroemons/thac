@@ -209,7 +209,7 @@ trackIsrcsRouter.delete("/:trackId/isrcs/:id", async (c) => {
 		// 削除
 		await db.delete(trackIsrcs).where(eq(trackIsrcs.id, id));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id });
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/tracks/:trackId/isrcs/:id");
 	}

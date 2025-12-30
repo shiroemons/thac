@@ -199,7 +199,7 @@ worksRouter.delete("/:id", async (c) => {
 		// 削除（関連楽曲はCASCADE削除）
 		await db.delete(officialWorks).where(eq(officialWorks.id, id));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id });
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/official/works/:id");
 	}
@@ -483,7 +483,7 @@ worksRouter.delete("/:workId/links/:linkId", async (c) => {
 		// 削除
 		await db.delete(officialWorkLinks).where(eq(officialWorkLinks.id, linkId));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id: linkId });
 	} catch (error) {
 		return handleDbError(
 			c,

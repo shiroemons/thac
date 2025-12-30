@@ -249,7 +249,7 @@ officialWorkCategoriesRouter.delete("/:code", async (c) => {
 			.delete(officialWorkCategories)
 			.where(eq(officialWorkCategories.code, code));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id: code });
 	} catch (error) {
 		return handleDbError(
 			c,

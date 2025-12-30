@@ -231,7 +231,7 @@ aliasTypesRouter.delete("/:code", async (c) => {
 		// 削除
 		await db.delete(aliasTypes).where(eq(aliasTypes.code, code));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id: code });
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/master/alias-types/:code");
 	}

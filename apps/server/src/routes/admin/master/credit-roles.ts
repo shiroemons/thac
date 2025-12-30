@@ -230,7 +230,7 @@ creditRolesRouter.delete("/:code", async (c) => {
 	// 削除
 	await db.delete(creditRoles).where(eq(creditRoles.code, code));
 
-	return c.json({ success: true });
+	return c.json({ success: true, id: code });
 });
 
 export { creditRolesRouter };

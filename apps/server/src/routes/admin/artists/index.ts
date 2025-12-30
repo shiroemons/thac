@@ -236,7 +236,7 @@ artistsRouter.delete("/:id", async (c) => {
 		// 削除（関連別名義はCASCADE削除）
 		await db.delete(artists).where(eq(artists.id, id));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id });
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/artists/:id");
 	}
@@ -290,7 +290,7 @@ artistsRouter.delete("/batch", async (c) => {
 
 		return c.json({
 			success: failed.length === 0,
-			deleted: deleted.length,
+			deleted,
 			failed,
 		});
 	} catch (error) {

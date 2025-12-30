@@ -204,7 +204,7 @@ discsRouter.delete("/:releaseId/discs/:discId", async (c) => {
 		// 削除
 		await db.delete(discs).where(eq(discs.id, discId));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id: discId });
 	} catch (error) {
 		return handleDbError(
 			c,
