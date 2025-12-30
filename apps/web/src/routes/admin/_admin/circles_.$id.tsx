@@ -16,6 +16,7 @@ import { CircleEditDialog } from "@/components/admin/circle-edit-dialog";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -71,6 +72,14 @@ function CircleDetailPage() {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// 削除ダイアログ状態
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
+	const [deleteLinkTarget, setDeleteLinkTarget] = useState<CircleLink | null>(
+		null,
+	);
+	const [isDeletingLink, setIsDeletingLink] = useState(false);
 
 	// 外部リンク管理用
 	const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
@@ -153,15 +162,18 @@ function CircleDetailPage() {
 
 	// サークル削除
 	const handleDelete = async () => {
-		if (!confirm(`サークル「${circle?.name}」を削除しますか？`)) {
-			return;
-		}
+		setIsDeleting(true);
 		try {
 			await circlesApi.delete(id);
+			setIsDeleteDialogOpen(false);
 			queryClient.invalidateQueries({ queryKey: ["circles"] });
 			navigate({ to: "/admin/circles" });
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "削除に失敗しました");
+			setMutationError(
+				err instanceof Error ? err.message : "削除に失敗しました",
+			);
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -220,15 +232,19 @@ function CircleDetailPage() {
 		}
 	};
 
-	const handleLinkDelete = async (link: CircleLink) => {
-		if (!confirm("この外部リンクを削除しますか？")) {
-			return;
-		}
+	const handleLinkDelete = async () => {
+		if (!deleteLinkTarget) return;
+		setIsDeletingLink(true);
 		try {
-			await circleLinksApi.delete(id, link.id);
+			await circleLinksApi.delete(id, deleteLinkTarget.id);
+			setDeleteLinkTarget(null);
 			invalidateQuery();
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "削除に失敗しました");
+			setMutationError(
+				err instanceof Error ? err.message : "削除に失敗しました",
+			);
+		} finally {
+			setIsDeletingLink(false);
 		}
 	};
 
@@ -293,7 +309,7 @@ function CircleDetailPage() {
 						variant="outline"
 						size="sm"
 						className="text-error hover:bg-error hover:text-error-content"
-						onClick={handleDelete}
+						onClick={() => setIsDeleteDialogOpen(true)}
 					>
 						<Trash2 className="mr-2 h-4 w-4" />
 						削除
@@ -426,7 +442,7 @@ function CircleDetailPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handleLinkDelete(link)}
+														onClick={() => setDeleteLinkTarget(link)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -799,6 +815,50 @@ function CircleDetailPage() {
 				mode="edit"
 				circle={circle}
 				onSuccess={invalidateQuery}
+			/>
+
+			{/* サークル削除確認ダイアログ */}
+			<ConfirmDialog
+				open={isDeleteDialogOpen}
+				onOpenChange={setIsDeleteDialogOpen}
+				title="サークルの削除"
+				description={
+					<div>
+						<p>「{circle?.name}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※関連するリリースやリンクも削除されます。この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDelete}
+				isLoading={isDeleting}
+			/>
+
+			{/* 外部リンク削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteLinkTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteLinkTarget(null);
+				}}
+				title="外部リンクの削除"
+				description={
+					<div>
+						<p>
+							「
+							{deleteLinkTarget?.platformName || deleteLinkTarget?.platformCode}
+							」の外部リンクを削除しますか？
+						</p>
+						<p className="mt-2 text-error text-sm">
+							※この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleLinkDelete}
+				isLoading={isDeletingLink}
 			/>
 		</div>
 	);

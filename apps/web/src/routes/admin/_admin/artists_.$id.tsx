@@ -16,6 +16,7 @@ import { ArtistEditDialog } from "@/components/admin/artist-edit-dialog";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
 import {
 	Table,
@@ -75,6 +76,13 @@ function ArtistDetailPage() {
 	const [isAliasDialogOpen, setIsAliasDialogOpen] = useState(false);
 	const [editingAlias, setEditingAlias] = useState<ArtistAlias | null>(null);
 	const [tracksPage, setTracksPage] = useState(1);
+
+	// 削除ダイアログ状態
+	const [deleteAliasTarget, setDeleteAliasTarget] =
+		useState<ArtistAlias | null>(null);
+	const [isDeletingAlias, setIsDeletingAlias] = useState(false);
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
 	const tracksPageSize = 20;
 
 	const { data: artist, isPending } = useQuery(artistDetailQueryOptions(id));
@@ -90,16 +98,18 @@ function ArtistDetailPage() {
 	};
 
 	// 別名義削除
-	const handleDeleteAlias = async (alias: ArtistAlias) => {
-		if (!confirm(`別名義「${alias.name}」を削除しますか？`)) {
-			return;
-		}
+	const handleDeleteAlias = async () => {
+		if (!deleteAliasTarget) return;
+		setIsDeletingAlias(true);
 		try {
-			await artistAliasesApi.delete(alias.id);
+			await artistAliasesApi.delete(deleteAliasTarget.id);
+			setDeleteAliasTarget(null);
 			invalidateQuery();
 			toast.success("別名義を削除しました");
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "削除に失敗しました");
+		} finally {
+			setIsDeletingAlias(false);
 		}
 	};
 
@@ -117,15 +127,16 @@ function ArtistDetailPage() {
 
 	// アーティスト削除
 	const handleDelete = async () => {
-		if (!confirm(`アーティスト「${artist?.name}」を削除しますか？`)) {
-			return;
-		}
+		setIsDeleting(true);
 		try {
 			await artistsApi.delete(id);
+			setIsDeleteDialogOpen(false);
 			queryClient.invalidateQueries({ queryKey: ["artists"] });
 			navigate({ to: "/admin/artists" });
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "削除に失敗しました");
+			toast.error(err instanceof Error ? err.message : "削除に失敗しました");
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -190,7 +201,7 @@ function ArtistDetailPage() {
 						variant="outline"
 						size="sm"
 						className="text-error hover:bg-error hover:text-error-content"
-						onClick={handleDelete}
+						onClick={() => setIsDeleteDialogOpen(true)}
 					>
 						<Trash2 className="mr-2 h-4 w-4" />
 						削除
@@ -312,7 +323,7 @@ function ArtistDetailPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handleDeleteAlias(alias)}
+														onClick={() => setDeleteAliasTarget(alias)}
 													>
 														<Trash2 className="h-4 w-4" />
 													</Button>
@@ -615,6 +626,46 @@ function ArtistDetailPage() {
 				alias={editingAlias}
 				artistId={id}
 				onSuccess={invalidateQuery}
+			/>
+
+			{/* 別名義削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteAliasTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteAliasTarget(null);
+				}}
+				title="別名義の削除"
+				description={
+					<div>
+						<p>「{deleteAliasTarget?.name}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDeleteAlias}
+				isLoading={isDeletingAlias}
+			/>
+
+			{/* アーティスト削除確認ダイアログ */}
+			<ConfirmDialog
+				open={isDeleteDialogOpen}
+				onOpenChange={setIsDeleteDialogOpen}
+				title="アーティストの削除"
+				description={
+					<div>
+						<p>「{artist?.name}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※関連する別名義も削除されます。この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDelete}
+				isLoading={isDeleting}
 			/>
 		</div>
 	);

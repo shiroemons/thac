@@ -11,6 +11,7 @@ import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { EventEditDialog } from "@/components/admin/event-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -99,6 +100,14 @@ function EventsPage() {
 	const [isSeriesDialogOpen, setIsSeriesDialogOpen] = useState(false);
 	const [newSeriesName, setNewSeriesName] = useState("");
 
+	// 個別削除ダイアログ状態
+	const [deleteTarget, setDeleteTarget] = useState<Event | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
+
+	// 開催日削除ダイアログ状態
+	const [deleteDayTarget, setDeleteDayTarget] = useState<EventDay | null>(null);
+	const [isDeletingDay, setIsDeletingDay] = useState(false);
+
 	// シリーズ一覧取得
 	const { data: seriesData } = useQuery({
 		queryKey: ["event-series"],
@@ -179,18 +188,17 @@ function EventsPage() {
 		}
 	};
 
-	const handleDelete = async (event: Event) => {
-		if (
-			!confirm(
-				`「${event.name}」を削除しますか？\n※関連する開催日情報も削除されます。`,
-			)
-		)
-			return;
+	const handleDelete = async () => {
+		if (!deleteTarget) return;
+		setIsDeleting(true);
 		try {
-			await eventsApi.delete(event.id);
+			await eventsApi.delete(deleteTarget.id);
+			setDeleteTarget(null);
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -271,17 +279,20 @@ function EventsPage() {
 	};
 
 	// 開催日削除
-	const handleDeleteDay = async (day: EventDay) => {
-		if (!editingEvent) return;
-		if (!confirm(`${day.dayNumber}日目（${day.date}）を削除しますか？`)) return;
+	const handleDeleteDay = async () => {
+		if (!editingEvent || !deleteDayTarget) return;
+		setIsDeletingDay(true);
 		try {
-			await eventDaysApi.delete(editingEvent.id, day.id);
+			await eventDaysApi.delete(editingEvent.id, deleteDayTarget.id);
 			const updated = await eventsApi.get(editingEvent.id);
 			setEditingEvent(updated);
+			setDeleteDayTarget(null);
 		} catch (e) {
 			setMutationError(
 				e instanceof Error ? e.message : "開催日の削除に失敗しました",
 			);
+		} finally {
+			setIsDeletingDay(false);
 		}
 	};
 
@@ -494,7 +505,7 @@ function EventsPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handleDelete(event)}
+														onClick={() => setDeleteTarget(event)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -742,7 +753,7 @@ function EventsPage() {
 													variant="ghost"
 													size="icon"
 													className="text-error hover:text-error"
-													onClick={() => handleDeleteDay(day)}
+													onClick={() => setDeleteDayTarget(day)}
 												>
 													<Trash2 className="h-4 w-4" />
 												</Button>
@@ -843,6 +854,41 @@ function EventsPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* イベント削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteTarget(null);
+				}}
+				title="イベントの削除"
+				description={
+					<div>
+						<p>「{deleteTarget?.name}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※関連する開催日情報も削除されます。この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDelete}
+				isLoading={isDeleting}
+			/>
+
+			{/* 開催日削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteDayTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteDayTarget(null);
+				}}
+				title="開催日の削除"
+				description={`${deleteDayTarget?.dayNumber}日目（${deleteDayTarget?.date}）を削除しますか？この操作は取り消せません。`}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDeleteDay}
+				isLoading={isDeletingDay}
+			/>
 		</div>
 	);
 }

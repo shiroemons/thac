@@ -10,6 +10,7 @@ import { EventSeriesEditDialog } from "@/components/admin/event-series-edit-dial
 import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { SortIcon } from "@/components/admin/sort-icon";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Table,
 	TableBody,
@@ -62,6 +63,10 @@ function EventSeriesPage() {
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// 個別削除ダイアログ状態
+	const [deleteTarget, setDeleteTarget] = useState<EventSeries | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	const { data, isPending, error } = useQuery(
 		eventSeriesListQueryOptions({
@@ -144,18 +149,17 @@ function EventSeriesPage() {
 		}
 	};
 
-	const handleDelete = async (series: EventSeries) => {
-		if (
-			!confirm(
-				`「${series.name}」を削除しますか？\n※イベントが紐付いている場合は削除できません。`,
-			)
-		)
-			return;
+	const handleDelete = async () => {
+		if (!deleteTarget) return;
+		setIsDeleting(true);
 		try {
-			await eventSeriesApi.delete(series.id);
+			await eventSeriesApi.delete(deleteTarget.id);
+			setDeleteTarget(null);
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -343,7 +347,7 @@ function EventSeriesPage() {
 													variant="ghost"
 													size="icon"
 													className="text-error hover:text-error"
-													onClick={() => handleDelete(series)}
+													onClick={() => setDeleteTarget(series)}
 												>
 													<Trash2 className="h-4 w-4" />
 													<span className="sr-only">削除</span>
@@ -390,6 +394,27 @@ function EventSeriesPage() {
 				mode="edit"
 				eventSeries={editingSeries}
 				onSuccess={invalidateQuery}
+			/>
+
+			{/* 削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteTarget(null);
+				}}
+				title="イベントシリーズの削除"
+				description={
+					<div>
+						<p>「{deleteTarget?.name}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※イベントが紐付いている場合は削除できません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDelete}
+				isLoading={isDeleting}
 			/>
 		</div>
 	);

@@ -101,6 +101,10 @@ function ArtistsPage() {
 	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
+	// 個別削除ダイアログ状態
+	const [deleteTarget, setDeleteTarget] = useState<Artist | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
+
 	// ensureQueryData + queryOptionsパターン
 	// ローダーでプリフェッチしたデータを自動的に使用
 	const { data, isPending, error } = useQuery(
@@ -119,18 +123,17 @@ function ArtistsPage() {
 		queryClient.invalidateQueries({ queryKey: ["artists"] });
 	};
 
-	const handleDelete = async (artist: Artist) => {
-		if (
-			!confirm(
-				`「${artist.name}」を削除しますか？\n※関連する別名義も削除されます。`,
-			)
-		)
-			return;
+	const handleDelete = async () => {
+		if (!deleteTarget) return;
+		setIsDeleting(true);
 		try {
-			await artistsApi.delete(artist.id);
+			await artistsApi.delete(deleteTarget.id);
+			setDeleteTarget(null);
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -422,7 +425,7 @@ function ArtistsPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handleDelete(artist)}
+														onClick={() => setDeleteTarget(artist)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -492,6 +495,27 @@ function ArtistsPage() {
 				variant="danger"
 				onConfirm={handleBatchDelete}
 				isLoading={isBatchDeleting}
+			/>
+
+			{/* 個別削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteTarget(null);
+				}}
+				title="アーティストの削除"
+				description={
+					<div>
+						<p>「{deleteTarget?.name}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※関連する別名義も削除されます。この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDelete}
+				isLoading={isDeleting}
 			/>
 		</div>
 	);

@@ -20,6 +20,7 @@ import { ReorderButtons } from "@/components/admin/reorder-buttons";
 import { TrackEditDialog } from "@/components/admin/track-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -170,6 +171,24 @@ function TrackDetailPage() {
 		isPrimary: true,
 	});
 	const [editingIsrc, setEditingIsrc] = useState<TrackIsrc | null>(null);
+
+	// 削除ダイアログ状態
+	const [deleteCreditTarget, setDeleteCreditTarget] =
+		useState<TrackCredit | null>(null);
+	const [isDeletingCredit, setIsDeletingCredit] = useState(false);
+	const [deleteOfficialSongTarget, setDeleteOfficialSongTarget] =
+		useState<TrackOfficialSong | null>(null);
+	const [isDeletingOfficialSong, setIsDeletingOfficialSong] = useState(false);
+	const [deleteDerivationTarget, setDeleteDerivationTarget] =
+		useState<TrackDerivation | null>(null);
+	const [isDeletingDerivation, setIsDeletingDerivation] = useState(false);
+	const [deletePublicationTarget, setDeletePublicationTarget] =
+		useState<TrackPublication | null>(null);
+	const [isDeletingPublication, setIsDeletingPublication] = useState(false);
+	const [deleteIsrcTarget, setDeleteIsrcTarget] = useState<TrackIsrc | null>(
+		null,
+	);
+	const [isDeletingIsrc, setIsDeletingIsrc] = useState(false);
 
 	// アーティスト・別名義・役割データ取得
 	const { data: artistsData } = useQuery({
@@ -481,20 +500,21 @@ function TrackDetailPage() {
 	};
 
 	// クレジット削除
-	const handleCreditDelete = async (credit: TrackCredit) => {
-		if (!track?.releaseId) return;
+	const handleCreditDelete = async () => {
+		if (!deleteCreditTarget || !track?.releaseId) return;
 		const releaseId = track.releaseId;
-		if (!confirm(`クレジット "${credit.creditName}" を削除しますか？`)) {
-			return;
-		}
+		setIsDeletingCredit(true);
 
 		try {
-			await trackCreditsApi.delete(releaseId, track.id, credit.id);
+			await trackCreditsApi.delete(releaseId, track.id, deleteCreditTarget.id);
+			setDeleteCreditTarget(null);
 			await queryClient.invalidateQueries({ queryKey: ["track", trackId] });
 		} catch (err) {
 			setMutationError(
 				err instanceof Error ? err.message : "クレジットの削除に失敗しました",
 			);
+		} finally {
+			setIsDeletingCredit(false);
 		}
 	};
 
@@ -626,18 +646,13 @@ function TrackDetailPage() {
 		}
 	};
 
-	const handleOfficialSongDelete = async (relation: TrackOfficialSong) => {
-		const songName =
-			relation.officialSong?.name ??
-			relation.customSongName ??
-			relation.officialSongId ??
-			"不明";
-		if (!confirm(`原曲紐付け "${songName}" を削除しますか？`)) {
-			return;
-		}
+	const handleOfficialSongDelete = async () => {
+		if (!deleteOfficialSongTarget) return;
+		setIsDeletingOfficialSong(true);
 
 		try {
-			await trackOfficialSongsApi.delete(trackId, relation.id);
+			await trackOfficialSongsApi.delete(trackId, deleteOfficialSongTarget.id);
+			setDeleteOfficialSongTarget(null);
 			await queryClient.invalidateQueries({
 				queryKey: ["track-official-songs", trackId],
 			});
@@ -645,6 +660,8 @@ function TrackDetailPage() {
 			setMutationError(
 				err instanceof Error ? err.message : "原曲紐付けの削除に失敗しました",
 			);
+		} finally {
+			setIsDeletingOfficialSong(false);
 		}
 	};
 
@@ -702,17 +719,13 @@ function TrackDetailPage() {
 		}
 	};
 
-	const handleDerivationDelete = async (derivation: TrackDerivation) => {
-		if (
-			!confirm(
-				`派生関係 "${derivation.parentTrack?.name ?? derivation.parentTrackId}" を削除しますか？`,
-			)
-		) {
-			return;
-		}
+	const handleDerivationDelete = async () => {
+		if (!deleteDerivationTarget) return;
+		setIsDeletingDerivation(true);
 
 		try {
-			await trackDerivationsApi.delete(trackId, derivation.id);
+			await trackDerivationsApi.delete(trackId, deleteDerivationTarget.id);
+			setDeleteDerivationTarget(null);
 			await queryClient.invalidateQueries({
 				queryKey: ["track-derivations", trackId],
 			});
@@ -720,6 +733,8 @@ function TrackDetailPage() {
 			setMutationError(
 				err instanceof Error ? err.message : "派生関係の削除に失敗しました",
 			);
+		} finally {
+			setIsDeletingDerivation(false);
 		}
 	};
 
@@ -780,13 +795,13 @@ function TrackDetailPage() {
 		}
 	};
 
-	const handlePublicationDelete = async (publication: TrackPublication) => {
-		if (!confirm(`公開リンク "${publication.url}" を削除しますか？`)) {
-			return;
-		}
+	const handlePublicationDelete = async () => {
+		if (!deletePublicationTarget) return;
+		setIsDeletingPublication(true);
 
 		try {
-			await trackPublicationsApi.delete(trackId, publication.id);
+			await trackPublicationsApi.delete(trackId, deletePublicationTarget.id);
+			setDeletePublicationTarget(null);
 			await queryClient.invalidateQueries({
 				queryKey: ["track-publications", trackId],
 			});
@@ -794,6 +809,8 @@ function TrackDetailPage() {
 			setMutationError(
 				err instanceof Error ? err.message : "公開リンクの削除に失敗しました",
 			);
+		} finally {
+			setIsDeletingPublication(false);
 		}
 	};
 
@@ -854,13 +871,13 @@ function TrackDetailPage() {
 		}
 	};
 
-	const handleIsrcDelete = async (isrc: TrackIsrc) => {
-		if (!confirm(`ISRC "${isrc.isrc}" を削除しますか？`)) {
-			return;
-		}
+	const handleIsrcDelete = async () => {
+		if (!deleteIsrcTarget) return;
+		setIsDeletingIsrc(true);
 
 		try {
-			await trackIsrcsApi.delete(trackId, isrc.id);
+			await trackIsrcsApi.delete(trackId, deleteIsrcTarget.id);
+			setDeleteIsrcTarget(null);
 			await queryClient.invalidateQueries({
 				queryKey: ["track-isrcs", trackId],
 			});
@@ -868,6 +885,8 @@ function TrackDetailPage() {
 			setMutationError(
 				err instanceof Error ? err.message : "ISRCの削除に失敗しました",
 			);
+		} finally {
+			setIsDeletingIsrc(false);
 		}
 	};
 
@@ -1190,7 +1209,7 @@ function TrackDetailPage() {
 													<Button
 														variant="ghost"
 														size="icon"
-														onClick={() => handleCreditDelete(credit)}
+														onClick={() => setDeleteCreditTarget(credit)}
 													>
 														<Trash2 className="h-4 w-4 text-error" />
 													</Button>
@@ -1283,7 +1302,9 @@ function TrackDetailPage() {
 													<Button
 														variant="ghost"
 														size="icon"
-														onClick={() => handleOfficialSongDelete(relation)}
+														onClick={() =>
+															setDeleteOfficialSongTarget(relation)
+														}
 													>
 														<Trash2 className="h-4 w-4 text-error" />
 													</Button>
@@ -1352,7 +1373,7 @@ function TrackDetailPage() {
 											<Button
 												variant="ghost"
 												size="icon"
-												onClick={() => handleDerivationDelete(derivation)}
+												onClick={() => setDeleteDerivationTarget(derivation)}
 											>
 												<Trash2 className="h-4 w-4 text-error" />
 											</Button>
@@ -1420,7 +1441,7 @@ function TrackDetailPage() {
 												<Button
 													variant="ghost"
 													size="icon"
-													onClick={() => handlePublicationDelete(pub)}
+													onClick={() => setDeletePublicationTarget(pub)}
 												>
 													<Trash2 className="h-4 w-4 text-error" />
 												</Button>
@@ -1489,7 +1510,7 @@ function TrackDetailPage() {
 												<Button
 													variant="ghost"
 													size="icon"
-													onClick={() => handleIsrcDelete(isrc)}
+													onClick={() => setDeleteIsrcTarget(isrc)}
 												>
 													<Trash2 className="h-4 w-4 text-error" />
 												</Button>
@@ -2080,6 +2101,66 @@ function TrackDetailPage() {
 				onOpenChange={setIsEditDialogOpen}
 				track={track}
 				onSuccess={invalidateTrackQuery}
+			/>
+
+			{/* クレジット削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteCreditTarget}
+				onOpenChange={(open) => !open && setDeleteCreditTarget(null)}
+				title="クレジットの削除"
+				description={`クレジット「${deleteCreditTarget?.creditName}」を削除しますか？この操作は取り消せません。`}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleCreditDelete}
+				isLoading={isDeletingCredit}
+			/>
+
+			{/* 原曲紐付け削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteOfficialSongTarget}
+				onOpenChange={(open) => !open && setDeleteOfficialSongTarget(null)}
+				title="原曲紐付けの削除"
+				description={`原曲紐付け「${deleteOfficialSongTarget?.officialSong?.name ?? deleteOfficialSongTarget?.customSongName ?? "不明"}」を削除しますか？この操作は取り消せません。`}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleOfficialSongDelete}
+				isLoading={isDeletingOfficialSong}
+			/>
+
+			{/* 派生関係削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteDerivationTarget}
+				onOpenChange={(open) => !open && setDeleteDerivationTarget(null)}
+				title="派生関係の削除"
+				description={`派生関係「${deleteDerivationTarget?.parentTrack?.name ?? deleteDerivationTarget?.parentTrackId}」を削除しますか？この操作は取り消せません。`}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDerivationDelete}
+				isLoading={isDeletingDerivation}
+			/>
+
+			{/* 公開リンク削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deletePublicationTarget}
+				onOpenChange={(open) => !open && setDeletePublicationTarget(null)}
+				title="公開リンクの削除"
+				description={`公開リンク「${deletePublicationTarget?.url}」を削除しますか？この操作は取り消せません。`}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handlePublicationDelete}
+				isLoading={isDeletingPublication}
+			/>
+
+			{/* ISRC削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteIsrcTarget}
+				onOpenChange={(open) => !open && setDeleteIsrcTarget(null)}
+				title="ISRCの削除"
+				description={`ISRC「${deleteIsrcTarget?.isrc}」を削除しますか？この操作は取り消せません。`}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleIsrcDelete}
+				isLoading={isDeletingIsrc}
 			/>
 		</div>
 	);

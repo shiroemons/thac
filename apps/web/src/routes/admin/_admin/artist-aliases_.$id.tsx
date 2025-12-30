@@ -6,6 +6,7 @@ import { ArtistAliasEditDialog } from "@/components/admin/artist-alias-edit-dial
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
 import {
 	Table,
@@ -82,6 +83,10 @@ function ArtistAliasDetailPage() {
 	const [tracksPage, setTracksPage] = useState(1);
 	const tracksPageSize = 20;
 
+	// 削除ダイアログ状態
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
+
 	const { data: alias, isPending } = useQuery(
 		artistAliasDetailQueryOptions(id),
 	);
@@ -106,15 +111,16 @@ function ArtistAliasDetailPage() {
 
 	// 削除
 	const handleDelete = async () => {
-		if (!confirm(`名義「${alias?.name}」を削除しますか？`)) {
-			return;
-		}
+		setIsDeleting(true);
 		try {
 			await artistAliasesApi.delete(id);
+			setIsDeleteDialogOpen(false);
 			queryClient.invalidateQueries({ queryKey: ["artistAliases"] });
 			navigate({ to: "/admin/artist-aliases" });
 		} catch (err) {
 			alert(err instanceof Error ? err.message : "削除に失敗しました");
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -181,7 +187,7 @@ function ArtistAliasDetailPage() {
 						variant="outline"
 						size="sm"
 						className="text-error hover:bg-error hover:text-error-content"
-						onClick={handleDelete}
+						onClick={() => setIsDeleteDialogOpen(true)}
 					>
 						<Trash2 className="mr-2 h-4 w-4" />
 						削除
@@ -534,6 +540,25 @@ function ArtistAliasDetailPage() {
 				mode="edit"
 				alias={alias}
 				onSuccess={invalidateQuery}
+			/>
+
+			{/* 削除確認ダイアログ */}
+			<ConfirmDialog
+				open={isDeleteDialogOpen}
+				onOpenChange={setIsDeleteDialogOpen}
+				title="名義の削除"
+				description={
+					<div>
+						<p>「{alias?.name}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDelete}
+				isLoading={isDeleting}
 			/>
 		</div>
 	);
