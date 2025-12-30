@@ -12,6 +12,20 @@ import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
+/**
+ * リリースのJANコード一覧を取得する関数
+ * 統合エンドポイント用にロジックを分離
+ */
+export async function getReleaseJanCodes(releaseId: string) {
+	// JANコード一覧取得
+	const janCodes = await db
+		.select()
+		.from(releaseJanCodes)
+		.where(eq(releaseJanCodes.releaseId, releaseId));
+
+	return janCodes;
+}
+
 const releaseJanCodesRouter = new Hono<AdminContext>();
 
 // リリースのJANコード一覧取得
@@ -30,13 +44,8 @@ releaseJanCodesRouter.get("/:releaseId/jan-codes", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
-		// JANコード一覧取得
-		const janCodes = await db
-			.select()
-			.from(releaseJanCodes)
-			.where(eq(releaseJanCodes.releaseId, releaseId));
-
-		return c.json(janCodes);
+		const result = await getReleaseJanCodes(releaseId);
+		return c.json(result);
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/releases/:releaseId/jan-codes");
 	}

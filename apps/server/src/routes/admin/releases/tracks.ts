@@ -20,6 +20,105 @@ import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
+/**
+ * リリースのトラック一覧を取得する関数
+ * 統合エンドポイント用にロジックを分離
+ */
+export async function getReleaseTracks(releaseId: string) {
+	// トラック一覧取得（クレジット数を含む）
+	const releaseTracks = await db
+		.select({
+			track: tracks,
+			creditCount: db.$count(trackCredits, eq(trackCredits.trackId, tracks.id)),
+		})
+		.from(tracks)
+		.where(eq(tracks.releaseId, releaseId))
+		.orderBy(tracks.discId, tracks.trackNumber);
+
+	// 全トラックIDを取得
+	const trackIds = releaseTracks.map((row) => row.track.id);
+
+	// 役割別クレジット取得用のヘルパー
+	const getCreditsByRole = async (roleCode: string) => {
+		if (trackIds.length === 0) return new Map<string, string[]>();
+
+		const credits = await db
+			.select({
+				trackId: trackCredits.trackId,
+				creditName: trackCredits.creditName,
+			})
+			.from(trackCredits)
+			.innerJoin(
+				trackCreditRoles,
+				eq(trackCredits.id, trackCreditRoles.trackCreditId),
+			)
+			.where(
+				and(
+					inArray(trackCredits.trackId, trackIds),
+					eq(trackCreditRoles.roleCode, roleCode),
+				),
+			)
+			.orderBy(trackCredits.creditPosition);
+
+		const map = new Map<string, string[]>();
+		for (const c of credits) {
+			const existing = map.get(c.trackId) ?? [];
+			existing.push(c.creditName);
+			map.set(c.trackId, existing);
+		}
+		return map;
+	};
+
+	// 原曲取得
+	const getOriginalSongs = async () => {
+		if (trackIds.length === 0) return new Map<string, string[]>();
+
+		const songs = await db
+			.select({
+				trackId: trackOfficialSongs.trackId,
+				songName: officialSongs.name,
+				customSongName: trackOfficialSongs.customSongName,
+			})
+			.from(trackOfficialSongs)
+			.leftJoin(
+				officialSongs,
+				eq(trackOfficialSongs.officialSongId, officialSongs.id),
+			)
+			.where(inArray(trackOfficialSongs.trackId, trackIds))
+			.orderBy(trackOfficialSongs.partPosition);
+
+		const map = new Map<string, string[]>();
+		for (const s of songs) {
+			const name = s.songName ?? s.customSongName ?? "";
+			if (name) {
+				const existing = map.get(s.trackId) ?? [];
+				existing.push(name);
+				map.set(s.trackId, existing);
+			}
+		}
+		return map;
+	};
+
+	// 並列で取得
+	const [vocalistsMap, arrangersMap, lyricistsMap, originalSongsMap] =
+		await Promise.all([
+			getCreditsByRole("vocalist"),
+			getCreditsByRole("arranger"),
+			getCreditsByRole("lyricist"),
+			getOriginalSongs(),
+		]);
+
+	// レスポンス形式に変換
+	return releaseTracks.map((row) => ({
+		...row.track,
+		creditCount: row.creditCount,
+		vocalists: vocalistsMap.get(row.track.id)?.join(" / ") ?? null,
+		arrangers: arrangersMap.get(row.track.id)?.join(" / ") ?? null,
+		lyricists: lyricistsMap.get(row.track.id)?.join(" / ") ?? null,
+		originalSongs: originalSongsMap.get(row.track.id)?.join(" / ") ?? null,
+	}));
+}
+
 const tracksRouter = new Hono<AdminContext>();
 
 // リリースのトラック一覧取得（ディスク・トラック番号順）
@@ -38,102 +137,7 @@ tracksRouter.get("/:releaseId/tracks", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
-		// トラック一覧取得（クレジット数を含む）
-		const releaseTracks = await db
-			.select({
-				track: tracks,
-				creditCount: db.$count(
-					trackCredits,
-					eq(trackCredits.trackId, tracks.id),
-				),
-			})
-			.from(tracks)
-			.where(eq(tracks.releaseId, releaseId))
-			.orderBy(tracks.discId, tracks.trackNumber);
-
-		// 全トラックIDを取得
-		const trackIds = releaseTracks.map((row) => row.track.id);
-
-		// 役割別クレジット取得用のヘルパー
-		const getCreditsByRole = async (roleCode: string) => {
-			if (trackIds.length === 0) return new Map<string, string[]>();
-
-			const credits = await db
-				.select({
-					trackId: trackCredits.trackId,
-					creditName: trackCredits.creditName,
-				})
-				.from(trackCredits)
-				.innerJoin(
-					trackCreditRoles,
-					eq(trackCredits.id, trackCreditRoles.trackCreditId),
-				)
-				.where(
-					and(
-						inArray(trackCredits.trackId, trackIds),
-						eq(trackCreditRoles.roleCode, roleCode),
-					),
-				)
-				.orderBy(trackCredits.creditPosition);
-
-			const map = new Map<string, string[]>();
-			for (const c of credits) {
-				const existing = map.get(c.trackId) ?? [];
-				existing.push(c.creditName);
-				map.set(c.trackId, existing);
-			}
-			return map;
-		};
-
-		// 原曲取得
-		const getOriginalSongs = async () => {
-			if (trackIds.length === 0) return new Map<string, string[]>();
-
-			const songs = await db
-				.select({
-					trackId: trackOfficialSongs.trackId,
-					songName: officialSongs.name,
-					customSongName: trackOfficialSongs.customSongName,
-				})
-				.from(trackOfficialSongs)
-				.leftJoin(
-					officialSongs,
-					eq(trackOfficialSongs.officialSongId, officialSongs.id),
-				)
-				.where(inArray(trackOfficialSongs.trackId, trackIds))
-				.orderBy(trackOfficialSongs.partPosition);
-
-			const map = new Map<string, string[]>();
-			for (const s of songs) {
-				const name = s.songName ?? s.customSongName ?? "";
-				if (name) {
-					const existing = map.get(s.trackId) ?? [];
-					existing.push(name);
-					map.set(s.trackId, existing);
-				}
-			}
-			return map;
-		};
-
-		// 並列で取得
-		const [vocalistsMap, arrangersMap, lyricistsMap, originalSongsMap] =
-			await Promise.all([
-				getCreditsByRole("vocalist"),
-				getCreditsByRole("arranger"),
-				getCreditsByRole("lyricist"),
-				getOriginalSongs(),
-			]);
-
-		// レスポンス形式に変換
-		const result = releaseTracks.map((row) => ({
-			...row.track,
-			creditCount: row.creditCount,
-			vocalists: vocalistsMap.get(row.track.id)?.join(" / ") ?? null,
-			arrangers: arrangersMap.get(row.track.id)?.join(" / ") ?? null,
-			lyricists: lyricistsMap.get(row.track.id)?.join(" / ") ?? null,
-			originalSongs: originalSongsMap.get(row.track.id)?.join(" / ") ?? null,
-		}));
-
+		const result = await getReleaseTracks(releaseId);
 		return c.json(result);
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/releases/:releaseId/tracks");

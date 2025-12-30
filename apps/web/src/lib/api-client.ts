@@ -1004,6 +1004,26 @@ export interface ArtistCircle {
 	participationTypes: string[];
 }
 
+// アーティスト統合レスポンス
+export interface ArtistFullStats {
+	trackCount: number;
+	releaseCount: number;
+	circleCount: number;
+	byRole: Record<string, number>;
+	earliestReleaseDate: string | null;
+	latestReleaseDate: string | null;
+}
+
+export interface ArtistFullResponse {
+	artist: ArtistWithAliases;
+	tracks: {
+		data: ArtistTrack[];
+		total: number;
+	};
+	circles: ArtistCircle[];
+	stats: ArtistFullStats;
+}
+
 // Artists
 export const artistsApi = {
 	list: (params?: {
@@ -1025,6 +1045,10 @@ export const artistsApi = {
 	},
 	get: (id: string) =>
 		fetchWithAuth<ArtistWithAliases>(`/api/admin/artists/${id}`),
+	getFull: (id: string, ssrHeaders?: Headers) =>
+		fetchWithAuth<ArtistFullResponse>(`/api/admin/artists/${id}/full`, {
+			ssrHeaders,
+		}),
 	getTracks: (id: string) =>
 		fetchWithAuth<ArtistTracksResponse>(`/api/admin/artists/${id}/tracks`),
 	getCircles: (id: string) =>
@@ -1477,6 +1501,38 @@ export const releasesApi = {
 		}),
 };
 
+// リリース統合レスポンス
+export interface ReleaseEventInfo {
+	id: string;
+	name: string;
+	dayId: string | null;
+	dayNumber: number | null;
+	dayDate: string | null;
+}
+
+export interface ReleaseFullStats {
+	discCount: number;
+	trackCount: number;
+	circleCount: number;
+}
+
+export interface ReleaseFullResponse {
+	release: ReleaseWithDiscs;
+	tracks: TrackWithCreditCount[];
+	circles: ReleaseCircleWithCircle[];
+	publications: ReleasePublication[];
+	janCodes: ReleaseJanCode[];
+	event: ReleaseEventInfo | null;
+	stats: ReleaseFullStats;
+}
+
+export const releasesFullApi = {
+	get: (id: string, ssrHeaders?: Headers) =>
+		fetchWithAuth<ReleaseFullResponse>(`/api/admin/releases/${id}/full`, {
+			ssrHeaders,
+		}),
+};
+
 // Discs
 export const discsApi = {
 	list: (releaseId: string) =>
@@ -1644,6 +1700,29 @@ export const circleArtistsApi = {
 		fetchWithAuth<CircleArtistsResponse>(
 			`/api/admin/circles/${circleId}/artists`,
 		),
+};
+
+// サークル統合レスポンス
+export interface CircleFullStats {
+	artistCount: number;
+	releaseCount: number;
+	trackCount: number;
+	earliestReleaseDate: string | null;
+	latestReleaseDate: string | null;
+}
+
+export interface CircleFullResponse {
+	circle: CircleWithLinks;
+	artists: CircleArtistsResponse;
+	releases: CircleReleasesByType[];
+	stats: CircleFullStats;
+}
+
+export const circlesFullApi = {
+	get: (id: string, ssrHeaders?: Headers) =>
+		fetchWithAuth<CircleFullResponse>(`/api/admin/circles/${id}/full`, {
+			ssrHeaders,
+		}),
 };
 
 // ===== トラック管理 =====

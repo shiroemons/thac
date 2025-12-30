@@ -18,8 +18,8 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
-import { circleArtistsRouter } from "./artists";
-import { circleReleasesRouter } from "./releases";
+import { circleArtistsRouter, getCircleArtists } from "./artists";
+import { circleReleasesRouter, getCircleReleases } from "./releases";
 
 const circlesRouter = new Hono<AdminContext>();
 
@@ -80,6 +80,63 @@ circlesRouter.get("/", async (c) => {
 		});
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/circles");
+	}
+});
+
+// 統合取得（基本情報 + リンク + 参加アーティスト + リリース）
+circlesRouter.get("/:id/full", async (c) => {
+	try {
+		const id = c.req.param("id");
+
+		// 並列実行でパフォーマンス最適化
+		const [circleResult, links, artistsData, releasesData] = await Promise.all([
+			db.select().from(circles).where(eq(circles.id, id)).limit(1),
+			db
+				.select({
+					id: circleLinks.id,
+					circleId: circleLinks.circleId,
+					platformCode: circleLinks.platformCode,
+					url: circleLinks.url,
+					platformId: circleLinks.platformId,
+					handle: circleLinks.handle,
+					isOfficial: circleLinks.isOfficial,
+					isPrimary: circleLinks.isPrimary,
+					createdAt: circleLinks.createdAt,
+					updatedAt: circleLinks.updatedAt,
+					platformName: platforms.name,
+				})
+				.from(circleLinks)
+				.leftJoin(platforms, eq(circleLinks.platformCode, platforms.code))
+				.where(eq(circleLinks.circleId, id))
+				.orderBy(circleLinks.isPrimary, circleLinks.createdAt),
+			getCircleArtists(id),
+			getCircleReleases(id),
+		]);
+
+		if (circleResult.length === 0) {
+			return c.json({ error: ERROR_MESSAGES.CIRCLE_NOT_FOUND }, 404);
+		}
+
+		// リリース数を計算（参加形態別データからフラット化）
+		const totalReleaseCount = releasesData.reduce(
+			(sum, group) => sum + group.releases.length,
+			0,
+		);
+
+		return c.json({
+			circle: { ...circleResult[0], links },
+			artists: artistsData,
+			releases: releasesData,
+			stats: {
+				artistCount: artistsData.statistics.totalArtistCount,
+				releaseCount: totalReleaseCount,
+				trackCount: artistsData.statistics.totalTrackCount,
+				earliestReleaseDate: artistsData.statistics.earliestReleaseDate,
+				latestReleaseDate: artistsData.statistics.latestReleaseDate,
+			},
+		});
+	} catch (error) {
+		return handleDbError(c, error, "GET /admin/circles/:id/full");
 	}
 });
 

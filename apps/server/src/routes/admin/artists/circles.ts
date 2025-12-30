@@ -11,6 +11,106 @@ import { Hono } from "hono";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
+/**
+ * アーティストの参加サークル一覧を取得する関数
+ * 統合エンドポイント用にロジックを分離
+ * 経路: artist → trackCredits → tracks → releases → releaseCircles → circles
+ */
+export async function getArtistCircles(artistId: string) {
+	// アーティストのクレジット一覧からトラックIDを取得
+	const creditsResult = await db
+		.select({
+			trackId: trackCredits.trackId,
+		})
+		.from(trackCredits)
+		.where(eq(trackCredits.artistId, artistId));
+
+	if (creditsResult.length === 0) {
+		return [];
+	}
+
+	const trackIds = [...new Set(creditsResult.map((c) => c.trackId))];
+
+	// トラックからリリースIDを取得
+	const tracksResult = await db
+		.select({
+			releaseId: tracks.releaseId,
+		})
+		.from(tracks)
+		.where(inArray(tracks.id, trackIds));
+
+	const releaseIds = [
+		...new Set(
+			tracksResult
+				.map((t) => t.releaseId)
+				.filter((id): id is string => id !== null),
+		),
+	];
+
+	if (releaseIds.length === 0) {
+		return [];
+	}
+
+	// リリースサークル情報を取得
+	const releaseCirclesResult = await db
+		.select({
+			releaseId: releaseCircles.releaseId,
+			circleId: releaseCircles.circleId,
+			participationType: releaseCircles.participationType,
+		})
+		.from(releaseCircles)
+		.where(inArray(releaseCircles.releaseId, releaseIds));
+
+	if (releaseCirclesResult.length === 0) {
+		return [];
+	}
+
+	// サークル情報を取得
+	const circleIds = [...new Set(releaseCirclesResult.map((rc) => rc.circleId))];
+	const circleList = await db
+		.select({
+			id: circles.id,
+			name: circles.name,
+		})
+		.from(circles)
+		.where(inArray(circles.id, circleIds))
+		.orderBy(circles.name);
+
+	// サークルごとにリリース数と参加形態を集計
+	const circleStats = new Map<
+		string,
+		{
+			releaseCount: number;
+			participationTypes: Set<string>;
+		}
+	>();
+
+	for (const rc of releaseCirclesResult) {
+		const stats = circleStats.get(rc.circleId) || {
+			releaseCount: 0,
+			participationTypes: new Set<string>(),
+		};
+		// 同じサークルでも異なるリリースをカウント
+		if (!circleStats.has(rc.circleId)) {
+			stats.releaseCount = 0;
+		}
+		stats.releaseCount++;
+		stats.participationTypes.add(rc.participationType);
+		circleStats.set(rc.circleId, stats);
+	}
+
+	// レスポンスを整形
+	return circleList.map((circle) => {
+		const stats = circleStats.get(circle.id);
+		return {
+			circleId: circle.id,
+			circleName: circle.name,
+			releaseCount: stats?.releaseCount ?? 0,
+			participationTypes: stats ? Array.from(stats.participationTypes) : [],
+		};
+	});
+}
+
 const artistCirclesRouter = new Hono<AdminContext>();
 
 // アーティストの参加サークル一覧取得
@@ -18,102 +118,7 @@ const artistCirclesRouter = new Hono<AdminContext>();
 artistCirclesRouter.get("/:artistId/circles", async (c) => {
 	try {
 		const artistId = c.req.param("artistId");
-
-		// アーティストのクレジット一覧からトラックIDを取得
-		const creditsResult = await db
-			.select({
-				trackId: trackCredits.trackId,
-			})
-			.from(trackCredits)
-			.where(eq(trackCredits.artistId, artistId));
-
-		if (creditsResult.length === 0) {
-			return c.json([]);
-		}
-
-		const trackIds = [...new Set(creditsResult.map((c) => c.trackId))];
-
-		// トラックからリリースIDを取得
-		const tracksResult = await db
-			.select({
-				releaseId: tracks.releaseId,
-			})
-			.from(tracks)
-			.where(inArray(tracks.id, trackIds));
-
-		const releaseIds = [
-			...new Set(
-				tracksResult
-					.map((t) => t.releaseId)
-					.filter((id): id is string => id !== null),
-			),
-		];
-
-		if (releaseIds.length === 0) {
-			return c.json([]);
-		}
-
-		// リリースサークル情報を取得
-		const releaseCirclesResult = await db
-			.select({
-				releaseId: releaseCircles.releaseId,
-				circleId: releaseCircles.circleId,
-				participationType: releaseCircles.participationType,
-			})
-			.from(releaseCircles)
-			.where(inArray(releaseCircles.releaseId, releaseIds));
-
-		if (releaseCirclesResult.length === 0) {
-			return c.json([]);
-		}
-
-		// サークル情報を取得
-		const circleIds = [
-			...new Set(releaseCirclesResult.map((rc) => rc.circleId)),
-		];
-		const circleList = await db
-			.select({
-				id: circles.id,
-				name: circles.name,
-			})
-			.from(circles)
-			.where(inArray(circles.id, circleIds))
-			.orderBy(circles.name);
-
-		// サークルごとにリリース数と参加形態を集計
-		const circleStats = new Map<
-			string,
-			{
-				releaseCount: number;
-				participationTypes: Set<string>;
-			}
-		>();
-
-		for (const rc of releaseCirclesResult) {
-			const stats = circleStats.get(rc.circleId) || {
-				releaseCount: 0,
-				participationTypes: new Set<string>(),
-			};
-			// 同じサークルでも異なるリリースをカウント
-			if (!circleStats.has(rc.circleId)) {
-				stats.releaseCount = 0;
-			}
-			stats.releaseCount++;
-			stats.participationTypes.add(rc.participationType);
-			circleStats.set(rc.circleId, stats);
-		}
-
-		// レスポンスを整形
-		const result = circleList.map((circle) => {
-			const stats = circleStats.get(circle.id);
-			return {
-				circleId: circle.id,
-				circleName: circle.name,
-				releaseCount: stats?.releaseCount ?? 0,
-				participationTypes: stats ? Array.from(stats.participationTypes) : [],
-			};
-		});
-
+		const result = await getArtistCircles(artistId);
 		return c.json(result);
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/artists/:artistId/circles");

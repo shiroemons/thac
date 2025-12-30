@@ -34,11 +34,7 @@ import {
 	INITIAL_SCRIPT_LABELS,
 } from "@/lib/api-client";
 import { createArtistDetailHead } from "@/lib/head";
-import {
-	artistCirclesQueryOptions,
-	artistDetailQueryOptions,
-	artistTracksQueryOptions,
-} from "@/lib/query-options";
+import { artistFullQueryOptions } from "@/lib/query-options";
 
 /** 役割コードのラベルマップ */
 const ROLE_LABELS: Record<string, string> = {
@@ -62,8 +58,8 @@ const ROLE_LABELS: Record<string, string> = {
 
 export const Route = createFileRoute("/admin/_admin/artists_/$id")({
 	loader: ({ context, params }) =>
-		context.queryClient.ensureQueryData(artistDetailQueryOptions(params.id)),
-	head: ({ loaderData }) => createArtistDetailHead(loaderData?.name),
+		context.queryClient.ensureQueryData(artistFullQueryOptions(params.id)),
+	head: ({ loaderData }) => createArtistDetailHead(loaderData?.artist?.name),
 	component: ArtistDetailPage,
 });
 
@@ -85,16 +81,27 @@ function ArtistDetailPage() {
 	const [isDeleting, setIsDeleting] = useState(false);
 	const tracksPageSize = 20;
 
-	const { data: artist, isPending } = useQuery(artistDetailQueryOptions(id));
-	const { data: tracksData, isPending: isTracksPending } = useQuery(
-		artistTracksQueryOptions(id),
-	);
-	const { data: circlesData, isPending: isCirclesPending } = useQuery(
-		artistCirclesQueryOptions(id),
-	);
+	// 統合APIを使用して一括取得
+	const { data: fullData, isPending } = useQuery(artistFullQueryOptions(id));
+
+	// 統合レスポンスからデータを抽出
+	const artist = fullData?.artist;
+	const tracksData = fullData
+		? {
+				totalUniqueTrackCount: fullData.tracks.total,
+				byRole: fullData.stats.byRole,
+				tracks: fullData.tracks.data,
+				statistics: {
+					releaseCount: fullData.stats.releaseCount,
+					earliestReleaseDate: fullData.stats.earliestReleaseDate,
+					latestReleaseDate: fullData.stats.latestReleaseDate,
+				},
+			}
+		: undefined;
+	const circlesData = fullData?.circles;
 
 	const invalidateQuery = () => {
-		queryClient.invalidateQueries({ queryKey: ["artists", id] });
+		queryClient.invalidateQueries({ queryKey: ["artist", id, "full"] });
 	};
 
 	// 別名義削除
@@ -343,7 +350,7 @@ function ArtistDetailPage() {
 				<div className="card-body">
 					<h2 className="card-title">統計情報</h2>
 
-					{isTracksPending ? (
+					{isPending ? (
 						<div className="flex items-center justify-center py-8">
 							<span className="loading loading-spinner loading-md" />
 						</div>
@@ -419,7 +426,7 @@ function ArtistDetailPage() {
 						)}
 					</div>
 
-					{isCirclesPending ? (
+					{isPending ? (
 						<div className="flex items-center justify-center py-8">
 							<span className="loading loading-spinner loading-md" />
 						</div>
@@ -485,7 +492,7 @@ function ArtistDetailPage() {
 						)}
 					</div>
 
-					{isTracksPending ? (
+					{isPending ? (
 						<div className="flex items-center justify-center py-8">
 							<span className="loading loading-spinner loading-md" />
 						</div>
