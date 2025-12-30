@@ -137,6 +137,10 @@ function ArtistAliasesPage() {
 	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
+	// 個別削除ダイアログ状態
+	const [deleteTarget, setDeleteTarget] = useState<ArtistAlias | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
+
 	// アーティスト一覧取得（セレクト用）
 	const { data: artistsData } = useQuery({
 		queryKey: ["artists", "all"],
@@ -169,13 +173,17 @@ function ArtistAliasesPage() {
 		queryClient.invalidateQueries({ queryKey: ["artistAliases"] });
 	};
 
-	const handleDelete = async (alias: ArtistAlias) => {
-		if (!confirm(`「${alias.name}」を削除しますか？`)) return;
+	const handleDelete = async () => {
+		if (!deleteTarget) return;
+		setIsDeleting(true);
 		try {
-			await artistAliasesApi.delete(alias.id);
+			await artistAliasesApi.delete(deleteTarget.id);
+			setDeleteTarget(null);
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -499,7 +507,7 @@ function ArtistAliasesPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handleDelete(alias)}
+														onClick={() => setDeleteTarget(alias)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -569,6 +577,20 @@ function ArtistAliasesPage() {
 				variant="danger"
 				onConfirm={handleBatchDelete}
 				isLoading={isBatchDeleting}
+			/>
+
+			{/* 個別削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteTarget(null);
+				}}
+				title="名義の削除"
+				description={`「${deleteTarget?.name}」を削除しますか？この操作は取り消せません。`}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDelete}
+				isLoading={isDeleting}
 			/>
 		</div>
 	);

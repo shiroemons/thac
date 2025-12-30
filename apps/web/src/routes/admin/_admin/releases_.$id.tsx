@@ -22,6 +22,7 @@ import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { ReleaseEditDialog } from "@/components/admin/release-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -179,6 +180,25 @@ function ReleaseDetailPage() {
 		countryCode: "",
 		isPrimary: false,
 	});
+
+	// 削除ダイアログ状態
+	const [deleteDiscTarget, setDeleteDiscTarget] = useState<Disc | null>(null);
+	const [isDeletingDisc, setIsDeletingDisc] = useState(false);
+	const [deleteCircleTarget, setDeleteCircleTarget] =
+		useState<ReleaseCircleWithCircle | null>(null);
+	const [isDeletingCircle, setIsDeletingCircle] = useState(false);
+	const [deleteTrackTarget, setDeleteTrackTarget] =
+		useState<TrackWithCreditCount | null>(null);
+	const [isDeletingTrack, setIsDeletingTrack] = useState(false);
+	const [deleteCreditTarget, setDeleteCreditTarget] =
+		useState<TrackCredit | null>(null);
+	const [isDeletingCredit, setIsDeletingCredit] = useState(false);
+	const [deletePublicationTarget, setDeletePublicationTarget] =
+		useState<ReleasePublication | null>(null);
+	const [isDeletingPublication, setIsDeletingPublication] = useState(false);
+	const [deleteJanCodeTarget, setDeleteJanCodeTarget] =
+		useState<ReleaseJanCode | null>(null);
+	const [isDeletingJanCode, setIsDeletingJanCode] = useState(false);
 
 	// 作品データ取得（SSRデータをキャッシュとして活用）
 	const {
@@ -422,19 +442,19 @@ function ReleaseDetailPage() {
 		}
 	};
 
-	const handleDiscDelete = async (disc: Disc) => {
-		if (
-			!confirm(
-				`ディスク "${disc.discName || `Disc ${disc.discNumber}`}" を削除しますか？`,
-			)
-		) {
-			return;
-		}
+	const handleDiscDelete = async () => {
+		if (!deleteDiscTarget) return;
+		setIsDeletingDisc(true);
 		try {
-			await discsApi.delete(id, disc.id);
+			await discsApi.delete(id, deleteDiscTarget.id);
+			setDeleteDiscTarget(null);
 			invalidateQuery();
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "削除に失敗しました");
+			setMutationError(
+				err instanceof Error ? err.message : "削除に失敗しました",
+			);
+		} finally {
+			setIsDeletingDisc(false);
 		}
 	};
 
@@ -465,15 +485,23 @@ function ReleaseDetailPage() {
 		}
 	};
 
-	const handleCircleRemove = async (rc: ReleaseCircleWithCircle) => {
-		if (!confirm(`サークル "${rc.circle.name}" の関連付けを解除しますか？`)) {
-			return;
-		}
+	const handleCircleRemove = async () => {
+		if (!deleteCircleTarget) return;
+		setIsDeletingCircle(true);
 		try {
-			await releaseCirclesApi.remove(id, rc.circleId, rc.participationType);
+			await releaseCirclesApi.remove(
+				id,
+				deleteCircleTarget.circleId,
+				deleteCircleTarget.participationType,
+			);
+			setDeleteCircleTarget(null);
 			invalidateQuery();
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "削除に失敗しました");
+			setMutationError(
+				err instanceof Error ? err.message : "削除に失敗しました",
+			);
+		} finally {
+			setIsDeletingCircle(false);
 		}
 	};
 
@@ -598,19 +626,19 @@ function ReleaseDetailPage() {
 		}
 	};
 
-	const handleTrackDelete = async (track: TrackWithCreditCount) => {
-		if (
-			!confirm(
-				`トラック "${track.name}" を削除しますか？関連するクレジット情報も削除されます。`,
-			)
-		) {
-			return;
-		}
+	const handleTrackDelete = async () => {
+		if (!deleteTrackTarget) return;
+		setIsDeletingTrack(true);
 		try {
-			await tracksApi.delete(id, track.id);
+			await tracksApi.delete(id, deleteTrackTarget.id);
+			setDeleteTrackTarget(null);
 			invalidateQuery();
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "削除に失敗しました");
+			setMutationError(
+				err instanceof Error ? err.message : "削除に失敗しました",
+			);
+		} finally {
+			setIsDeletingTrack(false);
 		}
 	};
 
@@ -793,22 +821,24 @@ function ReleaseDetailPage() {
 		}
 	};
 
-	const handleCreditDelete = async (credit: TrackCredit) => {
-		if (!selectedTrackForCredits) return;
-
-		if (
-			!confirm(
-				`クレジット "${credit.creditName}" を削除しますか？関連する役割情報も削除されます。`,
-			)
-		) {
-			return;
-		}
+	const handleCreditDelete = async () => {
+		if (!selectedTrackForCredits || !deleteCreditTarget) return;
+		setIsDeletingCredit(true);
 		try {
-			await trackCreditsApi.delete(id, selectedTrackForCredits.id, credit.id);
+			await trackCreditsApi.delete(
+				id,
+				selectedTrackForCredits.id,
+				deleteCreditTarget.id,
+			);
+			setDeleteCreditTarget(null);
 			await refetchCredits();
 			invalidateQuery();
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "削除に失敗しました");
+			setMutationError(
+				err instanceof Error ? err.message : "削除に失敗しました",
+			);
+		} finally {
+			setIsDeletingCredit(false);
 		}
 	};
 
@@ -856,15 +886,19 @@ function ReleaseDetailPage() {
 		}
 	};
 
-	const handlePublicationDelete = async (publication: ReleasePublication) => {
-		if (!confirm("この公開リンクを削除しますか？")) {
-			return;
-		}
+	const handlePublicationDelete = async () => {
+		if (!deletePublicationTarget) return;
+		setIsDeletingPublication(true);
 		try {
-			await releasePublicationsApi.delete(id, publication.id);
+			await releasePublicationsApi.delete(id, deletePublicationTarget.id);
+			setDeletePublicationTarget(null);
 			invalidateQuery();
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "削除に失敗しました");
+			setMutationError(
+				err instanceof Error ? err.message : "削除に失敗しました",
+			);
+		} finally {
+			setIsDeletingPublication(false);
 		}
 	};
 
@@ -922,15 +956,19 @@ function ReleaseDetailPage() {
 		}
 	};
 
-	const handleJanCodeDelete = async (janCode: ReleaseJanCode) => {
-		if (!confirm(`JANコード "${janCode.janCode}" を削除しますか？`)) {
-			return;
-		}
+	const handleJanCodeDelete = async () => {
+		if (!deleteJanCodeTarget) return;
+		setIsDeletingJanCode(true);
 		try {
-			await releaseJanCodesApi.delete(id, janCode.id);
+			await releaseJanCodesApi.delete(id, deleteJanCodeTarget.id);
+			setDeleteJanCodeTarget(null);
 			invalidateQuery();
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "削除に失敗しました");
+			setMutationError(
+				err instanceof Error ? err.message : "削除に失敗しました",
+			);
+		} finally {
+			setIsDeletingJanCode(false);
 		}
 	};
 
@@ -1127,7 +1165,7 @@ function ReleaseDetailPage() {
 															variant="ghost"
 															size="icon"
 															className="text-error hover:text-error"
-															onClick={() => handleDiscDelete(disc)}
+															onClick={() => setDeleteDiscTarget(disc)}
 														>
 															<Trash2 className="h-4 w-4" />
 															<span className="sr-only">削除</span>
@@ -1213,7 +1251,7 @@ function ReleaseDetailPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handleCircleRemove(rc)}
+														onClick={() => setDeleteCircleTarget(rc)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -1295,7 +1333,7 @@ function ReleaseDetailPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handlePublicationDelete(pub)}
+														onClick={() => setDeletePublicationTarget(pub)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -1368,7 +1406,7 @@ function ReleaseDetailPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handleJanCodeDelete(jc)}
+														onClick={() => setDeleteJanCodeTarget(jc)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -1504,7 +1542,9 @@ function ReleaseDetailPage() {
 																			variant="ghost"
 																			size="icon"
 																			className="text-error hover:text-error"
-																			onClick={() => handleTrackDelete(track)}
+																			onClick={() =>
+																				setDeleteTrackTarget(track)
+																			}
 																		>
 																			<Trash2 className="h-4 w-4" />
 																			<span className="sr-only">削除</span>
@@ -1621,7 +1661,7 @@ function ReleaseDetailPage() {
 																		variant="ghost"
 																		size="icon"
 																		className="text-error hover:text-error"
-																		onClick={() => handleTrackDelete(track)}
+																		onClick={() => setDeleteTrackTarget(track)}
 																	>
 																		<Trash2 className="h-4 w-4" />
 																		<span className="sr-only">削除</span>
@@ -1988,7 +2028,7 @@ function ReleaseDetailPage() {
 																variant="ghost"
 																size="icon"
 																className="text-error hover:text-error"
-																onClick={() => handleCreditDelete(credit)}
+																onClick={() => setDeleteCreditTarget(credit)}
 															>
 																<Trash2 className="h-4 w-4" />
 																<span className="sr-only">削除</span>
@@ -2366,6 +2406,140 @@ function ReleaseDetailPage() {
 				onOpenChange={setIsEditDialogOpen}
 				release={release}
 				onSuccess={invalidateQuery}
+			/>
+
+			{/* ディスク削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteDiscTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteDiscTarget(null);
+				}}
+				title="ディスクの削除"
+				description={
+					<div>
+						<p>
+							「
+							{deleteDiscTarget?.discName ||
+								`Disc ${deleteDiscTarget?.discNumber}`}
+							」を削除しますか？
+						</p>
+						<p className="mt-2 text-error text-sm">
+							※この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDiscDelete}
+				isLoading={isDeletingDisc}
+			/>
+
+			{/* サークル関連付け解除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteCircleTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteCircleTarget(null);
+				}}
+				title="サークルの関連付け解除"
+				description={
+					<div>
+						<p>
+							サークル「{deleteCircleTarget?.circle.name}
+							」の関連付けを解除しますか？
+						</p>
+						<p className="mt-2 text-error text-sm">
+							※この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="解除する"
+				variant="danger"
+				onConfirm={handleCircleRemove}
+				isLoading={isDeletingCircle}
+			/>
+
+			{/* トラック削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteTrackTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteTrackTarget(null);
+				}}
+				title="トラックの削除"
+				description={
+					<div>
+						<p>「{deleteTrackTarget?.name}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※関連するクレジット情報も削除されます。この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleTrackDelete}
+				isLoading={isDeletingTrack}
+			/>
+
+			{/* クレジット削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteCreditTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteCreditTarget(null);
+				}}
+				title="クレジットの削除"
+				description={
+					<div>
+						<p>「{deleteCreditTarget?.creditName}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※関連する役割情報も削除されます。この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleCreditDelete}
+				isLoading={isDeletingCredit}
+			/>
+
+			{/* 公開リンク削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deletePublicationTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeletePublicationTarget(null);
+				}}
+				title="公開リンクの削除"
+				description={
+					<div>
+						<p>この公開リンクを削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handlePublicationDelete}
+				isLoading={isDeletingPublication}
+			/>
+
+			{/* JANコード削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteJanCodeTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteJanCodeTarget(null);
+				}}
+				title="JANコードの削除"
+				description={
+					<div>
+						<p>JANコード「{deleteJanCodeTarget?.janCode}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleJanCodeDelete}
+				isLoading={isDeletingJanCode}
 			/>
 		</div>
 	);

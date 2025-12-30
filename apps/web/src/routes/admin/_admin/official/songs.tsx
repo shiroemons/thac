@@ -11,6 +11,7 @@ import { OfficialSongEditDialog } from "@/components/admin/official-song-edit-di
 import { ImportDialog } from "@/components/import-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SearchableGroupedSelect } from "@/components/ui/searchable-grouped-select";
 import {
 	Table,
@@ -85,6 +86,8 @@ function OfficialSongsPage() {
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+	const [deleteTarget, setDeleteTarget] = useState<OfficialSong | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	// 作品一覧を取得（セレクトボックス用）
 	const { data: worksData } = useQuery({
@@ -157,13 +160,17 @@ function OfficialSongsPage() {
 			}));
 	}, [worksData, categoriesData]);
 
-	const handleDelete = async (id: string) => {
-		if (!confirm("この楽曲を削除しますか？")) return;
+	const handleDelete = async () => {
+		if (!deleteTarget) return;
+		setIsDeleting(true);
 		try {
-			await officialSongsApi.delete(id);
+			await officialSongsApi.delete(deleteTarget.id);
+			setDeleteTarget(null);
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -405,7 +412,7 @@ function OfficialSongsPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handleDelete(s.id)}
+														onClick={() => setDeleteTarget(s)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -457,6 +464,18 @@ function OfficialSongsPage() {
 				onSuccess={invalidateQuery}
 				open={isImportDialogOpen}
 				onOpenChange={setIsImportDialogOpen}
+			/>
+
+			{/* 削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteTarget}
+				onOpenChange={(open) => !open && setDeleteTarget(null)}
+				title="公式楽曲の削除"
+				description={`「${deleteTarget?.nameJa}」を削除しますか？この操作は取り消せません。`}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDelete}
+				isLoading={isDeleting}
 			/>
 		</div>
 	);

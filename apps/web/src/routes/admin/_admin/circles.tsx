@@ -143,6 +143,16 @@ function CirclesPage() {
 	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
+	// 個別削除ダイアログ状態
+	const [deleteTarget, setDeleteTarget] = useState<Circle | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
+
+	// リンク削除ダイアログ状態
+	const [deleteLinkTarget, setDeleteLinkTarget] = useState<CircleLink | null>(
+		null,
+	);
+	const [isDeletingLink, setIsDeletingLink] = useState(false);
+
 	// プラットフォーム一覧取得
 	const { data: platformsData } = useQuery({
 		queryKey: ["platforms", "all"],
@@ -255,18 +265,17 @@ function CirclesPage() {
 		}
 	};
 
-	const handleDelete = async (circle: Circle) => {
-		if (
-			!confirm(
-				`「${circle.name}」を削除しますか？\n※関連する外部リンクも削除されます。`,
-			)
-		)
-			return;
+	const handleDelete = async () => {
+		if (!deleteTarget) return;
+		setIsDeleting(true);
 		try {
-			await circlesApi.delete(circle.id);
+			await circlesApi.delete(deleteTarget.id);
+			setDeleteTarget(null);
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -396,17 +405,20 @@ function CirclesPage() {
 	};
 
 	// リンク削除
-	const handleDeleteLink = async (link: CircleLink) => {
-		if (!editingCircle) return;
-		if (!confirm("このリンクを削除しますか？")) return;
+	const handleDeleteLink = async () => {
+		if (!editingCircle || !deleteLinkTarget) return;
+		setIsDeletingLink(true);
 		try {
-			await circleLinksApi.delete(editingCircle.id, link.id);
+			await circleLinksApi.delete(editingCircle.id, deleteLinkTarget.id);
 			const updated = await circlesApi.get(editingCircle.id);
 			setEditingCircle(updated);
+			setDeleteLinkTarget(null);
 		} catch (e) {
 			setMutationError(
 				e instanceof Error ? e.message : "リンクの削除に失敗しました",
 			);
+		} finally {
+			setIsDeletingLink(false);
 		}
 	};
 
@@ -662,7 +674,7 @@ function CirclesPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handleDelete(circle)}
+														onClick={() => setDeleteTarget(circle)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -885,7 +897,7 @@ function CirclesPage() {
 													variant="ghost"
 													size="icon"
 													className="text-error hover:text-error"
-													onClick={() => handleDeleteLink(link)}
+													onClick={() => setDeleteLinkTarget(link)}
 												>
 													<Trash2 className="h-4 w-4" />
 												</Button>
@@ -1080,6 +1092,41 @@ function CirclesPage() {
 				variant="danger"
 				onConfirm={handleBatchDelete}
 				isLoading={isBatchDeleting}
+			/>
+
+			{/* 個別削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteTarget(null);
+				}}
+				title="サークルの削除"
+				description={
+					<div>
+						<p>「{deleteTarget?.name}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※関連する外部リンクも削除されます。この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDelete}
+				isLoading={isDeleting}
+			/>
+
+			{/* リンク削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteLinkTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteLinkTarget(null);
+				}}
+				title="リンクの削除"
+				description="このリンクを削除しますか？この操作は取り消せません。"
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDeleteLink}
+				isLoading={isDeletingLink}
 			/>
 		</div>
 	);

@@ -107,6 +107,10 @@ function TracksPage() {
 	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
+	// 個別削除ダイアログ状態
+	const [deleteTarget, setDeleteTarget] = useState<TrackListItem | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
+
 	// 作品一覧取得（フィルター用・新規作成用）
 	const { data: releasesData } = useQuery({
 		queryKey: ["releases", { limit: 200 }],
@@ -165,24 +169,23 @@ function TracksPage() {
 		}
 	};
 
-	const handleDelete = async (track: TrackListItem) => {
-		if (
-			!confirm(
-				`「${track.name}」を削除しますか？\n※関連するクレジット情報も削除されます。`,
-			)
-		)
-			return;
-		if (!track.releaseId) {
+	const handleDelete = async () => {
+		if (!deleteTarget) return;
+		if (!deleteTarget.releaseId) {
 			setMutationError(
 				"作品に紐づかないトラックの削除は現在サポートされていません",
 			);
 			return;
 		}
+		setIsDeleting(true);
 		try {
-			await tracksApi.delete(track.releaseId, track.id);
+			await tracksApi.delete(deleteTarget.releaseId, deleteTarget.id);
+			setDeleteTarget(null);
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -538,7 +541,7 @@ function TracksPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handleDelete(track)}
+														onClick={() => setDeleteTarget(track)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -727,6 +730,27 @@ function TracksPage() {
 				variant="danger"
 				onConfirm={handleBatchDelete}
 				isLoading={isBatchDeleting}
+			/>
+
+			{/* 個別削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteTarget(null);
+				}}
+				title="トラックの削除"
+				description={
+					<div>
+						<p>「{deleteTarget?.name}」を削除しますか？</p>
+						<p className="mt-2 text-error text-sm">
+							※関連するクレジット情報も削除されます。この操作は取り消せません。
+						</p>
+					</div>
+				}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDelete}
+				isLoading={isDeleting}
 			/>
 		</div>
 	);

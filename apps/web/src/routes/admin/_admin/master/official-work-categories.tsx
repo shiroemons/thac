@@ -11,6 +11,7 @@ import { SortIcon } from "@/components/admin/sort-icon";
 import { CreateDialog } from "@/components/create-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Table,
 	TableBody,
@@ -73,6 +74,10 @@ function OfficialWorkCategoriesPage() {
 	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+	const [deleteTarget, setDeleteTarget] = useState<OfficialWorkCategory | null>(
+		null,
+	);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	const { data, isPending, error } = useQuery({
 		queryKey: [
@@ -170,13 +175,17 @@ function OfficialWorkCategoriesPage() {
 		});
 	};
 
-	const handleDelete = async (code: string) => {
-		if (!confirm(`「${code}」を削除しますか？`)) return;
+	const handleDelete = async () => {
+		if (!deleteTarget) return;
+		setIsDeleting(true);
 		try {
-			await officialWorkCategoriesApi.delete(code);
+			await officialWorkCategoriesApi.delete(deleteTarget.code);
+			setDeleteTarget(null);
 			invalidateQuery();
 		} catch (e) {
 			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
+		} finally {
+			setIsDeleting(false);
 		}
 	};
 
@@ -361,7 +370,7 @@ function OfficialWorkCategoriesPage() {
 														variant="ghost"
 														size="icon"
 														className="text-error hover:text-error"
-														onClick={() => handleDelete(c.code)}
+														onClick={() => setDeleteTarget(c)}
 													>
 														<Trash2 className="h-4 w-4" />
 														<span className="sr-only">削除</span>
@@ -432,6 +441,18 @@ function OfficialWorkCategoriesPage() {
 				onSuccess={invalidateQuery}
 				open={isImportDialogOpen}
 				onOpenChange={setIsImportDialogOpen}
+			/>
+
+			{/* 削除確認ダイアログ */}
+			<ConfirmDialog
+				open={!!deleteTarget}
+				onOpenChange={(open) => !open && setDeleteTarget(null)}
+				title="公式作品カテゴリの削除"
+				description={`「${deleteTarget?.name}」を削除しますか？この操作は取り消せません。`}
+				confirmLabel="削除する"
+				variant="danger"
+				onConfirm={handleDelete}
+				isLoading={isDeleting}
 			/>
 		</div>
 	);
