@@ -16,8 +16,8 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
-import { artistCirclesRouter } from "./circles";
-import { artistTracksRouter } from "./tracks";
+import { artistCirclesRouter, getArtistCircles } from "./circles";
+import { artistTracksRouter, getArtistTracks } from "./tracks";
 
 const artistsRouter = new Hono<AdminContext>();
 
@@ -79,6 +79,48 @@ artistsRouter.get("/", async (c) => {
 		});
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/artists");
+	}
+});
+
+// 統合取得（基本情報 + 別名義 + 関連楽曲 + 参加サークル）
+artistsRouter.get("/:id/full", async (c) => {
+	try {
+		const id = c.req.param("id");
+
+		// 並列実行でパフォーマンス最適化
+		const [artistResult, aliases, tracksData, circlesData] = await Promise.all([
+			db.select().from(artists).where(eq(artists.id, id)).limit(1),
+			db
+				.select()
+				.from(artistAliases)
+				.where(eq(artistAliases.artistId, id))
+				.orderBy(asc(artistAliases.name)),
+			getArtistTracks(id),
+			getArtistCircles(id),
+		]);
+
+		if (artistResult.length === 0) {
+			return c.json({ error: ERROR_MESSAGES.ARTIST_NOT_FOUND }, 404);
+		}
+
+		return c.json({
+			artist: { ...artistResult[0], aliases },
+			tracks: {
+				data: tracksData.tracks,
+				total: tracksData.totalUniqueTrackCount,
+			},
+			circles: circlesData,
+			stats: {
+				trackCount: tracksData.totalUniqueTrackCount,
+				releaseCount: tracksData.statistics.releaseCount,
+				circleCount: circlesData.length,
+				byRole: tracksData.byRole,
+				earliestReleaseDate: tracksData.statistics.earliestReleaseDate,
+				latestReleaseDate: tracksData.statistics.latestReleaseDate,
+			},
+		});
+	} catch (error) {
+		return handleDbError(c, error, "GET /admin/artists/:id/full");
 	}
 });
 

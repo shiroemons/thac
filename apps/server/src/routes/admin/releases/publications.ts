@@ -13,6 +13,27 @@ import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
+/**
+ * リリースの公開リンク一覧を取得する関数
+ * 統合エンドポイント用にロジックを分離
+ */
+export async function getReleasePublications(releaseId: string) {
+	// 公開リンク一覧取得（プラットフォーム情報を結合）
+	const publications = await db
+		.select({
+			publication: releasePublications,
+			platform: platforms,
+		})
+		.from(releasePublications)
+		.leftJoin(platforms, eq(releasePublications.platformCode, platforms.code))
+		.where(eq(releasePublications.releaseId, releaseId));
+
+	return publications.map((row) => ({
+		...row.publication,
+		platform: row.platform,
+	}));
+}
+
 const releasePublicationsRouter = new Hono<AdminContext>();
 
 // リリースの公開リンク一覧取得
@@ -31,22 +52,8 @@ releasePublicationsRouter.get("/:releaseId/publications", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
-		// 公開リンク一覧取得（プラットフォーム情報を結合）
-		const publications = await db
-			.select({
-				publication: releasePublications,
-				platform: platforms,
-			})
-			.from(releasePublications)
-			.leftJoin(platforms, eq(releasePublications.platformCode, platforms.code))
-			.where(eq(releasePublications.releaseId, releaseId));
-
-		return c.json(
-			publications.map((row) => ({
-				...row.publication,
-				platform: row.platform,
-			})),
-		);
+		const result = await getReleasePublications(releaseId);
+		return c.json(result);
 	} catch (error) {
 		return handleDbError(
 			c,

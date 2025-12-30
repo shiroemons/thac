@@ -13,6 +13,33 @@ import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
+/**
+ * 作品の関連サークル一覧を取得する関数
+ * 統合エンドポイント用にロジックを分離
+ */
+export async function getReleaseCircles(releaseId: string) {
+	// 関連サークル一覧取得（サークル情報を含む）
+	const releaseCirclesList = await db
+		.select({
+			releaseId: releaseCircles.releaseId,
+			circleId: releaseCircles.circleId,
+			participationType: releaseCircles.participationType,
+			position: releaseCircles.position,
+			circle: {
+				id: circles.id,
+				name: circles.name,
+				nameJa: circles.nameJa,
+				nameEn: circles.nameEn,
+			},
+		})
+		.from(releaseCircles)
+		.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
+		.where(eq(releaseCircles.releaseId, releaseId))
+		.orderBy(releaseCircles.position);
+
+	return releaseCirclesList;
+}
+
 const releaseCirclesRouter = new Hono<AdminContext>();
 
 // 作品の関連サークル一覧取得（position順）
@@ -31,26 +58,8 @@ releaseCirclesRouter.get("/:releaseId/circles", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
-		// 関連サークル一覧取得（サークル情報を含む）
-		const releaseCirclesList = await db
-			.select({
-				releaseId: releaseCircles.releaseId,
-				circleId: releaseCircles.circleId,
-				participationType: releaseCircles.participationType,
-				position: releaseCircles.position,
-				circle: {
-					id: circles.id,
-					name: circles.name,
-					nameJa: circles.nameJa,
-					nameEn: circles.nameEn,
-				},
-			})
-			.from(releaseCircles)
-			.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
-			.where(eq(releaseCircles.releaseId, releaseId))
-			.orderBy(releaseCircles.position);
-
-		return c.json(releaseCirclesList);
+		const result = await getReleaseCircles(releaseId);
+		return c.json(result);
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/releases/:releaseId/circles");
 	}

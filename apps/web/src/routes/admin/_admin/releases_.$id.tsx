@@ -69,12 +69,12 @@ import {
 	PLATFORM_CATEGORY_ORDER,
 } from "@/lib/constants";
 import { createReleaseDetailHead } from "@/lib/head";
-import { releaseDetailQueryOptions } from "@/lib/query-options";
+import { releaseFullQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/releases_/$id")({
 	loader: ({ context, params }) =>
-		context.queryClient.ensureQueryData(releaseDetailQueryOptions(params.id)),
-	head: ({ loaderData }) => createReleaseDetailHead(loaderData?.name),
+		context.queryClient.ensureQueryData(releaseFullQueryOptions(params.id)),
+	head: ({ loaderData }) => createReleaseDetailHead(loaderData?.release?.name),
 	component: ReleaseDetailPage,
 });
 
@@ -200,35 +200,26 @@ function ReleaseDetailPage() {
 		useState<ReleaseJanCode | null>(null);
 	const [isDeletingJanCode, setIsDeletingJanCode] = useState(false);
 
-	// 作品データ取得（SSRデータをキャッシュとして活用）
+	// 統合クエリで全データを一括取得
 	const {
-		data: release,
+		data: fullData,
 		isPending,
 		error,
-	} = useQuery(releaseDetailQueryOptions(id));
+	} = useQuery(releaseFullQueryOptions(id));
 
-	// 関連サークル取得
-	const { data: releaseCircles = [] } = useQuery({
-		queryKey: ["releases", id, "circles"],
-		queryFn: () => releaseCirclesApi.list(id),
-		staleTime: 30_000,
-		enabled: !!release,
-	});
+	// 統合レスポンスから個別データを導出
+	const release = fullData?.release;
+	const releaseCircles = fullData?.circles ?? [];
+	const tracks = fullData?.tracks ?? [];
+	const publications = fullData?.publications ?? [];
+	const janCodes = fullData?.janCodes ?? [];
 
-	// サークル一覧取得
+	// サークル一覧取得（ダイアログ用）
 	const { data: circlesData } = useQuery({
 		queryKey: ["circles", { limit: 100 }],
 		queryFn: () => circlesApi.list({ limit: 100 }),
 		staleTime: 30_000,
 		enabled: isCircleDialogOpen,
-	});
-
-	// トラック一覧取得
-	const { data: tracks = [] } = useQuery({
-		queryKey: ["releases", id, "tracks"],
-		queryFn: () => tracksApi.list(id),
-		staleTime: 30_000,
-		enabled: !!release,
 	});
 
 	// クレジット一覧取得（選択されたトラックに対して）
@@ -270,22 +261,6 @@ function ReleaseDetailPage() {
 		queryFn: () => creditRolesApi.list(),
 		staleTime: 300_000,
 		enabled: isCreditEditDialogOpen,
-	});
-
-	// 公開リンク一覧取得
-	const { data: publications = [] } = useQuery({
-		queryKey: ["releases", id, "publications"],
-		queryFn: () => releasePublicationsApi.list(id),
-		staleTime: 30_000,
-		enabled: !!release,
-	});
-
-	// JANコード一覧取得
-	const { data: janCodes = [] } = useQuery({
-		queryKey: ["releases", id, "jan-codes"],
-		queryFn: () => releaseJanCodesApi.list(id),
-		staleTime: 30_000,
-		enabled: !!release,
 	});
 
 	// プラットフォーム一覧取得
@@ -388,13 +363,8 @@ function ReleaseDetailPage() {
 	})();
 
 	const invalidateQuery = () => {
-		queryClient.invalidateQueries({ queryKey: ["releases", id] });
-		queryClient.invalidateQueries({ queryKey: ["releases", id, "circles"] });
-		queryClient.invalidateQueries({ queryKey: ["releases", id, "tracks"] });
-		queryClient.invalidateQueries({
-			queryKey: ["releases", id, "publications"],
-		});
-		queryClient.invalidateQueries({ queryKey: ["releases", id, "jan-codes"] });
+		queryClient.invalidateQueries({ queryKey: ["release", id, "full"] });
+		queryClient.invalidateQueries({ queryKey: ["releases"] });
 	};
 
 	// ディスク関連

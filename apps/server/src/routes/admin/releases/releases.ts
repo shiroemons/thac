@@ -16,6 +16,10 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { getReleaseJanCodes } from "./jan-codes";
+import { getReleasePublications } from "./publications";
+import { getReleaseCircles } from "./release-circles";
+import { getReleaseTracks } from "./tracks";
 
 // リリース日を年月日に分解するヘルパー関数
 function parseDateToComponents(
@@ -176,6 +180,83 @@ releasesRouter.get("/", async (c) => {
 		});
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/releases");
+	}
+});
+
+// 統合取得（基本情報 + ディスク + トラック + サークル + 公開リンク + JANコード + イベント情報）
+releasesRouter.get("/:id/full", async (c) => {
+	try {
+		const id = c.req.param("id");
+
+		// 基本情報取得（イベント情報を含む）
+		const releaseResult = await db
+			.select({
+				release: releases,
+				eventName: events.name,
+				eventDayNumber: eventDays.dayNumber,
+				eventDayDate: eventDays.date,
+			})
+			.from(releases)
+			.leftJoin(events, eq(releases.eventId, events.id))
+			.leftJoin(eventDays, eq(releases.eventDayId, eventDays.id))
+			.where(eq(releases.id, id))
+			.limit(1);
+
+		if (releaseResult.length === 0) {
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
+		}
+
+		const releaseData = releaseResult[0];
+
+		// 並列実行でパフォーマンス最適化
+		const [
+			releaseDiscs,
+			tracksData,
+			circlesData,
+			publicationsData,
+			janCodesData,
+		] = await Promise.all([
+			db
+				.select()
+				.from(discs)
+				.where(eq(discs.releaseId, id))
+				.orderBy(discs.discNumber),
+			getReleaseTracks(id),
+			getReleaseCircles(id),
+			getReleasePublications(id),
+			getReleaseJanCodes(id),
+		]);
+
+		// イベント情報を整形
+		const eventInfo =
+			releaseData?.release.eventId && releaseData.eventName
+				? {
+						id: releaseData.release.eventId,
+						name: releaseData.eventName,
+						dayId: releaseData.release.eventDayId,
+						dayNumber: releaseData.eventDayNumber,
+						dayDate: releaseData.eventDayDate,
+					}
+				: null;
+
+		return c.json({
+			release: {
+				...releaseData?.release,
+				discs: releaseDiscs,
+			},
+			tracks: tracksData,
+			circles: circlesData,
+			publications: publicationsData,
+			janCodes: janCodesData,
+			event: eventInfo,
+			stats: {
+				discCount: releaseDiscs.length,
+				trackCount: tracksData.length,
+				circleCount: circlesData.length,
+			},
+		});
+	} catch (error) {
+		return handleDbError(c, error, "GET /admin/releases/:id/full");
 	}
 });
 

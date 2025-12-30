@@ -20,10 +20,13 @@ import type {
 	Artist,
 	ArtistAlias,
 	ArtistCircle,
+	ArtistFullResponse,
 	ArtistTracksResponse,
 	ArtistWithAliases,
 	Circle,
 	CircleArtistsResponse,
+	CircleFullResponse,
+	CircleReleasesByType,
 	CircleWithLinks,
 	CreditRole,
 	Event,
@@ -35,6 +38,7 @@ import type {
 	OfficialWorkCategory,
 	PaginatedResponse,
 	Platform,
+	ReleaseFullResponse,
 	ReleaseWithCounts,
 	ReleaseWithDiscs,
 	TrackDetail,
@@ -118,6 +122,18 @@ export const artistCirclesQueryOptions = (id: string) =>
 	queryOptions({
 		queryKey: ["artist", id, "circles"],
 		queryFn: () => ssrFetch<ArtistCircle[]>(`/api/admin/artists/${id}/circles`),
+		staleTime: STALE_TIME.SHORT,
+	});
+
+/**
+ * アーティスト詳細（統合）のqueryOptions
+ * 基本情報 + 別名義 + 関連楽曲 + 参加サークルを一括取得
+ */
+export const artistFullQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["artist", id, "full"],
+		queryFn: () =>
+			ssrFetch<ArtistFullResponse>(`/api/admin/artists/${id}/full`),
 		staleTime: STALE_TIME.SHORT,
 	});
 
@@ -244,6 +260,29 @@ export const circleArtistsQueryOptions = (id: string) =>
 		queryKey: ["circle", id, "artists"],
 		queryFn: () =>
 			ssrFetch<CircleArtistsResponse>(`/api/admin/circles/${id}/artists`),
+		staleTime: STALE_TIME.SHORT,
+	});
+
+/**
+ * サークルのリリース一覧のqueryOptions
+ */
+export const circleReleasesQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["circle", id, "releases"],
+		queryFn: () =>
+			ssrFetch<CircleReleasesByType[]>(`/api/admin/circles/${id}/releases`),
+		staleTime: STALE_TIME.SHORT,
+	});
+
+/**
+ * サークル詳細（統合）のqueryOptions
+ * 基本情報 + リンク + 参加アーティスト + リリース一覧を一括取得
+ */
+export const circleFullQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["circle", id, "full"],
+		queryFn: () =>
+			ssrFetch<CircleFullResponse>(`/api/admin/circles/${id}/full`),
 		staleTime: STALE_TIME.SHORT,
 	});
 
@@ -391,6 +430,18 @@ export const releaseTracksQueryOptions = (releaseId: string) =>
 			ssrFetch<TrackWithCreditCount[]>(
 				`/api/admin/releases/${releaseId}/tracks`,
 			),
+		staleTime: STALE_TIME.SHORT,
+	});
+
+/**
+ * リリース詳細（統合）のqueryOptions
+ * 基本情報 + ディスク + トラック + サークル + 公開リンク + JANコード + イベント情報を一括取得
+ */
+export const releaseFullQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["release", id, "full"],
+		queryFn: () =>
+			ssrFetch<ReleaseFullResponse>(`/api/admin/releases/${id}/full`),
 		staleTime: STALE_TIME.SHORT,
 	});
 

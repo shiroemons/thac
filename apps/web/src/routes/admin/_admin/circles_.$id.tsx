@@ -37,9 +37,7 @@ import {
 } from "@/components/ui/table";
 import {
 	type CircleLink,
-	circleArtistsApi,
 	circleLinksApi,
-	circleReleasesApi,
 	circlesApi,
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
@@ -55,12 +53,12 @@ import {
 	PLATFORM_CATEGORY_ORDER,
 } from "@/lib/constants";
 import { createCircleDetailHead } from "@/lib/head";
-import { circleDetailQueryOptions } from "@/lib/query-options";
+import { circleFullQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/circles_/$id")({
 	loader: ({ context, params }) =>
-		context.queryClient.ensureQueryData(circleDetailQueryOptions(params.id)),
-	head: ({ loaderData }) => createCircleDetailHead(loaderData?.name),
+		context.queryClient.ensureQueryData(circleFullQueryOptions(params.id)),
+	head: ({ loaderData }) => createCircleDetailHead(loaderData?.circle?.name),
 	component: CircleDetailPage,
 });
 
@@ -96,18 +94,13 @@ function CircleDetailPage() {
 		isPrimary: false,
 	});
 
-	const { data: circle, isPending } = useQuery(circleDetailQueryOptions(id));
-	const { data: releasesByType } = useQuery({
-		queryKey: ["circles", id, "releases"],
-		queryFn: () => circleReleasesApi.list(id),
-		enabled: !!circle,
-	});
+	// 統合クエリで全データを一括取得
+	const { data: fullData, isPending } = useQuery(circleFullQueryOptions(id));
 
-	const { data: artistsData, isPending: isArtistsPending } = useQuery({
-		queryKey: ["circles", id, "artists"],
-		queryFn: () => circleArtistsApi.list(id),
-		enabled: !!circle,
-	});
+	// 統合レスポンスから個別データを導出
+	const circle = fullData?.circle;
+	const releasesByType = fullData?.releases;
+	const artistsData = fullData?.artists;
 
 	// ページネーション用のstate
 	const [artistsPage, setArtistsPage] = useState(1);
@@ -141,9 +134,9 @@ function CircleDetailPage() {
 	);
 
 	const invalidateQuery = () => {
-		queryClient.invalidateQueries({ queryKey: ["circles", id] });
-		queryClient.invalidateQueries({ queryKey: ["circles", id, "releases"] });
-		queryClient.invalidateQueries({ queryKey: ["circles", id, "artists"] });
+		queryClient.invalidateQueries({ queryKey: ["circle", id] });
+		queryClient.invalidateQueries({ queryKey: ["circle", id, "full"] });
+		queryClient.invalidateQueries({ queryKey: ["circles"] });
 	};
 
 	// 役割ラベル
@@ -466,7 +459,7 @@ function CircleDetailPage() {
 						<h2 className="card-title">統計情報</h2>
 					</div>
 
-					{isArtistsPending ? (
+					{isPending ? (
 						<div className="flex items-center justify-center py-8">
 							<span className="loading loading-spinner loading-md" />
 						</div>
@@ -533,7 +526,7 @@ function CircleDetailPage() {
 						)}
 					</div>
 
-					{isArtistsPending ? (
+					{isPending ? (
 						<div className="flex items-center justify-center py-8">
 							<span className="loading loading-spinner loading-md" />
 						</div>
