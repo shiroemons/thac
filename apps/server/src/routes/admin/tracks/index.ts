@@ -446,7 +446,7 @@ tracksAdminRouter.delete("/batch", async (c) => {
 
 		return c.json({
 			success: failed.length === 0,
-			deleted: deleted.length,
+			deleted,
 			failed,
 		});
 	} catch (error) {

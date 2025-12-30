@@ -185,7 +185,7 @@ trackCreditRolesRouter.delete(
 					),
 				);
 
-			return c.json({ success: true });
+			return c.json({ success: true, id: roleCode });
 		} catch (error) {
 			return handleDbError(
 				c,

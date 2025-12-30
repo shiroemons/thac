@@ -227,7 +227,7 @@ releaseJanCodesRouter.delete("/:releaseId/jan-codes/:id", async (c) => {
 		// 削除
 		await db.delete(releaseJanCodes).where(eq(releaseJanCodes.id, id));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id });
 	} catch (error) {
 		return handleDbError(
 			c,

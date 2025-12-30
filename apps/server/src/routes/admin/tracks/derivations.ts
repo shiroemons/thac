@@ -165,7 +165,7 @@ trackDerivationsRouter.delete("/:trackId/derivations/:id", async (c) => {
 		// 削除
 		await db.delete(trackDerivations).where(eq(trackDerivations.id, id));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id });
 	} catch (error) {
 		return handleDbError(
 			c,

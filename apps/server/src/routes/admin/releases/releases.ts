@@ -382,7 +382,7 @@ releasesRouter.delete("/:id", async (c) => {
 		// 削除（ディスクはCASCADE削除）
 		await db.delete(releases).where(eq(releases.id, id));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id });
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/releases/:id");
 	}
@@ -436,7 +436,7 @@ releasesRouter.delete("/batch", async (c) => {
 
 		return c.json({
 			success: failed.length === 0,
-			deleted: deleted.length,
+			deleted,
 			failed,
 		});
 	} catch (error) {

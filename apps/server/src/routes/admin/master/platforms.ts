@@ -247,7 +247,7 @@ platformsRouter.delete("/:code", async (c) => {
 		// 削除
 		await db.delete(platforms).where(eq(platforms.code, code));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id: code });
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/platforms/:code");
 	}

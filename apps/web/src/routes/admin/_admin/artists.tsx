@@ -153,7 +153,7 @@ function ArtistsPage() {
 
 			if (result.failed.length > 0) {
 				setBatchDeleteError(
-					`${result.deleted}件削除、${result.failed.length}件失敗`,
+					`${result.deleted.length}件削除、${result.failed.length}件失敗`,
 				);
 			} else {
 				setIsBatchDeleteDialogOpen(false);

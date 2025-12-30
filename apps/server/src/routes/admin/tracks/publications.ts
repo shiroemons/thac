@@ -219,7 +219,7 @@ trackPublicationsRouter.delete("/:trackId/publications/:id", async (c) => {
 		// 削除
 		await db.delete(trackPublications).where(eq(trackPublications.id, id));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id });
 	} catch (error) {
 		return handleDbError(
 			c,

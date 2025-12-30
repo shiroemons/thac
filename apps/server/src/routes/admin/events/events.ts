@@ -299,7 +299,7 @@ eventsRouter.delete("/:id", async (c) => {
 		// 削除（開催日はCASCADE削除）
 		await db.delete(events).where(eq(events.id, id));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id });
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/events/:id");
 	}

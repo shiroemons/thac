@@ -425,7 +425,7 @@ tracksRouter.delete("/:releaseId/tracks/:trackId", async (c) => {
 		// 削除
 		await db.delete(tracks).where(eq(tracks.id, trackId));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id: trackId });
 	} catch (error) {
 		return handleDbError(
 			c,

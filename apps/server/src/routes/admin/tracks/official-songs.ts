@@ -277,7 +277,7 @@ trackOfficialSongsRouter.delete("/:trackId/official-songs/:id", async (c) => {
 		// 削除
 		await db.delete(trackOfficialSongs).where(eq(trackOfficialSongs.id, id));
 
-		return c.json({ success: true });
+		return c.json({ success: true, id });
 	} catch (error) {
 		return handleDbError(
 			c,

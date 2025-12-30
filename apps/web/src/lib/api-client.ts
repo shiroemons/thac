@@ -176,9 +176,12 @@ export const platformsApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (code: string) =>
-		fetchWithAuth<{ success: boolean }>(`/api/admin/master/platforms/${code}`, {
-			method: "DELETE",
-		}),
+		fetchWithAuth<{ success: boolean; id: string }>(
+			`/api/admin/master/platforms/${code}`,
+			{
+				method: "DELETE",
+			},
+		),
 	reorder: (items: { code: string; sortOrder: number }[]) =>
 		fetchWithAuth<{ success: boolean }>("/api/admin/master/platforms/reorder", {
 			method: "PUT",
@@ -219,7 +222,7 @@ export const aliasTypesApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (code: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/master/alias-types/${code}`,
 			{
 				method: "DELETE",
@@ -268,7 +271,7 @@ export const creditRolesApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (code: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/master/credit-roles/${code}`,
 			{
 				method: "DELETE",
@@ -629,7 +632,7 @@ export const officialWorkCategoriesApi = {
 			},
 		),
 	delete: (code: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/master/official-work-categories/${code}`,
 			{
 				method: "DELETE",
@@ -679,9 +682,12 @@ export const officialWorksApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (id: string) =>
-		fetchWithAuth<{ success: boolean }>(`/api/admin/official/works/${id}`, {
-			method: "DELETE",
-		}),
+		fetchWithAuth<{ success: boolean; id: string }>(
+			`/api/admin/official/works/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
 };
 
 // Official Songs
@@ -723,9 +729,12 @@ export const officialSongsApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (id: string) =>
-		fetchWithAuth<{ success: boolean }>(`/api/admin/official/songs/${id}`, {
-			method: "DELETE",
-		}),
+		fetchWithAuth<{ success: boolean; id: string }>(
+			`/api/admin/official/songs/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
 };
 
 // Official Work Links
@@ -777,7 +786,7 @@ export const officialWorkLinksApi = {
 			},
 		),
 	delete: (workId: string, linkId: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/official/works/${workId}/links/${linkId}`,
 			{
 				method: "DELETE",
@@ -842,7 +851,7 @@ export const officialSongLinksApi = {
 			},
 		),
 	delete: (songId: string, linkId: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/official/songs/${songId}/links/${linkId}`,
 			{
 				method: "DELETE",
@@ -1034,13 +1043,16 @@ export const artistsApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (id: string) =>
-		fetchWithAuth<{ success: boolean }>(`/api/admin/artists/${id}`, {
-			method: "DELETE",
-		}),
+		fetchWithAuth<{ success: boolean; id: string }>(
+			`/api/admin/artists/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
 	batchDelete: (ids: string[]) =>
 		fetchWithAuth<{
 			success: boolean;
-			deleted: number;
+			deleted: string[];
 			failed: Array<{ id: string; error: string }>;
 		}>("/api/admin/artists/batch", {
 			method: "DELETE",
@@ -1088,13 +1100,16 @@ export const artistAliasesApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (id: string) =>
-		fetchWithAuth<{ success: boolean }>(`/api/admin/artist-aliases/${id}`, {
-			method: "DELETE",
-		}),
+		fetchWithAuth<{ success: boolean; id: string }>(
+			`/api/admin/artist-aliases/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
 	batchDelete: (ids: string[]) =>
 		fetchWithAuth<{
 			success: boolean;
-			deleted: number;
+			deleted: string[];
 			failed: Array<{ id: string; error: string }>;
 		}>("/api/admin/artist-aliases/batch", {
 			method: "DELETE",
@@ -1137,13 +1152,16 @@ export const circlesApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (id: string) =>
-		fetchWithAuth<{ success: boolean }>(`/api/admin/circles/${id}`, {
-			method: "DELETE",
-		}),
+		fetchWithAuth<{ success: boolean; id: string }>(
+			`/api/admin/circles/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
 	batchDelete: (ids: string[]) =>
 		fetchWithAuth<{
 			success: boolean;
-			deleted: number;
+			deleted: string[];
 			failed: Array<{ id: string; error: string }>;
 		}>("/api/admin/circles/batch", {
 			method: "DELETE",
@@ -1184,7 +1202,7 @@ export const circleLinksApi = {
 			},
 		),
 	delete: (circleId: string, linkId: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/circles/${circleId}/links/${linkId}`,
 			{
 				method: "DELETE",
@@ -1265,9 +1283,12 @@ export const eventSeriesApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (id: string) =>
-		fetchWithAuth<{ success: boolean }>(`/api/admin/event-series/${id}`, {
-			method: "DELETE",
-		}),
+		fetchWithAuth<{ success: boolean; id: string }>(
+			`/api/admin/event-series/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
 	reorder: (items: { id: string; sortOrder: number }[]) =>
 		fetchWithAuth<{ success: boolean }>("/api/admin/event-series/reorder", {
 			method: "PUT",
@@ -1308,7 +1329,7 @@ export const eventsApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (id: string) =>
-		fetchWithAuth<{ success: boolean }>(`/api/admin/events/${id}`, {
+		fetchWithAuth<{ success: boolean; id: string }>(`/api/admin/events/${id}`, {
 			method: "DELETE",
 		}),
 };
@@ -1335,7 +1356,7 @@ export const eventDaysApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (eventId: string, dayId: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/events/${eventId}/days/${dayId}`,
 			{
 				method: "DELETE",
@@ -1439,13 +1460,16 @@ export const releasesApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (id: string) =>
-		fetchWithAuth<{ success: boolean }>(`/api/admin/releases/${id}`, {
-			method: "DELETE",
-		}),
+		fetchWithAuth<{ success: boolean; id: string }>(
+			`/api/admin/releases/${id}`,
+			{
+				method: "DELETE",
+			},
+		),
 	batchDelete: (ids: string[]) =>
 		fetchWithAuth<{
 			success: boolean;
-			deleted: number;
+			deleted: string[];
 			failed: Array<{ id: string; error: string }>;
 		}>("/api/admin/releases/batch", {
 			method: "DELETE",
@@ -1475,7 +1499,7 @@ export const discsApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (releaseId: string, discId: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/releases/${releaseId}/discs/${discId}`,
 			{
 				method: "DELETE",
@@ -1563,7 +1587,7 @@ export const releaseCirclesApi = {
 		circleId: string,
 		participationType: ParticipationType,
 	) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/releases/${releaseId}/circles/${circleId}?participationType=${encodeURIComponent(participationType)}`,
 			{
 				method: "DELETE",
@@ -1739,7 +1763,7 @@ export const tracksApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (releaseId: string, trackId: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/releases/${releaseId}/tracks/${trackId}`,
 			{
 				method: "DELETE",
@@ -1756,7 +1780,7 @@ export const tracksApi = {
 	batchDelete: (items: Array<{ trackId: string; releaseId: string }>) =>
 		fetchWithAuth<{
 			success: boolean;
-			deleted: number;
+			deleted: string[];
 			failed: Array<{ trackId: string; error: string }>;
 		}>("/api/admin/tracks/batch", {
 			method: "DELETE",
@@ -1811,7 +1835,7 @@ export const trackCreditsApi = {
 			},
 		),
 	delete: (releaseId: string, trackId: string, creditId: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/releases/${releaseId}/tracks/${trackId}/credits/${creditId}`,
 			{
 				method: "DELETE",
@@ -1841,7 +1865,7 @@ export const trackCreditRolesApi = {
 		roleCode: string,
 		rolePosition: number,
 	) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/releases/${releaseId}/tracks/${trackId}/credits/${creditId}/roles/${roleCode}/${rolePosition}`,
 			{
 				method: "DELETE",
@@ -1906,7 +1930,7 @@ export const trackOfficialSongsApi = {
 			},
 		),
 	delete: (trackId: string, id: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/tracks/${trackId}/official-songs/${id}`,
 			{
 				method: "DELETE",
@@ -1951,7 +1975,7 @@ export const trackDerivationsApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (trackId: string, id: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/tracks/${trackId}/derivations/${id}`,
 			{
 				method: "DELETE",
@@ -2005,7 +2029,7 @@ export const trackPublicationsApi = {
 			},
 		),
 	delete: (trackId: string, id: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/tracks/${trackId}/publications/${id}`,
 			{
 				method: "DELETE",
@@ -2052,7 +2076,7 @@ export const trackIsrcsApi = {
 			body: JSON.stringify(data),
 		}),
 	delete: (trackId: string, id: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/tracks/${trackId}/isrcs/${id}`,
 			{
 				method: "DELETE",
@@ -2106,7 +2130,7 @@ export const releasePublicationsApi = {
 			},
 		),
 	delete: (releaseId: string, id: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/releases/${releaseId}/publications/${id}`,
 			{
 				method: "DELETE",
@@ -2165,7 +2189,7 @@ export const releaseJanCodesApi = {
 			},
 		),
 	delete: (releaseId: string, id: string) =>
-		fetchWithAuth<{ success: boolean }>(
+		fetchWithAuth<{ success: boolean; id: string }>(
 			`/api/admin/releases/${releaseId}/jan-codes/${id}`,
 			{
 				method: "DELETE",
