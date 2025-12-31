@@ -65,6 +65,8 @@ interface ArtistListParams {
 	limit: number;
 	search?: string;
 	initialScript?: string;
+	sortBy?: string;
+	sortOrder?: "asc" | "desc";
 }
 
 /**
@@ -77,6 +79,8 @@ export const artistsListQueryOptions = (params: ArtistListParams) => {
 	if (params.search) searchParams.set("search", params.search);
 	if (params.initialScript)
 		searchParams.set("initialScript", params.initialScript);
+	if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+	if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 
 	return queryOptions({
 		queryKey: [
@@ -85,6 +89,8 @@ export const artistsListQueryOptions = (params: ArtistListParams) => {
 			params.limit,
 			params.search,
 			params.initialScript,
+			params.sortBy,
+			params.sortOrder,
 		],
 		queryFn: () =>
 			ssrFetch<PaginatedResponse<Artist>>(
@@ -144,6 +150,8 @@ interface ArtistAliasListParams {
 	limit: number;
 	search?: string;
 	artistId?: string;
+	sortBy?: string;
+	sortOrder?: "asc" | "desc";
 }
 
 /**
@@ -157,6 +165,8 @@ export const artistAliasesListQueryOptions = (
 	searchParams.set("limit", String(params.limit));
 	if (params.search) searchParams.set("search", params.search);
 	if (params.artistId) searchParams.set("artistId", params.artistId);
+	if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+	if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 
 	return queryOptions({
 		queryKey: [
@@ -165,6 +175,8 @@ export const artistAliasesListQueryOptions = (
 			params.limit,
 			params.search,
 			params.artistId,
+			params.sortBy,
+			params.sortOrder,
 		],
 		queryFn: () =>
 			ssrFetch<PaginatedResponse<ArtistAlias>>(
@@ -213,6 +225,8 @@ interface CircleListParams {
 	limit: number;
 	search?: string;
 	initialScript?: string;
+	sortBy?: string;
+	sortOrder?: "asc" | "desc";
 }
 
 /**
@@ -225,6 +239,8 @@ export const circlesListQueryOptions = (params: CircleListParams) => {
 	if (params.search) searchParams.set("search", params.search);
 	if (params.initialScript)
 		searchParams.set("initialScript", params.initialScript);
+	if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+	if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 
 	return queryOptions({
 		queryKey: [
@@ -233,6 +249,8 @@ export const circlesListQueryOptions = (params: CircleListParams) => {
 			params.limit,
 			params.search,
 			params.initialScript,
+			params.sortBy,
+			params.sortOrder,
 		],
 		queryFn: () =>
 			ssrFetch<PaginatedResponse<Circle>>(
@@ -293,6 +311,8 @@ interface EventListParams {
 	limit: number;
 	search?: string;
 	seriesId?: string;
+	sortBy?: string;
+	sortOrder?: "asc" | "desc";
 }
 
 /**
@@ -304,6 +324,8 @@ export const eventsListQueryOptions = (params: EventListParams) => {
 	searchParams.set("limit", String(params.limit));
 	if (params.search) searchParams.set("search", params.search);
 	if (params.seriesId) searchParams.set("seriesId", params.seriesId);
+	if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+	if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 
 	return queryOptions({
 		queryKey: [
@@ -312,6 +334,8 @@ export const eventsListQueryOptions = (params: EventListParams) => {
 			params.limit,
 			params.search,
 			params.seriesId,
+			params.sortBy,
+			params.sortOrder,
 		],
 		queryFn: () =>
 			ssrFetch<PaginatedResponse<Event>>(
@@ -382,6 +406,8 @@ interface ReleaseListParams {
 	limit: number;
 	search?: string;
 	releaseType?: string;
+	sortBy?: string;
+	sortOrder?: "asc" | "desc";
 }
 
 /**
@@ -393,6 +419,8 @@ export const releasesListQueryOptions = (params: ReleaseListParams) => {
 	searchParams.set("limit", String(params.limit));
 	if (params.search) searchParams.set("search", params.search);
 	if (params.releaseType) searchParams.set("releaseType", params.releaseType);
+	if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+	if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 
 	return queryOptions({
 		queryKey: [
@@ -401,6 +429,8 @@ export const releasesListQueryOptions = (params: ReleaseListParams) => {
 			params.limit,
 			params.search,
 			params.releaseType,
+			params.sortBy,
+			params.sortOrder,
 		],
 		queryFn: () =>
 			ssrFetch<PaginatedResponse<ReleaseWithCounts>>(
@@ -464,6 +494,8 @@ interface OfficialWorkListParams {
 	limit: number;
 	search?: string;
 	category?: string;
+	sortBy?: string;
+	sortOrder?: "asc" | "desc";
 }
 
 /**
@@ -477,6 +509,8 @@ export const officialWorksListQueryOptions = (
 	searchParams.set("limit", String(params.limit));
 	if (params.search) searchParams.set("search", params.search);
 	if (params.category) searchParams.set("category", params.category);
+	if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+	if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 
 	return queryOptions({
 		queryKey: [
@@ -485,6 +519,8 @@ export const officialWorksListQueryOptions = (
 			params.limit,
 			params.search,
 			params.category,
+			params.sortBy,
+			params.sortOrder,
 		],
 		queryFn: () =>
 			ssrFetch<PaginatedResponse<OfficialWork>>(

@@ -4,6 +4,8 @@ interface UseSortableTableOptions {
 	defaultSortBy?: string;
 	defaultSortOrder?: "asc" | "desc";
 	onSortChange?: () => void;
+	/** 3段階ソート（昇順→降順→リセット）を有効にする（デフォルト: true） */
+	threeStateSort?: boolean;
 }
 
 interface UseSortableTableReturn {
@@ -22,6 +24,7 @@ export function useSortableTable(
 		defaultSortBy = "sortOrder",
 		defaultSortOrder = "asc",
 		onSortChange,
+		threeStateSort = true,
 	} = options;
 
 	const [sortBy, setSortBy] = useState<string>(defaultSortBy);
@@ -30,14 +33,31 @@ export function useSortableTable(
 	const handleSort = useCallback(
 		(column: string) => {
 			if (sortBy === column) {
-				setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+				if (sortOrder === "asc") {
+					// 昇順 → 降順
+					setSortOrder("desc");
+				} else if (threeStateSort) {
+					// 3段階モード: 降順 → リセット（デフォルトに戻す）
+					setSortBy(defaultSortBy);
+					setSortOrder(defaultSortOrder);
+				} else {
+					// 2段階モード: 降順 → 昇順
+					setSortOrder("asc");
+				}
 			} else {
 				setSortBy(column);
 				setSortOrder("asc");
 			}
 			onSortChange?.();
 		},
-		[sortBy, sortOrder, onSortChange],
+		[
+			sortBy,
+			sortOrder,
+			threeStateSort,
+			defaultSortBy,
+			defaultSortOrder,
+			onSortChange,
+		],
 	);
 
 	const resetSort = useCallback(() => {

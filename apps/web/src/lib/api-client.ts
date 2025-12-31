@@ -1809,12 +1809,16 @@ export const tracksApi = {
 		limit?: number;
 		search?: string;
 		releaseId?: string;
+		sortBy?: string;
+		sortOrder?: "asc" | "desc";
 	}) => {
 		const searchParams = new URLSearchParams();
 		if (params?.page) searchParams.set("page", String(params.page));
 		if (params?.limit) searchParams.set("limit", String(params.limit));
 		if (params?.search) searchParams.set("search", params.search);
 		if (params?.releaseId) searchParams.set("releaseId", params.releaseId);
+		if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+		if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 		const query = searchParams.toString();
 		return fetchWithAuth<PaginatedResponse<TrackListItem>>(
 			`/api/admin/tracks${query ? `?${query}` : ""}`,

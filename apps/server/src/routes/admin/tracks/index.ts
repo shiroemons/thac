@@ -2,10 +2,12 @@ import {
 	and,
 	artistAliases,
 	artists,
+	asc,
 	circles,
 	count,
 	creditRoles,
 	db,
+	desc,
 	discs,
 	eq,
 	eventDays,
@@ -49,6 +51,8 @@ tracksAdminRouter.get("/", async (c) => {
 		const limit = Number.parseInt(c.req.query("limit") ?? "20", 10);
 		const search = c.req.query("search") ?? "";
 		const releaseId = c.req.query("releaseId") ?? "";
+		const sortBy = c.req.query("sortBy") || "name";
+		const sortOrder = c.req.query("sortOrder") || "asc";
 
 		const offset = (page - 1) * limit;
 
@@ -72,6 +76,19 @@ tracksAdminRouter.get("/", async (c) => {
 		const whereCondition =
 			searchConditions.length > 0 ? and(...searchConditions) : undefined;
 
+		// ソートカラムを決定
+		const sortColumnMap = {
+			id: tracks.id,
+			name: tracks.name,
+			trackNumber: tracks.trackNumber,
+			createdAt: tracks.createdAt,
+			updatedAt: tracks.updatedAt,
+		} as const;
+		const sortColumn =
+			sortColumnMap[sortBy as keyof typeof sortColumnMap] ?? tracks.name;
+		const orderByClause =
+			sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
+
 		// トラック一覧取得（リリース名、ディスク番号、イベント情報付き）
 		const result = await db
 			.select({
@@ -88,7 +105,7 @@ tracksAdminRouter.get("/", async (c) => {
 			.leftJoin(events, eq(tracks.eventId, events.id))
 			.leftJoin(eventDays, eq(tracks.eventDayId, eventDays.id))
 			.where(whereCondition)
-			.orderBy(releases.name, discs.discNumber, tracks.trackNumber)
+			.orderBy(orderByClause)
 			.limit(limit)
 			.offset(offset);
 

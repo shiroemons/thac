@@ -8,6 +8,7 @@ import { ArtistEditDialog } from "@/components/admin/artist-edit-dialog";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
+import { SortIcon } from "@/components/admin/sort-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,6 +24,7 @@ import {
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRowSelection } from "@/hooks/use-row-selection";
+import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
 	type Artist,
 	artistsApi,
@@ -73,6 +75,13 @@ function ArtistsPage() {
 
 	const debouncedSearch = useDebounce(search, 300);
 
+	// ソート状態（3段階: 昇順→降順→リセット）
+	const { sortBy, sortOrder, handleSort } = useSortableTable({
+		defaultSortBy: "name",
+		defaultSortOrder: "asc",
+		onSortChange: () => setPage(1),
+	});
+
 	// カラム表示設定
 	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
 	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
@@ -113,6 +122,8 @@ function ArtistsPage() {
 			limit: pageSize,
 			search: debouncedSearch || undefined,
 			initialScript: initialScript || undefined,
+			sortBy,
+			sortOrder,
 		}),
 	);
 
@@ -279,11 +290,43 @@ function ArtistsPage() {
 										/>
 									</TableHead>
 									{isVisible("id") && (
-										<TableHead className="w-[220px]">ID</TableHead>
+										<TableHead
+											className="w-[220px] cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("id")}
+										>
+											ID
+											<SortIcon
+												column="id"
+												sortBy={sortBy}
+												sortOrder={sortOrder}
+											/>
+										</TableHead>
 									)}
-									{isVisible("name") && <TableHead>名前</TableHead>}
+									{isVisible("name") && (
+										<TableHead
+											className="cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("name")}
+										>
+											名前
+											<SortIcon
+												column="name"
+												sortBy={sortBy}
+												sortOrder={sortOrder}
+											/>
+										</TableHead>
+									)}
 									{isVisible("nameJa") && (
-										<TableHead className="w-[150px]">日本語名</TableHead>
+										<TableHead
+											className="w-[150px] cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("nameJa")}
+										>
+											日本語名
+											<SortIcon
+												column="nameJa"
+												sortBy={sortBy}
+												sortOrder={sortOrder}
+											/>
+										</TableHead>
 									)}
 									{isVisible("nameEn") && (
 										<TableHead className="w-[150px]">英語名</TableHead>
@@ -301,10 +344,30 @@ function ArtistsPage() {
 										<TableHead className="w-[200px]">備考</TableHead>
 									)}
 									{isVisible("createdAt") && (
-										<TableHead className="w-[160px]">作成日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("createdAt")}
+										>
+											作成日時
+											<SortIcon
+												column="createdAt"
+												sortBy={sortBy}
+												sortOrder={sortOrder}
+											/>
+										</TableHead>
 									)}
 									{isVisible("updatedAt") && (
-										<TableHead className="w-[160px]">更新日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("updatedAt")}
+										>
+											更新日時
+											<SortIcon
+												column="updatedAt"
+												sortBy={sortBy}
+												sortOrder={sortOrder}
+											/>
+										</TableHead>
 									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>

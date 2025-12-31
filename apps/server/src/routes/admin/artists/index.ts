@@ -5,6 +5,7 @@ import {
 	asc,
 	count,
 	db,
+	desc,
 	eq,
 	insertArtistSchema,
 	like,
@@ -25,13 +26,15 @@ const artistsRouter = new Hono<AdminContext>();
 artistsRouter.route("/", artistTracksRouter);
 artistsRouter.route("/", artistCirclesRouter);
 
-// 一覧取得（ページネーション、検索、頭文字フィルタ対応）
+// 一覧取得（ページネーション、検索、頭文字フィルタ、ソート対応）
 artistsRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const initialScript = c.req.query("initialScript");
 		const search = c.req.query("search");
+		const sortBy = c.req.query("sortBy") || "name";
+		const sortOrder = c.req.query("sortOrder") || "asc";
 
 		const offset = (page - 1) * limit;
 
@@ -57,6 +60,19 @@ artistsRouter.get("/", async (c) => {
 		const whereCondition =
 			conditions.length > 0 ? and(...conditions) : undefined;
 
+		// ソートカラムを決定
+		const sortColumnMap = {
+			id: artists.id,
+			name: artists.name,
+			nameJa: artists.nameJa,
+			createdAt: artists.createdAt,
+			updatedAt: artists.updatedAt,
+		} as const;
+		const sortColumn =
+			sortColumnMap[sortBy as keyof typeof sortColumnMap] ?? artists.name;
+		const orderByClause =
+			sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
+
 		// データ取得
 		const [data, totalResult] = await Promise.all([
 			db
@@ -65,7 +81,7 @@ artistsRouter.get("/", async (c) => {
 				.where(whereCondition)
 				.limit(limit)
 				.offset(offset)
-				.orderBy(artists.name),
+				.orderBy(orderByClause),
 			db.select({ count: count() }).from(artists).where(whereCondition),
 		]);
 

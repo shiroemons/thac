@@ -9,6 +9,7 @@ import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { ReleaseEditDialog } from "@/components/admin/release-edit-dialog";
+import { SortIcon } from "@/components/admin/sort-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,6 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRowSelection } from "@/hooks/use-row-selection";
+import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
 	discsApi,
 	eventDaysApi,
@@ -98,6 +100,13 @@ function ReleasesPage() {
 
 	const debouncedSearch = useDebounce(search, 300);
 
+	// ソート状態（3段階: 昇順→降順→リセット）
+	const { sortBy, sortOrder, handleSort } = useSortableTable({
+		defaultSortBy: "releaseDate",
+		defaultSortOrder: "asc",
+		onSortChange: () => setPage(1),
+	});
+
 	// カラム表示設定
 	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
 	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
@@ -147,6 +156,8 @@ function ReleasesPage() {
 			limit: pageSize,
 			search: debouncedSearch || undefined,
 			releaseType: releaseTypeFilter || undefined,
+			sortBy,
+			sortOrder,
 		}),
 	);
 
@@ -430,16 +441,52 @@ function ReleasesPage() {
 										/>
 									</TableHead>
 									{isVisible("id") && (
-										<TableHead className="w-[220px]">ID</TableHead>
+										<TableHead
+											className="w-[220px] cursor-pointer select-none"
+											onClick={() => handleSort("id")}
+										>
+											<span className="inline-flex items-center gap-1">
+												ID
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="id"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("name") && (
-										<TableHead className="min-w-[200px]">作品名</TableHead>
+										<TableHead
+											className="min-w-[200px] cursor-pointer select-none"
+											onClick={() => handleSort("name")}
+										>
+											<span className="inline-flex items-center gap-1">
+												作品名
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="name"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("releaseType") && (
 										<TableHead className="w-[120px]">タイプ</TableHead>
 									)}
 									{isVisible("releaseDate") && (
-										<TableHead className="w-[120px]">発売日</TableHead>
+										<TableHead
+											className="w-[120px] cursor-pointer select-none"
+											onClick={() => handleSort("releaseDate")}
+										>
+											<span className="inline-flex items-center gap-1">
+												発売日
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="releaseDate"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("event") && (
 										<TableHead className="min-w-[180px]">イベント</TableHead>
@@ -454,10 +501,34 @@ function ReleasesPage() {
 										<TableHead className="w-[100px]">トラック数</TableHead>
 									)}
 									{isVisible("createdAt") && (
-										<TableHead className="w-[160px]">作成日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer select-none"
+											onClick={() => handleSort("createdAt")}
+										>
+											<span className="inline-flex items-center gap-1">
+												作成日時
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="createdAt"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("updatedAt") && (
-										<TableHead className="w-[160px]">更新日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer select-none"
+											onClick={() => handleSort("updatedAt")}
+										>
+											<span className="inline-flex items-center gap-1">
+												更新日時
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="updatedAt"
+												/>
+											</span>
+										</TableHead>
 									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>

@@ -2,8 +2,10 @@ import {
 	and,
 	artistAliases,
 	artists,
+	asc,
 	count,
 	db,
+	desc,
 	eq,
 	insertArtistAliasSchema,
 	like,
@@ -30,6 +32,8 @@ artistAliasesRouter.get("/", async (c) => {
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const artistId = c.req.query("artistId");
 		const search = c.req.query("search");
+		const sortBy = c.req.query("sortBy") || "name";
+		const sortOrder = c.req.query("sortOrder") || "asc";
 
 		const offset = (page - 1) * limit;
 
@@ -47,6 +51,18 @@ artistAliasesRouter.get("/", async (c) => {
 
 		const whereCondition =
 			conditions.length > 0 ? and(...conditions) : undefined;
+
+		// ソートカラムを決定
+		const sortColumnMap = {
+			id: artistAliases.id,
+			name: artistAliases.name,
+			createdAt: artistAliases.createdAt,
+			updatedAt: artistAliases.updatedAt,
+		} as const;
+		const sortColumn =
+			sortColumnMap[sortBy as keyof typeof sortColumnMap] ?? artistAliases.name;
+		const orderByClause =
+			sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
 
 		// データ取得（親アーティスト名を結合）
 		const [data, totalResult] = await Promise.all([
@@ -69,7 +85,7 @@ artistAliasesRouter.get("/", async (c) => {
 				.where(whereCondition)
 				.limit(limit)
 				.offset(offset)
-				.orderBy(artistAliases.name),
+				.orderBy(orderByClause),
 			db.select({ count: count() }).from(artistAliases).where(whereCondition),
 		]);
 

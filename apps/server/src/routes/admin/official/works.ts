@@ -1,7 +1,9 @@
 import {
 	and,
+	asc,
 	count,
 	db,
+	desc,
 	eq,
 	insertOfficialWorkLinkSchema,
 	insertOfficialWorkSchema,
@@ -28,6 +30,8 @@ worksRouter.get("/", async (c) => {
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const category = c.req.query("category");
 		const search = c.req.query("search");
+		const sortBy = c.req.query("sortBy") || "position";
+		const sortOrder = c.req.query("sortOrder") || "asc";
 
 		const offset = (page - 1) * limit;
 
@@ -52,6 +56,21 @@ worksRouter.get("/", async (c) => {
 		const whereCondition =
 			conditions.length > 0 ? and(...conditions) : undefined;
 
+		// ソートカラムを決定
+		const sortColumnMap = {
+			id: officialWorks.id,
+			nameJa: officialWorks.nameJa,
+			position: officialWorks.position,
+			releaseDate: officialWorks.releaseDate,
+			createdAt: officialWorks.createdAt,
+			updatedAt: officialWorks.updatedAt,
+		} as const;
+		const sortColumn =
+			sortColumnMap[sortBy as keyof typeof sortColumnMap] ??
+			officialWorks.position;
+		const orderByClause =
+			sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
+
 		// データ取得
 		const [data, totalResult] = await Promise.all([
 			db
@@ -60,7 +79,7 @@ worksRouter.get("/", async (c) => {
 				.where(whereCondition)
 				.limit(limit)
 				.offset(offset)
-				.orderBy(officialWorks.position, officialWorks.id),
+				.orderBy(orderByClause),
 			db.select({ count: count() }).from(officialWorks).where(whereCondition),
 		]);
 
