@@ -74,6 +74,43 @@ bun run check-types
 cd packages/db && bun run db:local
 ```
 
+## API Error Handling
+
+### 統一エラーメッセージ
+
+`apps/server/src/constants/error-messages.ts`で全APIエンドポイント共通のエラーメッセージを定義。
+
+```typescript
+import { ERROR_MESSAGES } from "../constants/error-messages";
+
+// 使用例
+return c.json({ error: ERROR_MESSAGES.NOT_FOUND }, 404);
+return c.json({ error: ERROR_MESSAGES.VALIDATION_FAILED, details: errors }, 400);
+```
+
+### エラーカテゴリ
+
+| カテゴリ | HTTPステータス | 例 |
+|---------|--------------|-----|
+| Not Found | 404 | `ARTIST_NOT_FOUND`, `TRACK_NOT_FOUND` |
+| 重複エラー | 409 | `ID_ALREADY_EXISTS`, `NAME_ALREADY_EXISTS` |
+| バリデーション | 400 | `VALIDATION_FAILED`, `INVALID_DIRECTION` |
+| 削除制約 | 409 | `CANNOT_DELETE_SERIES_WITH_EVENTS` |
+| DB障害 | 500 | `DB_ERROR` |
+
+### エラーハンドリングユーティリティ
+
+```typescript
+import { handleDbError } from "../utils/api-error";
+
+// DB操作でエラーが発生した場合の統一ハンドリング
+try {
+  await db.insert(table).values(data);
+} catch (e) {
+  return handleDbError(c, e);
+}
+```
+
 ## Key Technical Decisions
 
 - **Bunランタイム採用**: 高速な起動と実行、ネイティブTypeScriptサポート
@@ -81,6 +118,7 @@ cd packages/db && bun run db:local
 - **TanStack Start**: Next.jsの代替としてのReact SSRフレームワーク
 - **Drizzle ORM**: TypeScriptファーストで軽量なSQLクエリビルダー
 - **Biome**: ESLint + Prettierの統合代替として高速なツールチェーン
+- **統一エラーメッセージ**: 集中管理された日本語エラーメッセージで一貫したUX
 
 ---
 _Document standards and patterns, not every dependency_

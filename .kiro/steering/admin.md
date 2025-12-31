@@ -392,17 +392,28 @@ import { ReorderButtons } from "@/components/admin/reorder-buttons";
 
 ### useSortableTable
 
-ソート状態を管理するフック。
+ソート状態を管理するフック。3段階ソート（昇順→降順→リセット）をデフォルトでサポート。
 
 ```tsx
 import { useSortableTable } from "@/hooks/use-sortable-table";
 
-const { sortBy, sortOrder, handleSort } = useSortableTable({
+const { sortBy, sortOrder, handleSort, resetSort } = useSortableTable({
   defaultSortBy: "sortOrder",  // デフォルト: "sortOrder"
   defaultSortOrder: "asc",     // デフォルト: "asc"
   onSortChange: () => {},      // ソート変更時のコールバック
+  threeStateSort: true,        // デフォルト: true（3段階ソート有効）
 });
 ```
+
+### 3段階ソートの動作
+
+| クリック回数 | 動作 |
+|------------|------|
+| 1回目 | 昇順（ASC） |
+| 2回目 | 降順（DESC） |
+| 3回目 | リセット（デフォルトソートに戻る） |
+
+`threeStateSort: false`を設定すると、従来の2段階ソート（昇順↔降順のトグル）になる。
 
 ### isReorderDisabled ルール
 
@@ -452,6 +463,70 @@ const isReorderDisabled =
 | `alias-types.tsx` | sortOrder, code, label |
 | `official-work-categories.tsx` | sortOrder, code, name |
 | `event-series.tsx` | sortOrder, name |
+
+---
+
+## 行選択（一括操作）
+
+複数の行を選択して一括操作（削除など）を行う機能。
+
+### useRowSelection
+
+ページをまたいだ行選択を管理するフック。
+
+```tsx
+import { useRowSelection } from "@/hooks/use-row-selection";
+
+const {
+  selectedIds,       // 選択中のID Set
+  selectedItems,     // 選択中のアイテム Map<id, item>
+  isSelected,        // (id) => boolean
+  isAllSelected,     // (currentPageItems) => boolean
+  isIndeterminate,   // (currentPageItems) => boolean（一部選択状態）
+  toggleItem,        // (item) => void
+  toggleAll,         // (currentPageItems) => void
+  clearSelection,    // () => void
+  selectedCount,     // 選択件数
+} = useRowSelection<Item>();
+```
+
+### 選択UI
+
+```tsx
+{/* ヘッダーチェックボックス */}
+<TableHead className="w-[50px]">
+  <Checkbox
+    checked={isAllSelected(items)}
+    indeterminate={isIndeterminate(items)}
+    onCheckedChange={() => toggleAll(items)}
+    aria-label="すべて選択"
+  />
+</TableHead>
+
+{/* 行チェックボックス */}
+<TableCell>
+  <Checkbox
+    checked={isSelected(item.id)}
+    onCheckedChange={() => toggleItem(item)}
+    aria-label={`${item.name}を選択`}
+  />
+</TableCell>
+```
+
+### 一括削除ボタン
+
+```tsx
+{selectedCount > 0 && (
+  <Button
+    variant="destructive"
+    size="sm"
+    onClick={() => setShowDeleteConfirm(true)}
+  >
+    <Trash2 className="mr-1 h-4 w-4" />
+    {selectedCount}件を削除
+  </Button>
+)}
+```
 
 ---
 
@@ -857,24 +932,15 @@ toast("メッセージ", {
 
 ## 確認ダイアログ
 
-破壊的アクション前に確認を求める。
+破壊的アクション前に確認を求める。`ConfirmDialog`コンポーネントを使用する。
 
-### パターン1: ネイティブ confirm（シンプルな場合）
-
-```tsx
-const handleDelete = async (item: Item) => {
-  if (!confirm(`「${item.name}」を削除しますか？\n※関連データも削除されます。`)) {
-    return;
-  }
-  await deleteItem(item.id);
-  toast.success("削除しました");
-};
-```
-
-### パターン2: カスタムダイアログ（複雑な場合）
+### ConfirmDialogコンポーネント
 
 ```tsx
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+
 const [deleteTarget, setDeleteTarget] = useState<Item | null>(null);
+const [isDeleting, setIsDeleting] = useState(false);
 
 // 削除ボタン
 <Button
@@ -887,35 +953,41 @@ const [deleteTarget, setDeleteTarget] = useState<Item | null>(null);
 </Button>
 
 // 確認ダイアログ
-<Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-  <DialogContent className="sm:max-w-[400px]">
-    <DialogHeader>
-      <DialogTitle>削除の確認</DialogTitle>
-      <DialogDescription>
-        「{deleteTarget?.name}」を削除しますか？
-        この操作は取り消せません。
-      </DialogDescription>
-    </DialogHeader>
-    <DialogFooter>
-      <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
-        キャンセル
-      </Button>
-      <Button variant="destructive" onClick={handleConfirmDelete}>
-        削除
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+<ConfirmDialog
+  open={!!deleteTarget}
+  onOpenChange={(open) => !open && setDeleteTarget(null)}
+  title="削除の確認"
+  description={`「${deleteTarget?.name}」を削除しますか？この操作は取り消せません。`}
+  confirmLabel="削除"
+  cancelLabel="キャンセル"
+  onConfirm={handleConfirmDelete}
+  variant="danger"
+  isLoading={isDeleting}
+/>
 ```
 
-### 使い分け
+### ConfirmDialogのProps
 
-| 操作 | パターン | 理由 |
-|------|---------|------|
-| 単一削除 | ネイティブ confirm | シンプルで十分 |
-| 一括削除 | カスタムダイアログ | 件数表示が必要 |
-| 重要データ削除 | カスタムダイアログ | 詳細説明が必要 |
-| 復元不可能な操作 | カスタムダイアログ | 警告を強調 |
+| Prop | 型 | 説明 |
+|------|-----|------|
+| `open` | `boolean` | ダイアログの開閉状態 |
+| `onOpenChange` | `(open: boolean) => void` | 開閉状態変更コールバック |
+| `title` | `string` | ダイアログタイトル |
+| `description` | `ReactNode` | 説明文 |
+| `confirmLabel` | `string` | 確認ボタンラベル（デフォルト: "確認"） |
+| `cancelLabel` | `string` | キャンセルボタンラベル（デフォルト: "キャンセル"） |
+| `onConfirm` | `() => void` | 確認時のコールバック |
+| `onCancel` | `() => void` | キャンセル時のコールバック（オプション） |
+| `isLoading` | `boolean` | ローディング状態（ボタン無効化） |
+| `variant` | `"danger" \| "warning" \| "default"` | ダイアログの種類 |
+
+### variantの使い分け
+
+| variant | 用途 | 表示 |
+|---------|------|------|
+| `danger` | 削除、破壊的操作 | 赤アイコン、destructiveボタン |
+| `warning` | 注意が必要な操作 | 黄アイコン |
+| `default` | 一般的な確認 | アイコンなし |
 
 ### 確認メッセージ規則
 

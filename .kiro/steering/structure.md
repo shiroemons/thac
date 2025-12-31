@@ -65,6 +65,18 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 **Pattern**: 機能別にディレクトリを分割、`index.ts`でルートをエクスポート
 **Example**: `routes/admin/`（管理API）
 
+### Server Constants (`apps/server/src/constants/`)
+**Location**: `/apps/server/src/constants/`
+**Purpose**: APIサーバー用の定数定義
+**Pattern**: `{category}.ts`（カテゴリ別定数ファイル）
+**Example**: `error-messages.ts`（統一エラーメッセージ定数）
+
+### Server Utilities (`apps/server/src/utils/`)
+**Location**: `/apps/server/src/utils/`
+**Purpose**: APIサーバー用のユーティリティ関数
+**Pattern**: `{functionality}.ts`（機能別ユーティリティ）
+**Example**: `api-error.ts`（エラーハンドリングヘルパー）
+
 ### Utility Package (`packages/utils/`)
 **Location**: `/packages/utils/`
 **Purpose**: アプリ間で共有するユーティリティ関数
