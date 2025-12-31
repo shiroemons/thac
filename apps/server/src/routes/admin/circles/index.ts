@@ -1,9 +1,11 @@
 import {
 	and,
+	asc,
 	circleLinks,
 	circles,
 	count,
 	db,
+	desc,
 	eq,
 	insertCircleLinkSchema,
 	insertCircleSchema,
@@ -27,13 +29,15 @@ const circlesRouter = new Hono<AdminContext>();
 circlesRouter.route("/", circleReleasesRouter);
 circlesRouter.route("/", circleArtistsRouter);
 
-// サークル一覧取得（ページネーション、検索、頭文字フィルタ対応）
+// サークル一覧取得（ページネーション、検索、頭文字フィルタ、ソート対応）
 circlesRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const initialScript = c.req.query("initialScript");
 		const search = c.req.query("search");
+		const sortBy = c.req.query("sortBy") || "name";
+		const sortOrder = c.req.query("sortOrder") || "asc";
 
 		const offset = (page - 1) * limit;
 
@@ -58,6 +62,19 @@ circlesRouter.get("/", async (c) => {
 		const whereCondition =
 			conditions.length > 0 ? and(...conditions) : undefined;
 
+		// ソートカラムを決定
+		const sortColumnMap = {
+			id: circles.id,
+			name: circles.name,
+			nameJa: circles.nameJa,
+			createdAt: circles.createdAt,
+			updatedAt: circles.updatedAt,
+		} as const;
+		const sortColumn =
+			sortColumnMap[sortBy as keyof typeof sortColumnMap] ?? circles.name;
+		const orderByClause =
+			sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
+
 		// データ取得
 		const [data, totalResult] = await Promise.all([
 			db
@@ -66,7 +83,7 @@ circlesRouter.get("/", async (c) => {
 				.where(whereCondition)
 				.limit(limit)
 				.offset(offset)
-				.orderBy(circles.name),
+				.orderBy(orderByClause),
 			db.select({ count: count() }).from(circles).where(whereCondition),
 		]);
 

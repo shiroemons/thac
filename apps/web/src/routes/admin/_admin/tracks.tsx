@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
+import { SortIcon } from "@/components/admin/sort-icon";
 import { TrackEditDialog } from "@/components/admin/track-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ import {
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useRowSelection } from "@/hooks/use-row-selection";
+import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
 	releasesApi,
 	type Track,
@@ -74,6 +76,13 @@ function TracksPage() {
 	const [releaseFilter, setReleaseFilter] = useState("");
 
 	const debouncedSearch = useDebounce(search, 300);
+
+	// ソート状態（3段階: 昇順→降順→リセット）
+	const { sortBy, sortOrder, handleSort } = useSortableTable({
+		defaultSortBy: "name",
+		defaultSortOrder: "asc",
+		onSortChange: () => setPage(1),
+	});
 
 	// カラム表示設定
 	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
@@ -120,13 +129,23 @@ function TracksPage() {
 
 	// トラック一覧取得（ページネーション対応API）
 	const { data, isPending, error } = useQuery({
-		queryKey: ["all-tracks", page, pageSize, debouncedSearch, releaseFilter],
+		queryKey: [
+			"all-tracks",
+			page,
+			pageSize,
+			debouncedSearch,
+			releaseFilter,
+			sortBy,
+			sortOrder,
+		],
 		queryFn: () =>
 			tracksApi.listPaginated({
 				page,
 				limit: pageSize,
 				search: debouncedSearch || undefined,
 				releaseId: releaseFilter || undefined,
+				sortBy,
+				sortOrder,
 			}),
 		staleTime: 30_000,
 	});
@@ -353,10 +372,34 @@ function TracksPage() {
 										/>
 									</TableHead>
 									{isVisible("id") && (
-										<TableHead className="w-[220px]">ID</TableHead>
+										<TableHead
+											className="w-[220px] cursor-pointer select-none"
+											onClick={() => handleSort("id")}
+										>
+											<span className="inline-flex items-center gap-1">
+												ID
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="id"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("name") && (
-										<TableHead className="min-w-[200px]">トラック名</TableHead>
+										<TableHead
+											className="min-w-[200px] cursor-pointer select-none"
+											onClick={() => handleSort("name")}
+										>
+											<span className="inline-flex items-center gap-1">
+												トラック名
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="name"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("releaseName") && (
 										<TableHead className="min-w-[200px]">作品</TableHead>
@@ -365,7 +408,19 @@ function TracksPage() {
 										<TableHead className="w-[100px]">ディスク</TableHead>
 									)}
 									{isVisible("trackNumber") && (
-										<TableHead className="w-[60px]">No.</TableHead>
+										<TableHead
+											className="w-[60px] cursor-pointer select-none"
+											onClick={() => handleSort("trackNumber")}
+										>
+											<span className="inline-flex items-center gap-1">
+												No.
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="trackNumber"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("event") && (
 										<TableHead className="min-w-[150px]">イベント</TableHead>
@@ -389,10 +444,34 @@ function TracksPage() {
 										<TableHead className="w-[100px]">クレジット数</TableHead>
 									)}
 									{isVisible("createdAt") && (
-										<TableHead className="w-[160px]">作成日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer select-none"
+											onClick={() => handleSort("createdAt")}
+										>
+											<span className="inline-flex items-center gap-1">
+												作成日時
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="createdAt"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("updatedAt") && (
-										<TableHead className="w-[160px]">更新日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer select-none"
+											onClick={() => handleSort("updatedAt")}
+										>
+											<span className="inline-flex items-center gap-1">
+												更新日時
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="updatedAt"
+												/>
+											</span>
+										</TableHead>
 									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>

@@ -9,6 +9,7 @@ import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { EventEditDialog } from "@/components/admin/event-edit-dialog";
+import { SortIcon } from "@/components/admin/sort-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
 	type Event,
 	type EventDay,
@@ -77,6 +79,13 @@ function EventsPage() {
 	const [seriesFilter, setSeriesFilter] = useState("");
 
 	const debouncedSearch = useDebounce(search, 300);
+
+	// ソート状態（3段階: 昇順→降順→リセット）
+	const { sortBy, sortOrder, handleSort } = useSortableTable({
+		defaultSortBy: "startDate",
+		defaultSortOrder: "asc",
+		onSortChange: () => setPage(1),
+	});
 
 	// カラム表示設定
 	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
@@ -127,6 +136,8 @@ function EventsPage() {
 			limit: pageSize,
 			search: debouncedSearch || undefined,
 			seriesId: seriesFilter || undefined,
+			sortBy,
+			sortOrder,
 		}),
 	);
 
@@ -386,10 +397,34 @@ function EventsPage() {
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
 									{isVisible("id") && (
-										<TableHead className="w-[220px]">ID</TableHead>
+										<TableHead
+											className="w-[220px] cursor-pointer select-none"
+											onClick={() => handleSort("id")}
+										>
+											<span className="inline-flex items-center gap-1">
+												ID
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="id"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("name") && (
-										<TableHead className="min-w-[200px]">イベント名</TableHead>
+										<TableHead
+											className="min-w-[200px] cursor-pointer select-none"
+											onClick={() => handleSort("name")}
+										>
+											<span className="inline-flex items-center gap-1">
+												イベント名
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="name"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("seriesName") && (
 										<TableHead className="w-[160px]">シリーズ</TableHead>
@@ -398,7 +433,19 @@ function EventsPage() {
 										<TableHead className="w-[70px]">回次</TableHead>
 									)}
 									{isVisible("dateRange") && (
-										<TableHead className="w-[180px]">開催期間</TableHead>
+										<TableHead
+											className="w-[180px] cursor-pointer select-none"
+											onClick={() => handleSort("startDate")}
+										>
+											<span className="inline-flex items-center gap-1">
+												開催期間
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="startDate"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("venue") && (
 										<TableHead className="w-[120px]">会場</TableHead>
@@ -407,10 +454,34 @@ function EventsPage() {
 										<TableHead className="w-[80px]">開催日数</TableHead>
 									)}
 									{isVisible("createdAt") && (
-										<TableHead className="w-[160px]">作成日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer select-none"
+											onClick={() => handleSort("createdAt")}
+										>
+											<span className="inline-flex items-center gap-1">
+												作成日時
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="createdAt"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("updatedAt") && (
-										<TableHead className="w-[160px]">更新日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer select-none"
+											onClick={() => handleSort("updatedAt")}
+										>
+											<span className="inline-flex items-center gap-1">
+												更新日時
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="updatedAt"
+												/>
+											</span>
+										</TableHead>
 									)}
 									<TableHead className="w-[70px]" />
 								</TableRow>

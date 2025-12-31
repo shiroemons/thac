@@ -8,6 +8,7 @@ import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { OfficialWorkEditDialog } from "@/components/admin/official-work-edit-dialog";
+import { SortIcon } from "@/components/admin/sort-icon";
 import { ImportDialog } from "@/components/import-dialog";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
 	importApi,
 	type OfficialWork,
@@ -84,6 +86,13 @@ function OfficialWorksPage() {
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
 
+	// ソート状態（3段階: 昇順→降順→リセット）
+	const { sortBy, sortOrder, handleSort } = useSortableTable({
+		defaultSortBy: "position",
+		defaultSortOrder: "asc",
+		onSortChange: () => setPage(1),
+	});
+
 	// カラム表示設定
 	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
 	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
@@ -119,6 +128,8 @@ function OfficialWorksPage() {
 			limit: pageSize,
 			search: debouncedSearch || undefined,
 			category: category || undefined,
+			sortBy,
+			sortOrder,
 		}),
 	);
 
@@ -238,9 +249,35 @@ function OfficialWorksPage() {
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
 									{isVisible("id") && (
-										<TableHead className="w-[150px]">ID</TableHead>
+										<TableHead
+											className="w-[150px] cursor-pointer hover:bg-base-200"
+											onClick={() => handleSort("id")}
+										>
+											<span className="flex items-center gap-1">
+												ID
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="id"
+												/>
+											</span>
+										</TableHead>
 									)}
-									{isVisible("nameJa") && <TableHead>作品名</TableHead>}
+									{isVisible("nameJa") && (
+										<TableHead
+											className="cursor-pointer hover:bg-base-200"
+											onClick={() => handleSort("nameJa")}
+										>
+											<span className="flex items-center gap-1">
+												作品名
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="nameJa"
+												/>
+											</span>
+										</TableHead>
+									)}
 									{isVisible("shortNameJa") && (
 										<TableHead className="w-[100px]">短縮名</TableHead>
 									)}
@@ -251,19 +288,67 @@ function OfficialWorksPage() {
 										<TableHead className="w-[60px]">番号</TableHead>
 									)}
 									{isVisible("releaseDate") && (
-										<TableHead className="w-[100px]">発売日</TableHead>
+										<TableHead
+											className="w-[100px] cursor-pointer hover:bg-base-200"
+											onClick={() => handleSort("releaseDate")}
+										>
+											<span className="flex items-center gap-1">
+												発売日
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="releaseDate"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("position") && (
-										<TableHead className="w-[70px]">表示順</TableHead>
+										<TableHead
+											className="w-[70px] cursor-pointer hover:bg-base-200"
+											onClick={() => handleSort("position")}
+										>
+											<span className="flex items-center gap-1">
+												表示順
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="position"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("officialOrganization") && (
 										<TableHead className="w-[150px]">発行元</TableHead>
 									)}
 									{isVisible("createdAt") && (
-										<TableHead className="w-[160px]">作成日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer hover:bg-base-200"
+											onClick={() => handleSort("createdAt")}
+										>
+											<span className="flex items-center gap-1">
+												作成日時
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="createdAt"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("updatedAt") && (
-										<TableHead className="w-[160px]">更新日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer hover:bg-base-200"
+											onClick={() => handleSort("updatedAt")}
+										>
+											<span className="flex items-center gap-1">
+												更新日時
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="updatedAt"
+												/>
+											</span>
+										</TableHead>
 									)}
 									<TableHead className="w-[100px]" />
 								</TableRow>

@@ -1,7 +1,9 @@
 import {
 	and,
+	asc,
 	count,
 	db,
+	desc,
 	discs,
 	eq,
 	eventDays,
@@ -76,13 +78,15 @@ async function validateEventConsistency(
 
 const releasesRouter = new Hono<AdminContext>();
 
-// リリース一覧取得（ページネーション、検索、フィルタ対応）
+// リリース一覧取得（ページネーション、検索、フィルタ、ソート対応）
 releasesRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const search = c.req.query("search");
 		const releaseType = c.req.query("releaseType");
+		const sortBy = c.req.query("sortBy") || "releaseDate";
+		const sortOrder = c.req.query("sortOrder") || "asc";
 
 		const offset = (page - 1) * limit;
 
@@ -100,6 +104,21 @@ releasesRouter.get("/", async (c) => {
 
 		const whereCondition =
 			conditions.length > 0 ? and(...conditions) : undefined;
+
+		// ソートカラムを決定
+		const sortColumnMap = {
+			id: releases.id,
+			name: releases.name,
+			releaseDate: releases.releaseDate,
+			eventDate: eventDays.date,
+			createdAt: releases.createdAt,
+			updatedAt: releases.updatedAt,
+		} as const;
+		const sortColumn =
+			sortColumnMap[sortBy as keyof typeof sortColumnMap] ??
+			releases.releaseDate;
+		const orderByClause =
+			sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
 
 		// データ取得
 		const [data, totalResult] = await Promise.all([
@@ -129,7 +148,7 @@ releasesRouter.get("/", async (c) => {
 				.where(whereCondition)
 				.limit(limit)
 				.offset(offset)
-				.orderBy(releases.releaseDate, releases.name),
+				.orderBy(orderByClause),
 			db.select({ count: count() }).from(releases).where(whereCondition),
 		]);
 

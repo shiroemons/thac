@@ -3,8 +3,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import {
-	ArrowDown,
-	ArrowUp,
 	ArrowUpDown,
 	ChevronDown,
 	ChevronUp,
@@ -19,6 +17,7 @@ import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { PlatformEditDialog } from "@/components/admin/platform-edit-dialog";
+import { SortIcon } from "@/components/admin/sort-icon";
 import { ImportDialog } from "@/components/import-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useSortableTable } from "@/hooks/use-sortable-table";
 import { importApi, type Platform, platformsApi } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 
@@ -79,17 +79,22 @@ const categoryOptions = [
 function PlatformsPage() {
 	const queryClient = useQueryClient();
 
-	// ページネーション・フィルタ・ソート状態
+	// ページネーション・フィルタ状態
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(20);
 	const [search, setSearch] = useState("");
 	const [category, setCategory] = useState("");
-	const [sortBy, setSortBy] = useState<string>("sortOrder");
-	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 	const [isReordering, setIsReordering] = useState(false);
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
+
+	// ソート状態（3段階: 昇順→降順→リセット）
+	const { sortBy, sortOrder, handleSort } = useSortableTable({
+		defaultSortBy: "sortOrder",
+		defaultSortOrder: "asc",
+		onSortChange: () => setPage(1),
+	});
 
 	// カラム表示設定
 	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
@@ -229,29 +234,6 @@ function PlatformsPage() {
 		setPage(1);
 	};
 
-	const handleSort = (column: string) => {
-		if (sortBy === column) {
-			setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-		} else {
-			setSortBy(column);
-			setSortOrder("asc");
-		}
-		setPage(1);
-	};
-
-	const SortIcon = ({ column }: { column: string }) => {
-		if (sortBy !== column) {
-			return (
-				<ArrowUpDown className="ml-1 inline h-4 w-4 text-base-content/30" />
-			);
-		}
-		return sortOrder === "asc" ? (
-			<ArrowUp className="ml-1 inline h-4 w-4" />
-		) : (
-			<ArrowDown className="ml-1 inline h-4 w-4" />
-		);
-	};
-
 	const displayError =
 		mutationError || (error instanceof Error ? error.message : null);
 
@@ -330,8 +312,14 @@ function PlatformsPage() {
 											className="w-[80px] cursor-pointer select-none hover:bg-base-200"
 											onClick={() => handleSort("sortOrder")}
 										>
-											順序
-											<SortIcon column="sortOrder" />
+											<span className="flex items-center gap-1">
+												順序
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="sortOrder"
+												/>
+											</span>
 										</TableHead>
 									)}
 									{isVisible("code") && (
@@ -339,8 +327,14 @@ function PlatformsPage() {
 											className="w-[150px] cursor-pointer select-none hover:bg-base-200"
 											onClick={() => handleSort("code")}
 										>
-											コード
-											<SortIcon column="code" />
+											<span className="flex items-center gap-1">
+												コード
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="code"
+												/>
+											</span>
 										</TableHead>
 									)}
 									{isVisible("name") && (
@@ -348,8 +342,14 @@ function PlatformsPage() {
 											className="cursor-pointer select-none hover:bg-base-200"
 											onClick={() => handleSort("name")}
 										>
-											名前
-											<SortIcon column="name" />
+											<span className="flex items-center gap-1">
+												名前
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="name"
+												/>
+											</span>
 										</TableHead>
 									)}
 									{isVisible("category") && (
@@ -357,18 +357,48 @@ function PlatformsPage() {
 											className="w-[120px] cursor-pointer select-none hover:bg-base-200"
 											onClick={() => handleSort("category")}
 										>
-											カテゴリ
-											<SortIcon column="category" />
+											<span className="flex items-center gap-1">
+												カテゴリ
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="category"
+												/>
+											</span>
 										</TableHead>
 									)}
 									{isVisible("urlPattern") && (
 										<TableHead>URLパターン</TableHead>
 									)}
 									{isVisible("createdAt") && (
-										<TableHead className="w-[160px]">作成日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("createdAt")}
+										>
+											<span className="flex items-center gap-1">
+												作成日時
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="createdAt"
+												/>
+											</span>
+										</TableHead>
 									)}
 									{isVisible("updatedAt") && (
-										<TableHead className="w-[160px]">更新日時</TableHead>
+										<TableHead
+											className="w-[160px] cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("updatedAt")}
+										>
+											<span className="flex items-center gap-1">
+												更新日時
+												<SortIcon
+													sortBy={sortBy}
+													sortOrder={sortOrder}
+													column="updatedAt"
+												/>
+											</span>
+										</TableHead>
 									)}
 									<TableHead className="w-[100px]" />
 								</TableRow>

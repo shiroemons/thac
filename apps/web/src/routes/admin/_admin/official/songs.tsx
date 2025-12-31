@@ -77,26 +77,12 @@ function OfficialSongsPage() {
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
 
-	// ソート状態
-	const { sortBy, sortOrder, handleSort, resetSort } = useSortableTable({
+	// ソート状態（3段階: 昇順→降順→リセット）
+	const { sortBy, sortOrder, handleSort } = useSortableTable({
 		defaultSortBy: "id",
 		defaultSortOrder: "asc",
 		onSortChange: () => setPage(1),
 	});
-
-	// 楽曲名用の3段階ソートハンドラー（昇順→降順→リセット）
-	const handleNameJaSort = () => {
-		if (sortBy !== "nameJa") {
-			// 他のカラム → nameJa昇順
-			handleSort("nameJa");
-		} else if (sortOrder === "asc") {
-			// nameJa昇順 → nameJa降順
-			handleSort("nameJa");
-		} else {
-			// nameJa降順 → リセット（ID昇順）
-			resetSort();
-		}
-	};
 
 	// カラム表示設定
 	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
@@ -305,7 +291,7 @@ function OfficialSongsPage() {
 									{isVisible("nameJa") && (
 										<TableHead
 											className="cursor-pointer select-none hover:bg-base-200"
-											onClick={handleNameJaSort}
+											onClick={() => handleSort("nameJa")}
 										>
 											楽曲名
 											<SortIcon
