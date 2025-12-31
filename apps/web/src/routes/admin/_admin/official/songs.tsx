@@ -8,6 +8,7 @@ import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { OfficialSongEditDialog } from "@/components/admin/official-song-edit-dialog";
+import { SortIcon } from "@/components/admin/sort-icon";
 import { ImportDialog } from "@/components/import-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
 	importApi,
 	type OfficialSong,
@@ -75,6 +77,27 @@ function OfficialSongsPage() {
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
 
+	// ソート状態
+	const { sortBy, sortOrder, handleSort, resetSort } = useSortableTable({
+		defaultSortBy: "id",
+		defaultSortOrder: "asc",
+		onSortChange: () => setPage(1),
+	});
+
+	// 楽曲名用の3段階ソートハンドラー（昇順→降順→リセット）
+	const handleNameJaSort = () => {
+		if (sortBy !== "nameJa") {
+			// 他のカラム → nameJa昇順
+			handleSort("nameJa");
+		} else if (sortOrder === "asc") {
+			// nameJa昇順 → nameJa降順
+			handleSort("nameJa");
+		} else {
+			// nameJa降順 → リセット（ID昇順）
+			resetSort();
+		}
+	};
+
 	// カラム表示設定
 	const columnConfigs = useMemo(() => [...COLUMN_CONFIGS], []);
 	const { visibleColumns, toggleColumn, isVisible } = useColumnVisibility(
@@ -109,6 +132,8 @@ function OfficialSongsPage() {
 			limit: pageSize,
 			search: debouncedSearch || undefined,
 			workId: workId || undefined,
+			sortBy,
+			sortOrder,
 		}),
 	);
 
@@ -265,9 +290,31 @@ function OfficialSongsPage() {
 							<TableHeader>
 								<TableRow className="hover:bg-transparent">
 									{isVisible("id") && (
-										<TableHead className="w-[200px]">ID</TableHead>
+										<TableHead
+											className="w-[200px] cursor-pointer select-none hover:bg-base-200"
+											onClick={() => handleSort("id")}
+										>
+											ID
+											<SortIcon
+												column="id"
+												sortBy={sortBy}
+												sortOrder={sortOrder}
+											/>
+										</TableHead>
 									)}
-									{isVisible("nameJa") && <TableHead>楽曲名</TableHead>}
+									{isVisible("nameJa") && (
+										<TableHead
+											className="cursor-pointer select-none hover:bg-base-200"
+											onClick={handleNameJaSort}
+										>
+											楽曲名
+											<SortIcon
+												column="nameJa"
+												sortBy={sortBy}
+												sortOrder={sortOrder}
+											/>
+										</TableHead>
+									)}
 									{isVisible("workName") && (
 										<TableHead className="min-w-[250px]">作品</TableHead>
 									)}
