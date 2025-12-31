@@ -511,6 +511,8 @@ interface OfficialSongListParams {
 	limit: number;
 	search?: string;
 	workId?: string;
+	sortBy?: string;
+	sortOrder?: "asc" | "desc";
 }
 
 /**
@@ -524,6 +526,8 @@ export const officialSongsListQueryOptions = (
 	searchParams.set("limit", String(params.limit));
 	if (params.search) searchParams.set("search", params.search);
 	if (params.workId) searchParams.set("workId", params.workId);
+	if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+	if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 
 	return queryOptions({
 		queryKey: [
@@ -532,6 +536,8 @@ export const officialSongsListQueryOptions = (
 			params.limit,
 			params.search,
 			params.workId,
+			params.sortBy,
+			params.sortOrder,
 		],
 		queryFn: () =>
 			ssrFetch<PaginatedResponse<OfficialSong>>(

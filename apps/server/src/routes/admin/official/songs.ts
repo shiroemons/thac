@@ -1,7 +1,9 @@
 import {
 	and,
+	asc,
 	count,
 	db,
+	desc,
 	eq,
 	insertOfficialSongLinkSchema,
 	insertOfficialSongSchema,
@@ -23,13 +25,15 @@ import { parseAndValidate } from "../../../utils/import-parser";
 
 const songsRouter = new Hono<AdminContext>();
 
-// 一覧取得（ページネーション、作品フィルタ、検索対応）
+// 一覧取得（ページネーション、作品フィルタ、検索、ソート対応）
 songsRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 5000);
 		const workId = c.req.query("workId");
 		const search = c.req.query("search");
+		const sortBy = c.req.query("sortBy") || "id";
+		const sortOrder = c.req.query("sortOrder") || "asc";
 
 		const offset = (page - 1) * limit;
 
@@ -53,6 +57,16 @@ songsRouter.get("/", async (c) => {
 
 		const whereCondition =
 			conditions.length > 0 ? and(...conditions) : undefined;
+
+		// ソート条件を構築
+		const sortColumn =
+			sortBy === "nameJa"
+				? officialSongs.nameJa
+				: sortBy === "name"
+					? officialSongs.name
+					: officialSongs.id;
+		const orderByClause =
+			sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
 
 		// データ取得（作品情報・カテゴリ情報を結合）
 		const [data, totalResult] = await Promise.all([
@@ -88,7 +102,7 @@ songsRouter.get("/", async (c) => {
 				.where(whereCondition)
 				.limit(limit)
 				.offset(offset)
-				.orderBy(officialSongs.name),
+				.orderBy(orderByClause),
 			db.select({ count: count() }).from(officialSongs).where(whereCondition),
 		]);
 
