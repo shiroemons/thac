@@ -111,6 +111,57 @@ try {
 }
 ```
 
+## Rate Limiting
+
+### 概要
+
+管理API（`/api/admin/*`）にレート制限を適用し、DoS攻撃や過剰なリクエストを防止。
+
+### 制限値
+
+| 操作 | 制限（本番） | 制限（開発） |
+|------|-------------|-------------|
+| GET（一覧・詳細） | 100/分 | 1000/分 |
+| POST/PUT/PATCH（作成・更新） | 30/分 | 300/分 |
+| DELETE（通常） | 20/分 | 200/分 |
+| DELETE（バッチ: `/batch`） | 10/分 | 100/分 |
+
+### 実装
+
+```typescript
+// apps/server/src/middleware/rate-limit.ts
+import { rateLimiter } from "hono-rate-limiter";
+
+// ユーザーID優先、IPフォールバックでキー生成
+const keyGenerator = (c: Context) =>
+  c.get("user")?.id ?? c.req.header("x-forwarded-for") ?? "anonymous";
+
+// 例: GET用
+const readRateLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 100,
+  standardHeaders: "draft-6",
+  keyGenerator,
+  message: { error: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED },
+});
+```
+
+### レスポンスヘッダー
+
+`standardHeaders: "draft-6"` により以下のヘッダーを返却:
+
+- `RateLimit-Limit`: 制限値
+- `RateLimit-Remaining`: 残りリクエスト数
+- `RateLimit-Reset`: リセットまでの秒数
+
+### 429エラー
+
+制限超過時は HTTP 429 と以下のJSONを返却:
+
+```json
+{ "error": "リクエスト数が上限を超えました。しばらくしてから再試行してください" }
+```
+
 ## Key Technical Decisions
 
 - **Bunランタイム採用**: 高速な起動と実行、ネイティブTypeScriptサポート
