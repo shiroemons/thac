@@ -33,7 +33,33 @@ const fetchWithRetry = async (
 type DrizzleDB = ReturnType<typeof drizzle<typeof schema>>;
 let _db: DrizzleDB | null = null;
 
+// テスト用DB注入機能
+// biome-ignore lint/suspicious/noExplicitAny: テスト用の汎用DB型
+let _testDb: any = null;
+
+/**
+ * テスト用DBを設定する（テストでのみ使用）
+ * @param testDb - drizzle-orm/bun-sqlite等で作成したテスト用DBインスタンス
+ */
+// biome-ignore lint/suspicious/noExplicitAny: テスト用の汎用DB型
+export function __setTestDatabase(testDb: any): void {
+	_testDb = testDb;
+}
+
+/**
+ * DB状態をリセットする（テストでのみ使用）
+ */
+export function __resetDatabase(): void {
+	_db = null;
+	_testDb = null;
+}
+
 function getDb(): DrizzleDB {
+	// テストDBが設定されている場合はそれを使用
+	if (_testDb) {
+		return _testDb as DrizzleDB;
+	}
+
 	if (!_db) {
 		const client = createClient({
 			url: process.env.DATABASE_URL || "",
