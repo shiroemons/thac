@@ -1,9 +1,10 @@
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
+import { useState } from "react";
 import z from "zod";
 import { authClient } from "@/lib/auth-client";
 import Loader from "./loader";
+import { Banner } from "./ui/banner";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -13,6 +14,7 @@ export default function AdminLoginForm() {
 		from: "/admin/login",
 	});
 	const { isPending } = authClient.useSession();
+	const [error, setError] = useState<string | null>(null);
 
 	const form = useForm({
 		defaultValues: {
@@ -20,6 +22,7 @@ export default function AdminLoginForm() {
 			password: "",
 		},
 		onSubmit: async ({ value }) => {
+			setError(null);
 			await authClient.signIn.email(
 				{
 					email: value.email,
@@ -32,18 +35,18 @@ export default function AdminLoginForm() {
 						if (session.data?.user?.role !== "admin") {
 							// 管理者権限がない場合はサインアウトしてエラー表示
 							await authClient.signOut();
-							toast.error("管理者権限がありません");
+							setError("管理者権限がありません");
 							return;
 						}
 						navigate({
 							to: "/admin",
 						});
-						toast.success("ログインしました");
+						// 成功通知は不要（リダイレクトで自明）
 					},
-					onError: (error) => {
+					onError: (err) => {
 						// タイミング攻撃対策: 統一されたエラーメッセージ
-						toast.error(
-							error.error.message ||
+						setError(
+							err.error.message ||
 								"メールアドレスまたはパスワードが正しくありません",
 						);
 					},
@@ -65,6 +68,16 @@ export default function AdminLoginForm() {
 	return (
 		<div className="mx-auto w-full max-w-md">
 			<h1 className="mb-6 text-center font-bold text-3xl">管理者ログイン</h1>
+
+			{error && (
+				<Banner
+					variant="error"
+					onDismiss={() => setError(null)}
+					className="mb-4"
+				>
+					{error}
+				</Banner>
+			)}
 
 			<form
 				onSubmit={(e) => {

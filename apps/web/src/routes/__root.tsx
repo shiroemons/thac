@@ -8,7 +8,6 @@ import {
 	useLocation,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { Toaster } from "@/components/ui/sonner";
 import { APP_NAME } from "@/lib/head";
 import { ThemeProvider } from "@/lib/theme";
 import Header from "../components/header";
@@ -78,7 +77,6 @@ function RootDocument() {
 							{!isAdminRoute && <Header />}
 							<Outlet />
 						</div>
-						<Toaster richColors />
 					</ThemeProvider>
 				</QueryClientProvider>
 				<TanStackRouterDevtools position="bottom-left" />

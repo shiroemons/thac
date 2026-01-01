@@ -1,5 +1,4 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
@@ -27,10 +26,10 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
 		await authClient.signOut({
 			fetchOptions: {
 				onSuccess: () => {
-					toast.success("ログアウトしました");
 					navigate({
 						to: "/admin/login",
 					});
+					// 成功通知は不要（リダイレクトで自明）
 				},
 			},
 		});
