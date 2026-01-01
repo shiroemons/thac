@@ -335,3 +335,104 @@ export function createTestArtistAlias(
 		...overrides,
 	};
 }
+
+/**
+ * テスト用リリースデータを生成
+ */
+export function createTestRelease(
+	overrides?: Partial<{
+		id: string;
+		name: string;
+		nameJa: string | null;
+		nameEn: string | null;
+		releaseDate: string | null;
+		releaseYear: number | null;
+		releaseMonth: number | null;
+		releaseDay: number | null;
+		releaseType: string;
+		eventId: string | null;
+		eventDayId: string | null;
+		notes: string | null;
+	}>,
+) {
+	const uniqueId = nanoid(8);
+	return {
+		id: `rel_test_${uniqueId}`,
+		name: `Test Release ${uniqueId}`,
+		nameJa: null,
+		nameEn: null,
+		releaseDate: "2024-01-01",
+		releaseYear: 2024,
+		releaseMonth: 1,
+		releaseDay: 1,
+		releaseType: "album",
+		eventId: null,
+		eventDayId: null,
+		notes: null,
+		...overrides,
+	};
+}
+
+/**
+ * テスト用ディスクデータを生成
+ */
+export function createTestDisc(
+	overrides?: Partial<{
+		id: string;
+		releaseId: string;
+		discNumber: number;
+		name: string | null;
+	}>,
+) {
+	const uniqueId = nanoid(8);
+	return {
+		id: `disc_test_${uniqueId}`,
+		releaseId: "test_release",
+		discNumber: 1,
+		name: null,
+		...overrides,
+	};
+}
+
+/**
+ * テスト用トラックデータを生成
+ */
+export function createTestTrack(
+	overrides?: Partial<{
+		id: string;
+		releaseId: string | null;
+		discId: string | null;
+		trackNumber: number;
+		name: string;
+		nameJa: string | null;
+		nameEn: string | null;
+		isOriginal: boolean;
+		releaseDate: string | null;
+		releaseYear: number | null;
+		releaseMonth: number | null;
+		releaseDay: number | null;
+		eventId: string | null;
+		eventDayId: string | null;
+		notes: string | null;
+	}>,
+) {
+	const uniqueId = nanoid(8);
+	return {
+		id: `tr_test_${uniqueId}`,
+		releaseId: null,
+		discId: null,
+		trackNumber: 1,
+		name: `Test Track ${uniqueId}`,
+		nameJa: null,
+		nameEn: null,
+		isOriginal: false,
+		releaseDate: null,
+		releaseYear: null,
+		releaseMonth: null,
+		releaseDay: null,
+		eventId: null,
+		eventDayId: null,
+		notes: null,
+		...overrides,
+	};
+}
