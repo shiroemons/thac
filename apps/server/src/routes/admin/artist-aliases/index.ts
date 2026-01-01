@@ -16,6 +16,7 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 import { aliasCirclesRouter } from "./circles";
 import { aliasTracksRouter } from "./tracks";
 
@@ -220,8 +221,20 @@ artistAliasesRouter.put("/:id", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.ARTIST_ALIAS_NOT_FOUND }, 404);
 		}
 
-		// バリデーション
-		const parsed = updateArtistAliasSchema.safeParse(body);
+		const existingAlias = existing[0];
+
+		// 楽観的ロック: updatedAtの競合チェック
+		const conflict = checkOptimisticLockConflict({
+			requestUpdatedAt: body.updatedAt,
+			currentEntity: existingAlias,
+		});
+		if (conflict) {
+			return c.json(conflict, 409);
+		}
+
+		// バリデーション（updatedAtを除外）
+		const { updatedAt: _, ...updateData } = body;
+		const parsed = updateArtistAliasSchema.safeParse(updateData);
 		if (!parsed.success) {
 			return c.json(
 				{
@@ -232,7 +245,7 @@ artistAliasesRouter.put("/:id", async (c) => {
 			);
 		}
 
-		const currentArtistId = parsed.data.artistId || existing[0]?.artistId;
+		const currentArtistId = parsed.data.artistId || existingAlias?.artistId;
 
 		// 名前重複チェック（同一アーティスト内、自身以外）
 		if (parsed.data.name && currentArtistId) {

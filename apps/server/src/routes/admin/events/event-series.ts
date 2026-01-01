@@ -16,6 +16,7 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 
 const eventSeriesRouter = new Hono<AdminContext>();
 
@@ -204,8 +205,20 @@ eventSeriesRouter.put("/:id", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.EVENT_SERIES_NOT_FOUND }, 404);
 		}
 
-		// バリデーション
-		const parsed = updateEventSeriesSchema.safeParse(body);
+		const existingSeries = existing[0];
+
+		// 楽観的ロック: updatedAtの競合チェック
+		const conflict = checkOptimisticLockConflict({
+			requestUpdatedAt: body.updatedAt,
+			currentEntity: existingSeries,
+		});
+		if (conflict) {
+			return c.json(conflict, 409);
+		}
+
+		// バリデーション（updatedAtを除外）
+		const { updatedAt: _, ...updateData } = body;
+		const parsed = updateEventSeriesSchema.safeParse(updateData);
 		if (!parsed.success) {
 			return c.json(
 				{

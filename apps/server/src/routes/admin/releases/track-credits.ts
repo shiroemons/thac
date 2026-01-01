@@ -18,6 +18,7 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 
 const trackCreditsRouter = new Hono<AdminContext>();
 
@@ -271,12 +272,28 @@ trackCreditsRouter.put(
 				return c.json({ error: ERROR_MESSAGES.CREDIT_NOT_FOUND }, 404);
 			}
 
+			const existingCreditData = existingCredit[0]?.track_credits;
+
+			// 楽観的ロック: updatedAtの競合チェック
+			if (existingCreditData) {
+				const conflict = checkOptimisticLockConflict({
+					requestUpdatedAt: body.updatedAt,
+					currentEntity: existingCreditData,
+				});
+				if (conflict) {
+					return c.json(conflict, 409);
+				}
+			}
+
+			// バリデーション前にupdatedAtを除外
+			const { updatedAt: _, ...updateBody } = body;
+
 			// アーティスト存在チェック（変更される場合）
-			if (body.artistId) {
+			if (updateBody.artistId) {
 				const existingArtist = await db
 					.select()
 					.from(artists)
-					.where(eq(artists.id, body.artistId))
+					.where(eq(artists.id, updateBody.artistId))
 					.limit(1);
 
 				if (existingArtist.length === 0) {
@@ -285,15 +302,18 @@ trackCreditsRouter.put(
 			}
 
 			// 別名義存在チェック（変更される場合）
-			if (body.artistAliasId !== undefined && body.artistAliasId !== null) {
+			if (
+				updateBody.artistAliasId !== undefined &&
+				updateBody.artistAliasId !== null
+			) {
 				const artistIdToCheck =
-					body.artistId || existingCredit[0]?.track_credits.artistId;
+					updateBody.artistId || existingCreditData?.artistId;
 				const existingAlias = await db
 					.select()
 					.from(artistAliases)
 					.where(
 						and(
-							eq(artistAliases.id, body.artistAliasId),
+							eq(artistAliases.id, updateBody.artistAliasId),
 							eq(artistAliases.artistId, artistIdToCheck),
 						),
 					)
@@ -310,7 +330,7 @@ trackCreditsRouter.put(
 			}
 
 			// バリデーション
-			const parsed = updateTrackCreditSchema.safeParse(body);
+			const parsed = updateTrackCreditSchema.safeParse(updateBody);
 			if (!parsed.success) {
 				return c.json(
 					{
@@ -322,7 +342,7 @@ trackCreditsRouter.put(
 			}
 
 			// 同一アーティスト・同一別名義の重複チェック（自身以外）
-			const currentCredit = existingCredit[0]?.track_credits;
+			const currentCredit = existingCreditData;
 			const newArtistId = parsed.data.artistId ?? currentCredit?.artistId;
 			const newAliasId =
 				parsed.data.artistAliasId !== undefined
@@ -375,14 +395,17 @@ trackCreditsRouter.put(
 				.returning();
 
 			// 役割の更新（rolesCodes が指定されている場合）
-			if (body.rolesCodes !== undefined && Array.isArray(body.rolesCodes)) {
+			if (
+				updateBody.rolesCodes !== undefined &&
+				Array.isArray(updateBody.rolesCodes)
+			) {
 				// 既存の役割を削除
 				await db
 					.delete(trackCreditRoles)
 					.where(eq(trackCreditRoles.trackCreditId, creditId));
 
 				// 新しい役割を登録
-				const rolesCodes = body.rolesCodes as string[];
+				const rolesCodes = updateBody.rolesCodes as string[];
 				if (rolesCodes.length > 0) {
 					// 役割マスター存在チェック
 					const existingRoles = await db

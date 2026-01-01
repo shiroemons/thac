@@ -19,6 +19,7 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 
 /**
  * リリースのトラック一覧を取得する関数
@@ -302,6 +303,17 @@ tracksRouter.put("/:releaseId/tracks/:trackId", async (c) => {
 
 		if (existing.length === 0) {
 			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
+		}
+
+		const existingTrack = existing[0];
+
+		// 楽観的ロック: updatedAtの競合チェック
+		const conflict = checkOptimisticLockConflict({
+			requestUpdatedAt: body.updatedAt,
+			currentEntity: existingTrack,
+		});
+		if (conflict) {
+			return c.json(conflict, 409);
 		}
 
 		// ディスク存在チェック（指定された場合）

@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 
 const eventDaysRouter = new Hono<AdminContext>();
 
@@ -144,8 +145,20 @@ eventDaysRouter.put("/:eventId/days/:dayId", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.EVENT_DAY_NOT_FOUND }, 404);
 		}
 
-		// バリデーション
-		const parsed = updateEventDaySchema.safeParse(body);
+		const existingDay = existing[0];
+
+		// 楽観的ロック: updatedAtの競合チェック
+		const conflict = checkOptimisticLockConflict({
+			requestUpdatedAt: body.updatedAt,
+			currentEntity: existingDay,
+		});
+		if (conflict) {
+			return c.json(conflict, 409);
+		}
+
+		// バリデーション（updatedAtを除外）
+		const { updatedAt: _, ...updateData } = body;
+		const parsed = updateEventDaySchema.safeParse(updateData);
 		if (!parsed.success) {
 			return c.json(
 				{

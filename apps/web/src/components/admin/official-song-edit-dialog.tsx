@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { useConflictHandler } from "@/hooks/use-conflict-handler";
 import {
+	isConflictError,
 	type OfficialSong,
 	officialSongsApi,
 	officialWorkCategoriesApi,
@@ -20,6 +22,7 @@ import { SearchableGroupedSelect } from "../ui/searchable-grouped-select";
 import { SearchableSelect } from "../ui/searchable-select";
 import { Select } from "../ui/select";
 import { Textarea } from "../ui/textarea";
+import { ConflictDialog } from "./conflict-dialog";
 
 export interface OfficialSongFormData {
 	id: string;
@@ -65,6 +68,12 @@ export function OfficialSongEditDialog({
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	// 楽観的ロック用: 編集開始時のupdatedAtを記録
+	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
+		null,
+	);
+	const { conflictState, setConflict, clearConflict } =
+		useConflictHandler<OfficialSong>();
 
 	// 作品一覧を取得
 	const { data: worksData } = useQuery({
@@ -178,6 +187,7 @@ export function OfficialSongEditDialog({
 					sourceSongId: song.sourceSongId,
 					notes: song.notes,
 				});
+				setOriginalUpdatedAt(song.updatedAt);
 			} else {
 				setForm({
 					id: "",
@@ -192,10 +202,12 @@ export function OfficialSongEditDialog({
 					sourceSongId: null,
 					notes: null,
 				});
+				setOriginalUpdatedAt(null);
 			}
 			setError(null);
+			clearConflict();
 		}
-	}, [open, mode, song]);
+	}, [open, mode, song, clearConflict]);
 
 	const handleWorkChange = (workId: string | null) => {
 		if (mode === "create" && workId) {
@@ -206,7 +218,7 @@ export function OfficialSongEditDialog({
 		}
 	};
 
-	const handleSubmit = async () => {
+	const handleSubmit = async (overrideUpdatedAt?: string) => {
 		if (!form.name || !form.nameJa) {
 			setError("名前と日本語名は必須です");
 			return;
@@ -253,11 +265,18 @@ export function OfficialSongEditDialog({
 					isOriginal: form.isOriginal,
 					sourceSongId: form.isOriginal ? null : form.sourceSongId,
 					notes: form.notes,
+					// 楽観的ロック: updatedAtを送信
+					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
 				});
 			}
 			onOpenChange(false);
 			onSuccess?.();
 		} catch (e) {
+			// 楽観的ロック競合エラーの場合
+			if (isConflictError<OfficialSong>(e)) {
+				setConflict(e.current);
+				return;
+			}
 			setError(
 				e instanceof Error
 					? e.message
@@ -270,197 +289,238 @@ export function OfficialSongEditDialog({
 		}
 	};
 
+	// 競合ダイアログで「編集を続ける」を選択した場合
+	const handleContinueEditing = (data: OfficialSong) => {
+		setForm({
+			id: data.id,
+			officialWorkId: data.officialWorkId,
+			trackNumber: data.trackNumber,
+			name: data.name,
+			nameJa: data.nameJa,
+			nameEn: data.nameEn,
+			composerName: data.composerName,
+			arrangerName: data.arrangerName,
+			isOriginal: data.isOriginal,
+			sourceSongId: data.sourceSongId,
+			notes: data.notes,
+		});
+		setOriginalUpdatedAt(data.updatedAt);
+		clearConflict();
+	};
+
+	// 競合ダイアログで「上書き」を選択した場合
+	const handleOverwrite = () => {
+		if (conflictState.conflictData) {
+			// 最新のupdatedAtで再送信
+			handleSubmit(conflictState.conflictData.updatedAt);
+			clearConflict();
+		}
+	};
+
 	const title = mode === "create" ? "新規公式楽曲" : "公式楽曲の編集";
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
-				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
-				</DialogHeader>
-				<div className="grid gap-4 py-4">
-					{error && (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{error}
-						</div>
-					)}
-					<div className="grid gap-2">
-						<Label htmlFor="song-id">
-							ID {mode === "create" && "(自動生成)"}
-						</Label>
-						<Input
-							id="song-id"
-							value={form.id}
-							disabled
-							className="font-mono"
-						/>
-					</div>
-					<div className="grid gap-2">
-						<Label>作品</Label>
-						<SearchableGroupedSelect
-							value={form.officialWorkId || ""}
-							onChange={(val) => handleWorkChange(val || null)}
-							groups={workGroups}
-							placeholder="作品を選択..."
-							searchPlaceholder="作品を検索..."
-						/>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="song-name">
-							名前 <span className="text-error">*</span>
-						</Label>
-						<Input
-							id="song-name"
-							value={form.name}
-							onChange={(e) => setForm({ ...form, name: e.target.value })}
-							placeholder="例: A Sacred Lot"
-							disabled={isSubmitting}
-						/>
-					</div>
-					<div className="grid grid-cols-2 gap-4">
+		<>
+			<Dialog open={open} onOpenChange={onOpenChange}>
+				<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+					<DialogHeader>
+						<DialogTitle>{title}</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{error && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{error}
+							</div>
+						)}
 						<div className="grid gap-2">
-							<Label htmlFor="song-nameJa">
-								日本語名 <span className="text-error">*</span>
+							<Label htmlFor="song-id">
+								ID {mode === "create" && "(自動生成)"}
 							</Label>
 							<Input
-								id="song-nameJa"
-								value={form.nameJa}
-								onChange={(e) => setForm({ ...form, nameJa: e.target.value })}
+								id="song-id"
+								value={form.id}
+								disabled
+								className="font-mono"
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label>作品</Label>
+							<SearchableGroupedSelect
+								value={form.officialWorkId || ""}
+								onChange={(val) => handleWorkChange(val || null)}
+								groups={workGroups}
+								placeholder="作品を選択..."
+								searchPlaceholder="作品を検索..."
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="song-name">
+								名前 <span className="text-error">*</span>
+							</Label>
+							<Input
+								id="song-name"
+								value={form.name}
+								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: A Sacred Lot"
 								disabled={isSubmitting}
 							/>
 						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label htmlFor="song-nameJa">
+									日本語名 <span className="text-error">*</span>
+								</Label>
+								<Input
+									id="song-nameJa"
+									value={form.nameJa}
+									onChange={(e) => setForm({ ...form, nameJa: e.target.value })}
+									placeholder="例: A Sacred Lot"
+									disabled={isSubmitting}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="song-nameEn">英語名</Label>
+								<Input
+									id="song-nameEn"
+									value={form.nameEn || ""}
+									onChange={(e) =>
+										setForm({ ...form, nameEn: e.target.value || null })
+									}
+									placeholder="例: A Sacred Lot"
+									disabled={isSubmitting}
+								/>
+							</div>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label htmlFor="song-trackNumber">トラック番号</Label>
+								<Input
+									id="song-trackNumber"
+									type="number"
+									value={form.trackNumber ?? ""}
+									onChange={(e) =>
+										setForm({
+											...form,
+											trackNumber: e.target.value
+												? Number.parseInt(e.target.value, 10)
+												: null,
+										})
+									}
+									placeholder="例: 1"
+									disabled={isSubmitting}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="song-isOriginal">オリジナル曲</Label>
+								<Select
+									id="song-isOriginal"
+									value={form.isOriginal ? "true" : "false"}
+									onChange={(e) =>
+										setForm({
+											...form,
+											isOriginal: e.target.value === "true",
+											sourceSongId:
+												e.target.value === "true" ? null : form.sourceSongId,
+										})
+									}
+									disabled={isSubmitting}
+								>
+									<option value="true">はい</option>
+									<option value="false">いいえ（アレンジ曲）</option>
+								</Select>
+							</div>
+						</div>
+						{!form.isOriginal && (
+							<div className="grid gap-2">
+								<Label>原曲</Label>
+								<SearchableSelect
+									value={form.sourceSongId || ""}
+									onChange={(val) =>
+										setForm({ ...form, sourceSongId: val || null })
+									}
+									options={sourceSongOptions}
+									placeholder="原曲を選択..."
+									searchPlaceholder="楽曲を検索..."
+									emptyMessage="楽曲が見つかりません"
+									disabled={isSubmitting}
+								/>
+							</div>
+						)}
+						<div className="grid grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label htmlFor="song-composerName">作曲者</Label>
+								<Input
+									id="song-composerName"
+									value={form.composerName || ""}
+									onChange={(e) =>
+										setForm({ ...form, composerName: e.target.value || null })
+									}
+									placeholder="例: ZUN"
+									disabled={isSubmitting}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="song-arrangerName">編曲者</Label>
+								<Input
+									id="song-arrangerName"
+									value={form.arrangerName || ""}
+									onChange={(e) =>
+										setForm({ ...form, arrangerName: e.target.value || null })
+									}
+									placeholder="例: ZUN"
+									disabled={isSubmitting}
+								/>
+							</div>
+						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="song-nameEn">英語名</Label>
-							<Input
-								id="song-nameEn"
-								value={form.nameEn || ""}
+							<Label htmlFor="song-notes">備考</Label>
+							<Textarea
+								id="song-notes"
+								value={form.notes || ""}
 								onChange={(e) =>
-									setForm({ ...form, nameEn: e.target.value || null })
+									setForm({ ...form, notes: e.target.value || null })
 								}
-								placeholder="例: A Sacred Lot"
+								placeholder="例: アレンジバージョン、特記事項など"
+								rows={3}
 								disabled={isSubmitting}
 							/>
 						</div>
 					</div>
-					<div className="grid grid-cols-2 gap-4">
-						<div className="grid gap-2">
-							<Label htmlFor="song-trackNumber">トラック番号</Label>
-							<Input
-								id="song-trackNumber"
-								type="number"
-								value={form.trackNumber ?? ""}
-								onChange={(e) =>
-									setForm({
-										...form,
-										trackNumber: e.target.value
-											? Number.parseInt(e.target.value, 10)
-											: null,
-									})
-								}
-								placeholder="例: 1"
-								disabled={isSubmitting}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="song-isOriginal">オリジナル曲</Label>
-							<Select
-								id="song-isOriginal"
-								value={form.isOriginal ? "true" : "false"}
-								onChange={(e) =>
-									setForm({
-										...form,
-										isOriginal: e.target.value === "true",
-										sourceSongId:
-											e.target.value === "true" ? null : form.sourceSongId,
-									})
-								}
-								disabled={isSubmitting}
-							>
-								<option value="true">はい</option>
-								<option value="false">いいえ（アレンジ曲）</option>
-							</Select>
-						</div>
-					</div>
-					{!form.isOriginal && (
-						<div className="grid gap-2">
-							<Label>原曲</Label>
-							<SearchableSelect
-								value={form.sourceSongId || ""}
-								onChange={(val) =>
-									setForm({ ...form, sourceSongId: val || null })
-								}
-								options={sourceSongOptions}
-								placeholder="原曲を選択..."
-								searchPlaceholder="楽曲を検索..."
-								emptyMessage="楽曲が見つかりません"
-								disabled={isSubmitting}
-							/>
-						</div>
-					)}
-					<div className="grid grid-cols-2 gap-4">
-						<div className="grid gap-2">
-							<Label htmlFor="song-composerName">作曲者</Label>
-							<Input
-								id="song-composerName"
-								value={form.composerName || ""}
-								onChange={(e) =>
-									setForm({ ...form, composerName: e.target.value || null })
-								}
-								placeholder="例: ZUN"
-								disabled={isSubmitting}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<Label htmlFor="song-arrangerName">編曲者</Label>
-							<Input
-								id="song-arrangerName"
-								value={form.arrangerName || ""}
-								onChange={(e) =>
-									setForm({ ...form, arrangerName: e.target.value || null })
-								}
-								placeholder="例: ZUN"
-								disabled={isSubmitting}
-							/>
-						</div>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="song-notes">備考</Label>
-						<Textarea
-							id="song-notes"
-							value={form.notes || ""}
-							onChange={(e) =>
-								setForm({ ...form, notes: e.target.value || null })
-							}
-							placeholder="例: アレンジバージョン、特記事項など"
-							rows={3}
+					<DialogFooter>
+						<Button
+							variant="ghost"
+							onClick={() => onOpenChange(false)}
 							disabled={isSubmitting}
-						/>
-					</div>
-				</div>
-				<DialogFooter>
-					<Button
-						variant="ghost"
-						onClick={() => onOpenChange(false)}
-						disabled={isSubmitting}
-					>
-						キャンセル
-					</Button>
-					<Button
-						variant="primary"
-						onClick={handleSubmit}
-						disabled={isSubmitting || !form.name || !form.nameJa}
-					>
-						{isSubmitting
-							? mode === "create"
-								? "作成中..."
-								: "保存中..."
-							: mode === "create"
-								? "作成"
-								: "保存"}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+						>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={() => handleSubmit()}
+							disabled={isSubmitting || !form.name || !form.nameJa}
+						>
+							{isSubmitting
+								? mode === "create"
+									? "作成中..."
+									: "保存中..."
+								: mode === "create"
+									? "作成"
+									: "保存"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* 楽観的ロック競合ダイアログ */}
+			<ConflictDialog
+				open={conflictState.isConflict}
+				onOpenChange={(open) => !open && clearConflict()}
+				currentData={conflictState.conflictData}
+				getDisplayName={(data) => data.nameJa}
+				onOverwrite={handleOverwrite}
+				onContinueEditing={handleContinueEditing}
+				isLoading={isSubmitting}
+			/>
+		</>
 	);
 }
