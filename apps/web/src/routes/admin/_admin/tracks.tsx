@@ -128,7 +128,7 @@ function TracksPage() {
 	});
 
 	// トラック一覧取得（ページネーション対応API）
-	const { data, isPending, error } = useQuery({
+	const { data, isPending, isFetching, error } = useQuery({
 		queryKey: [
 			"all-tracks",
 			page,
@@ -302,6 +302,7 @@ function TracksPage() {
 					searchPlaceholder="トラック名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					columnVisibility={{
 						columns: columnConfigs,
 						visibleColumns,

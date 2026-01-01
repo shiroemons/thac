@@ -35,6 +35,7 @@ interface DataTableActionBarProps extends React.ComponentProps<"div"> {
 	searchPlaceholder?: string;
 	searchValue?: string;
 	onSearchChange?: (value: string) => void;
+	isLoading?: boolean;
 	filterOptions?: FilterOption[];
 	filterValue?: string;
 	filterPlaceholder?: string;
@@ -55,6 +56,7 @@ function DataTableActionBar({
 	searchPlaceholder = "検索...",
 	searchValue,
 	onSearchChange,
+	isLoading = false,
 	filterOptions,
 	filterValue,
 	filterPlaceholder = "すべて",
@@ -87,6 +89,7 @@ function DataTableActionBar({
 						onChange={(e) => onSearchChange(e.target.value)}
 						size="md"
 						containerClassName="w-64"
+						isLoading={isLoading}
 					/>
 				)}
 				{filterOptions && filterOptions.length > 0 && onFilterChange && (

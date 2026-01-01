@@ -150,7 +150,7 @@ function ReleasesPage() {
 	);
 	const [isDeleting, setIsDeleting] = useState(false);
 
-	const { data, isPending, error } = useQuery(
+	const { data, isPending, isFetching, error } = useQuery(
 		releasesListQueryOptions({
 			page,
 			limit: pageSize,
@@ -377,6 +377,7 @@ function ReleasesPage() {
 					searchPlaceholder="作品名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					filterOptions={RELEASE_TYPE_OPTIONS}
 					filterValue={releaseTypeFilter}
 					filterPlaceholder="タイプで絞り込み"

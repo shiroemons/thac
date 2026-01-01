@@ -233,7 +233,7 @@ function CirclesPage() {
 		return "web_site"; // マッチしなければweb_site
 	};
 
-	const { data, isPending, error } = useQuery(
+	const { data, isPending, isFetching, error } = useQuery(
 		circlesListQueryOptions({
 			page,
 			limit: pageSize,
@@ -478,6 +478,7 @@ function CirclesPage() {
 					searchPlaceholder="名前で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					filterOptions={initialScriptOptions}
 					filterValue={initialScript}
 					filterPlaceholder="頭文字の文字種"

@@ -69,7 +69,7 @@ function AliasTypesPage() {
 	const [deleteTarget, setDeleteTarget] = useState<AliasType | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
 
-	const { data, isPending, error } = useQuery({
+	const { data, isPending, isFetching, error } = useQuery({
 		queryKey: [
 			"alias-types",
 			page,
@@ -211,6 +211,7 @@ function AliasTypesPage() {
 					searchPlaceholder="ラベルまたはコードで検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					columnVisibility={{
 						columns: columnConfigs,
 						visibleColumns,

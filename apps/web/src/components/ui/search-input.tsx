@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
@@ -22,23 +22,28 @@ const iconSizeClasses: Record<SearchInputSize, string> = {
 interface SearchInputProps extends Omit<React.ComponentProps<"input">, "size"> {
 	size?: SearchInputSize;
 	containerClassName?: string;
+	isLoading?: boolean;
 }
 
 function SearchInput({
 	className,
 	size = "md",
 	containerClassName,
+	isLoading = false,
 	...props
 }: SearchInputProps) {
+	const IconComponent = isLoading ? Loader2 : Search;
+
 	return (
 		<div
 			data-slot="search-input-container"
 			className={cn("relative", containerClassName)}
 		>
-			<Search
+			<IconComponent
 				className={cn(
 					"pointer-events-none absolute top-1/2 left-3 z-10 -translate-y-1/2 text-base-content/50",
 					iconSizeClasses[size],
+					isLoading && "animate-spin",
 				)}
 			/>
 			<input
