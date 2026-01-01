@@ -3,6 +3,7 @@ import {
 	type AdminContext,
 	adminAuthMiddleware,
 } from "../../middleware/admin-auth";
+import { methodRateLimiter } from "../../middleware/rate-limit";
 import { artistAliasesRouter } from "./artist-aliases";
 import { artistsRouter } from "./artists";
 import { circlesRouter } from "./circles";
@@ -18,6 +19,9 @@ const adminRouter = new Hono<AdminContext>();
 
 // 管理者認証ミドルウェアを適用
 adminRouter.use("/*", adminAuthMiddleware);
+
+// レート制限ミドルウェアを適用（認証後）
+adminRouter.use("/*", methodRateLimiter);
 
 // 統計情報ルート
 adminRouter.route("/stats", statsRouter);

@@ -95,6 +95,10 @@ export const ERROR_MESSAGES = {
 	FILE_NOT_SPECIFIED: "ファイルが指定されていません",
 	FILE_NOT_UPLOADED: "ファイルがアップロードされていません",
 	ONLY_CSV_ALLOWED: "CSVファイルのみアップロード可能です",
+
+	// ===== レート制限エラー (429) =====
+	RATE_LIMIT_EXCEEDED:
+		"リクエスト数が上限を超えました。しばらくしてから再試行してください",
 	FILE_SIZE_EXCEEDED: (maxSizeMB: number) =>
 		`ファイルサイズが${maxSizeMB}MBを超えています`,
 	DATA_FETCH_FAILED: "データの取得に失敗しました",
