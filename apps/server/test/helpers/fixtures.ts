@@ -58,3 +58,51 @@ export function createTestCircle(
 		...overrides,
 	};
 }
+
+/**
+ * テスト用イベントシリーズデータを生成
+ */
+export function createTestEventSeries(
+	overrides?: Partial<{
+		id: string;
+		name: string;
+		sortOrder: number;
+	}>,
+) {
+	const uniqueId = nanoid(8);
+	return {
+		id: `es_test_${uniqueId}`,
+		name: `Test Event Series ${uniqueId}`,
+		sortOrder: 0,
+		...overrides,
+	};
+}
+
+/**
+ * テスト用イベントデータを生成
+ */
+export function createTestEvent(
+	overrides?: Partial<{
+		id: string;
+		eventSeriesId: string | null;
+		name: string;
+		edition: number | null;
+		totalDays: number;
+		venue: string | null;
+		startDate: string | null;
+		endDate: string | null;
+	}>,
+) {
+	const uniqueId = nanoid(8);
+	return {
+		id: `ev_test_${uniqueId}`,
+		eventSeriesId: null,
+		name: `Test Event ${uniqueId}`,
+		edition: null,
+		totalDays: 1,
+		venue: null,
+		startDate: null,
+		endDate: null,
+		...overrides,
+	};
+}
