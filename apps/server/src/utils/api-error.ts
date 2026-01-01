@@ -25,6 +25,8 @@ export const ErrorCodes = {
 	NOT_FOUND: "NOT_FOUND",
 	/** 重複エラー */
 	DUPLICATE: "DUPLICATE",
+	/** データ競合（楽観的ロック） */
+	CONFLICT: "CONFLICT",
 	/** その他のエラー */
 	INTERNAL_ERROR: "INTERNAL_ERROR",
 } as const;

@@ -1,7 +1,13 @@
 import { createId } from "@thac/db";
 import { detectInitial } from "@thac/utils";
 import { useEffect, useState } from "react";
-import { type Artist, artistsApi, type InitialScript } from "@/lib/api-client";
+import { useConflictHandler } from "@/hooks/use-conflict-handler";
+import {
+	type Artist,
+	artistsApi,
+	type InitialScript,
+	isConflictError,
+} from "@/lib/api-client";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -13,6 +19,7 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
+import { ConflictDialog } from "./conflict-dialog";
 
 export interface ArtistFormData {
 	name: string;
@@ -50,6 +57,12 @@ export function ArtistEditDialog({
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	// 楽観的ロック用: 編集開始時のupdatedAtを記録
+	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
+		null,
+	);
+	const { conflictState, setConflict, clearConflict } =
+		useConflictHandler<Artist>();
 
 	// ダイアログが開いた時にフォームを初期化
 	useEffect(() => {
@@ -64,6 +77,7 @@ export function ArtistEditDialog({
 					initialScript: artist.initialScript,
 					nameInitial: artist.nameInitial,
 				});
+				setOriginalUpdatedAt(artist.updatedAt);
 			} else {
 				setForm({
 					name: "",
@@ -74,10 +88,12 @@ export function ArtistEditDialog({
 					initialScript: "latin",
 					nameInitial: null,
 				});
+				setOriginalUpdatedAt(null);
 			}
 			setError(null);
+			clearConflict();
 		}
-	}, [open, mode, artist]);
+	}, [open, mode, artist, clearConflict]);
 
 	const handleNameChange = (name: string) => {
 		const initial = detectInitial(name);
@@ -100,7 +116,7 @@ export function ArtistEditDialog({
 		}
 	};
 
-	const handleSubmit = async () => {
+	const handleSubmit = async (overrideUpdatedAt?: string) => {
 		if (!form.name.trim()) {
 			setError("名前を入力してください");
 			return;
@@ -131,11 +147,18 @@ export function ArtistEditDialog({
 					initialScript: form.initialScript,
 					nameInitial: form.nameInitial,
 					notes: form.notes,
+					// 楽観的ロック: updatedAtを送信
+					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
 				});
 			}
 			onOpenChange(false);
 			onSuccess?.();
 		} catch (e) {
+			// 楽観的ロック競合エラーの場合
+			if (isConflictError<Artist>(e)) {
+				setConflict(e.current);
+				return;
+			}
 			setError(
 				e instanceof Error
 					? e.message
@@ -148,107 +171,144 @@ export function ArtistEditDialog({
 		}
 	};
 
+	// 競合ダイアログで「編集を続ける」を選択した場合
+	const handleContinueEditing = (data: Artist) => {
+		setForm({
+			name: data.name,
+			nameJa: data.nameJa,
+			nameEn: data.nameEn,
+			sortName: data.sortName,
+			notes: data.notes,
+			initialScript: data.initialScript,
+			nameInitial: data.nameInitial,
+		});
+		setOriginalUpdatedAt(data.updatedAt);
+		clearConflict();
+	};
+
+	// 競合ダイアログで「上書き」を選択した場合
+	const handleOverwrite = () => {
+		if (conflictState.conflictData) {
+			// 最新のupdatedAtで再送信
+			handleSubmit(conflictState.conflictData.updatedAt);
+			clearConflict();
+		}
+	};
+
 	const title = mode === "create" ? "新規アーティスト" : "アーティストの編集";
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[500px]">
-				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
-				</DialogHeader>
-				<div className="grid gap-4 py-4">
-					{error && (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{error}
-						</div>
-					)}
-					<div className="grid gap-2">
-						<Label htmlFor="artist-name">
-							名前 <span className="text-error">*</span>
-						</Label>
-						<Input
-							id="artist-name"
-							value={form.name}
-							onChange={(e) => handleNameChange(e.target.value)}
-							placeholder="例: ZUN"
-							disabled={isSubmitting}
-						/>
-					</div>
-					<div className="grid gap-4">
+		<>
+			<Dialog open={open} onOpenChange={onOpenChange}>
+				<DialogContent className="sm:max-w-[500px]">
+					<DialogHeader>
+						<DialogTitle>{title}</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{error && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{error}
+							</div>
+						)}
 						<div className="grid gap-2">
-							<Label htmlFor="artist-nameJa">日本語名</Label>
+							<Label htmlFor="artist-name">
+								名前 <span className="text-error">*</span>
+							</Label>
 							<Input
-								id="artist-nameJa"
-								value={form.nameJa || ""}
+								id="artist-name"
+								value={form.name}
+								onChange={(e) => handleNameChange(e.target.value)}
+								placeholder="例: ZUN"
+								disabled={isSubmitting}
+							/>
+						</div>
+						<div className="grid gap-4">
+							<div className="grid gap-2">
+								<Label htmlFor="artist-nameJa">日本語名</Label>
+								<Input
+									id="artist-nameJa"
+									value={form.nameJa || ""}
+									onChange={(e) =>
+										setForm({ ...form, nameJa: e.target.value || null })
+									}
+									placeholder="例: ZUN"
+									disabled={isSubmitting}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="artist-nameEn">英語名</Label>
+								<Input
+									id="artist-nameEn"
+									value={form.nameEn || ""}
+									onChange={(e) =>
+										setForm({ ...form, nameEn: e.target.value || null })
+									}
+									placeholder="例: ZUN"
+									disabled={isSubmitting}
+								/>
+							</div>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="artist-sortName">ソート用名</Label>
+							<Input
+								id="artist-sortName"
+								value={form.sortName || ""}
 								onChange={(e) =>
-									setForm({ ...form, nameJa: e.target.value || null })
+									setForm({ ...form, sortName: e.target.value || null })
 								}
 								placeholder="例: ZUN"
 								disabled={isSubmitting}
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="artist-nameEn">英語名</Label>
-							<Input
-								id="artist-nameEn"
-								value={form.nameEn || ""}
+							<Label htmlFor="artist-notes">備考</Label>
+							<Textarea
+								id="artist-notes"
+								value={form.notes || ""}
 								onChange={(e) =>
-									setForm({ ...form, nameEn: e.target.value || null })
+									setForm({ ...form, notes: e.target.value || null })
 								}
-								placeholder="例: ZUN"
+								placeholder="例: 来歴、特記事項など"
+								rows={3}
 								disabled={isSubmitting}
 							/>
 						</div>
 					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="artist-sortName">ソート用名</Label>
-						<Input
-							id="artist-sortName"
-							value={form.sortName || ""}
-							onChange={(e) =>
-								setForm({ ...form, sortName: e.target.value || null })
-							}
-							placeholder="例: ZUN"
+					<DialogFooter>
+						<Button
+							variant="ghost"
+							onClick={() => onOpenChange(false)}
 							disabled={isSubmitting}
-						/>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="artist-notes">備考</Label>
-						<Textarea
-							id="artist-notes"
-							value={form.notes || ""}
-							onChange={(e) =>
-								setForm({ ...form, notes: e.target.value || null })
-							}
-							placeholder="例: 来歴、特記事項など"
-							rows={3}
-							disabled={isSubmitting}
-						/>
-					</div>
-				</div>
-				<DialogFooter>
-					<Button
-						variant="ghost"
-						onClick={() => onOpenChange(false)}
-						disabled={isSubmitting}
-					>
-						キャンセル
-					</Button>
-					<Button
-						variant="primary"
-						onClick={handleSubmit}
-						disabled={isSubmitting || !form.name.trim()}
-					>
-						{isSubmitting
-							? mode === "create"
-								? "作成中..."
-								: "保存中..."
-							: mode === "create"
-								? "作成"
-								: "保存"}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+						>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={() => handleSubmit()}
+							disabled={isSubmitting || !form.name.trim()}
+						>
+							{isSubmitting
+								? mode === "create"
+									? "作成中..."
+									: "保存中..."
+								: mode === "create"
+									? "作成"
+									: "保存"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* 楽観的ロック競合ダイアログ */}
+			<ConflictDialog
+				open={conflictState.isConflict}
+				onOpenChange={(open) => !open && clearConflict()}
+				currentData={conflictState.conflictData}
+				getDisplayName={(data) => data.name}
+				onOverwrite={handleOverwrite}
+				onContinueEditing={handleContinueEditing}
+				isLoading={isSubmitting}
+			/>
+		</>
 	);
 }

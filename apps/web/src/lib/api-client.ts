@@ -1,3 +1,36 @@
+// ===== 競合エラー（楽観的ロック）=====
+
+/** 409 Conflict エラーの型 */
+export interface ConflictErrorData<T = unknown> {
+	error: string;
+	code: "CONFLICT";
+	current: T;
+}
+
+/** 競合エラーを表すカスタムエラークラス */
+export class ConflictError<T = unknown> extends Error {
+	public readonly code = "CONFLICT" as const;
+	public readonly current: T;
+
+	constructor(message: string, current: T) {
+		super(message);
+		this.name = "ConflictError";
+		this.current = current;
+	}
+}
+
+/** エラーが ConflictError かどうかを判定する型ガード */
+export function isConflictError<T = unknown>(
+	error: unknown,
+): error is ConflictError<T> {
+	return (
+		error instanceof ConflictError ||
+		(error instanceof Error &&
+			"code" in error &&
+			(error as ConflictError<T>).code === "CONFLICT")
+	);
+}
+
 // SSR時はSERVER_URL（Docker内部通信用）、クライアント側はVITE_SERVER_URL（ブラウザ用）を使用
 const getApiBaseUrl = () => {
 	if (typeof window === "undefined") {
@@ -131,8 +164,16 @@ async function fetchWithAuth<T>(
 	});
 
 	if (!res.ok) {
-		const error = await res.json().catch(() => ({ error: "Unknown error" }));
-		throw new Error(error.error || `HTTP ${res.status}`);
+		const errorData = await res
+			.json()
+			.catch(() => ({ error: "Unknown error" }));
+
+		// 409 Conflict（楽観的ロック競合）の場合は専用エラーをthrow
+		if (res.status === 409 && errorData.code === "CONFLICT") {
+			throw new ConflictError(errorData.error, errorData.current);
+		}
+
+		throw new Error(errorData.error || `HTTP ${res.status}`);
 	}
 
 	return res.json();
@@ -169,7 +210,9 @@ export const platformsApi = {
 		}),
 	update: (
 		code: string,
-		data: Partial<Omit<Platform, "code" | "createdAt" | "updatedAt">>,
+		data: Partial<Omit<Platform, "code" | "createdAt" | "updatedAt">> & {
+			updatedAt?: string;
+		},
 	) =>
 		fetchWithAuth<Platform>(`/api/admin/master/platforms/${code}`, {
 			method: "PUT",
@@ -675,7 +718,9 @@ export const officialWorksApi = {
 		}),
 	update: (
 		id: string,
-		data: Partial<Omit<OfficialWork, "id" | "createdAt" | "updatedAt">>,
+		data: Partial<Omit<OfficialWork, "id" | "createdAt" | "updatedAt">> & {
+			updatedAt?: string;
+		},
 	) =>
 		fetchWithAuth<OfficialWork>(`/api/admin/official/works/${id}`, {
 			method: "PUT",
@@ -722,7 +767,7 @@ export const officialSongsApi = {
 		id: string,
 		data: Partial<
 			Omit<OfficialSong, "id" | "createdAt" | "updatedAt" | "workName">
-		>,
+		> & { updatedAt?: string },
 	) =>
 		fetchWithAuth<OfficialSong>(`/api/admin/official/songs/${id}`, {
 			method: "PUT",
@@ -1060,7 +1105,9 @@ export const artistsApi = {
 		}),
 	update: (
 		id: string,
-		data: Partial<Omit<Artist, "id" | "createdAt" | "updatedAt">>,
+		data: Partial<Omit<Artist, "id" | "createdAt" | "updatedAt">> & {
+			updatedAt?: string;
+		},
 	) =>
 		fetchWithAuth<Artist>(`/api/admin/artists/${id}`, {
 			method: "PUT",
@@ -1117,7 +1164,7 @@ export const artistAliasesApi = {
 		id: string,
 		data: Partial<
 			Omit<ArtistAlias, "id" | "createdAt" | "updatedAt" | "artistName">
-		>,
+		> & { updatedAt?: string },
 	) =>
 		fetchWithAuth<ArtistAlias>(`/api/admin/artist-aliases/${id}`, {
 			method: "PUT",
@@ -1169,7 +1216,9 @@ export const circlesApi = {
 		}),
 	update: (
 		id: string,
-		data: Partial<Omit<Circle, "id" | "createdAt" | "updatedAt">>,
+		data: Partial<Omit<Circle, "id" | "createdAt" | "updatedAt">> & {
+			updatedAt?: string;
+		},
 	) =>
 		fetchWithAuth<Circle>(`/api/admin/circles/${id}`, {
 			method: "PUT",
@@ -1300,7 +1349,9 @@ export const eventSeriesApi = {
 		}),
 	update: (
 		id: string,
-		data: Partial<Omit<EventSeries, "id" | "createdAt" | "updatedAt">>,
+		data: Partial<Omit<EventSeries, "id" | "createdAt" | "updatedAt">> & {
+			updatedAt?: string;
+		},
 	) =>
 		fetchWithAuth<EventSeries>(`/api/admin/event-series/${id}`, {
 			method: "PUT",
@@ -1346,7 +1397,9 @@ export const eventsApi = {
 		}),
 	update: (
 		id: string,
-		data: Partial<Omit<Event, "id" | "createdAt" | "updatedAt" | "seriesName">>,
+		data: Partial<
+			Omit<Event, "id" | "createdAt" | "updatedAt" | "seriesName">
+		> & { updatedAt?: string },
 	) =>
 		fetchWithAuth<Event>(`/api/admin/events/${id}`, {
 			method: "PUT",
@@ -1477,7 +1530,9 @@ export const releasesApi = {
 		}),
 	update: (
 		id: string,
-		data: Partial<Omit<Release, "id" | "createdAt" | "updatedAt">>,
+		data: Partial<Omit<Release, "id" | "createdAt" | "updatedAt">> & {
+			updatedAt?: string;
+		},
 	) =>
 		fetchWithAuth<Release>(`/api/admin/releases/${id}`, {
 			method: "PUT",
@@ -1839,7 +1894,9 @@ export const tracksApi = {
 	update: (
 		releaseId: string,
 		trackId: string,
-		data: Partial<Omit<Track, "id" | "releaseId" | "createdAt" | "updatedAt">>,
+		data: Partial<
+			Omit<Track, "id" | "releaseId" | "createdAt" | "updatedAt">
+		> & { updatedAt?: string },
 	) =>
 		fetchWithAuth<Track>(`/api/admin/releases/${releaseId}/tracks/${trackId}`, {
 			method: "PUT",

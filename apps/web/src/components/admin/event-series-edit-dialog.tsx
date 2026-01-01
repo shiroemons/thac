@@ -1,6 +1,11 @@
 import { createId } from "@thac/db";
 import { useEffect, useState } from "react";
-import { type EventSeries, eventSeriesApi } from "@/lib/api-client";
+import { useConflictHandler } from "@/hooks/use-conflict-handler";
+import {
+	type EventSeries,
+	eventSeriesApi,
+	isConflictError,
+} from "@/lib/api-client";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -11,6 +16,7 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { ConflictDialog } from "./conflict-dialog";
 
 export interface EventSeriesFormData {
 	name: string;
@@ -41,6 +47,12 @@ export function EventSeriesEditDialog({
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	// 楽観的ロック用: 編集開始時のupdatedAtを記録
+	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
+		null,
+	);
+	const { conflictState, setConflict, clearConflict } =
+		useConflictHandler<EventSeries>();
 
 	// ダイアログが開いた時にフォームを初期化
 	useEffect(() => {
@@ -50,17 +62,20 @@ export function EventSeriesEditDialog({
 					name: eventSeries.name,
 					sortOrder: eventSeries.sortOrder ?? 0,
 				});
+				setOriginalUpdatedAt(eventSeries.updatedAt);
 			} else {
 				setForm({
 					name: "",
 					sortOrder: defaultSortOrder,
 				});
+				setOriginalUpdatedAt(null);
 			}
 			setError(null);
+			clearConflict();
 		}
-	}, [open, mode, eventSeries, defaultSortOrder]);
+	}, [open, mode, eventSeries, defaultSortOrder, clearConflict]);
 
-	const handleSubmit = async () => {
+	const handleSubmit = async (overrideUpdatedAt?: string) => {
 		if (!form.name.trim()) {
 			setError("名前を入力してください");
 			return;
@@ -81,11 +96,18 @@ export function EventSeriesEditDialog({
 				await eventSeriesApi.update(eventSeries.id, {
 					name: form.name,
 					sortOrder: form.sortOrder,
+					// 楽観的ロック: updatedAtを送信
+					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
 				});
 			}
 			onOpenChange(false);
 			onSuccess?.();
 		} catch (e) {
+			// 楽観的ロック競合エラーの場合
+			if (isConflictError<EventSeries>(e)) {
+				setConflict(e.current);
+				return;
+			}
 			setError(
 				e instanceof Error
 					? e.message
@@ -98,76 +120,108 @@ export function EventSeriesEditDialog({
 		}
 	};
 
+	// 競合ダイアログで「編集を続ける」を選択した場合
+	const handleContinueEditing = (data: EventSeries) => {
+		setForm({
+			name: data.name,
+			sortOrder: data.sortOrder ?? 0,
+		});
+		setOriginalUpdatedAt(data.updatedAt);
+		clearConflict();
+	};
+
+	// 競合ダイアログで「上書き」を選択した場合
+	const handleOverwrite = () => {
+		if (conflictState.conflictData) {
+			// 最新のupdatedAtで再送信
+			handleSubmit(conflictState.conflictData.updatedAt);
+			clearConflict();
+		}
+	};
+
 	const title =
 		mode === "create" ? "新規イベントシリーズ" : "イベントシリーズの編集";
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[425px]">
-				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
-				</DialogHeader>
-				<div className="grid gap-4 py-4">
-					{error && (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{error}
-						</div>
-					)}
-					<div className="grid gap-2">
-						<Label htmlFor="eventSeries-name">
-							名前 <span className="text-error">*</span>
-						</Label>
-						<Input
-							id="eventSeries-name"
-							value={form.name}
-							onChange={(e) => setForm({ ...form, name: e.target.value })}
-							placeholder="例: 博麗神社例大祭"
-							disabled={isSubmitting}
-						/>
-					</div>
-					{mode === "edit" && (
+		<>
+			<Dialog open={open} onOpenChange={onOpenChange}>
+				<DialogContent className="sm:max-w-[425px]">
+					<DialogHeader>
+						<DialogTitle>{title}</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{error && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{error}
+							</div>
+						)}
 						<div className="grid gap-2">
-							<Label htmlFor="eventSeries-sortOrder">表示順</Label>
+							<Label htmlFor="eventSeries-name">
+								名前 <span className="text-error">*</span>
+							</Label>
 							<Input
-								id="eventSeries-sortOrder"
-								type="number"
-								value={form.sortOrder}
-								onChange={(e) =>
-									setForm({
-										...form,
-										sortOrder: e.target.value
-											? Number.parseInt(e.target.value, 10)
-											: 0,
-									})
-								}
+								id="eventSeries-name"
+								value={form.name}
+								onChange={(e) => setForm({ ...form, name: e.target.value })}
+								placeholder="例: 博麗神社例大祭"
 								disabled={isSubmitting}
 							/>
 						</div>
-					)}
-				</div>
-				<DialogFooter>
-					<Button
-						variant="ghost"
-						onClick={() => onOpenChange(false)}
-						disabled={isSubmitting}
-					>
-						キャンセル
-					</Button>
-					<Button
-						variant="primary"
-						onClick={handleSubmit}
-						disabled={isSubmitting || !form.name.trim()}
-					>
-						{isSubmitting
-							? mode === "create"
-								? "作成中..."
-								: "保存中..."
-							: mode === "create"
-								? "作成"
-								: "保存"}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+						{mode === "edit" && (
+							<div className="grid gap-2">
+								<Label htmlFor="eventSeries-sortOrder">表示順</Label>
+								<Input
+									id="eventSeries-sortOrder"
+									type="number"
+									value={form.sortOrder}
+									onChange={(e) =>
+										setForm({
+											...form,
+											sortOrder: e.target.value
+												? Number.parseInt(e.target.value, 10)
+												: 0,
+										})
+									}
+									disabled={isSubmitting}
+								/>
+							</div>
+						)}
+					</div>
+					<DialogFooter>
+						<Button
+							variant="ghost"
+							onClick={() => onOpenChange(false)}
+							disabled={isSubmitting}
+						>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={() => handleSubmit()}
+							disabled={isSubmitting || !form.name.trim()}
+						>
+							{isSubmitting
+								? mode === "create"
+									? "作成中..."
+									: "保存中..."
+								: mode === "create"
+									? "作成"
+									: "保存"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* 楽観的ロック競合ダイアログ */}
+			<ConflictDialog
+				open={conflictState.isConflict}
+				onOpenChange={(open) => !open && clearConflict()}
+				currentData={conflictState.conflictData}
+				getDisplayName={(data) => data.name}
+				onOverwrite={handleOverwrite}
+				onContinueEditing={handleContinueEditing}
+				isLoading={isSubmitting}
+			/>
+		</>
 	);
 }

@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createId } from "@thac/db";
 import { detectInitial } from "@thac/utils";
 import { useEffect, useMemo, useState } from "react";
+import { useConflictHandler } from "@/hooks/use-conflict-handler";
 import {
 	type Artist,
 	type ArtistAlias,
@@ -9,6 +10,7 @@ import {
 	artistAliasesApi,
 	artistsApi,
 	type InitialScript,
+	isConflictError,
 } from "@/lib/api-client";
 import { Button } from "../ui/button";
 import {
@@ -22,6 +24,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { SearchableSelect } from "../ui/searchable-select";
 import { Select } from "../ui/select";
+import { ConflictDialog } from "./conflict-dialog";
 
 export interface ArtistAliasFormData {
 	name: string;
@@ -63,6 +66,12 @@ export function ArtistAliasEditDialog({
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	// 楽観的ロック用: 編集開始時のupdatedAtを記録
+	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
+		null,
+	);
+	const { conflictState, setConflict, clearConflict } =
+		useConflictHandler<ArtistAlias>();
 
 	// アーティスト作成用ネストダイアログ
 	const [isArtistCreateDialogOpen, setIsArtistCreateDialogOpen] =
@@ -105,6 +114,7 @@ export function ArtistAliasEditDialog({
 					periodFrom: alias.periodFrom,
 					periodTo: alias.periodTo,
 				});
+				setOriginalUpdatedAt(alias.updatedAt);
 			} else {
 				setForm({
 					name: "",
@@ -115,10 +125,12 @@ export function ArtistAliasEditDialog({
 					periodFrom: null,
 					periodTo: null,
 				});
+				setOriginalUpdatedAt(null);
 			}
 			setError(null);
+			clearConflict();
 		}
-	}, [open, mode, alias, defaultArtistId]);
+	}, [open, mode, alias, defaultArtistId, clearConflict]);
 
 	const handleNameChange = (name: string) => {
 		const initial = detectInitial(name);
@@ -160,7 +172,7 @@ export function ArtistAliasEditDialog({
 		}
 	};
 
-	const handleSubmit = async () => {
+	const handleSubmit = async (overrideUpdatedAt?: string) => {
 		if (!form.name.trim()) {
 			setError("名義名を入力してください");
 			return;
@@ -195,11 +207,18 @@ export function ArtistAliasEditDialog({
 					nameInitial: form.nameInitial,
 					periodFrom: form.periodFrom || null,
 					periodTo: form.periodTo || null,
+					// 楽観的ロック: updatedAtを送信
+					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
 				});
 			}
 			onOpenChange(false);
 			onSuccess?.();
 		} catch (e) {
+			// 楽観的ロック競合エラーの場合
+			if (isConflictError<ArtistAlias>(e)) {
+				setConflict(e.current);
+				return;
+			}
 			setError(
 				e instanceof Error
 					? e.message
@@ -209,6 +228,30 @@ export function ArtistAliasEditDialog({
 			);
 		} finally {
 			setIsSubmitting(false);
+		}
+	};
+
+	// 競合ダイアログで「編集を続ける」を選択した場合
+	const handleContinueEditing = (data: ArtistAlias) => {
+		setForm({
+			name: data.name,
+			artistId: data.artistId,
+			aliasTypeCode: data.aliasTypeCode,
+			initialScript: data.initialScript,
+			nameInitial: data.nameInitial,
+			periodFrom: data.periodFrom,
+			periodTo: data.periodTo,
+		});
+		setOriginalUpdatedAt(data.updatedAt);
+		clearConflict();
+	};
+
+	// 競合ダイアログで「上書き」を選択した場合
+	const handleOverwrite = () => {
+		if (conflictState.conflictData) {
+			// 最新のupdatedAtで再送信
+			handleSubmit(conflictState.conflictData.updatedAt);
+			clearConflict();
 		}
 	};
 
@@ -320,7 +363,7 @@ export function ArtistAliasEditDialog({
 						</Button>
 						<Button
 							variant="primary"
-							onClick={handleSubmit}
+							onClick={() => handleSubmit()}
 							disabled={isSubmitting || !form.name.trim() || !form.artistId}
 						>
 							{isSubmitting
@@ -428,6 +471,17 @@ export function ArtistAliasEditDialog({
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* 楽観的ロック競合ダイアログ */}
+			<ConflictDialog
+				open={conflictState.isConflict}
+				onOpenChange={(open) => !open && clearConflict()}
+				currentData={conflictState.conflictData}
+				getDisplayName={(data) => data.name}
+				onOverwrite={handleOverwrite}
+				onContinueEditing={handleContinueEditing}
+				isLoading={isSubmitting}
+			/>
 		</>
 	);
 }

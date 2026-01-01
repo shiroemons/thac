@@ -18,6 +18,7 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 import { getReleaseJanCodes } from "./jan-codes";
 import { getReleasePublications } from "./publications";
 import { getReleaseCircles } from "./release-circles";
@@ -387,8 +388,20 @@ releasesRouter.put("/:id", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
 
-		// バリデーション
-		const parsed = updateReleaseSchema.safeParse(body);
+		const existingRelease = existing[0];
+
+		// 楽観的ロック: updatedAtの競合チェック
+		const conflict = checkOptimisticLockConflict({
+			requestUpdatedAt: body.updatedAt,
+			currentEntity: existingRelease,
+		});
+		if (conflict) {
+			return c.json(conflict, 409);
+		}
+
+		// バリデーション（updatedAtを除外）
+		const { updatedAt: _, ...bodyWithoutUpdatedAt } = body;
+		const parsed = updateReleaseSchema.safeParse(bodyWithoutUpdatedAt);
 		if (!parsed.success) {
 			return c.json(
 				{
@@ -400,7 +413,6 @@ releasesRouter.put("/:id", async (c) => {
 		}
 
 		// event_id と event_day_id の整合性チェック
-		const existingRelease = existing[0];
 		const newEventId = parsed.data.eventId ?? existingRelease?.eventId;
 		const newEventDayId = parsed.data.eventDayId ?? existingRelease?.eventDayId;
 		const eventValidation = await validateEventConsistency(

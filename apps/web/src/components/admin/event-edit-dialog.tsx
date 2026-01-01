@@ -1,11 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createId } from "@thac/db";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useConflictHandler } from "@/hooks/use-conflict-handler";
 import {
 	type Event,
 	type EventWithDays,
 	eventSeriesApi,
 	eventsApi,
+	isConflictError,
 } from "@/lib/api-client";
 import { suggestFromEventName } from "@/lib/event-name-parser";
 import { Button } from "../ui/button";
@@ -19,6 +21,7 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { SearchableSelect } from "../ui/searchable-select";
+import { ConflictDialog } from "./conflict-dialog";
 
 export interface EventFormData {
 	name: string;
@@ -56,6 +59,12 @@ export function EventEditDialog({
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	// 楽観的ロック用: 編集開始時のupdatedAtを記録
+	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
+		null,
+	);
+	const { conflictState, setConflict, clearConflict } =
+		useConflictHandler<Event>();
 
 	// シリーズ新規作成用
 	const [isSeriesDialogOpen, setIsSeriesDialogOpen] = useState(false);
@@ -92,6 +101,7 @@ export function EventEditDialog({
 					startDate: event.startDate,
 					endDate: event.endDate,
 				});
+				setOriginalUpdatedAt(event.updatedAt);
 			} else {
 				setForm({
 					name: "",
@@ -101,10 +111,12 @@ export function EventEditDialog({
 					startDate: null,
 					endDate: null,
 				});
+				setOriginalUpdatedAt(null);
 			}
 			setError(null);
+			clearConflict();
 		}
-	}, [open, mode, event]);
+	}, [open, mode, event, clearConflict]);
 
 	const handleNameChange = (name: string) => {
 		const suggestion = suggest(name);
@@ -142,7 +154,7 @@ export function EventEditDialog({
 		}
 	};
 
-	const handleSubmit = async () => {
+	const handleSubmit = async (overrideUpdatedAt?: string) => {
 		if (!form.name.trim()) {
 			setError("イベント名を入力してください");
 			return;
@@ -172,11 +184,18 @@ export function EventEditDialog({
 					venue: form.venue,
 					startDate: form.startDate,
 					endDate: form.endDate,
+					// 楽観的ロック: updatedAtを送信
+					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
 				});
 			}
 			onOpenChange(false);
 			onSuccess?.();
 		} catch (e) {
+			// 楽観的ロック競合エラーの場合
+			if (isConflictError<Event>(e)) {
+				setConflict(e.current);
+				return;
+			}
 			setError(
 				e instanceof Error
 					? e.message
@@ -186,6 +205,29 @@ export function EventEditDialog({
 			);
 		} finally {
 			setIsSubmitting(false);
+		}
+	};
+
+	// 競合ダイアログで「編集を続ける」を選択した場合
+	const handleContinueEditing = (data: Event) => {
+		setForm({
+			name: data.name,
+			eventSeriesId: data.eventSeriesId,
+			edition: data.edition,
+			venue: data.venue,
+			startDate: data.startDate,
+			endDate: data.endDate,
+		});
+		setOriginalUpdatedAt(data.updatedAt);
+		clearConflict();
+	};
+
+	// 競合ダイアログで「上書き」を選択した場合
+	const handleOverwrite = () => {
+		if (conflictState.conflictData) {
+			// 最新のupdatedAtで再送信
+			handleSubmit(conflictState.conflictData.updatedAt);
+			clearConflict();
 		}
 	};
 
@@ -310,7 +352,7 @@ export function EventEditDialog({
 						</Button>
 						<Button
 							variant="primary"
-							onClick={handleSubmit}
+							onClick={() => handleSubmit()}
 							disabled={isSubmitting || !form.name.trim()}
 						>
 							{isSubmitting
@@ -363,6 +405,17 @@ export function EventEditDialog({
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* 楽観的ロック競合ダイアログ */}
+			<ConflictDialog
+				open={conflictState.isConflict}
+				onOpenChange={(open) => !open && clearConflict()}
+				currentData={conflictState.conflictData}
+				getDisplayName={(data) => data.name}
+				onOverwrite={handleOverwrite}
+				onContinueEditing={handleContinueEditing}
+				isLoading={isSubmitting}
+			/>
 		</>
 	);
 }

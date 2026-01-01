@@ -19,6 +19,7 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 import { parseAndValidate } from "../../../utils/import-parser";
 
 const worksRouter = new Hono<AdminContext>();
@@ -174,8 +175,20 @@ worksRouter.put("/:id", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.WORK_NOT_FOUND }, 404);
 		}
 
-		// バリデーション
-		const parsed = updateOfficialWorkSchema.safeParse(body);
+		const existingWork = existing[0];
+
+		// 楽観的ロック: updatedAtの競合チェック
+		const conflict = checkOptimisticLockConflict({
+			requestUpdatedAt: body.updatedAt,
+			currentEntity: existingWork,
+		});
+		if (conflict) {
+			return c.json(conflict, 409);
+		}
+
+		// バリデーション（updatedAtを除外）
+		const { updatedAt: _, ...updateData } = body;
+		const parsed = updateOfficialWorkSchema.safeParse(updateData);
 		if (!parsed.success) {
 			return c.json(
 				{
@@ -428,8 +441,20 @@ worksRouter.put("/:workId/links/:linkId", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.WORK_NOT_FOUND }, 404);
 		}
 
-		// バリデーション
-		const parsed = updateOfficialWorkLinkSchema.safeParse(body);
+		const existingLink = existing[0];
+
+		// 楽観的ロック: updatedAtの競合チェック
+		const conflict = checkOptimisticLockConflict({
+			requestUpdatedAt: body.updatedAt,
+			currentEntity: existingLink,
+		});
+		if (conflict) {
+			return c.json(conflict, 409);
+		}
+
+		// バリデーション（updatedAtを除外）
+		const { updatedAt: _, ...updateData } = body;
+		const parsed = updateOfficialWorkLinkSchema.safeParse(updateData);
 		if (!parsed.success) {
 			return c.json(
 				{

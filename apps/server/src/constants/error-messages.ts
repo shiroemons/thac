@@ -96,6 +96,10 @@ export const ERROR_MESSAGES = {
 	FILE_NOT_UPLOADED: "ファイルがアップロードされていません",
 	ONLY_CSV_ALLOWED: "CSVファイルのみアップロード可能です",
 
+	// ===== 競合エラー (409) =====
+	DATA_CHANGED_BY_ANOTHER_USER:
+		"このデータは他のユーザーによって更新されています",
+
 	// ===== レート制限エラー (429) =====
 	RATE_LIMIT_EXCEEDED:
 		"リクエスト数が上限を超えました。しばらくしてから再試行してください",

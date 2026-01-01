@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { type Platform, platformsApi } from "@/lib/api-client";
+import { useConflictHandler } from "@/hooks/use-conflict-handler";
+import { isConflictError, type Platform, platformsApi } from "@/lib/api-client";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -11,6 +12,7 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select } from "../ui/select";
+import { ConflictDialog } from "./conflict-dialog";
 
 export interface PlatformFormData {
 	code: string;
@@ -53,6 +55,12 @@ export function PlatformEditDialog({
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	// 楽観的ロック用: 編集開始時のupdatedAtを記録
+	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
+		null,
+	);
+	const { conflictState, setConflict, clearConflict } =
+		useConflictHandler<Platform>();
 
 	// ダイアログが開いた時にフォームを初期化
 	useEffect(() => {
@@ -64,6 +72,7 @@ export function PlatformEditDialog({
 					category: platform.category ?? "",
 					urlPattern: platform.urlPattern ?? "",
 				});
+				setOriginalUpdatedAt(platform.updatedAt);
 			} else {
 				setForm({
 					code: "",
@@ -71,12 +80,14 @@ export function PlatformEditDialog({
 					category: "",
 					urlPattern: "",
 				});
+				setOriginalUpdatedAt(null);
 			}
 			setError(null);
+			clearConflict();
 		}
-	}, [open, mode, platform]);
+	}, [open, mode, platform, clearConflict]);
 
-	const handleSubmit = async () => {
+	const handleSubmit = async (overrideUpdatedAt?: string) => {
 		if (!form.code.trim()) {
 			setError("コードを入力してください");
 			return;
@@ -107,11 +118,18 @@ export function PlatformEditDialog({
 					name: form.name,
 					category: form.category,
 					urlPattern: form.urlPattern || null,
+					// 楽観的ロック: updatedAtを送信
+					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
 				});
 			}
 			onOpenChange(false);
 			onSuccess?.();
 		} catch (e) {
+			// 楽観的ロック競合エラーの場合
+			if (isConflictError<Platform>(e)) {
+				setConflict(e.current);
+				return;
+			}
 			setError(
 				e instanceof Error
 					? e.message
@@ -124,106 +142,142 @@ export function PlatformEditDialog({
 		}
 	};
 
+	// 競合ダイアログで「編集を続ける」を選択した場合
+	const handleContinueEditing = (data: Platform) => {
+		setForm({
+			code: data.code,
+			name: data.name,
+			category: data.category ?? "",
+			urlPattern: data.urlPattern ?? "",
+		});
+		setOriginalUpdatedAt(data.updatedAt);
+		clearConflict();
+	};
+
+	// 競合ダイアログで「上書き」を選択した場合
+	const handleOverwrite = () => {
+		if (conflictState.conflictData) {
+			// 最新のupdatedAtで再送信
+			handleSubmit(conflictState.conflictData.updatedAt);
+			clearConflict();
+		}
+	};
+
 	const title =
 		mode === "create" ? "新規プラットフォーム" : "プラットフォームの編集";
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[500px]">
-				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
-				</DialogHeader>
-				<div className="grid gap-4 py-4">
-					{error && (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{error}
-						</div>
-					)}
-					<div className="grid gap-2">
-						<Label htmlFor="platform-code">
-							コード <span className="text-error">*</span>
-						</Label>
-						<Input
-							id="platform-code"
-							value={form.code}
-							onChange={(e) => setForm({ ...form, code: e.target.value })}
-							placeholder="例: spotify"
-							disabled={isSubmitting || mode === "edit"}
-						/>
-						{mode === "edit" && (
-							<p className="text-muted-foreground text-xs">
-								コードは変更できません
-							</p>
+		<>
+			<Dialog open={open} onOpenChange={onOpenChange}>
+				<DialogContent className="sm:max-w-[500px]">
+					<DialogHeader>
+						<DialogTitle>{title}</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						{error && (
+							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+								{error}
+							</div>
 						)}
+						<div className="grid gap-2">
+							<Label htmlFor="platform-code">
+								コード <span className="text-error">*</span>
+							</Label>
+							<Input
+								id="platform-code"
+								value={form.code}
+								onChange={(e) => setForm({ ...form, code: e.target.value })}
+								placeholder="例: spotify"
+								disabled={isSubmitting || mode === "edit"}
+							/>
+							{mode === "edit" && (
+								<p className="text-muted-foreground text-xs">
+									コードは変更できません
+								</p>
+							)}
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="platform-name">
+								名前 <span className="text-error">*</span>
+							</Label>
+							<Input
+								id="platform-name"
+								value={form.name}
+								onChange={(e) => setForm({ ...form, name: e.target.value })}
+								placeholder="例: Spotify"
+								disabled={isSubmitting}
+							/>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="platform-category">
+								カテゴリ <span className="text-error">*</span>
+							</Label>
+							<Select
+								id="platform-category"
+								value={form.category}
+								onChange={(e) => setForm({ ...form, category: e.target.value })}
+								disabled={isSubmitting}
+							>
+								{categoryOptions.map((option) => (
+									<option key={option.value} value={option.value}>
+										{option.label}
+									</option>
+								))}
+							</Select>
+						</div>
+						<div className="grid gap-2">
+							<Label htmlFor="platform-urlPattern">URLパターン</Label>
+							<Input
+								id="platform-urlPattern"
+								value={form.urlPattern}
+								onChange={(e) =>
+									setForm({ ...form, urlPattern: e.target.value })
+								}
+								placeholder="例: ^https?://open\.spotify\.com/"
+								disabled={isSubmitting}
+							/>
+						</div>
 					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="platform-name">
-							名前 <span className="text-error">*</span>
-						</Label>
-						<Input
-							id="platform-name"
-							value={form.name}
-							onChange={(e) => setForm({ ...form, name: e.target.value })}
-							placeholder="例: Spotify"
-							disabled={isSubmitting}
-						/>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="platform-category">
-							カテゴリ <span className="text-error">*</span>
-						</Label>
-						<Select
-							id="platform-category"
-							value={form.category}
-							onChange={(e) => setForm({ ...form, category: e.target.value })}
+					<DialogFooter>
+						<Button
+							variant="ghost"
+							onClick={() => onOpenChange(false)}
 							disabled={isSubmitting}
 						>
-							{categoryOptions.map((option) => (
-								<option key={option.value} value={option.value}>
-									{option.label}
-								</option>
-							))}
-						</Select>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="platform-urlPattern">URLパターン</Label>
-						<Input
-							id="platform-urlPattern"
-							value={form.urlPattern}
-							onChange={(e) => setForm({ ...form, urlPattern: e.target.value })}
-							placeholder="例: ^https?://open\.spotify\.com/"
-							disabled={isSubmitting}
-						/>
-					</div>
-				</div>
-				<DialogFooter>
-					<Button
-						variant="ghost"
-						onClick={() => onOpenChange(false)}
-						disabled={isSubmitting}
-					>
-						キャンセル
-					</Button>
-					<Button
-						variant="primary"
-						onClick={handleSubmit}
-						disabled={
-							isSubmitting ||
-							!form.code.trim() ||
-							!form.name.trim() ||
-							!form.category.trim()
-						}
-					>
-						{isSubmitting
-							? mode === "create"
-								? "作成中..."
-								: "保存中..."
-							: mode === "create"
-								? "作成"
-								: "保存"}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+							キャンセル
+						</Button>
+						<Button
+							variant="primary"
+							onClick={() => handleSubmit()}
+							disabled={
+								isSubmitting ||
+								!form.code.trim() ||
+								!form.name.trim() ||
+								!form.category.trim()
+							}
+						>
+							{isSubmitting
+								? mode === "create"
+									? "作成中..."
+									: "保存中..."
+								: mode === "create"
+									? "作成"
+									: "保存"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* 楽観的ロック競合ダイアログ */}
+			<ConflictDialog
+				open={conflictState.isConflict}
+				onOpenChange={(open) => !open && clearConflict()}
+				currentData={conflictState.conflictData}
+				getDisplayName={(data) => data.name}
+				onOverwrite={handleOverwrite}
+				onContinueEditing={handleContinueEditing}
+				isLoading={isSubmitting}
+			/>
+		</>
 	);
 }
