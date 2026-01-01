@@ -287,3 +287,51 @@ export function createTestOfficialSongLink(
 		...overrides,
 	};
 }
+
+/**
+ * テスト用別名タイプデータを生成
+ */
+export function createTestAliasType(
+	overrides?: Partial<{
+		code: string;
+		label: string;
+		sortOrder: number;
+	}>,
+) {
+	const uniqueId = nanoid(8);
+	return {
+		code: `alias_${uniqueId}`,
+		label: `Test Alias Type ${uniqueId}`,
+		sortOrder: 0,
+		...overrides,
+	};
+}
+
+/**
+ * テスト用アーティスト別名データを生成
+ */
+export function createTestArtistAlias(
+	overrides?: Partial<{
+		id: string;
+		artistId: string;
+		name: string;
+		aliasTypeCode: string | null;
+		nameInitial: string | null;
+		initialScript: InitialScript;
+		periodFrom: string | null;
+		periodTo: string | null;
+	}>,
+) {
+	const uniqueId = nanoid(8);
+	return {
+		id: `aa_test_${uniqueId}`,
+		artistId: "test_artist",
+		name: `Test Alias ${uniqueId}`,
+		aliasTypeCode: null,
+		nameInitial: "T",
+		initialScript: "latin" as InitialScript,
+		periodFrom: null,
+		periodTo: null,
+		...overrides,
+	};
+}

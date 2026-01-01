@@ -2,7 +2,7 @@
  * Admin Master API 統合テスト
  *
  * @description
- * マスタデータ管理API（プラットフォーム、クレジットロール）のCRUD操作をテスト
+ * マスタデータ管理API（プラットフォーム、クレジットロール、別名タイプ、作品カテゴリ）のCRUD操作をテスト
  */
 
 import type { Database } from "bun:sqlite";
@@ -17,13 +17,19 @@ import {
 import {
 	__resetDatabase,
 	__setTestDatabase,
+	aliasTypes,
 	creditRoles,
+	officialWorkCategories,
 	platforms,
 } from "@thac/db";
+import { aliasTypesRouter } from "../../../src/routes/admin/master/alias-types";
 import { creditRolesRouter } from "../../../src/routes/admin/master/credit-roles";
+import { officialWorkCategoriesRouter } from "../../../src/routes/admin/master/official-work-categories";
 import { platformsRouter } from "../../../src/routes/admin/master/platforms";
 import {
+	createTestAliasType,
 	createTestCreditRole,
+	createTestOfficialWorkCategory,
 	createTestPlatform,
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
@@ -71,6 +77,50 @@ interface CreditRoleListResponse {
 interface CreditRoleResponse {
 	code: string;
 	label: string;
+	sortOrder: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+interface AliasTypeListResponse {
+	data: Array<{
+		code: string;
+		label: string;
+		sortOrder: number;
+		createdAt: string;
+		updatedAt: string;
+	}>;
+	total: number;
+	page: number;
+	limit: number;
+}
+
+interface AliasTypeResponse {
+	code: string;
+	label: string;
+	sortOrder: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+interface OfficialWorkCategoryListResponse {
+	data: Array<{
+		code: string;
+		name: string;
+		description: string | null;
+		sortOrder: number;
+		createdAt: string;
+		updatedAt: string;
+	}>;
+	total: number;
+	page: number;
+	limit: number;
+}
+
+interface OfficialWorkCategoryResponse {
+	code: string;
+	name: string;
+	description: string | null;
 	sortOrder: number;
 	createdAt: string;
 	updatedAt: string;
@@ -629,6 +679,485 @@ describe("Admin Credit Roles API", () => {
 
 		it("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter, {
+				user: { role: "user" },
+			});
+
+			const res = await app.request("/");
+			expect(res.status).toBe(403);
+		});
+	});
+});
+
+describe("Admin Alias Types API", () => {
+	describe("GET / - 一覧取得", () => {
+		it("別名タイプが存在しない場合、空配列を返す", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const res = await app.request("/");
+			expect(res.status).toBe(200);
+
+			const json = (await res.json()) as AliasTypeListResponse;
+			expect(json.data).toEqual([]);
+			expect(json.total).toBe(0);
+		});
+
+		it("別名タイプ一覧をページネーション付きで返す", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const type1 = createTestAliasType({ label: "別名" });
+			const type2 = createTestAliasType({ label: "ユニット" });
+			await testDb.insert(aliasTypes).values([type1, type2]);
+
+			const res = await app.request("/?page=1&limit=10");
+			expect(res.status).toBe(200);
+
+			const json = (await res.json()) as AliasTypeListResponse;
+			expect(json.data.length).toBe(2);
+			expect(json.total).toBe(2);
+		});
+
+		it("検索クエリでフィルタリングできる", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const type1 = createTestAliasType({ code: "alias", label: "別名" });
+			const type2 = createTestAliasType({ code: "unit", label: "ユニット" });
+			await testDb.insert(aliasTypes).values([type1, type2]);
+
+			const res = await app.request("/?search=alias");
+			expect(res.status).toBe(200);
+
+			const json = (await res.json()) as AliasTypeListResponse;
+			expect(json.data.length).toBe(1);
+			expect(json.data[0]?.code).toBe("alias");
+		});
+	});
+
+	describe("GET /:code - 個別取得", () => {
+		it("存在する別名タイプを返す", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const type = createTestAliasType({ code: "alias", label: "別名" });
+			await testDb.insert(aliasTypes).values(type);
+
+			const res = await app.request("/alias");
+			expect(res.status).toBe(200);
+
+			const json = (await res.json()) as AliasTypeResponse;
+			expect(json.code).toBe("alias");
+			expect(json.label).toBe("別名");
+		});
+
+		it("存在しない別名タイプは404を返す", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const res = await app.request("/nonexistent");
+			expect(res.status).toBe(404);
+		});
+	});
+
+	describe("POST / - 新規作成", () => {
+		it("新しい別名タイプを作成できる", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const type = createTestAliasType({ code: "alias", label: "別名" });
+			const res = await app.request("/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(type),
+			});
+
+			expect(res.status).toBe(201);
+
+			const json = (await res.json()) as AliasTypeResponse;
+			expect(json.code).toBe(type.code);
+			expect(json.label).toBe(type.label);
+		});
+
+		it("sortOrderが未指定の場合は自動設定される", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const existingType = createTestAliasType({ sortOrder: 5 });
+			await testDb.insert(aliasTypes).values(existingType);
+
+			const newType = createTestAliasType();
+			const { sortOrder: _, ...typeWithoutSortOrder } = newType;
+			const res = await app.request("/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(typeWithoutSortOrder),
+			});
+
+			expect(res.status).toBe(201);
+			const json = (await res.json()) as AliasTypeResponse;
+			expect(json.sortOrder).toBe(6);
+		});
+
+		it("重複するコードは409を返す", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const type = createTestAliasType({ code: "alias" });
+			await testDb.insert(aliasTypes).values(type);
+
+			const duplicateType = createTestAliasType({
+				code: "alias",
+				label: "Different",
+			});
+			const res = await app.request("/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(duplicateType),
+			});
+
+			expect(res.status).toBe(409);
+		});
+	});
+
+	describe("PUT /:code - 更新", () => {
+		it("別名タイプを更新できる", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const type = createTestAliasType({ code: "alias", label: "別名" });
+			await testDb.insert(aliasTypes).values(type);
+
+			const updateRes = await app.request("/alias", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ label: "エイリアス" }),
+			});
+
+			expect(updateRes.status).toBe(200);
+			const json = (await updateRes.json()) as AliasTypeResponse;
+			expect(json.label).toBe("エイリアス");
+		});
+
+		it("存在しない別名タイプは404を返す", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const res = await app.request("/nonexistent", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ label: "Updated" }),
+			});
+
+			expect(res.status).toBe(404);
+		});
+	});
+
+	describe("DELETE /:code - 削除", () => {
+		it("別名タイプを削除できる", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const type = createTestAliasType({ code: "alias" });
+			await testDb.insert(aliasTypes).values(type);
+
+			const res = await app.request("/alias", {
+				method: "DELETE",
+			});
+
+			expect(res.status).toBe(200);
+
+			// 削除されたことを確認
+			const getRes = await app.request("/alias");
+			expect(getRes.status).toBe(404);
+		});
+
+		it("存在しない別名タイプは404を返す", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const res = await app.request("/nonexistent", {
+				method: "DELETE",
+			});
+
+			expect(res.status).toBe(404);
+		});
+	});
+
+	describe("PUT /reorder - 並べ替え", () => {
+		it("複数の別名タイプのsortOrderを一括更新できる", async () => {
+			const app = createTestAdminApp(aliasTypesRouter);
+
+			const type1 = createTestAliasType({ code: "t1", sortOrder: 0 });
+			const type2 = createTestAliasType({ code: "t2", sortOrder: 1 });
+			await testDb.insert(aliasTypes).values([type1, type2]);
+
+			const res = await app.request("/reorder", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					items: [
+						{ code: "t1", sortOrder: 1 },
+						{ code: "t2", sortOrder: 0 },
+					],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			// 更新されたことを確認
+			const getRes1 = await app.request("/t1");
+			const json1 = (await getRes1.json()) as AliasTypeResponse;
+			expect(json1.sortOrder).toBe(1);
+		});
+	});
+
+	describe("認証・認可", () => {
+		it("未認証リクエストは401を返す", async () => {
+			const app = createTestAdminApp(aliasTypesRouter, { user: null });
+
+			const res = await app.request("/");
+			expect(res.status).toBe(401);
+		});
+
+		it("非管理者ユーザーは403を返す", async () => {
+			const app = createTestAdminApp(aliasTypesRouter, {
+				user: { role: "user" },
+			});
+
+			const res = await app.request("/");
+			expect(res.status).toBe(403);
+		});
+	});
+});
+
+describe("Admin Official Work Categories API", () => {
+	describe("GET / - 一覧取得", () => {
+		it("カテゴリが存在しない場合、空配列を返す", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const res = await app.request("/");
+			expect(res.status).toBe(200);
+
+			const json = (await res.json()) as OfficialWorkCategoryListResponse;
+			expect(json.data).toEqual([]);
+			expect(json.total).toBe(0);
+		});
+
+		it("カテゴリ一覧をページネーション付きで返す", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const cat1 = createTestOfficialWorkCategory({ name: "ゲーム" });
+			const cat2 = createTestOfficialWorkCategory({ name: "音楽CD" });
+			await testDb.insert(officialWorkCategories).values([cat1, cat2]);
+
+			const res = await app.request("/?page=1&limit=10");
+			expect(res.status).toBe(200);
+
+			const json = (await res.json()) as OfficialWorkCategoryListResponse;
+			expect(json.data.length).toBe(2);
+			expect(json.total).toBe(2);
+		});
+
+		it("検索クエリでフィルタリングできる", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const cat1 = createTestOfficialWorkCategory({
+				code: "game",
+				name: "ゲーム",
+			});
+			const cat2 = createTestOfficialWorkCategory({
+				code: "music",
+				name: "音楽CD",
+			});
+			await testDb.insert(officialWorkCategories).values([cat1, cat2]);
+
+			const res = await app.request("/?search=game");
+			expect(res.status).toBe(200);
+
+			const json = (await res.json()) as OfficialWorkCategoryListResponse;
+			expect(json.data.length).toBe(1);
+			expect(json.data[0]?.code).toBe("game");
+		});
+	});
+
+	describe("GET /:code - 個別取得", () => {
+		it("存在するカテゴリを返す", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const cat = createTestOfficialWorkCategory({
+				code: "game",
+				name: "ゲーム",
+			});
+			await testDb.insert(officialWorkCategories).values(cat);
+
+			const res = await app.request("/game");
+			expect(res.status).toBe(200);
+
+			const json = (await res.json()) as OfficialWorkCategoryResponse;
+			expect(json.code).toBe("game");
+			expect(json.name).toBe("ゲーム");
+		});
+
+		it("存在しないカテゴリは404を返す", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const res = await app.request("/nonexistent");
+			expect(res.status).toBe(404);
+		});
+	});
+
+	describe("POST / - 新規作成", () => {
+		it("新しいカテゴリを作成できる", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const cat = createTestOfficialWorkCategory({
+				code: "game",
+				name: "ゲーム",
+			});
+			const res = await app.request("/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(cat),
+			});
+
+			expect(res.status).toBe(201);
+
+			const json = (await res.json()) as OfficialWorkCategoryResponse;
+			expect(json.code).toBe(cat.code);
+			expect(json.name).toBe(cat.name);
+		});
+
+		it("sortOrderが未指定の場合は自動設定される", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const existingCat = createTestOfficialWorkCategory({ sortOrder: 5 });
+			await testDb.insert(officialWorkCategories).values(existingCat);
+
+			const newCat = createTestOfficialWorkCategory();
+			const { sortOrder: _, ...catWithoutSortOrder } = newCat;
+			const res = await app.request("/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(catWithoutSortOrder),
+			});
+
+			expect(res.status).toBe(201);
+			const json = (await res.json()) as OfficialWorkCategoryResponse;
+			expect(json.sortOrder).toBe(6);
+		});
+
+		it("重複するコードは409を返す", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const cat = createTestOfficialWorkCategory({ code: "game" });
+			await testDb.insert(officialWorkCategories).values(cat);
+
+			const duplicateCat = createTestOfficialWorkCategory({
+				code: "game",
+				name: "Different",
+			});
+			const res = await app.request("/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(duplicateCat),
+			});
+
+			expect(res.status).toBe(409);
+		});
+	});
+
+	describe("PUT /:code - 更新", () => {
+		it("カテゴリを更新できる", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const cat = createTestOfficialWorkCategory({
+				code: "game",
+				name: "ゲーム",
+			});
+			await testDb.insert(officialWorkCategories).values(cat);
+
+			const updateRes = await app.request("/game", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ name: "PCゲーム" }),
+			});
+
+			expect(updateRes.status).toBe(200);
+			const json = (await updateRes.json()) as OfficialWorkCategoryResponse;
+			expect(json.name).toBe("PCゲーム");
+		});
+
+		it("存在しないカテゴリは404を返す", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const res = await app.request("/nonexistent", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ name: "Updated" }),
+			});
+
+			expect(res.status).toBe(404);
+		});
+	});
+
+	describe("DELETE /:code - 削除", () => {
+		it("カテゴリを削除できる", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const cat = createTestOfficialWorkCategory({ code: "game" });
+			await testDb.insert(officialWorkCategories).values(cat);
+
+			const res = await app.request("/game", {
+				method: "DELETE",
+			});
+
+			expect(res.status).toBe(200);
+
+			// 削除されたことを確認
+			const getRes = await app.request("/game");
+			expect(getRes.status).toBe(404);
+		});
+
+		it("存在しないカテゴリは404を返す", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const res = await app.request("/nonexistent", {
+				method: "DELETE",
+			});
+
+			expect(res.status).toBe(404);
+		});
+	});
+
+	describe("PUT /reorder - 並べ替え", () => {
+		it("複数のカテゴリのsortOrderを一括更新できる", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter);
+
+			const cat1 = createTestOfficialWorkCategory({ code: "c1", sortOrder: 0 });
+			const cat2 = createTestOfficialWorkCategory({ code: "c2", sortOrder: 1 });
+			await testDb.insert(officialWorkCategories).values([cat1, cat2]);
+
+			const res = await app.request("/reorder", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					items: [
+						{ code: "c1", sortOrder: 1 },
+						{ code: "c2", sortOrder: 0 },
+					],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			// 更新されたことを確認
+			const getRes1 = await app.request("/c1");
+			const json1 = (await getRes1.json()) as OfficialWorkCategoryResponse;
+			expect(json1.sortOrder).toBe(1);
+		});
+	});
+
+	describe("認証・認可", () => {
+		it("未認証リクエストは401を返す", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter, {
+				user: null,
+			});
+
+			const res = await app.request("/");
+			expect(res.status).toBe(401);
+		});
+
+		it("非管理者ユーザーは403を返す", async () => {
+			const app = createTestAdminApp(officialWorkCategoriesRouter, {
 				user: { role: "user" },
 			});
 
