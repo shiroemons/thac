@@ -1,9 +1,10 @@
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
+import { useState } from "react";
 import z from "zod";
 import { authClient } from "@/lib/auth-client";
 import Loader from "./loader";
+import { Banner } from "./ui/banner";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -17,6 +18,7 @@ export default function SignUpForm({
 		from: "/",
 	});
 	const { isPending } = authClient.useSession();
+	const [error, setError] = useState<string | null>(null);
 
 	const form = useForm({
 		defaultValues: {
@@ -25,6 +27,7 @@ export default function SignUpForm({
 			name: "",
 		},
 		onSubmit: async ({ value }) => {
+			setError(null);
 			await authClient.signUp.email(
 				{
 					email: value.email,
@@ -36,10 +39,10 @@ export default function SignUpForm({
 						navigate({
 							to: "/dashboard",
 						});
-						toast.success("Sign up successful");
+						// 成功通知は不要（リダイレクトで自明）
 					},
-					onError: (error) => {
-						toast.error(error.error.message || error.error.statusText);
+					onError: (err) => {
+						setError(err.error.message || err.error.statusText);
 					},
 				},
 			);
@@ -60,6 +63,16 @@ export default function SignUpForm({
 	return (
 		<div className="mx-auto mt-10 w-full max-w-md p-6">
 			<h1 className="mb-6 text-center font-bold text-3xl">Create Account</h1>
+
+			{error && (
+				<Banner
+					variant="error"
+					onDismiss={() => setError(null)}
+					className="mb-4"
+				>
+					{error}
+				</Banner>
+			)}
 
 			<form
 				onSubmit={(e) => {

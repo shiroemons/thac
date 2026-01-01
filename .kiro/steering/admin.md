@@ -878,55 +878,82 @@ const eventId = createId.event();         // ev_...
 
 ---
 
-## フィードバック・通知（トースト）
+## フィードバック・通知
 
-sonner ライブラリを使用。
+### 基本方針
 
-### 基本設定
+GitHub Primerのアクセシビリティガイドラインに従い、**トースト通知は使用しない**。
+
+**理由（WCAG違反の可能性）:**
+- 2.2.1 タイミング調整: 自動消滅により読む時間が不足
+- 1.3.2 意味のある構造: DOMの端に配置され発見困難
+- 2.1.1 キーボード操作: キーボードアクセスが困難
+- 4.1.3 ステータスメッセージ: ワークフローを中断すべきでない
+
+参考: [Primer - Accessible Notifications](https://primer.style/accessibility/patterns/accessible-notifications-and-messages/)
+
+### 推奨パターン
+
+| 状況 | 対応 | 例 |
+|------|------|-----|
+| 成功（単純） | 通知不要 | 削除→リストから消える、保存→ダイアログ閉じる |
+| 成功（複雑） | Banner表示 | バッチ操作完了「5件をインポートしました」 |
+| エラー（フォーム） | インライン表示 | ダイアログ内エラー（既存パターン） |
+| エラー（ページ） | Banner表示 | 削除失敗時にページ上部に表示 |
+
+### Bannerコンポーネント
+
+ページレベルのフィードバック表示に使用。`components/ui/banner.tsx`
+
+**Props:**
+- `variant`: `"info"` | `"warning"` | `"error"` | `"success"`
+- `children`: メッセージ内容
+- `onDismiss`: 閉じるボタンのコールバック
+- `dismissible`: 閉じるボタンの表示（デフォルト: true）
+
+**アクセシビリティ:**
+- `role="alert"` でスクリーンリーダーに即座に通知
+- `aria-live="assertive"`（error）/ `"polite"`（その他）
 
 ```tsx
-// routes/__root.tsx
-import { Toaster } from "~/components/ui/sonner";
+import { Banner } from "@/components/ui/banner";
 
-<Toaster richColors />
+// ページレベルのエラー表示
+const [actionError, setActionError] = useState<string | null>(null);
+
+// JSX
+{actionError && (
+  <Banner variant="error" onDismiss={() => setActionError(null)}>
+    {actionError}
+  </Banner>
+)}
+
+// エラーハンドリング
+try {
+  await deleteItem(id);
+  // 成功通知は不要（リストからアイテムが消えることで自明）
+} catch (err) {
+  setActionError(err instanceof Error ? err.message : "削除に失敗しました");
+}
 ```
 
-### 使用方法
+### インラインエラー（ダイアログ内）
+
+既存パターンを継続使用:
 
 ```tsx
-import { toast } from "sonner";
-
-// 成功
-toast.success("保存しました");
-
-// エラー
-toast.error("保存に失敗しました");
-
-// 情報
-toast.info("処理中です...");
-
-// カスタム
-toast("メッセージ", {
-  description: "詳細な説明",
-  duration: 5000,
-});
+{error && (
+  <div className="rounded-md bg-error/10 p-3 text-error text-sm">
+    {error}
+  </div>
+)}
 ```
 
-### 使い分け
+### 禁止事項
 
-| 状況 | 種類 | メッセージ例 |
-|------|------|-------------|
-| 作成成功 | `success` | 「作成しました」 |
-| 更新成功 | `success` | 「保存しました」 |
-| 削除成功 | `success` | 「削除しました」 |
-| API エラー | `error` | 「保存に失敗しました」 |
-| バリデーションエラー | インライン表示 | フォーム内に表示 |
-
-### 注意点
-
-- 成功トースト: 操作完了後に表示
-- エラートースト: インラインエラーで対応できない場合のみ
-- 表示時間: デフォルト4秒、重要なメッセージは長めに
+- `sonner` や `react-hot-toast` などのトーストライブラリの使用禁止
+- 自動消滅する通知の実装禁止
+- 成功通知の乱用（UIの変化で自明な場合は不要）
 
 ---
 

@@ -1,6 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
 import { LogOut, Menu, PanelLeft } from "lucide-react";
-import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { ThemeSwitcher } from "./theme-switcher";
 
@@ -21,10 +20,10 @@ export function AdminNavbar({ user, onToggleSidebar }: AdminNavbarProps) {
 		await authClient.signOut({
 			fetchOptions: {
 				onSuccess: () => {
-					toast.success("ログアウトしました");
 					navigate({
 						to: "/admin/login",
 					});
+					// 成功通知は不要（リダイレクトで自明）
 				},
 			},
 		});

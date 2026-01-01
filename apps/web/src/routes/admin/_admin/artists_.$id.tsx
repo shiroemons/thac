@@ -10,11 +10,11 @@ import {
 	Users,
 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { ArtistAliasEditDialog } from "@/components/admin/artist-alias-edit-dialog";
 import { ArtistEditDialog } from "@/components/admin/artist-edit-dialog";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
@@ -79,6 +79,7 @@ function ArtistDetailPage() {
 	const [isDeletingAlias, setIsDeletingAlias] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [actionError, setActionError] = useState<string | null>(null);
 	const tracksPageSize = 20;
 
 	// 統合APIを使用して一括取得
@@ -108,13 +109,16 @@ function ArtistDetailPage() {
 	const handleDeleteAlias = async () => {
 		if (!deleteAliasTarget) return;
 		setIsDeletingAlias(true);
+		setActionError(null);
 		try {
 			await artistAliasesApi.delete(deleteAliasTarget.id);
 			setDeleteAliasTarget(null);
 			invalidateQuery();
-			toast.success("別名義を削除しました");
+			// 成功通知は不要（リストからアイテムが消えることで自明）
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "削除に失敗しました");
+			setActionError(
+				err instanceof Error ? err.message : "別名義の削除に失敗しました",
+			);
 		} finally {
 			setIsDeletingAlias(false);
 		}
@@ -135,13 +139,17 @@ function ArtistDetailPage() {
 	// アーティスト削除
 	const handleDelete = async () => {
 		setIsDeleting(true);
+		setActionError(null);
 		try {
 			await artistsApi.delete(id);
 			setIsDeleteDialogOpen(false);
 			queryClient.invalidateQueries({ queryKey: ["artists"] });
 			navigate({ to: "/admin/artists" });
+			// 成功通知は不要（一覧ページへリダイレクトで自明）
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "削除に失敗しました");
+			setActionError(
+				err instanceof Error ? err.message : "アーティストの削除に失敗しました",
+			);
 		} finally {
 			setIsDeleting(false);
 		}
@@ -183,6 +191,13 @@ function ArtistDetailPage() {
 					<li>{artist.name}</li>
 				</ul>
 			</nav>
+
+			{/* エラーメッセージ */}
+			{actionError && (
+				<Banner variant="error" onDismiss={() => setActionError(null)}>
+					{actionError}
+				</Banner>
+			)}
 
 			{/* ヘッダー */}
 			<div className="flex items-center justify-between">
