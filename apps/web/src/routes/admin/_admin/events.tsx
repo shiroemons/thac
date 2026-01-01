@@ -130,7 +130,7 @@ function EventsPage() {
 		label: s.name,
 	}));
 
-	const { data, isPending, error } = useQuery(
+	const { data, isPending, isFetching, error } = useQuery(
 		eventsListQueryOptions({
 			page,
 			limit: pageSize,
@@ -363,6 +363,7 @@ function EventsPage() {
 					searchPlaceholder="イベント名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					filterOptions={seriesOptions}
 					filterValue={seriesFilter}
 					filterPlaceholder="シリーズで絞り込み"

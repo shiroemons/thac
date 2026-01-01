@@ -110,7 +110,7 @@ function PlatformsPage() {
 	const [deleteTarget, setDeleteTarget] = useState<Platform | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
 
-	const { data, isPending, error } = useQuery({
+	const { data, isPending, isFetching, error } = useQuery({
 		queryKey: [
 			"platforms",
 			page,
@@ -260,6 +260,7 @@ function PlatformsPage() {
 					searchPlaceholder="名前またはコードで検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					filterOptions={categoryOptions}
 					filterValue={category}
 					filterPlaceholder="カテゴリを選択"

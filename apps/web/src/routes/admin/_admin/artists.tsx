@@ -116,7 +116,7 @@ function ArtistsPage() {
 
 	// ensureQueryData + queryOptionsパターン
 	// ローダーでプリフェッチしたデータを自動的に使用
-	const { data, isPending, error } = useQuery(
+	const { data, isPending, isFetching, error } = useQuery(
 		artistsListQueryOptions({
 			page,
 			limit: pageSize,
@@ -226,6 +226,7 @@ function ArtistsPage() {
 					searchPlaceholder="名前で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					filterOptions={initialScriptOptions}
 					filterValue={initialScript}
 					filterPlaceholder="頭文字の文字種"

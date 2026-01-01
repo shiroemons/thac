@@ -166,7 +166,7 @@ function ArtistAliasesPage() {
 	});
 	const aliasTypes = aliasTypesData?.data ?? [];
 
-	const { data, isPending, error } = useQuery(
+	const { data, isPending, isFetching, error } = useQuery(
 		artistAliasesListQueryOptions({
 			page,
 			limit: pageSize,
@@ -291,6 +291,7 @@ function ArtistAliasesPage() {
 					searchPlaceholder="名義名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					columnVisibility={{
 						columns: columnConfigs,
 						visibleColumns,

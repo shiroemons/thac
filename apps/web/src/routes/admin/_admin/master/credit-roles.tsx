@@ -71,7 +71,7 @@ function CreditRolesPage() {
 	const [deleteTarget, setDeleteTarget] = useState<CreditRole | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
 
-	const { data, isPending, error } = useQuery({
+	const { data, isPending, isFetching, error } = useQuery({
 		queryKey: [
 			"credit-roles",
 			page,
@@ -206,6 +206,7 @@ function CreditRolesPage() {
 					searchPlaceholder="ラベルまたはコードで検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					columnVisibility={{
 						columns: columnConfigs,
 						visibleColumns,

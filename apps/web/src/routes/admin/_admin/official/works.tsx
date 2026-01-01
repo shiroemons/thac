@@ -122,7 +122,7 @@ function OfficialWorksPage() {
 			label: c.name,
 		})) ?? [];
 
-	const { data, isPending, error } = useQuery(
+	const { data, isPending, isFetching, error } = useQuery(
 		officialWorksListQueryOptions({
 			page,
 			limit: pageSize,
@@ -208,6 +208,7 @@ function OfficialWorksPage() {
 					searchPlaceholder="作品名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					filterOptions={categoryOptions}
 					filterValue={category}
 					filterPlaceholder="カテゴリを選択"

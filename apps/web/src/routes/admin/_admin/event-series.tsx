@@ -68,7 +68,7 @@ function EventSeriesPage() {
 	const [deleteTarget, setDeleteTarget] = useState<EventSeries | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
 
-	const { data, isPending, error } = useQuery(
+	const { data, isPending, isFetching, error } = useQuery(
 		eventSeriesListQueryOptions({
 			search: debouncedSearch || undefined,
 			sortBy,
@@ -198,6 +198,7 @@ function EventSeriesPage() {
 					searchPlaceholder="シリーズ名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					columnVisibility={{
 						columns: columnConfigs,
 						visibleColumns,

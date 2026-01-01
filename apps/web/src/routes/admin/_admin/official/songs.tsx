@@ -112,7 +112,7 @@ function OfficialSongsPage() {
 		staleTime: 300_000,
 	});
 
-	const { data, isPending, error } = useQuery(
+	const { data, isPending, isFetching, error } = useQuery(
 		officialSongsListQueryOptions({
 			page,
 			limit: pageSize,
@@ -230,6 +230,7 @@ function OfficialSongsPage() {
 					searchPlaceholder="楽曲名で検索..."
 					searchValue={search}
 					onSearchChange={handleSearchChange}
+					isLoading={isFetching}
 					columnVisibility={{
 						columns: columnConfigs,
 						visibleColumns,
