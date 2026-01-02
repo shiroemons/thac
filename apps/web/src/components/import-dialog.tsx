@@ -91,6 +91,7 @@ export function ImportDialog({
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
 					<input
+						id="import-file"
 						ref={fileInputRef}
 						type="file"
 						accept=".csv,.json"
