@@ -260,7 +260,7 @@ export function EventEditDialog({
 						</div>
 						<div className="grid gap-2">
 							<div className="flex items-center justify-between">
-								<Label>シリーズ</Label>
+								<Label htmlFor="event-series">シリーズ</Label>
 								<Button
 									variant="ghost"
 									size="sm"
@@ -272,6 +272,7 @@ export function EventEditDialog({
 								</Button>
 							</div>
 							<SearchableSelect
+								id="event-series"
 								value={form.eventSeriesId || ""}
 								onChange={(val) =>
 									setForm({ ...form, eventSeriesId: val || null })

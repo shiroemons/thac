@@ -344,8 +344,9 @@ export function OfficialSongEditDialog({
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label>作品</Label>
+							<Label htmlFor="song-work">作品</Label>
 							<SearchableGroupedSelect
+								id="song-work"
 								value={form.officialWorkId || ""}
 								onChange={(val) => handleWorkChange(val || null)}
 								groups={workGroups}
@@ -432,8 +433,9 @@ export function OfficialSongEditDialog({
 						</div>
 						{!form.isOriginal && (
 							<div className="grid gap-2">
-								<Label>原曲</Label>
+								<Label htmlFor="song-source">原曲</Label>
 								<SearchableSelect
+									id="song-source"
 									value={form.sourceSongId || ""}
 									onChange={(val) =>
 										setForm({ ...form, sourceSongId: val || null })

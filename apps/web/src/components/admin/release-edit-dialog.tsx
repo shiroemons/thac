@@ -259,8 +259,9 @@ export function ReleaseEditDialog({
 								</Select>
 							</div>
 							<div className="grid gap-2">
-								<Label>イベント</Label>
+								<Label htmlFor="release-event">イベント</Label>
 								<SearchableSelect
+									id="release-event"
 									value={editForm.eventId || ""}
 									onChange={(value) => {
 										setEditForm({
@@ -278,8 +279,9 @@ export function ReleaseEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label>イベント日</Label>
+								<Label htmlFor="release-event-day">イベント日</Label>
 								<SearchableSelect
+									id="release-event-day"
 									value={editForm.eventDayId || ""}
 									onChange={(value) => {
 										const selectedDay = eventDaysData?.find(

@@ -285,7 +285,7 @@ export function ArtistAliasEditDialog({
 						</div>
 						<div className="grid gap-2">
 							<div className="flex items-center justify-between">
-								<Label>
+								<Label htmlFor="alias-artist">
 									アーティスト <span className="text-error">*</span>
 								</Label>
 								<Button
@@ -299,6 +299,7 @@ export function ArtistAliasEditDialog({
 								</Button>
 							</div>
 							<SearchableSelect
+								id="alias-artist"
 								value={form.artistId}
 								onChange={(val) => setForm({ ...form, artistId: val })}
 								options={artistOptions}
