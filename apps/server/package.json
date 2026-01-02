@@ -27,6 +27,8 @@
 		"@types/bun": "catalog:",
 		"typescript": "catalog:",
 		"tsdown": "^0.16.5",
-		"@thac/config": "workspace:*"
+		"@thac/config": "workspace:*",
+		"drizzle-orm": "^0.45.1",
+		"nanoid": "catalog:"
 	}
 }

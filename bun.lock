@@ -39,6 +39,8 @@
       "devDependencies": {
         "@thac/config": "workspace:*",
         "@types/bun": "catalog:",
+        "drizzle-orm": "^0.45.1",
+        "nanoid": "catalog:",
         "tsdown": "^0.16.5",
         "typescript": "catalog:",
       },
