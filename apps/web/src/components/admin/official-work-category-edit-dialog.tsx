@@ -130,6 +130,7 @@ export function OfficialWorkCategoryEditDialog({
 							onChange={(e) => setForm({ ...form, code: e.target.value })}
 							placeholder="例: windows"
 							disabled={isSubmitting || mode === "edit"}
+							autoComplete="off"
 						/>
 						{mode === "edit" && (
 							<p className="text-muted-foreground text-xs">
@@ -147,6 +148,7 @@ export function OfficialWorkCategoryEditDialog({
 							onChange={(e) => setForm({ ...form, name: e.target.value })}
 							placeholder="例: Windows作品"
 							disabled={isSubmitting}
+							autoComplete="off"
 						/>
 					</div>
 					<div className="grid gap-2">
@@ -160,6 +162,7 @@ export function OfficialWorkCategoryEditDialog({
 							placeholder="例: Windows向けにリリースされた作品"
 							rows={3}
 							disabled={isSubmitting}
+							autoComplete="off"
 						/>
 					</div>
 				</div>

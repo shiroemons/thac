@@ -63,7 +63,7 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 **Location**: `/apps/server/src/routes/`
 **Purpose**: Honoルート定義
 **Pattern**: 機能別にディレクトリを分割、`index.ts`でルートをエクスポート
-**Example**: `routes/admin/`（管理API）
+**Example**: `routes/admin/`（管理API）、`routes/admin/export/`（データエクスポートAPI）
 
 ### Server Constants (`apps/server/src/constants/`)
 **Location**: `/apps/server/src/constants/`

@@ -156,11 +156,11 @@ export function EventSeriesEditDialog({
 							</div>
 						)}
 						<div className="grid gap-2">
-							<Label htmlFor="eventSeries-name">
+							<Label htmlFor={`${mode}-eventSeries-name`}>
 								名前 <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="eventSeries-name"
+								id={`${mode}-eventSeries-name`}
 								value={form.name}
 								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: 博麗神社例大祭"
@@ -169,9 +169,9 @@ export function EventSeriesEditDialog({
 						</div>
 						{mode === "edit" && (
 							<div className="grid gap-2">
-								<Label htmlFor="eventSeries-sortOrder">表示順</Label>
+								<Label htmlFor={`${mode}-eventSeries-sortOrder`}>表示順</Label>
 								<Input
-									id="eventSeries-sortOrder"
+									id={`${mode}-eventSeries-sortOrder`}
 									type="number"
 									value={form.sortOrder}
 									onChange={(e) =>

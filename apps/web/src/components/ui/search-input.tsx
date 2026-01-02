@@ -54,6 +54,7 @@ function SearchInput({
 					sizeClasses[size],
 					className,
 				)}
+				autoComplete="off"
 				{...props}
 			/>
 		</div>

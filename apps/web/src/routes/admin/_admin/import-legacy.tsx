@@ -901,10 +901,11 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 				<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 					{/* 開催日数 */}
 					<div className="form-control">
-						<label className="label">
+						<label className="label" htmlFor="event-total-days">
 							<span className="label-text">開催日数</span>
 						</label>
 						<select
+							id="event-total-days"
 							className="select select-bordered"
 							value={input?.totalDays || 1}
 							onChange={(e) =>
@@ -921,10 +922,11 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 
 					{/* 開始日 */}
 					<div className="form-control">
-						<label className="label">
+						<label className="label" htmlFor="event-start-date">
 							<span className="label-text">開始日</span>
 						</label>
 						<input
+							id="event-start-date"
 							type="date"
 							className="input input-bordered"
 							value={input?.startDate || ""}
@@ -934,10 +936,11 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 
 					{/* 終了日 */}
 					<div className="form-control">
-						<label className="label">
+						<label className="label" htmlFor="event-end-date">
 							<span className="label-text">終了日</span>
 						</label>
 						<input
+							id="event-end-date"
 							type="date"
 							className="input input-bordered"
 							value={input?.endDate || ""}
@@ -954,10 +957,11 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 						<div className="grid grid-cols-2 gap-2 md:grid-cols-5">
 							{Array.from({ length: input?.totalDays || 1 }).map((_, i) => (
 								<div key={`day-${event.name}-${i}`} className="form-control">
-									<label className="label">
+									<label className="label" htmlFor={`event-date-${i}`}>
 										<span className="label-text">{i + 1}日目</span>
 									</label>
 									<input
+										id={`event-date-${i}`}
 										type="date"
 										className="input input-bordered input-sm"
 										value={input?.eventDates?.[i] || ""}
@@ -1190,7 +1194,7 @@ function ImportingStep({
 									) : isCurrent ? (
 										<Loader2 className="h-4 w-4 animate-spin" />
 									) : (
-										<div className="h-4 w-4 rounded-full border border-current" />
+										<span className="block h-4 w-4 rounded-full border border-current" />
 									)}
 									<span>{info.label}</span>
 								</span>

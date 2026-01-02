@@ -39,6 +39,7 @@ function ColumnVisibilityToggle({
 							className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-base-200"
 						>
 							<Checkbox
+								id={`column-toggle-${column.key}`}
 								checked={visibleColumns.has(column.key)}
 								onCheckedChange={() => onToggle(column.key)}
 							/>

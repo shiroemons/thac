@@ -49,6 +49,8 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 - クォート: ダブルクォート
 - import自動整理有効
 - Lefthookによるgit hooksの自動実行
+- markuplintによるHTML品質チェック（React/JSX対応）
+- eslint-plugin-validate-jsx-nestingによるJSXネスト検証
 
 ### Testing
 - Bun Test Runner（サーバー側統合テスト）
@@ -91,6 +93,10 @@ bun run check
 
 # Type Check
 bun run check-types
+
+# HTML/JSX品質チェック（web）
+bun run --cwd apps/web lint:markuplint
+bun run --cwd apps/web lint:jsx-nesting
 
 # DB: ローカル起動
 cd packages/db && bun run db:local

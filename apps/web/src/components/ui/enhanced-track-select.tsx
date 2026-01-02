@@ -288,60 +288,60 @@ function TrackOptionCard({
 				isSelected && "bg-primary/10",
 			)}
 		>
-			<div className="flex items-start gap-2">
+			<span className="flex items-start gap-2">
 				{/* 選択チェック */}
-				<div className="mt-0.5 w-5 shrink-0">
+				<span className="mt-0.5 w-5 shrink-0">
 					{isSelected && <Check className="h-4 w-4 text-primary" />}
-				</div>
+				</span>
 
 				{/* トラック情報 */}
-				<div className="min-w-0 flex-1 space-y-1">
+				<span className="block min-w-0 flex-1 space-y-1">
 					{/* トラック名 + 番号 */}
-					<div className="flex items-center gap-2">
+					<span className="flex items-center gap-2">
 						<span className={cn("font-medium", isSelected && "text-primary")}>
 							{track.name}
 						</span>
 						<span className="shrink-0 rounded bg-base-300 px-1.5 py-0.5 font-mono text-xs">
 							{String(track.trackNumber).padStart(2, "0")}
 						</span>
-					</div>
+					</span>
 
 					{/* 詳細情報 */}
-					<div className="space-y-0.5 text-base-content/70 text-xs">
+					<span className="block space-y-0.5 text-base-content/70 text-xs">
 						{/* 作品 / ディスク */}
 						{releaseDisplay && (
-							<div className="flex items-center gap-1.5">
+							<span className="flex items-center gap-1.5">
 								<span className="shrink-0">作品:</span>
 								<span className="truncate">{releaseDisplay}</span>
-							</div>
+							</span>
 						)}
 
 						{/* サークル */}
 						{track.circles && (
-							<div className="flex items-center gap-1.5">
+							<span className="flex items-center gap-1.5">
 								<span className="shrink-0">サークル:</span>
 								<span className="truncate">{track.circles}</span>
-							</div>
+							</span>
 						)}
 
 						{/* イベント */}
 						{eventDisplay && (
-							<div className="flex items-center gap-1.5">
+							<span className="flex items-center gap-1.5">
 								<span className="shrink-0">イベント:</span>
 								<span className="truncate">{eventDisplay}</span>
-							</div>
+							</span>
 						)}
 
 						{/* 原曲 */}
 						{track.originalSongs && (
-							<div className="flex items-center gap-1.5">
+							<span className="flex items-center gap-1.5">
 								<span className="shrink-0">原曲:</span>
 								<span className="truncate">{track.originalSongs}</span>
-							</div>
+							</span>
 						)}
 
 						{/* クレジット */}
-						<div className="flex flex-wrap gap-x-3 gap-y-0.5">
+						<span className="flex flex-wrap gap-x-3 gap-y-0.5">
 							{track.vocalists && (
 								<span>
 									<span className="text-base-content/50">Vo:</span>{" "}
@@ -360,10 +360,10 @@ function TrackOptionCard({
 									{track.lyricists}
 								</span>
 							)}
-						</div>
-					</div>
-				</div>
-			</div>
+						</span>
+					</span>
+				</span>
+			</span>
 		</button>
 	);
 }

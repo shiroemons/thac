@@ -269,8 +269,9 @@ export function TrackEditDialog({
 						{/* ディスク選択 */}
 						{isDiscFieldVisible && (
 							<div className="grid gap-2">
-								<Label htmlFor="disc">ディスク</Label>
+								<Label htmlFor="track-disc">ディスク</Label>
 								<SearchableSelect
+									id="track-disc"
 									value={editForm.discId || ""}
 									onChange={(value) =>
 										setEditForm({ ...editForm, discId: value || null })
@@ -293,11 +294,11 @@ export function TrackEditDialog({
 
 						{/* トラック名 */}
 						<div className="grid gap-2">
-							<Label htmlFor="name">
+							<Label htmlFor="track-name">
 								トラック名 <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="name"
+								id="track-name"
 								value={editForm.name || ""}
 								onChange={(e) =>
 									setEditForm({ ...editForm, name: e.target.value })
@@ -368,6 +369,7 @@ export function TrackEditDialog({
 								</>
 							) : (
 								<SearchableSelect
+									id="track-event"
 									value={editForm.eventId || ""}
 									onChange={(value) => {
 										setEditForm({
@@ -399,6 +401,7 @@ export function TrackEditDialog({
 								</p>
 							) : (
 								<SearchableSelect
+									id="track-event-day"
 									value={editForm.eventDayId || ""}
 									onChange={(value) => {
 										const selectedDay = eventDaysData?.find(

@@ -5,6 +5,7 @@
 	"scripts": {
 		"check-types": "tsr generate && tsc --noEmit",
 		"lint:jsx-nesting": "eslint src --max-warnings 0",
+		"lint:markuplint": "markuplint \"src/**/*.tsx\"",
 		"build": "vite build",
 		"serve": "vite preview",
 		"dev": "vite dev --port=3001",
@@ -38,6 +39,8 @@
 	},
 	"devDependencies": {
 		"@happy-dom/global-registrator": "^20.0.11",
+		"@markuplint/jsx-parser": "^4.7.22",
+		"@markuplint/react-spec": "^4.5.22",
 		"@tanstack/react-query-devtools": "^5.91.1",
 		"@tanstack/react-router-devtools": "^1.141.1",
 		"@tanstack/router-cli": "^1.142.8",
@@ -51,6 +54,7 @@
 		"eslint": "^9.39.2",
 		"eslint-plugin-validate-jsx-nesting": "^0.1.1",
 		"jsdom": "^26.0.0",
+		"markuplint": "^4.14.0",
 		"typescript": "catalog:",
 		"vite": "^7.0.2",
 		"web-vitals": "^5.0.3"

@@ -122,6 +122,8 @@ export function SearchableSelect({
 							<input
 								ref={inputRef}
 								type="text"
+								id={id ? `${id}-search` : undefined}
+								name={id ? `${id}-search` : undefined}
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
 								placeholder={searchPlaceholder}

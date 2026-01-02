@@ -334,6 +334,7 @@ function ArtistsPage() {
 								<TableRow className="hover:bg-transparent">
 									<TableHead className="w-[50px]">
 										<Checkbox
+											id="select-all-artists"
 											checked={isAllSelected(artists)}
 											indeterminate={isIndeterminate(artists)}
 											onCheckedChange={() => toggleAll(artists)}
@@ -443,6 +444,7 @@ function ArtistsPage() {
 										>
 											<TableCell>
 												<Checkbox
+													id={`select-artist-${artist.id}`}
 													checked={isSelected(artist.id)}
 													onCheckedChange={() => toggleItem(artist)}
 													aria-label={`${artist.name}を選択`}

@@ -84,6 +84,7 @@ function DataTableActionBar({
 			<div className="flex flex-1 items-center gap-3">
 				{onSearchChange && (
 					<SearchInput
+						id="table-search"
 						placeholder={searchPlaceholder}
 						value={searchValue}
 						onChange={(e) => onSearchChange(e.target.value)}
@@ -94,6 +95,7 @@ function DataTableActionBar({
 				)}
 				{filterOptions && filterOptions.length > 0 && onFilterChange && (
 					<Select
+						id="filter-primary"
 						size="md"
 						value={filterValue}
 						onChange={(e) => onFilterChange(e.target.value)}
@@ -111,6 +113,7 @@ function DataTableActionBar({
 					secondFilterOptions.length > 0 &&
 					onSecondFilterChange && (
 						<Select
+							id="filter-secondary"
 							size="md"
 							value={secondFilterValue}
 							onChange={(e) => onSecondFilterChange(e.target.value)}

@@ -354,6 +354,7 @@ function ArtistAliasesPage() {
 								<TableRow className="hover:bg-transparent">
 									<TableHead className="w-[50px]">
 										<Checkbox
+											id="select-all-aliases"
 											checked={isAllSelected(aliases)}
 											indeterminate={isIndeterminate(aliases)}
 											onCheckedChange={() => toggleAll(aliases)}
@@ -458,6 +459,7 @@ function ArtistAliasesPage() {
 										>
 											<TableCell>
 												<Checkbox
+													id={`select-alias-${alias.id}`}
 													checked={isSelected(alias.id)}
 													onCheckedChange={() => toggleItem(alias)}
 													aria-label={`${alias.name}を選択`}

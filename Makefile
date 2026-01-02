@@ -1,6 +1,7 @@
 .PHONY: help dev up down logs ps build clean rebuild reset reset-deps prune shell-server shell-web \
 	db-push db-generate db-migrate db-seed db-setup db-studio \
 	check check-types check-local check-types-local test test-local \
+	lint-markuplint lint-markuplint-local \
 	logs-meilisearch shell-meilisearch
 
 # デフォルトターゲット
@@ -133,6 +134,12 @@ test: ## テストを実行（Docker）
 
 test-local: ## テストを実行（ローカル）
 	bun test
+
+lint-markuplint: ## Markuplintを実行（Docker）
+	docker compose exec web bun run lint:markuplint
+
+lint-markuplint-local: ## Markuplintを実行（ローカル）
+	bun run --cwd apps/web lint:markuplint
 
 # =============================================================================
 # Meilisearch

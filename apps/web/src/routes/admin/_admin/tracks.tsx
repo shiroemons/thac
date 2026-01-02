@@ -375,6 +375,7 @@ function TracksPage() {
 					]}
 				>
 					<SearchableSelect
+						id="tracks-release-filter"
 						value={releaseFilter}
 						onChange={(value) => handleReleaseFilterChange(value || "")}
 						options={releaseOptions}
@@ -416,6 +417,7 @@ function TracksPage() {
 								<TableRow className="hover:bg-transparent">
 									<TableHead className="w-[50px]">
 										<Checkbox
+											id="tracks-select-all"
 											checked={isAllSelected(tracks)}
 											indeterminate={isIndeterminate(tracks)}
 											onCheckedChange={() => toggleAll(tracks)}
@@ -547,6 +549,7 @@ function TracksPage() {
 										>
 											<TableCell>
 												<Checkbox
+													id={`tracks-select-${track.id}`}
 													checked={isSelected(track.id)}
 													onCheckedChange={() => toggleItem(track)}
 													aria-label={`${track.name}を選択`}
@@ -718,6 +721,7 @@ function TracksPage() {
 								作品 <span className="text-error">*</span>
 							</Label>
 							<SearchableSelect
+								id="create-release"
 								value={createForm.releaseId || ""}
 								onChange={(value) =>
 									setCreateForm({ ...createForm, releaseId: value || "" })

@@ -139,10 +139,11 @@ export function OfficialLinkDialog({
 					)}
 
 					<div className="grid gap-2">
-						<Label>
+						<Label htmlFor="link-platform">
 							プラットフォーム <span className="text-error">*</span>
 						</Label>
 						<GroupedSearchableSelect
+							id="link-platform"
 							value={platformCode}
 							onChange={(val) => setPlatformCode(val)}
 							options={platformOptions}
@@ -156,10 +157,11 @@ export function OfficialLinkDialog({
 					</div>
 
 					<div className="grid gap-2">
-						<Label>
+						<Label htmlFor="link-url">
 							URL <span className="text-error">*</span>
 						</Label>
 						<Input
+							id="link-url"
 							type="url"
 							value={url}
 							onChange={(e) => setUrl(e.target.value)}

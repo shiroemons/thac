@@ -122,9 +122,11 @@ export function CreateDialog({
 							</Label>
 							<Input
 								id={field.name}
+								name={field.name}
 								placeholder={field.placeholder}
 								value={formData[field.name]}
 								onChange={(e) => handleChange(field.name, e.target.value)}
+								autoComplete="off"
 							/>
 						</div>
 					))}

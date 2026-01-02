@@ -30,7 +30,12 @@ export function AdminLayout({ user }: AdminLayoutProps) {
 
 	return (
 		<div className={`drawer ${sidebarOpen ? "lg:drawer-open" : ""}`}>
-			<input id="admin-drawer" type="checkbox" className="drawer-toggle" />
+			<input
+				id="admin-drawer"
+				type="checkbox"
+				className="drawer-toggle"
+				aria-label="サイドバーを開閉"
+			/>
 
 			{/* Main content */}
 			<div className="drawer-content flex flex-col">
