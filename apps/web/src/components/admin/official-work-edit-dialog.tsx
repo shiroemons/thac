@@ -310,11 +310,11 @@ export function OfficialWorkEditDialog({
 						)}
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="work-categoryCode">
+								<Label htmlFor={`${mode}-work-categoryCode`}>
 									カテゴリ <span className="text-error">*</span>
 								</Label>
 								<Select
-									id="work-categoryCode"
+									id={`${mode}-work-categoryCode`}
 									value={form.categoryCode}
 									onChange={(e) => handleCategoryChange(e.target.value)}
 									disabled={isSubmitting || mode === "edit"}
@@ -328,11 +328,11 @@ export function OfficialWorkEditDialog({
 								</Select>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="work-id">
+								<Label htmlFor={`${mode}-work-id`}>
 									ID {mode === "create" && "(自動生成)"}
 								</Label>
 								<Input
-									id="work-id"
+									id={`${mode}-work-id`}
 									value={form.id}
 									disabled
 									className="font-mono"
@@ -340,11 +340,11 @@ export function OfficialWorkEditDialog({
 							</div>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="work-name">
+							<Label htmlFor={`${mode}-work-name`}>
 								名前 <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="work-name"
+								id={`${mode}-work-name`}
 								value={form.name}
 								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: Touhou Koumakyou"
@@ -353,11 +353,11 @@ export function OfficialWorkEditDialog({
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="work-nameJa">
+								<Label htmlFor={`${mode}-work-nameJa`}>
 									日本語名 <span className="text-error">*</span>
 								</Label>
 								<Input
-									id="work-nameJa"
+									id={`${mode}-work-nameJa`}
 									value={form.nameJa}
 									onChange={(e) => setForm({ ...form, nameJa: e.target.value })}
 									placeholder="例: 東方紅魔郷"
@@ -365,9 +365,9 @@ export function OfficialWorkEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="work-nameEn">英語名</Label>
+								<Label htmlFor={`${mode}-work-nameEn`}>英語名</Label>
 								<Input
-									id="work-nameEn"
+									id={`${mode}-work-nameEn`}
 									value={form.nameEn || ""}
 									onChange={(e) =>
 										setForm({ ...form, nameEn: e.target.value || null })
@@ -379,9 +379,11 @@ export function OfficialWorkEditDialog({
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="work-shortNameJa">短縮名（日本語）</Label>
+								<Label htmlFor={`${mode}-work-shortNameJa`}>
+									短縮名（日本語）
+								</Label>
 								<Input
-									id="work-shortNameJa"
+									id={`${mode}-work-shortNameJa`}
 									value={form.shortNameJa || ""}
 									onChange={(e) =>
 										setForm({ ...form, shortNameJa: e.target.value || null })
@@ -391,9 +393,11 @@ export function OfficialWorkEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="work-shortNameEn">短縮名（英語）</Label>
+								<Label htmlFor={`${mode}-work-shortNameEn`}>
+									短縮名（英語）
+								</Label>
 								<Input
-									id="work-shortNameEn"
+									id={`${mode}-work-shortNameEn`}
 									value={form.shortNameEn || ""}
 									onChange={(e) =>
 										setForm({ ...form, shortNameEn: e.target.value || null })
@@ -405,9 +409,11 @@ export function OfficialWorkEditDialog({
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="work-numberInSeries">シリーズ番号</Label>
+								<Label htmlFor={`${mode}-work-numberInSeries`}>
+									シリーズ番号
+								</Label>
 								<Input
-									id="work-numberInSeries"
+									id={`${mode}-work-numberInSeries`}
 									type="number"
 									value={form.numberInSeries ?? ""}
 									onChange={(e) =>
@@ -423,9 +429,9 @@ export function OfficialWorkEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="work-releaseDate">発売日</Label>
+								<Label htmlFor={`${mode}-work-releaseDate`}>発売日</Label>
 								<Input
-									id="work-releaseDate"
+									id={`${mode}-work-releaseDate`}
 									type="date"
 									value={form.releaseDate || ""}
 									onChange={(e) =>
@@ -436,9 +442,11 @@ export function OfficialWorkEditDialog({
 							</div>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="work-officialOrganization">発行元</Label>
+							<Label htmlFor={`${mode}-work-officialOrganization`}>
+								発行元
+							</Label>
 							<Input
-								id="work-officialOrganization"
+								id={`${mode}-work-officialOrganization`}
 								value={form.officialOrganization || ""}
 								onChange={(e) =>
 									setForm({
@@ -451,9 +459,9 @@ export function OfficialWorkEditDialog({
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="work-notes">備考</Label>
+							<Label htmlFor={`${mode}-work-notes`}>備考</Label>
 							<Textarea
-								id="work-notes"
+								id={`${mode}-work-notes`}
 								value={form.notes || ""}
 								onChange={(e) =>
 									setForm({ ...form, notes: e.target.value || null })
