@@ -4,7 +4,12 @@
 pre-commit:
   parallel: false
   commands:
-    check-types:
-      run: bun run check-types
     biome:
+      glob: "*.{js,ts,jsx,tsx,json,css}"
       run: bun run check
+    check-types:
+      glob: "*.{js,ts,jsx,tsx}"
+      run: bun run check-types
+    lint-jsx-nesting:
+      glob: "apps/web/**/*.{tsx,jsx}"
+      run: bun run --cwd apps/web lint:jsx-nesting

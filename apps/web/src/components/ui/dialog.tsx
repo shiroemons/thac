@@ -188,9 +188,12 @@ function DialogTitle({ className, ...props }: React.ComponentProps<"h3">) {
 	);
 }
 
-function DialogDescription({ className, ...props }: React.ComponentProps<"p">) {
+function DialogDescription({
+	className,
+	...props
+}: React.ComponentProps<"div">) {
 	return (
-		<p
+		<div
 			data-slot="dialog-description"
 			className={cn("text-base-content/70 text-sm", className)}
 			{...props}
