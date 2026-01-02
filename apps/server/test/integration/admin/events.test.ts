@@ -338,6 +338,64 @@ describe("Admin Event Series API", () => {
 		});
 	});
 
+	describe("PUT /reorder - ソート順一括更新", () => {
+		it("複数のイベントシリーズのsortOrderを一括更新できる", async () => {
+			const app = createTestAdminApp(eventSeriesRouter);
+
+			const series1 = createTestEventSeries({ sortOrder: 0 });
+			const series2 = createTestEventSeries({ sortOrder: 1 });
+			await testDb.insert(eventSeries).values([series1, series2]);
+
+			const res = await app.request("/reorder", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					items: [
+						{ id: series1.id, sortOrder: 1 },
+						{ id: series2.id, sortOrder: 0 },
+					],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			// 更新されたことを確認
+			const getRes1 = await app.request(`/${series1.id}`);
+			const json1 = (await getRes1.json()) as EventSeriesResponse;
+			expect(json1.sortOrder).toBe(1);
+
+			const getRes2 = await app.request(`/${series2.id}`);
+			const json2 = (await getRes2.json()) as EventSeriesResponse;
+			expect(json2.sortOrder).toBe(0);
+		});
+
+		it("itemsが配列でない場合は400を返す", async () => {
+			const app = createTestAdminApp(eventSeriesRouter);
+
+			const res = await app.request("/reorder", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ items: "invalid" }),
+			});
+
+			expect(res.status).toBe(400);
+		});
+
+		it("itemsが不正な形式の場合は400を返す", async () => {
+			const app = createTestAdminApp(eventSeriesRouter);
+
+			const res = await app.request("/reorder", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					items: [{ id: "test" }], // sortOrder missing
+				}),
+			});
+
+			expect(res.status).toBe(400);
+		});
+	});
+
 	describe("認証・認可", () => {
 		it("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter, { user: null });
