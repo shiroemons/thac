@@ -247,11 +247,11 @@ export function EventEditDialog({
 							</div>
 						)}
 						<div className="grid gap-2">
-							<Label htmlFor="event-name">
+							<Label htmlFor={`${mode}-event-name`}>
 								イベント名 <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="event-name"
+								id={`${mode}-event-name`}
 								value={form.name}
 								onChange={(e) => handleNameChange(e.target.value)}
 								placeholder="例: 博麗神社例大祭21"
@@ -260,7 +260,7 @@ export function EventEditDialog({
 						</div>
 						<div className="grid gap-2">
 							<div className="flex items-center justify-between">
-								<Label htmlFor="event-series">シリーズ</Label>
+								<Label htmlFor={`${mode}-event-series`}>シリーズ</Label>
 								<Button
 									variant="ghost"
 									size="sm"
@@ -272,7 +272,7 @@ export function EventEditDialog({
 								</Button>
 							</div>
 							<SearchableSelect
-								id="event-series"
+								id={`${mode}-event-series`}
 								value={form.eventSeriesId || ""}
 								onChange={(val) =>
 									setForm({ ...form, eventSeriesId: val || null })
@@ -286,9 +286,9 @@ export function EventEditDialog({
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="event-edition">回次</Label>
+								<Label htmlFor={`${mode}-event-edition`}>回次</Label>
 								<Input
-									id="event-edition"
+									id={`${mode}-event-edition`}
 									type="number"
 									value={form.edition ?? ""}
 									onChange={(e) =>
@@ -304,9 +304,9 @@ export function EventEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="event-venue">会場</Label>
+								<Label htmlFor={`${mode}-event-venue`}>会場</Label>
 								<Input
-									id="event-venue"
+									id={`${mode}-event-venue`}
 									value={form.venue || ""}
 									onChange={(e) =>
 										setForm({ ...form, venue: e.target.value || null })
@@ -318,9 +318,9 @@ export function EventEditDialog({
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="event-startDate">開始日</Label>
+								<Label htmlFor={`${mode}-event-startDate`}>開始日</Label>
 								<Input
-									id="event-startDate"
+									id={`${mode}-event-startDate`}
 									type="date"
 									value={form.startDate || ""}
 									onChange={(e) =>
@@ -330,9 +330,9 @@ export function EventEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="event-endDate">終了日</Label>
+								<Label htmlFor={`${mode}-event-endDate`}>終了日</Label>
 								<Input
-									id="event-endDate"
+									id={`${mode}-event-endDate`}
 									type="date"
 									value={form.endDate || ""}
 									onChange={(e) =>
@@ -376,11 +376,11 @@ export function EventEditDialog({
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
-							<Label htmlFor="new-series-name">
+							<Label htmlFor={`${mode}-new-series-name`}>
 								シリーズ名 <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="new-series-name"
+								id={`${mode}-new-series-name`}
 								value={newSeriesName}
 								onChange={(e) => setNewSeriesName(e.target.value)}
 								placeholder="例: 博麗神社例大祭"

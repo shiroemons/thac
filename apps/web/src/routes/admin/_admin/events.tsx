@@ -688,11 +688,11 @@ function EventsPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
-							<Label htmlFor="new-series-name">
+							<Label htmlFor="edit-new-series-name">
 								シリーズ名 <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="new-series-name"
+								id="edit-new-series-name"
 								value={newSeriesName}
 								onChange={(e) => setNewSeriesName(e.target.value)}
 								placeholder="例: コミックマーケット"
@@ -848,10 +848,10 @@ function EventsPage() {
 						{/* 開催日一覧 */}
 						<div className="mt-2 border-base-300 border-t pt-4">
 							<div className="mb-2 flex items-center justify-between">
-								<Label className="flex items-center gap-2">
+								<span className="flex items-center gap-2 font-medium text-sm">
 									<Calendar className="h-4 w-4" />
 									開催日
-								</Label>
+								</span>
 								<Button
 									type="button"
 									variant="outline"
