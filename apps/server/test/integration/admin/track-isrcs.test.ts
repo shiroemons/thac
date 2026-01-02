@@ -1,0 +1,319 @@
+import type { Database } from "bun:sqlite";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+} from "bun:test";
+import {
+	__resetDatabase,
+	__setTestDatabase,
+	db,
+	trackIsrcs,
+	tracks,
+} from "@thac/db";
+import { trackIsrcsRouter } from "../../../src/routes/admin/tracks/isrcs";
+import { createTestTrack } from "../../helpers/fixtures";
+import { createTestAdminApp } from "../../helpers/test-app";
+import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectForbidden,
+	expectNotFound,
+	expectSuccess,
+	expectUnauthorized,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
+
+// レスポンスの型定義
+interface IsrcResponse {
+	id: string;
+	trackId: string;
+	isrc: string;
+	isPrimary: boolean;
+}
+
+describe("Admin Track ISRCs API", () => {
+	let sqlite: Database;
+	let app: ReturnType<typeof createTestAdminApp>;
+
+	beforeAll(() => {
+		const testDb = createTestDatabase();
+		sqlite = testDb.sqlite;
+		__setTestDatabase(testDb.db);
+		app = createTestAdminApp(trackIsrcsRouter);
+	});
+
+	beforeEach(() => {
+		truncateAllTables(sqlite);
+	});
+
+	afterAll(() => {
+		__resetDatabase();
+		sqlite.close();
+	});
+
+	describe("GET /:trackId/isrcs - ISRC一覧取得", () => {
+		test("存在しないトラックは404を返す", async () => {
+			const res = await app.request("/tr_nonexistent/isrcs");
+			await expectNotFound(res);
+		});
+
+		test("ISRCがない場合は空配列を返す", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+
+			const res = await app.request("/tr_test_001/isrcs");
+			const json = await expectSuccess<IsrcResponse[]>(res);
+			expect(json).toEqual([]);
+		});
+
+		test("ISRC一覧を返す", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+			await db.insert(trackIsrcs).values([
+				{
+					id: "isrc_001",
+					trackId: "tr_test_001",
+					isrc: "JPXX01234567",
+					isPrimary: true,
+				},
+				{
+					id: "isrc_002",
+					trackId: "tr_test_001",
+					isrc: "JPXX09876543",
+					isPrimary: false,
+				},
+			]);
+
+			const res = await app.request("/tr_test_001/isrcs");
+			const json = await expectSuccess<IsrcResponse[]>(res);
+			expect(json).toHaveLength(2);
+		});
+	});
+
+	describe("POST /:trackId/isrcs - ISRC追加", () => {
+		test("存在しないトラックは404を返す", async () => {
+			const res = await app.request(
+				"/tr_nonexistent/isrcs",
+				postJson({
+					id: "isrc_001",
+					isrc: "JPXX01234567",
+					isPrimary: true,
+				}),
+			);
+			await expectNotFound(res);
+		});
+
+		test("新しいISRCを追加できる", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+
+			const res = await app.request(
+				"/tr_test_001/isrcs",
+				postJson({
+					id: "isrc_001",
+					isrc: "JPXX01234567",
+					isPrimary: true,
+				}),
+			);
+
+			const json = await expectCreated<IsrcResponse>(res);
+			expect(json.id).toBe("isrc_001");
+			expect(json.isrc).toBe("JPXX01234567");
+			expect(json.isPrimary).toBe(true);
+		});
+
+		test("ID重複は409を返す", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+			await db.insert(trackIsrcs).values({
+				id: "isrc_001",
+				trackId: "tr_test_001",
+				isrc: "JPXX01234567",
+				isPrimary: true,
+			});
+
+			const res = await app.request(
+				"/tr_test_001/isrcs",
+				postJson({
+					id: "isrc_001",
+					isrc: "JPXX09999999",
+					isPrimary: false,
+				}),
+			);
+
+			await expectConflict(res);
+		});
+
+		test("同一トラックで同じISRCの重複は409を返す", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+			await db.insert(trackIsrcs).values({
+				id: "isrc_001",
+				trackId: "tr_test_001",
+				isrc: "JPXX01234567",
+				isPrimary: false,
+			});
+
+			const res = await app.request(
+				"/tr_test_001/isrcs",
+				postJson({
+					id: "isrc_002",
+					isrc: "JPXX01234567",
+					isPrimary: false,
+				}),
+			);
+
+			await expectConflict(res);
+		});
+
+		test("同一トラック内で複数のprimaryは409を返す", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+			await db.insert(trackIsrcs).values({
+				id: "isrc_001",
+				trackId: "tr_test_001",
+				isrc: "JPXX01234567",
+				isPrimary: true,
+			});
+
+			const res = await app.request(
+				"/tr_test_001/isrcs",
+				postJson({
+					id: "isrc_002",
+					isrc: "JPXX09876543",
+					isPrimary: true,
+				}),
+			);
+
+			await expectConflict(res);
+		});
+
+		test("バリデーションエラーは400を返す", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+
+			const res = await app.request(
+				"/tr_test_001/isrcs",
+				postJson({
+					// id missing
+					isrc: "JPXX01234567",
+					isPrimary: true,
+				}),
+			);
+
+			const json = await expectBadRequest(res);
+			expect(json.error).toBeDefined();
+		});
+	});
+
+	describe("PUT /:trackId/isrcs/:id - ISRC更新", () => {
+		test("存在しないISRCは404を返す", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+
+			const res = await app.request(
+				"/tr_test_001/isrcs/isrc_nonexistent",
+				putJson({ isPrimary: false }),
+			);
+
+			await expectNotFound(res);
+		});
+
+		test("isPrimaryを更新できる", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+			await db.insert(trackIsrcs).values({
+				id: "isrc_001",
+				trackId: "tr_test_001",
+				isrc: "JPXX01234567",
+				isPrimary: false,
+			});
+
+			const res = await app.request(
+				"/tr_test_001/isrcs/isrc_001",
+				putJson({ isPrimary: true }),
+			);
+
+			const json = await expectSuccess<IsrcResponse>(res);
+			expect(json.isPrimary).toBe(true);
+		});
+
+		test("他にprimaryがある場合はprimaryへの変更は409を返す", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+			await db.insert(trackIsrcs).values([
+				{
+					id: "isrc_001",
+					trackId: "tr_test_001",
+					isrc: "JPXX01234567",
+					isPrimary: true,
+				},
+				{
+					id: "isrc_002",
+					trackId: "tr_test_001",
+					isrc: "JPXX09876543",
+					isPrimary: false,
+				},
+			]);
+
+			const res = await app.request(
+				"/tr_test_001/isrcs/isrc_002",
+				putJson({ isPrimary: true }),
+			);
+
+			await expectConflict(res);
+		});
+	});
+
+	describe("DELETE /:trackId/isrcs/:id - ISRC削除", () => {
+		test("存在しないISRCは404を返す", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+
+			const res = await app.request(
+				"/tr_test_001/isrcs/isrc_nonexistent",
+				deleteRequest(),
+			);
+
+			await expectNotFound(res);
+		});
+
+		test("ISRCを削除できる", async () => {
+			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
+			await db.insert(trackIsrcs).values({
+				id: "isrc_001",
+				trackId: "tr_test_001",
+				isrc: "JPXX01234567",
+				isPrimary: true,
+			});
+
+			const res = await app.request(
+				"/tr_test_001/isrcs/isrc_001",
+				deleteRequest(),
+			);
+
+			const json = await expectSuccess<DeleteResponse>(res);
+			expect(json.success).toBe(true);
+			expect(json.id).toBe("isrc_001");
+
+			// 削除されたことを確認
+			const checkRes = await app.request("/tr_test_001/isrcs");
+			const isrcs = await expectSuccess<IsrcResponse[]>(checkRes);
+			expect(isrcs).toHaveLength(0);
+		});
+	});
+
+	describe("認証・認可", () => {
+		test("未認証リクエストは401を返す", async () => {
+			const unauthApp = createTestAdminApp(trackIsrcsRouter, { user: null });
+			const res = await unauthApp.request("/tr_test_001/isrcs");
+			await expectUnauthorized(res);
+		});
+
+		test("非管理者ユーザーは403を返す", async () => {
+			const nonAdminApp = createTestAdminApp(trackIsrcsRouter, {
+				user: { role: "user" },
+			});
+			const res = await nonAdminApp.request("/tr_test_001/isrcs");
+			await expectForbidden(res);
+		});
+	});
+});
