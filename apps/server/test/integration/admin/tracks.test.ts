@@ -12,7 +12,7 @@ import {
 	beforeEach,
 	describe,
 	expect,
-	it,
+	test,
 } from "bun:test";
 import {
 	__resetDatabase,
@@ -133,7 +133,7 @@ async function setupTestTrack(
 
 describe("Admin Tracks API (Standalone)", () => {
 	describe("GET / - 一覧取得", () => {
-		it("トラックが存在しない場合、空配列を返す", async () => {
+		test("トラックが存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const res = await app.request("/");
@@ -144,7 +144,7 @@ describe("Admin Tracks API (Standalone)", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("トラック一覧をページネーション付きで返す", async () => {
+		test("トラック一覧をページネーション付きで返す", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const release = await setupTestRelease();
@@ -167,7 +167,7 @@ describe("Admin Tracks API (Standalone)", () => {
 			expect(json.limit).toBe(10);
 		});
 
-		it("リリースIDでフィルタリングできる", async () => {
+		test("リリースIDでフィルタリングできる", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const release1 = await setupTestRelease({ name: "Release 1" });
@@ -189,7 +189,7 @@ describe("Admin Tracks API (Standalone)", () => {
 			expect(json.data[0]?.name).toBe("Track from Release 1");
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const release = await setupTestRelease();
@@ -212,7 +212,7 @@ describe("Admin Tracks API (Standalone)", () => {
 	});
 
 	describe("GET /:trackId - 個別取得", () => {
-		it("存在するトラックを詳細情報付きで返す", async () => {
+		test("存在するトラックを詳細情報付きで返す", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const release = await setupTestRelease({ name: "Test Release" });
@@ -232,7 +232,7 @@ describe("Admin Tracks API (Standalone)", () => {
 			expect(json.disc?.discNumber).toBe(1);
 		});
 
-		it("存在しないトラックは404を返す", async () => {
+		test("存在しないトラックは404を返す", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const res = await app.request("/nonexistent");
@@ -241,7 +241,7 @@ describe("Admin Tracks API (Standalone)", () => {
 	});
 
 	describe("DELETE /batch - 一括削除", () => {
-		it("複数のトラックを一括削除できる", async () => {
+		test("複数のトラックを一括削除できる", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const release = await setupTestRelease();
@@ -269,7 +269,7 @@ describe("Admin Tracks API (Standalone)", () => {
 			expect(json.deleted.length).toBe(2);
 		});
 
-		it("空の配列は400を返す", async () => {
+		test("空の配列は400を返す", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const res = await app.request("/batch", {
@@ -281,7 +281,7 @@ describe("Admin Tracks API (Standalone)", () => {
 			expect(res.status).toBe(400);
 		});
 
-		it("存在しないトラックはfailedに含まれる", async () => {
+		test("存在しないトラックはfailedに含まれる", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const release = await setupTestRelease();
@@ -310,14 +310,14 @@ describe("Admin Tracks API (Standalone)", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(tracksAdminRouter, { user: null });
 
 			const res = await app.request("/");
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(tracksAdminRouter, {
 				user: { role: "user" },
 			});

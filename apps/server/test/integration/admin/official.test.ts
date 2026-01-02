@@ -12,7 +12,7 @@ import {
 	beforeEach,
 	describe,
 	expect,
-	it,
+	test,
 } from "bun:test";
 import {
 	__resetDatabase,
@@ -144,7 +144,7 @@ async function setupTestPlatform(code = "test_platform") {
 
 describe("Admin Official Works API", () => {
 	describe("GET / - 一覧取得", () => {
-		it("作品が存在しない場合、空配列を返す", async () => {
+		test("作品が存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			const res = await app.request("/");
@@ -155,7 +155,7 @@ describe("Admin Official Works API", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("作品一覧をページネーション付きで返す", async () => {
+		test("作品一覧をページネーション付きで返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -173,7 +173,7 @@ describe("Admin Official Works API", () => {
 			expect(json.limit).toBe(10);
 		});
 
-		it("カテゴリでフィルタリングできる", async () => {
+		test("カテゴリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory("game");
@@ -196,7 +196,7 @@ describe("Admin Official Works API", () => {
 			expect(json.data[0]?.name).toBe("Game Work");
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -220,7 +220,7 @@ describe("Admin Official Works API", () => {
 	});
 
 	describe("GET /:id - 個別取得", () => {
-		it("存在する作品を返す", async () => {
+		test("存在する作品を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -235,7 +235,7 @@ describe("Admin Official Works API", () => {
 			expect(json.name).toBe("Test Work");
 		});
 
-		it("存在しない作品は404を返す", async () => {
+		test("存在しない作品は404を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			const res = await app.request("/nonexistent");
@@ -244,7 +244,7 @@ describe("Admin Official Works API", () => {
 	});
 
 	describe("POST / - 新規作成", () => {
-		it("新しい作品を作成できる", async () => {
+		test("新しい作品を作成できる", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -262,7 +262,7 @@ describe("Admin Official Works API", () => {
 			expect(json.name).toBe(work.name);
 		});
 
-		it("重複するIDは409を返す", async () => {
+		test("重複するIDは409を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -281,7 +281,7 @@ describe("Admin Official Works API", () => {
 			expect(json.error).toContain("ID");
 		});
 
-		it("必須フィールドが欠けている場合は400を返す", async () => {
+		test("必須フィールドが欠けている場合は400を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			const res = await app.request("/", {
@@ -295,7 +295,7 @@ describe("Admin Official Works API", () => {
 	});
 
 	describe("PUT /:id - 更新", () => {
-		it("作品を更新できる", async () => {
+		test("作品を更新できる", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -321,7 +321,7 @@ describe("Admin Official Works API", () => {
 			expect(json.name).toBe("Updated");
 		});
 
-		it("存在しない作品は404を返す", async () => {
+		test("存在しない作品は404を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -333,7 +333,7 @@ describe("Admin Official Works API", () => {
 			expect(res.status).toBe(404);
 		});
 
-		it("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
+		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -356,7 +356,7 @@ describe("Admin Official Works API", () => {
 	});
 
 	describe("DELETE /:id - 削除", () => {
-		it("作品を削除できる", async () => {
+		test("作品を削除できる", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -376,7 +376,7 @@ describe("Admin Official Works API", () => {
 			expect(getRes.status).toBe(404);
 		});
 
-		it("存在しない作品は404を返す", async () => {
+		test("存在しない作品は404を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -388,14 +388,14 @@ describe("Admin Official Works API", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(worksRouter, { user: null });
 
 			const res = await app.request("/");
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(worksRouter, { user: { role: "user" } });
 
 			const res = await app.request("/");
@@ -406,7 +406,7 @@ describe("Admin Official Works API", () => {
 
 describe("Admin Official Work Links API", () => {
 	describe("GET /:workId/links - リンク一覧取得", () => {
-		it("作品のリンク一覧を返す", async () => {
+		test("作品のリンク一覧を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -428,7 +428,7 @@ describe("Admin Official Work Links API", () => {
 			expect(json[0]?.id).toBe(link.id);
 		});
 
-		it("存在しない作品は404を返す", async () => {
+		test("存在しない作品は404を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			const res = await app.request("/nonexistent/links");
@@ -437,7 +437,7 @@ describe("Admin Official Work Links API", () => {
 	});
 
 	describe("POST /:workId/links - リンク追加", () => {
-		it("新しいリンクを追加できる", async () => {
+		test("新しいリンクを追加できる", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -462,7 +462,7 @@ describe("Admin Official Work Links API", () => {
 			expect(json.id).toBe(link.id);
 		});
 
-		it("同一作品内でURLが重複する場合は409を返す", async () => {
+		test("同一作品内でURLが重複する場合は409を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -494,7 +494,7 @@ describe("Admin Official Work Links API", () => {
 	});
 
 	describe("DELETE /:workId/links/:linkId - リンク削除", () => {
-		it("リンクを削除できる", async () => {
+		test("リンクを削除できる", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -517,7 +517,7 @@ describe("Admin Official Work Links API", () => {
 			expect(json.success).toBe(true);
 		});
 
-		it("存在しないリンクは404を返す", async () => {
+		test("存在しないリンクは404を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
 			await setupTestCategory();
@@ -535,7 +535,7 @@ describe("Admin Official Work Links API", () => {
 
 describe("Admin Official Songs API", () => {
 	describe("GET / - 一覧取得", () => {
-		it("楽曲が存在しない場合、空配列を返す", async () => {
+		test("楽曲が存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const res = await app.request("/");
@@ -546,7 +546,7 @@ describe("Admin Official Songs API", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("楽曲一覧をページネーション付きで返す", async () => {
+		test("楽曲一覧をページネーション付きで返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song1 = createTestOfficialSong({ name: "Song A" });
@@ -561,7 +561,7 @@ describe("Admin Official Songs API", () => {
 			expect(json.total).toBe(2);
 		});
 
-		it("作品IDでフィルタリングできる", async () => {
+		test("作品IDでフィルタリングできる", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			await setupTestCategory();
@@ -583,7 +583,7 @@ describe("Admin Official Songs API", () => {
 			expect(json.data[0]?.name).toBe("Work Song");
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song1 = createTestOfficialSong({
@@ -606,7 +606,7 @@ describe("Admin Official Songs API", () => {
 	});
 
 	describe("GET /:id - 個別取得", () => {
-		it("存在する楽曲を返す", async () => {
+		test("存在する楽曲を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song = createTestOfficialSong({ name: "Test Song" });
@@ -620,7 +620,7 @@ describe("Admin Official Songs API", () => {
 			expect(json.name).toBe("Test Song");
 		});
 
-		it("存在しない楽曲は404を返す", async () => {
+		test("存在しない楽曲は404を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const res = await app.request("/nonexistent");
@@ -629,7 +629,7 @@ describe("Admin Official Songs API", () => {
 	});
 
 	describe("POST / - 新規作成", () => {
-		it("新しい楽曲を作成できる", async () => {
+		test("新しい楽曲を作成できる", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song = createTestOfficialSong();
@@ -646,7 +646,7 @@ describe("Admin Official Songs API", () => {
 			expect(json.name).toBe(song.name);
 		});
 
-		it("重複するIDは409を返す", async () => {
+		test("重複するIDは409を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song = createTestOfficialSong();
@@ -662,7 +662,7 @@ describe("Admin Official Songs API", () => {
 			expect(res.status).toBe(409);
 		});
 
-		it("sourceSongIdが自身を参照している場合は400を返す", async () => {
+		test("sourceSongIdが自身を参照している場合は400を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song = createTestOfficialSong({
@@ -680,7 +680,7 @@ describe("Admin Official Songs API", () => {
 	});
 
 	describe("PUT /:id - 更新", () => {
-		it("楽曲を更新できる", async () => {
+		test("楽曲を更新できる", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song = createTestOfficialSong({ name: "Original" });
@@ -705,7 +705,7 @@ describe("Admin Official Songs API", () => {
 			expect(json.name).toBe("Updated");
 		});
 
-		it("存在しない楽曲は404を返す", async () => {
+		test("存在しない楽曲は404を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -717,7 +717,7 @@ describe("Admin Official Songs API", () => {
 			expect(res.status).toBe(404);
 		});
 
-		it("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
+		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song = createTestOfficialSong();
@@ -737,7 +737,7 @@ describe("Admin Official Songs API", () => {
 			expect(json.error).toContain("更新");
 		});
 
-		it("sourceSongIdが自身を参照する更新は400を返す", async () => {
+		test("sourceSongIdが自身を参照する更新は400を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song = createTestOfficialSong({ id: "test_song_123" });
@@ -761,7 +761,7 @@ describe("Admin Official Songs API", () => {
 	});
 
 	describe("DELETE /:id - 削除", () => {
-		it("楽曲を削除できる", async () => {
+		test("楽曲を削除できる", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song = createTestOfficialSong();
@@ -780,7 +780,7 @@ describe("Admin Official Songs API", () => {
 			expect(getRes.status).toBe(404);
 		});
 
-		it("存在しない楽曲は404を返す", async () => {
+		test("存在しない楽曲は404を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -792,14 +792,14 @@ describe("Admin Official Songs API", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(songsRouter, { user: null });
 
 			const res = await app.request("/");
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(songsRouter, { user: { role: "user" } });
 
 			const res = await app.request("/");
@@ -810,7 +810,7 @@ describe("Admin Official Songs API", () => {
 
 describe("Admin Official Song Links API", () => {
 	describe("GET /:songId/links - リンク一覧取得", () => {
-		it("楽曲のリンク一覧を返す", async () => {
+		test("楽曲のリンク一覧を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			await setupTestPlatform();
@@ -831,7 +831,7 @@ describe("Admin Official Song Links API", () => {
 			expect(json[0]?.id).toBe(link.id);
 		});
 
-		it("存在しない楽曲は404を返す", async () => {
+		test("存在しない楽曲は404を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const res = await app.request("/nonexistent/links");
@@ -840,7 +840,7 @@ describe("Admin Official Song Links API", () => {
 	});
 
 	describe("POST /:songId/links - リンク追加", () => {
-		it("新しいリンクを追加できる", async () => {
+		test("新しいリンクを追加できる", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			await setupTestPlatform();
@@ -864,7 +864,7 @@ describe("Admin Official Song Links API", () => {
 			expect(json.id).toBe(link.id);
 		});
 
-		it("同一楽曲内でURLが重複する場合は409を返す", async () => {
+		test("同一楽曲内でURLが重複する場合は409を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			await setupTestPlatform();
@@ -895,7 +895,7 @@ describe("Admin Official Song Links API", () => {
 	});
 
 	describe("DELETE /:songId/links/:linkId - リンク削除", () => {
-		it("リンクを削除できる", async () => {
+		test("リンクを削除できる", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			await setupTestPlatform();
@@ -917,7 +917,7 @@ describe("Admin Official Song Links API", () => {
 			expect(json.success).toBe(true);
 		});
 
-		it("存在しないリンクは404を返す", async () => {
+		test("存在しないリンクは404を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song = createTestOfficialSong();

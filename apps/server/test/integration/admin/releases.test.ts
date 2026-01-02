@@ -12,7 +12,7 @@ import {
 	beforeEach,
 	describe,
 	expect,
-	it,
+	test,
 } from "bun:test";
 import {
 	__resetDatabase,
@@ -149,7 +149,7 @@ async function setupTestTrack(
 
 describe("Admin Releases API", () => {
 	describe("GET / - 一覧取得", () => {
-		it("リリースが存在しない場合、空配列を返す", async () => {
+		test("リリースが存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const res = await app.request("/");
@@ -160,7 +160,7 @@ describe("Admin Releases API", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("リリース一覧をページネーション付きで返す", async () => {
+		test("リリース一覧をページネーション付きで返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			await setupTestRelease({ name: "Release A" });
@@ -176,7 +176,7 @@ describe("Admin Releases API", () => {
 			expect(json.limit).toBe(10);
 		});
 
-		it("リリースタイプでフィルタリングできる", async () => {
+		test("リリースタイプでフィルタリングできる", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			await setupTestRelease({ name: "Album", releaseType: "album" });
@@ -190,7 +190,7 @@ describe("Admin Releases API", () => {
 			expect(json.data[0]?.name).toBe("Album");
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			await setupTestRelease({ name: "東方紅魔郷" });
@@ -206,7 +206,7 @@ describe("Admin Releases API", () => {
 	});
 
 	describe("GET /:id - 個別取得", () => {
-		it("存在するリリースをディスク情報付きで返す", async () => {
+		test("存在するリリースをディスク情報付きで返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease({ name: "Test Release" });
@@ -221,7 +221,7 @@ describe("Admin Releases API", () => {
 			expect(json.discs.length).toBe(1);
 		});
 
-		it("存在しないリリースは404を返す", async () => {
+		test("存在しないリリースは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const res = await app.request("/nonexistent");
@@ -230,7 +230,7 @@ describe("Admin Releases API", () => {
 	});
 
 	describe("POST / - 新規作成", () => {
-		it("新しいリリースを作成できる", async () => {
+		test("新しいリリースを作成できる", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = createTestRelease();
@@ -247,7 +247,7 @@ describe("Admin Releases API", () => {
 			expect(json.name).toBe(release.name);
 		});
 
-		it("重複するIDは409を返す", async () => {
+		test("重複するIDは409を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -269,7 +269,7 @@ describe("Admin Releases API", () => {
 	});
 
 	describe("PUT /:id - 更新", () => {
-		it("リリースを更新できる", async () => {
+		test("リリースを更新できる", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease({ name: "Original" });
@@ -293,7 +293,7 @@ describe("Admin Releases API", () => {
 			expect(json.name).toBe("Updated");
 		});
 
-		it("存在しないリリースは404を返す", async () => {
+		test("存在しないリリースは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -305,7 +305,7 @@ describe("Admin Releases API", () => {
 			expect(res.status).toBe(404);
 		});
 
-		it("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
+		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -326,7 +326,7 @@ describe("Admin Releases API", () => {
 	});
 
 	describe("DELETE /:id - 削除", () => {
-		it("リリースを削除できる", async () => {
+		test("リリースを削除できる", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -344,7 +344,7 @@ describe("Admin Releases API", () => {
 			expect(getRes.status).toBe(404);
 		});
 
-		it("存在しないリリースは404を返す", async () => {
+		test("存在しないリリースは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -356,14 +356,14 @@ describe("Admin Releases API", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter, { user: null });
 
 			const res = await app.request("/");
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter, {
 				user: { role: "user" },
 			});
@@ -376,7 +376,7 @@ describe("Admin Releases API", () => {
 
 describe("Admin Discs API", () => {
 	describe("GET /:releaseId/discs - ディスク一覧取得", () => {
-		it("リリースのディスク一覧を返す", async () => {
+		test("リリースのディスク一覧を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -390,7 +390,7 @@ describe("Admin Discs API", () => {
 			expect(json.length).toBe(2);
 		});
 
-		it("存在しないリリースは404を返す", async () => {
+		test("存在しないリリースは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const res = await app.request("/nonexistent/discs");
@@ -399,7 +399,7 @@ describe("Admin Discs API", () => {
 	});
 
 	describe("POST /:releaseId/discs - ディスク追加", () => {
-		it("新しいディスクを追加できる", async () => {
+		test("新しいディスクを追加できる", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -418,7 +418,7 @@ describe("Admin Discs API", () => {
 			expect(json.discNumber).toBe(1);
 		});
 
-		it("同一リリース内でディスク番号が重複する場合は409を返す", async () => {
+		test("同一リリース内でディスク番号が重複する場合は409を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -439,7 +439,7 @@ describe("Admin Discs API", () => {
 	});
 
 	describe("PUT /:releaseId/discs/:discId - ディスク更新", () => {
-		it("ディスクを更新できる", async () => {
+		test("ディスクを更新できる", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -465,7 +465,7 @@ describe("Admin Discs API", () => {
 			expect(json.discNumber).toBe(2);
 		});
 
-		it("存在しないディスクは404を返す", async () => {
+		test("存在しないディスクは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -481,7 +481,7 @@ describe("Admin Discs API", () => {
 	});
 
 	describe("DELETE /:releaseId/discs/:discId - ディスク削除", () => {
-		it("ディスクを削除できる", async () => {
+		test("ディスクを削除できる", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -496,7 +496,7 @@ describe("Admin Discs API", () => {
 			expect(json.success).toBe(true);
 		});
 
-		it("存在しないディスクは404を返す", async () => {
+		test("存在しないディスクは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -512,7 +512,7 @@ describe("Admin Discs API", () => {
 
 describe("Admin Release Tracks API", () => {
 	describe("GET /:releaseId/tracks - トラック一覧取得", () => {
-		it("リリースのトラック一覧を返す", async () => {
+		test("リリースのトラック一覧を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -532,7 +532,7 @@ describe("Admin Release Tracks API", () => {
 			expect(json.length).toBe(2);
 		});
 
-		it("存在しないリリースは404を返す", async () => {
+		test("存在しないリリースは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const res = await app.request("/nonexistent/tracks");
@@ -541,7 +541,7 @@ describe("Admin Release Tracks API", () => {
 	});
 
 	describe("POST /:releaseId/tracks - トラック追加", () => {
-		it("新しいトラックを追加できる", async () => {
+		test("新しいトラックを追加できる", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -564,7 +564,7 @@ describe("Admin Release Tracks API", () => {
 			expect(json.name).toBe("New Track");
 		});
 
-		it("ディスク内でトラック番号が重複する場合は409を返す", async () => {
+		test("ディスク内でトラック番号が重複する場合は409を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -585,7 +585,7 @@ describe("Admin Release Tracks API", () => {
 			expect(res.status).toBe(409);
 		});
 
-		it("存在しないリリースは404を返す", async () => {
+		test("存在しないリリースは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const track = createTestTrack({
@@ -603,7 +603,7 @@ describe("Admin Release Tracks API", () => {
 	});
 
 	describe("PUT /:releaseId/tracks/:trackId - トラック更新", () => {
-		it("トラックを更新できる", async () => {
+		test("トラックを更新できる", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -632,7 +632,7 @@ describe("Admin Release Tracks API", () => {
 			expect(json.name).toBe("Updated Track");
 		});
 
-		it("存在しないトラックは404を返す", async () => {
+		test("存在しないトラックは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -646,7 +646,7 @@ describe("Admin Release Tracks API", () => {
 			expect(res.status).toBe(404);
 		});
 
-		it("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
+		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -670,7 +670,7 @@ describe("Admin Release Tracks API", () => {
 	});
 
 	describe("DELETE /:releaseId/tracks/:trackId - トラック削除", () => {
-		it("トラックを削除できる", async () => {
+		test("トラックを削除できる", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();
@@ -687,7 +687,7 @@ describe("Admin Release Tracks API", () => {
 			expect(json.success).toBe(true);
 		});
 
-		it("存在しないトラックは404を返す", async () => {
+		test("存在しないトラックは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = await setupTestRelease();

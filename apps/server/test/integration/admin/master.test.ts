@@ -12,7 +12,7 @@ import {
 	beforeEach,
 	describe,
 	expect,
-	it,
+	test,
 } from "bun:test";
 import {
 	__resetDatabase,
@@ -148,7 +148,7 @@ afterAll(() => {
 
 describe("Admin Platforms API", () => {
 	describe("GET / - 一覧取得", () => {
-		it("プラットフォームが存在しない場合、空配列を返す", async () => {
+		test("プラットフォームが存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const res = await app.request("/");
@@ -159,7 +159,7 @@ describe("Admin Platforms API", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("プラットフォーム一覧をページネーション付きで返す", async () => {
+		test("プラットフォーム一覧をページネーション付きで返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const platform1 = createTestPlatform({ name: "Twitter" });
@@ -174,7 +174,7 @@ describe("Admin Platforms API", () => {
 			expect(json.total).toBe(2);
 		});
 
-		it("カテゴリでフィルタリングできる", async () => {
+		test("カテゴリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const platform1 = createTestPlatform({
@@ -195,7 +195,7 @@ describe("Admin Platforms API", () => {
 			expect(json.data[0]?.name).toBe("Twitter");
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const platform1 = createTestPlatform({
@@ -218,7 +218,7 @@ describe("Admin Platforms API", () => {
 	});
 
 	describe("GET /:code - 個別取得", () => {
-		it("存在するプラットフォームを返す", async () => {
+		test("存在するプラットフォームを返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const platform = createTestPlatform({ code: "twitter", name: "Twitter" });
@@ -232,7 +232,7 @@ describe("Admin Platforms API", () => {
 			expect(json.name).toBe("Twitter");
 		});
 
-		it("存在しないプラットフォームは404を返す", async () => {
+		test("存在しないプラットフォームは404を返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const res = await app.request("/nonexistent");
@@ -241,7 +241,7 @@ describe("Admin Platforms API", () => {
 	});
 
 	describe("POST / - 新規作成", () => {
-		it("新しいプラットフォームを作成できる", async () => {
+		test("新しいプラットフォームを作成できる", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const platform = createTestPlatform({ code: "twitter", name: "Twitter" });
@@ -258,7 +258,7 @@ describe("Admin Platforms API", () => {
 			expect(json.name).toBe(platform.name);
 		});
 
-		it("sortOrderが未指定の場合は自動設定される", async () => {
+		test("sortOrderが未指定の場合は自動設定される", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const existingPlatform = createTestPlatform({ sortOrder: 5 });
@@ -277,7 +277,7 @@ describe("Admin Platforms API", () => {
 			expect(json.sortOrder).toBe(6);
 		});
 
-		it("重複するコードは409を返す", async () => {
+		test("重複するコードは409を返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const platform = createTestPlatform({ code: "twitter" });
@@ -296,7 +296,7 @@ describe("Admin Platforms API", () => {
 			expect(res.status).toBe(409);
 		});
 
-		it("必須フィールドが欠けている場合は400を返す", async () => {
+		test("必須フィールドが欠けている場合は400を返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const res = await app.request("/", {
@@ -310,7 +310,7 @@ describe("Admin Platforms API", () => {
 	});
 
 	describe("PUT /:code - 更新", () => {
-		it("プラットフォームを更新できる", async () => {
+		test("プラットフォームを更新できる", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const platform = createTestPlatform({ code: "twitter", name: "Twitter" });
@@ -334,7 +334,7 @@ describe("Admin Platforms API", () => {
 			expect(json.name).toBe("X (Twitter)");
 		});
 
-		it("存在しないプラットフォームは404を返す", async () => {
+		test("存在しないプラットフォームは404を返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -346,7 +346,7 @@ describe("Admin Platforms API", () => {
 			expect(res.status).toBe(404);
 		});
 
-		it("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
+		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const platform = createTestPlatform({ code: "twitter" });
@@ -366,7 +366,7 @@ describe("Admin Platforms API", () => {
 	});
 
 	describe("DELETE /:code - 削除", () => {
-		it("プラットフォームを削除できる", async () => {
+		test("プラットフォームを削除できる", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const platform = createTestPlatform({ code: "twitter" });
@@ -383,7 +383,7 @@ describe("Admin Platforms API", () => {
 			expect(getRes.status).toBe(404);
 		});
 
-		it("存在しないプラットフォームは404を返す", async () => {
+		test("存在しないプラットフォームは404を返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -395,7 +395,7 @@ describe("Admin Platforms API", () => {
 	});
 
 	describe("PUT /reorder - 並べ替え", () => {
-		it("複数のプラットフォームのsortOrderを一括更新できる", async () => {
+		test("複数のプラットフォームのsortOrderを一括更新できる", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const platform1 = createTestPlatform({ code: "p1", sortOrder: 0 });
@@ -425,7 +425,7 @@ describe("Admin Platforms API", () => {
 			expect(json2.sortOrder).toBe(0);
 		});
 
-		it("itemsが配列でない場合は400を返す", async () => {
+		test("itemsが配列でない場合は400を返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const res = await app.request("/reorder", {
@@ -439,14 +439,14 @@ describe("Admin Platforms API", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(platformsRouter, { user: null });
 
 			const res = await app.request("/");
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(platformsRouter, {
 				user: { role: "user" },
 			});
@@ -459,7 +459,7 @@ describe("Admin Platforms API", () => {
 
 describe("Admin Credit Roles API", () => {
 	describe("GET / - 一覧取得", () => {
-		it("クレジットロールが存在しない場合、空配列を返す", async () => {
+		test("クレジットロールが存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const res = await app.request("/");
@@ -470,7 +470,7 @@ describe("Admin Credit Roles API", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("クレジットロール一覧をページネーション付きで返す", async () => {
+		test("クレジットロール一覧をページネーション付きで返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const role1 = createTestCreditRole({ label: "作曲" });
@@ -485,7 +485,7 @@ describe("Admin Credit Roles API", () => {
 			expect(json.total).toBe(2);
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const role1 = createTestCreditRole({ code: "composer", label: "作曲" });
@@ -502,7 +502,7 @@ describe("Admin Credit Roles API", () => {
 	});
 
 	describe("GET /:code - 個別取得", () => {
-		it("存在するクレジットロールを返す", async () => {
+		test("存在するクレジットロールを返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const role = createTestCreditRole({ code: "composer", label: "作曲" });
@@ -516,7 +516,7 @@ describe("Admin Credit Roles API", () => {
 			expect(json.label).toBe("作曲");
 		});
 
-		it("存在しないクレジットロールは404を返す", async () => {
+		test("存在しないクレジットロールは404を返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const res = await app.request("/nonexistent");
@@ -525,7 +525,7 @@ describe("Admin Credit Roles API", () => {
 	});
 
 	describe("POST / - 新規作成", () => {
-		it("新しいクレジットロールを作成できる", async () => {
+		test("新しいクレジットロールを作成できる", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const role = createTestCreditRole({ code: "composer", label: "作曲" });
@@ -542,7 +542,7 @@ describe("Admin Credit Roles API", () => {
 			expect(json.label).toBe(role.label);
 		});
 
-		it("sortOrderが未指定の場合は自動設定される", async () => {
+		test("sortOrderが未指定の場合は自動設定される", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const existingRole = createTestCreditRole({ sortOrder: 5 });
@@ -561,7 +561,7 @@ describe("Admin Credit Roles API", () => {
 			expect(json.sortOrder).toBe(6);
 		});
 
-		it("重複するコードは409を返す", async () => {
+		test("重複するコードは409を返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const role = createTestCreditRole({ code: "composer" });
@@ -582,7 +582,7 @@ describe("Admin Credit Roles API", () => {
 	});
 
 	describe("PUT /:code - 更新", () => {
-		it("クレジットロールを更新できる", async () => {
+		test("クレジットロールを更新できる", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const role = createTestCreditRole({ code: "composer", label: "作曲" });
@@ -599,7 +599,7 @@ describe("Admin Credit Roles API", () => {
 			expect(json.label).toBe("Compose");
 		});
 
-		it("存在しないクレジットロールは404を返す", async () => {
+		test("存在しないクレジットロールは404を返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -613,7 +613,7 @@ describe("Admin Credit Roles API", () => {
 	});
 
 	describe("DELETE /:code - 削除", () => {
-		it("クレジットロールを削除できる", async () => {
+		test("クレジットロールを削除できる", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const role = createTestCreditRole({ code: "composer" });
@@ -630,7 +630,7 @@ describe("Admin Credit Roles API", () => {
 			expect(getRes.status).toBe(404);
 		});
 
-		it("存在しないクレジットロールは404を返す", async () => {
+		test("存在しないクレジットロールは404を返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -642,7 +642,7 @@ describe("Admin Credit Roles API", () => {
 	});
 
 	describe("PUT /reorder - 並べ替え", () => {
-		it("複数のクレジットロールのsortOrderを一括更新できる", async () => {
+		test("複数のクレジットロールのsortOrderを一括更新できる", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const role1 = createTestCreditRole({ code: "r1", sortOrder: 0 });
@@ -670,14 +670,14 @@ describe("Admin Credit Roles API", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter, { user: null });
 
 			const res = await app.request("/");
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter, {
 				user: { role: "user" },
 			});
@@ -690,7 +690,7 @@ describe("Admin Credit Roles API", () => {
 
 describe("Admin Alias Types API", () => {
 	describe("GET / - 一覧取得", () => {
-		it("別名タイプが存在しない場合、空配列を返す", async () => {
+		test("別名タイプが存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const res = await app.request("/");
@@ -701,7 +701,7 @@ describe("Admin Alias Types API", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("別名タイプ一覧をページネーション付きで返す", async () => {
+		test("別名タイプ一覧をページネーション付きで返す", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const type1 = createTestAliasType({ label: "別名" });
@@ -716,7 +716,7 @@ describe("Admin Alias Types API", () => {
 			expect(json.total).toBe(2);
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const type1 = createTestAliasType({ code: "alias", label: "別名" });
@@ -733,7 +733,7 @@ describe("Admin Alias Types API", () => {
 	});
 
 	describe("GET /:code - 個別取得", () => {
-		it("存在する別名タイプを返す", async () => {
+		test("存在する別名タイプを返す", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const type = createTestAliasType({ code: "alias", label: "別名" });
@@ -747,7 +747,7 @@ describe("Admin Alias Types API", () => {
 			expect(json.label).toBe("別名");
 		});
 
-		it("存在しない別名タイプは404を返す", async () => {
+		test("存在しない別名タイプは404を返す", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const res = await app.request("/nonexistent");
@@ -756,7 +756,7 @@ describe("Admin Alias Types API", () => {
 	});
 
 	describe("POST / - 新規作成", () => {
-		it("新しい別名タイプを作成できる", async () => {
+		test("新しい別名タイプを作成できる", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const type = createTestAliasType({ code: "alias", label: "別名" });
@@ -773,7 +773,7 @@ describe("Admin Alias Types API", () => {
 			expect(json.label).toBe(type.label);
 		});
 
-		it("sortOrderが未指定の場合は自動設定される", async () => {
+		test("sortOrderが未指定の場合は自動設定される", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const existingType = createTestAliasType({ sortOrder: 5 });
@@ -792,7 +792,7 @@ describe("Admin Alias Types API", () => {
 			expect(json.sortOrder).toBe(6);
 		});
 
-		it("重複するコードは409を返す", async () => {
+		test("重複するコードは409を返す", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const type = createTestAliasType({ code: "alias" });
@@ -813,7 +813,7 @@ describe("Admin Alias Types API", () => {
 	});
 
 	describe("PUT /:code - 更新", () => {
-		it("別名タイプを更新できる", async () => {
+		test("別名タイプを更新できる", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const type = createTestAliasType({ code: "alias", label: "別名" });
@@ -830,7 +830,7 @@ describe("Admin Alias Types API", () => {
 			expect(json.label).toBe("エイリアス");
 		});
 
-		it("存在しない別名タイプは404を返す", async () => {
+		test("存在しない別名タイプは404を返す", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -844,7 +844,7 @@ describe("Admin Alias Types API", () => {
 	});
 
 	describe("DELETE /:code - 削除", () => {
-		it("別名タイプを削除できる", async () => {
+		test("別名タイプを削除できる", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const type = createTestAliasType({ code: "alias" });
@@ -861,7 +861,7 @@ describe("Admin Alias Types API", () => {
 			expect(getRes.status).toBe(404);
 		});
 
-		it("存在しない別名タイプは404を返す", async () => {
+		test("存在しない別名タイプは404を返す", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -873,7 +873,7 @@ describe("Admin Alias Types API", () => {
 	});
 
 	describe("PUT /reorder - 並べ替え", () => {
-		it("複数の別名タイプのsortOrderを一括更新できる", async () => {
+		test("複数の別名タイプのsortOrderを一括更新できる", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const type1 = createTestAliasType({ code: "t1", sortOrder: 0 });
@@ -901,14 +901,14 @@ describe("Admin Alias Types API", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(aliasTypesRouter, { user: null });
 
 			const res = await app.request("/");
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(aliasTypesRouter, {
 				user: { role: "user" },
 			});
@@ -921,7 +921,7 @@ describe("Admin Alias Types API", () => {
 
 describe("Admin Official Work Categories API", () => {
 	describe("GET / - 一覧取得", () => {
-		it("カテゴリが存在しない場合、空配列を返す", async () => {
+		test("カテゴリが存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const res = await app.request("/");
@@ -932,7 +932,7 @@ describe("Admin Official Work Categories API", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("カテゴリ一覧をページネーション付きで返す", async () => {
+		test("カテゴリ一覧をページネーション付きで返す", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const cat1 = createTestOfficialWorkCategory({ name: "ゲーム" });
@@ -947,7 +947,7 @@ describe("Admin Official Work Categories API", () => {
 			expect(json.total).toBe(2);
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const cat1 = createTestOfficialWorkCategory({
@@ -970,7 +970,7 @@ describe("Admin Official Work Categories API", () => {
 	});
 
 	describe("GET /:code - 個別取得", () => {
-		it("存在するカテゴリを返す", async () => {
+		test("存在するカテゴリを返す", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const cat = createTestOfficialWorkCategory({
@@ -987,7 +987,7 @@ describe("Admin Official Work Categories API", () => {
 			expect(json.name).toBe("ゲーム");
 		});
 
-		it("存在しないカテゴリは404を返す", async () => {
+		test("存在しないカテゴリは404を返す", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const res = await app.request("/nonexistent");
@@ -996,7 +996,7 @@ describe("Admin Official Work Categories API", () => {
 	});
 
 	describe("POST / - 新規作成", () => {
-		it("新しいカテゴリを作成できる", async () => {
+		test("新しいカテゴリを作成できる", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const cat = createTestOfficialWorkCategory({
@@ -1016,7 +1016,7 @@ describe("Admin Official Work Categories API", () => {
 			expect(json.name).toBe(cat.name);
 		});
 
-		it("sortOrderが未指定の場合は自動設定される", async () => {
+		test("sortOrderが未指定の場合は自動設定される", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const existingCat = createTestOfficialWorkCategory({ sortOrder: 5 });
@@ -1035,7 +1035,7 @@ describe("Admin Official Work Categories API", () => {
 			expect(json.sortOrder).toBe(6);
 		});
 
-		it("重複するコードは409を返す", async () => {
+		test("重複するコードは409を返す", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const cat = createTestOfficialWorkCategory({ code: "game" });
@@ -1056,7 +1056,7 @@ describe("Admin Official Work Categories API", () => {
 	});
 
 	describe("PUT /:code - 更新", () => {
-		it("カテゴリを更新できる", async () => {
+		test("カテゴリを更新できる", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const cat = createTestOfficialWorkCategory({
@@ -1076,7 +1076,7 @@ describe("Admin Official Work Categories API", () => {
 			expect(json.name).toBe("PCゲーム");
 		});
 
-		it("存在しないカテゴリは404を返す", async () => {
+		test("存在しないカテゴリは404を返す", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -1090,7 +1090,7 @@ describe("Admin Official Work Categories API", () => {
 	});
 
 	describe("DELETE /:code - 削除", () => {
-		it("カテゴリを削除できる", async () => {
+		test("カテゴリを削除できる", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const cat = createTestOfficialWorkCategory({ code: "game" });
@@ -1107,7 +1107,7 @@ describe("Admin Official Work Categories API", () => {
 			expect(getRes.status).toBe(404);
 		});
 
-		it("存在しないカテゴリは404を返す", async () => {
+		test("存在しないカテゴリは404を返す", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -1119,7 +1119,7 @@ describe("Admin Official Work Categories API", () => {
 	});
 
 	describe("PUT /reorder - 並べ替え", () => {
-		it("複数のカテゴリのsortOrderを一括更新できる", async () => {
+		test("複数のカテゴリのsortOrderを一括更新できる", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const cat1 = createTestOfficialWorkCategory({ code: "c1", sortOrder: 0 });
@@ -1147,7 +1147,7 @@ describe("Admin Official Work Categories API", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter, {
 				user: null,
 			});
@@ -1156,7 +1156,7 @@ describe("Admin Official Work Categories API", () => {
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter, {
 				user: { role: "user" },
 			});

@@ -12,7 +12,7 @@ import {
 	beforeEach,
 	describe,
 	expect,
-	it,
+	test,
 } from "bun:test";
 import { __resetDatabase, __setTestDatabase, circles } from "@thac/db";
 import { circlesRouter } from "../../../src/routes/admin/circles";
@@ -79,7 +79,7 @@ describe("Admin Circles API", () => {
 	});
 
 	describe("GET / - 一覧取得", () => {
-		it("サークルが存在しない場合、空配列を返す", async () => {
+		test("サークルが存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const res = await app.request("/");
@@ -90,7 +90,7 @@ describe("Admin Circles API", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("サークル一覧をページネーション付きで返す", async () => {
+		test("サークル一覧をページネーション付きで返す", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			// テストデータを挿入
@@ -114,7 +114,7 @@ describe("Admin Circles API", () => {
 			expect(json.limit).toBe(10);
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle1 = createTestCircle({
@@ -132,7 +132,7 @@ describe("Admin Circles API", () => {
 			expect(json.data[0]?.name).toBe("IOSYS");
 		});
 
-		it("頭文字でフィルタリングできる", async () => {
+		test("頭文字でフィルタリングできる", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle1 = createTestCircle({
@@ -154,7 +154,7 @@ describe("Admin Circles API", () => {
 			expect(json.data[0]?.name).toBe("あ行サークル");
 		});
 
-		it("ソート順を指定できる", async () => {
+		test("ソート順を指定できる", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle1 = createTestCircle({
@@ -182,7 +182,7 @@ describe("Admin Circles API", () => {
 	});
 
 	describe("GET /:id - 個別取得", () => {
-		it("存在するサークルを返す", async () => {
+		test("存在するサークルを返す", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle = createTestCircle({ name: "Test Circle" });
@@ -197,7 +197,7 @@ describe("Admin Circles API", () => {
 			expect(json.links).toBeDefined();
 		});
 
-		it("存在しないサークルは404を返す", async () => {
+		test("存在しないサークルは404を返す", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const res = await app.request("/nonexistent");
@@ -206,7 +206,7 @@ describe("Admin Circles API", () => {
 	});
 
 	describe("POST / - 新規作成", () => {
-		it("新しいサークルを作成できる", async () => {
+		test("新しいサークルを作成できる", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle = createTestCircle();
@@ -223,7 +223,7 @@ describe("Admin Circles API", () => {
 			expect(json.name).toBe(circle.name);
 		});
 
-		it("latin/hiragana/katakanaの場合はnameInitialが必須", async () => {
+		test("latin/hiragana/katakanaの場合はnameInitialが必須", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle = createTestCircle({
@@ -239,7 +239,7 @@ describe("Admin Circles API", () => {
 			expect(res.status).toBe(400);
 		});
 
-		it("必須フィールドが欠けている場合は400を返す", async () => {
+		test("必須フィールドが欠けている場合は400を返す", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const res = await app.request("/", {
@@ -251,7 +251,7 @@ describe("Admin Circles API", () => {
 			expect(res.status).toBe(400);
 		});
 
-		it("重複するIDは409を返す", async () => {
+		test("重複するIDは409を返す", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle = createTestCircle();
@@ -272,7 +272,7 @@ describe("Admin Circles API", () => {
 			expect(json.error).toContain("ID");
 		});
 
-		it("重複する名前は409を返す", async () => {
+		test("重複する名前は409を返す", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle = createTestCircle({ name: "Sound Horizon" });
@@ -290,7 +290,7 @@ describe("Admin Circles API", () => {
 	});
 
 	describe("PUT /:id - 更新", () => {
-		it("サークルを更新できる", async () => {
+		test("サークルを更新できる", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle = createTestCircle({ name: "Original Circle" });
@@ -315,7 +315,7 @@ describe("Admin Circles API", () => {
 			expect(json.name).toBe("Updated Circle");
 		});
 
-		it("存在しないサークルは404を返す", async () => {
+		test("存在しないサークルは404を返す", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -327,7 +327,7 @@ describe("Admin Circles API", () => {
 			expect(res.status).toBe(404);
 		});
 
-		it("他のサークルと重複する名前は409を返す", async () => {
+		test("他のサークルと重複する名前は409を返す", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle1 = createTestCircle({ name: "Circle One" });
@@ -350,7 +350,7 @@ describe("Admin Circles API", () => {
 			expect(updateRes.status).toBe(409);
 		});
 
-		it("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
+		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle = createTestCircle({ name: "Original Circle" });
@@ -373,7 +373,7 @@ describe("Admin Circles API", () => {
 	});
 
 	describe("DELETE /:id - 削除", () => {
-		it("サークルを削除できる", async () => {
+		test("サークルを削除できる", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const circle = createTestCircle();
@@ -392,7 +392,7 @@ describe("Admin Circles API", () => {
 			expect(getRes.status).toBe(404);
 		});
 
-		it("存在しないサークルは404を返す", async () => {
+		test("存在しないサークルは404を返す", async () => {
 			const app = createTestAdminApp(circlesRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -404,14 +404,14 @@ describe("Admin Circles API", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(circlesRouter, { user: null });
 
 			const res = await app.request("/");
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(circlesRouter, { user: { role: "user" } });
 
 			const res = await app.request("/");

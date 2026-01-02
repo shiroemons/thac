@@ -12,7 +12,7 @@ import {
 	beforeEach,
 	describe,
 	expect,
-	it,
+	test,
 } from "bun:test";
 import {
 	__resetDatabase,
@@ -110,7 +110,7 @@ afterAll(() => {
 
 describe("Admin Event Series API", () => {
 	describe("GET / - 一覧取得", () => {
-		it("イベントシリーズが存在しない場合、空配列を返す", async () => {
+		test("イベントシリーズが存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const res = await app.request("/");
@@ -121,7 +121,7 @@ describe("Admin Event Series API", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("イベントシリーズ一覧を返す", async () => {
+		test("イベントシリーズ一覧を返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const series1 = createTestEventSeries({
@@ -142,7 +142,7 @@ describe("Admin Event Series API", () => {
 			expect(json.total).toBe(2);
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const series1 = createTestEventSeries({ name: "コミックマーケット" });
@@ -159,7 +159,7 @@ describe("Admin Event Series API", () => {
 	});
 
 	describe("GET /:id - 個別取得", () => {
-		it("存在するイベントシリーズを返す", async () => {
+		test("存在するイベントシリーズを返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const series = createTestEventSeries({ name: "コミックマーケット" });
@@ -174,7 +174,7 @@ describe("Admin Event Series API", () => {
 			expect(json.events).toBeDefined();
 		});
 
-		it("存在しないイベントシリーズは404を返す", async () => {
+		test("存在しないイベントシリーズは404を返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const res = await app.request("/nonexistent");
@@ -183,7 +183,7 @@ describe("Admin Event Series API", () => {
 	});
 
 	describe("POST / - 新規作成", () => {
-		it("新しいイベントシリーズを作成できる", async () => {
+		test("新しいイベントシリーズを作成できる", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const series = createTestEventSeries({ name: "新しいイベント" });
@@ -200,7 +200,7 @@ describe("Admin Event Series API", () => {
 			expect(json.name).toBe(series.name);
 		});
 
-		it("sortOrderが未指定の場合は自動設定される", async () => {
+		test("sortOrderが未指定の場合は自動設定される", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const existingSeries = createTestEventSeries({ sortOrder: 5 });
@@ -219,7 +219,7 @@ describe("Admin Event Series API", () => {
 			expect(json.sortOrder).toBe(6);
 		});
 
-		it("重複するIDは409を返す", async () => {
+		test("重複するIDは409を返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const series = createTestEventSeries();
@@ -238,7 +238,7 @@ describe("Admin Event Series API", () => {
 			expect(res.status).toBe(409);
 		});
 
-		it("重複する名前は409を返す", async () => {
+		test("重複する名前は409を返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const series = createTestEventSeries({ name: "コミックマーケット" });
@@ -258,7 +258,7 @@ describe("Admin Event Series API", () => {
 	});
 
 	describe("PUT /:id - 更新", () => {
-		it("イベントシリーズを更新できる", async () => {
+		test("イベントシリーズを更新できる", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const series = createTestEventSeries({ name: "Original Series" });
@@ -282,7 +282,7 @@ describe("Admin Event Series API", () => {
 			expect(json.name).toBe("Updated Series");
 		});
 
-		it("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
+		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const series = createTestEventSeries();
@@ -302,7 +302,7 @@ describe("Admin Event Series API", () => {
 	});
 
 	describe("DELETE /:id - 削除", () => {
-		it("イベントシリーズを削除できる", async () => {
+		test("イベントシリーズを削除できる", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const series = createTestEventSeries();
@@ -319,7 +319,7 @@ describe("Admin Event Series API", () => {
 			expect(getRes.status).toBe(404);
 		});
 
-		it("イベントが紐付いている場合は削除できない", async () => {
+		test("イベントが紐付いている場合は削除できない", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const series = createTestEventSeries();
@@ -339,7 +339,7 @@ describe("Admin Event Series API", () => {
 	});
 
 	describe("PUT /reorder - ソート順一括更新", () => {
-		it("複数のイベントシリーズのsortOrderを一括更新できる", async () => {
+		test("複数のイベントシリーズのsortOrderを一括更新できる", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const series1 = createTestEventSeries({ sortOrder: 0 });
@@ -369,7 +369,7 @@ describe("Admin Event Series API", () => {
 			expect(json2.sortOrder).toBe(0);
 		});
 
-		it("itemsが配列でない場合は400を返す", async () => {
+		test("itemsが配列でない場合は400を返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const res = await app.request("/reorder", {
@@ -381,7 +381,7 @@ describe("Admin Event Series API", () => {
 			expect(res.status).toBe(400);
 		});
 
-		it("itemsが不正な形式の場合は400を返す", async () => {
+		test("itemsが不正な形式の場合は400を返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter);
 
 			const res = await app.request("/reorder", {
@@ -397,14 +397,14 @@ describe("Admin Event Series API", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter, { user: null });
 
 			const res = await app.request("/");
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(eventSeriesRouter, {
 				user: { role: "user" },
 			});
@@ -417,7 +417,7 @@ describe("Admin Event Series API", () => {
 
 describe("Admin Events API", () => {
 	describe("GET / - 一覧取得", () => {
-		it("イベントが存在しない場合、空配列を返す", async () => {
+		test("イベントが存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const res = await app.request("/");
@@ -428,7 +428,7 @@ describe("Admin Events API", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("イベント一覧をページネーション付きで返す", async () => {
+		test("イベント一覧をページネーション付きで返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const event1 = createTestEvent({ name: "Event 1" });
@@ -443,7 +443,7 @@ describe("Admin Events API", () => {
 			expect(json.total).toBe(2);
 		});
 
-		it("シリーズIDでフィルタリングできる", async () => {
+		test("シリーズIDでフィルタリングできる", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const series = createTestEventSeries();
@@ -464,7 +464,7 @@ describe("Admin Events API", () => {
 			expect(json.data[0]?.name).toBe("Linked Event");
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const event1 = createTestEvent({ name: "コミックマーケット101" });
@@ -481,7 +481,7 @@ describe("Admin Events API", () => {
 	});
 
 	describe("GET /:id - 個別取得", () => {
-		it("存在するイベントを返す", async () => {
+		test("存在するイベントを返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const event = createTestEvent({ name: "Test Event" });
@@ -496,7 +496,7 @@ describe("Admin Events API", () => {
 			expect(json.days).toBeDefined();
 		});
 
-		it("存在しないイベントは404を返す", async () => {
+		test("存在しないイベントは404を返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const res = await app.request("/nonexistent");
@@ -505,7 +505,7 @@ describe("Admin Events API", () => {
 	});
 
 	describe("POST / - 新規作成", () => {
-		it("新しいイベントを作成できる", async () => {
+		test("新しいイベントを作成できる", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const event = createTestEvent({ name: "New Event" });
@@ -522,7 +522,7 @@ describe("Admin Events API", () => {
 			expect(json.name).toBe(event.name);
 		});
 
-		it("シリーズを紐付けてイベントを作成できる", async () => {
+		test("シリーズを紐付けてイベントを作成できる", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const series = createTestEventSeries();
@@ -545,7 +545,7 @@ describe("Admin Events API", () => {
 			expect(json.edition).toBe(101);
 		});
 
-		it("存在しないシリーズIDは404を返す", async () => {
+		test("存在しないシリーズIDは404を返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const event = createTestEvent({ eventSeriesId: "nonexistent" });
@@ -558,7 +558,7 @@ describe("Admin Events API", () => {
 			expect(res.status).toBe(404);
 		});
 
-		it("同一シリーズ内で重複する回次は409を返す", async () => {
+		test("同一シリーズ内で重複する回次は409を返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const series = createTestEventSeries();
@@ -583,7 +583,7 @@ describe("Admin Events API", () => {
 			expect(res.status).toBe(409);
 		});
 
-		it("重複するIDは409を返す", async () => {
+		test("重複するIDは409を返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const event = createTestEvent();
@@ -604,7 +604,7 @@ describe("Admin Events API", () => {
 	});
 
 	describe("PUT /:id - 更新", () => {
-		it("イベントを更新できる", async () => {
+		test("イベントを更新できる", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const event = createTestEvent({ name: "Original Event" });
@@ -628,7 +628,7 @@ describe("Admin Events API", () => {
 			expect(json.name).toBe("Updated Event");
 		});
 
-		it("存在しないイベントは404を返す", async () => {
+		test("存在しないイベントは404を返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -640,7 +640,7 @@ describe("Admin Events API", () => {
 			expect(res.status).toBe(404);
 		});
 
-		it("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
+		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const event = createTestEvent();
@@ -660,7 +660,7 @@ describe("Admin Events API", () => {
 	});
 
 	describe("DELETE /:id - 削除", () => {
-		it("イベントを削除できる", async () => {
+		test("イベントを削除できる", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const event = createTestEvent();
@@ -677,7 +677,7 @@ describe("Admin Events API", () => {
 			expect(getRes.status).toBe(404);
 		});
 
-		it("存在しないイベントは404を返す", async () => {
+		test("存在しないイベントは404を返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -689,14 +689,14 @@ describe("Admin Events API", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter, { user: null });
 
 			const res = await app.request("/");
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(eventsAdminRouter, {
 				user: { role: "user" },
 			});

@@ -12,7 +12,7 @@ import {
 	beforeEach,
 	describe,
 	expect,
-	it,
+	test,
 } from "bun:test";
 import {
 	__resetDatabase,
@@ -101,7 +101,7 @@ async function setupTestArtist(id?: string) {
 
 describe("Admin Artist Aliases API", () => {
 	describe("GET / - 一覧取得", () => {
-		it("別名が存在しない場合、空配列を返す", async () => {
+		test("別名が存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const res = await app.request("/");
@@ -112,7 +112,7 @@ describe("Admin Artist Aliases API", () => {
 			expect(json.total).toBe(0);
 		});
 
-		it("別名一覧をページネーション付きで返す", async () => {
+		test("別名一覧をページネーション付きで返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const artist = await setupTestArtist();
@@ -136,7 +136,7 @@ describe("Admin Artist Aliases API", () => {
 			expect(json.limit).toBe(10);
 		});
 
-		it("アーティストIDでフィルタリングできる", async () => {
+		test("アーティストIDでフィルタリングできる", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const artist1 = await setupTestArtist();
@@ -160,7 +160,7 @@ describe("Admin Artist Aliases API", () => {
 			expect(json.data[0]?.name).toBe("Alias for Artist 1");
 		});
 
-		it("検索クエリでフィルタリングできる", async () => {
+		test("検索クエリでフィルタリングできる", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const artist = await setupTestArtist();
@@ -184,7 +184,7 @@ describe("Admin Artist Aliases API", () => {
 	});
 
 	describe("GET /:id - 個別取得", () => {
-		it("存在する別名を返す", async () => {
+		test("存在する別名を返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const artist = await setupTestArtist();
@@ -202,7 +202,7 @@ describe("Admin Artist Aliases API", () => {
 			expect(json.name).toBe("Test Alias");
 		});
 
-		it("存在しない別名は404を返す", async () => {
+		test("存在しない別名は404を返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const res = await app.request("/nonexistent");
@@ -211,7 +211,7 @@ describe("Admin Artist Aliases API", () => {
 	});
 
 	describe("POST / - 新規作成", () => {
-		it("新しい別名を作成できる", async () => {
+		test("新しい別名を作成できる", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const artist = await setupTestArtist();
@@ -229,7 +229,7 @@ describe("Admin Artist Aliases API", () => {
 			expect(json.name).toBe(alias.name);
 		});
 
-		it("存在しないアーティストIDは404を返す", async () => {
+		test("存在しないアーティストIDは404を返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const alias = createTestArtistAlias({ artistId: "nonexistent" });
@@ -242,7 +242,7 @@ describe("Admin Artist Aliases API", () => {
 			expect(res.status).toBe(404);
 		});
 
-		it("重複するIDは409を返す", async () => {
+		test("重複するIDは409を返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const artist = await setupTestArtist();
@@ -265,7 +265,7 @@ describe("Admin Artist Aliases API", () => {
 			expect(json.error).toContain("ID");
 		});
 
-		it("同一アーティスト内で重複する名前は409を返す", async () => {
+		test("同一アーティスト内で重複する名前は409を返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const artist = await setupTestArtist();
@@ -290,7 +290,7 @@ describe("Admin Artist Aliases API", () => {
 	});
 
 	describe("PUT /:id - 更新", () => {
-		it("別名を更新できる", async () => {
+		test("別名を更新できる", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const artist = await setupTestArtist();
@@ -319,7 +319,7 @@ describe("Admin Artist Aliases API", () => {
 			expect(json.name).toBe("Updated");
 		});
 
-		it("存在しない別名は404を返す", async () => {
+		test("存在しない別名は404を返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -331,7 +331,7 @@ describe("Admin Artist Aliases API", () => {
 			expect(res.status).toBe(404);
 		});
 
-		it("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
+		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const artist = await setupTestArtist();
@@ -352,7 +352,7 @@ describe("Admin Artist Aliases API", () => {
 			expect(json.error).toContain("更新");
 		});
 
-		it("同一アーティスト内で他の別名と重複する名前は409を返す", async () => {
+		test("同一アーティスト内で他の別名と重複する名前は409を返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const artist = await setupTestArtist();
@@ -384,7 +384,7 @@ describe("Admin Artist Aliases API", () => {
 	});
 
 	describe("DELETE /:id - 削除", () => {
-		it("別名を削除できる", async () => {
+		test("別名を削除できる", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const artist = await setupTestArtist();
@@ -404,7 +404,7 @@ describe("Admin Artist Aliases API", () => {
 			expect(getRes.status).toBe(404);
 		});
 
-		it("存在しない別名は404を返す", async () => {
+		test("存在しない別名は404を返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter);
 
 			const res = await app.request("/nonexistent", {
@@ -416,14 +416,14 @@ describe("Admin Artist Aliases API", () => {
 	});
 
 	describe("認証・認可", () => {
-		it("未認証リクエストは401を返す", async () => {
+		test("未認証リクエストは401を返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter, { user: null });
 
 			const res = await app.request("/");
 			expect(res.status).toBe(401);
 		});
 
-		it("非管理者ユーザーは403を返す", async () => {
+		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(artistAliasesRouter, {
 				user: { role: "user" },
 			});
