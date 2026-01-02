@@ -44,5 +44,24 @@ services:
       server:
         condition: service_healthy
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.31
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    environment:
+      - MEILI_ENV=development
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-development_master_key}
+      - MEILI_NO_ANALYTICS=true
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:7700/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
 volumes:
   node_modules:
+  meilisearch_data:

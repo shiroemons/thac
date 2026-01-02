@@ -1,6 +1,7 @@
 .PHONY: help dev up down logs ps build clean rebuild reset reset-deps prune shell-server shell-web \
 	db-push db-generate db-migrate db-seed db-setup db-studio \
-	check check-types check-local check-types-local test test-local
+	check check-types check-local check-types-local test test-local \
+	logs-meilisearch shell-meilisearch
 
 # デフォルトターゲット
 help: ## ヘルプを表示
@@ -132,3 +133,13 @@ test: ## テストを実行（Docker）
 
 test-local: ## テストを実行（ローカル）
 	bun test
+
+# =============================================================================
+# Meilisearch
+# =============================================================================
+
+logs-meilisearch: ## Meilisearchのログを表示
+	docker compose logs -f meilisearch
+
+shell-meilisearch: ## Meilisearchコンテナにシェル接続
+	docker compose exec meilisearch sh
