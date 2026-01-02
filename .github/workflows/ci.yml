@@ -36,4 +36,4 @@ jobs:
       - run: bun install --frozen-lockfile
 
       - name: Run CI checks
-        run: bun run check && bun run check-types && bun run test
+        run: bun run check && bun run check-types && bun run --cwd apps/web lint:jsx-nesting && bun run test
