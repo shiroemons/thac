@@ -180,15 +180,16 @@ export function PlatformEditDialog({
 							</div>
 						)}
 						<div className="grid gap-2">
-							<Label htmlFor="platform-code">
+							<Label htmlFor={`${mode}-platform-code`}>
 								コード <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="platform-code"
+								id={`${mode}-platform-code`}
 								value={form.code}
 								onChange={(e) => setForm({ ...form, code: e.target.value })}
 								placeholder="例: spotify"
 								disabled={isSubmitting || mode === "edit"}
+								autoComplete="off"
 							/>
 							{mode === "edit" && (
 								<p className="text-muted-foreground text-xs">
@@ -197,23 +198,24 @@ export function PlatformEditDialog({
 							)}
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="platform-name">
+							<Label htmlFor={`${mode}-platform-name`}>
 								名前 <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="platform-name"
+								id={`${mode}-platform-name`}
 								value={form.name}
 								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: Spotify"
 								disabled={isSubmitting}
+								autoComplete="off"
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="platform-category">
+							<Label htmlFor={`${mode}-platform-category`}>
 								カテゴリ <span className="text-error">*</span>
 							</Label>
 							<Select
-								id="platform-category"
+								id={`${mode}-platform-category`}
 								value={form.category}
 								onChange={(e) => setForm({ ...form, category: e.target.value })}
 								disabled={isSubmitting}
@@ -226,15 +228,16 @@ export function PlatformEditDialog({
 							</Select>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="platform-urlPattern">URLパターン</Label>
+							<Label htmlFor={`${mode}-platform-urlPattern`}>URLパターン</Label>
 							<Input
-								id="platform-urlPattern"
+								id={`${mode}-platform-urlPattern`}
 								value={form.urlPattern}
 								onChange={(e) =>
 									setForm({ ...form, urlPattern: e.target.value })
 								}
 								placeholder="例: ^https?://open\.spotify\.com/"
 								disabled={isSubmitting}
+								autoComplete="off"
 							/>
 						</div>
 					</div>
