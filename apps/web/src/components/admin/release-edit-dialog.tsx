@@ -208,10 +208,11 @@ export function ReleaseEditDialog({
 						)}
 						<div className="grid gap-4">
 							<div className="grid gap-2">
-								<Label>
+								<Label htmlFor="release-name">
 									作品名 <span className="text-error">*</span>
 								</Label>
 								<Input
+									id="release-name"
 									value={editForm.name || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, name: e.target.value })
@@ -220,8 +221,9 @@ export function ReleaseEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label>日本語名</Label>
+								<Label htmlFor="release-nameJa">日本語名</Label>
 								<Input
+									id="release-nameJa"
 									value={editForm.nameJa || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, nameJa: e.target.value })
@@ -230,8 +232,9 @@ export function ReleaseEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label>英語名</Label>
+								<Label htmlFor="release-nameEn">英語名</Label>
 								<Input
+									id="release-nameEn"
 									value={editForm.nameEn || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, nameEn: e.target.value })
@@ -240,8 +243,9 @@ export function ReleaseEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label>タイプ</Label>
+								<Label htmlFor="release-type">タイプ</Label>
 								<Select
+									id="release-type"
 									value={editForm.releaseType || ""}
 									onChange={(e) =>
 										setEditForm({
@@ -308,8 +312,9 @@ export function ReleaseEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label>発売日</Label>
+								<Label htmlFor="release-date">発売日</Label>
 								<Input
+									id="release-date"
 									type="date"
 									value={editForm.releaseDate || ""}
 									onChange={(e) =>
@@ -319,8 +324,9 @@ export function ReleaseEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label>メモ</Label>
+								<Label htmlFor="release-notes">メモ</Label>
 								<Textarea
+									id="release-notes"
 									value={editForm.notes || ""}
 									onChange={(e) =>
 										setEditForm({ ...editForm, notes: e.target.value })
