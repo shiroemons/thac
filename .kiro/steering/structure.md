@@ -77,6 +77,14 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 **Pattern**: `{functionality}.ts`（機能別ユーティリティ）
 **Example**: `api-error.ts`（エラーハンドリングヘルパー）
 
+### Server Tests (`apps/server/test/`)
+**Location**: `/apps/server/test/`
+**Purpose**: サーバーAPIの統合テスト
+**Pattern**:
+- `helpers/`: 共有テストユーティリティ
+- `integration/admin/`: 管理API統合テスト（`{entity}.test.ts`）
+**Example**: `integration/admin/artists.test.ts`, `helpers/test-response.ts`
+
 ### Utility Package (`packages/utils/`)
 **Location**: `/packages/utils/`
 **Purpose**: アプリ間で共有するユーティリティ関数
