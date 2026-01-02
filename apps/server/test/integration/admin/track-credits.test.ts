@@ -28,6 +28,18 @@ import {
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectConflict,
+	expectCreated,
+	expectForbidden,
+	expectNotFound,
+	expectSuccess,
+	expectUnauthorized,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface TrackCreditResponse {
@@ -40,11 +52,6 @@ interface TrackCreditResponse {
 	artist?: unknown;
 	artistAlias?: unknown;
 	roles?: unknown[];
-}
-
-interface DeleteResponse {
-	success: boolean;
-	id: string;
 }
 
 describe("Admin Track Credits API", () => {
@@ -76,7 +83,7 @@ describe("Admin Track Credits API", () => {
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_nonexistent/credits",
 			);
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("クレジットがない場合は空配列を返す", async () => {
@@ -90,9 +97,7 @@ describe("Admin Track Credits API", () => {
 				);
 
 			const res = await app.request("/rel_test_001/tracks/tr_test_001/credits");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackCreditResponse[];
+			const json = await expectSuccess<TrackCreditResponse[]>(res);
 			expect(json).toEqual([]);
 		});
 
@@ -117,9 +122,7 @@ describe("Admin Track Credits API", () => {
 			});
 
 			const res = await app.request("/rel_test_001/tracks/tr_test_001/credits");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackCreditResponse[];
+			const json = await expectSuccess<TrackCreditResponse[]>(res);
 			expect(json).toHaveLength(1);
 			expect(json[0]?.creditName).toBe("Test Artist");
 			expect(json[0]?.artist).toBeDefined();
@@ -151,9 +154,7 @@ describe("Admin Track Credits API", () => {
 			]);
 
 			const res = await app.request("/rel_test_001/tracks/tr_test_001/credits");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackCreditResponse[];
+			const json = await expectSuccess<TrackCreditResponse[]>(res);
 			expect(json[0]?.roles).toHaveLength(2);
 		});
 	});
@@ -167,17 +168,13 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_nonexistent/credits",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						id: "tc_001",
-						artistId: "ar_test_001",
-						creditName: "Test Artist",
-					}),
-				},
+				postJson({
+					id: "tc_001",
+					artistId: "ar_test_001",
+					creditName: "Test Artist",
+				}),
 			);
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("存在しないアーティストは404を返す", async () => {
@@ -192,17 +189,13 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						id: "tc_001",
-						artistId: "ar_nonexistent",
-						creditName: "Test",
-					}),
-				},
+				postJson({
+					id: "tc_001",
+					artistId: "ar_nonexistent",
+					creditName: "Test",
+				}),
 			);
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("新しいクレジットを追加できる", async () => {
@@ -220,19 +213,14 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						id: "tc_001",
-						artistId: "ar_test_001",
-						creditName: "Test Artist",
-					}),
-				},
+				postJson({
+					id: "tc_001",
+					artistId: "ar_test_001",
+					creditName: "Test Artist",
+				}),
 			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as TrackCreditResponse;
+			const json = await expectCreated<TrackCreditResponse>(res);
 			expect(json.id).toBe("tc_001");
 			expect(json.creditName).toBe("Test Artist");
 		});
@@ -257,20 +245,15 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						id: "tc_001",
-						artistId: "ar_test_001",
-						artistAliasId: "aa_test_001",
-						creditName: "Alias Name",
-					}),
-				},
+				postJson({
+					id: "tc_001",
+					artistId: "ar_test_001",
+					artistAliasId: "aa_test_001",
+					creditName: "Alias Name",
+				}),
 			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as TrackCreditResponse;
+			const json = await expectCreated<TrackCreditResponse>(res);
 			expect(json.artistAliasId).toBe("aa_test_001");
 		});
 
@@ -299,19 +282,15 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						id: "tc_001",
-						artistId: "ar_test_001",
-						artistAliasId: "aa_test_001",
-						creditName: "Alias Name",
-					}),
-				},
+				postJson({
+					id: "tc_001",
+					artistId: "ar_test_001",
+					artistAliasId: "aa_test_001",
+					creditName: "Alias Name",
+				}),
 			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("役割付きでクレジットを追加できる", async () => {
@@ -331,25 +310,21 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						id: "tc_001",
-						artistId: "ar_test_001",
-						creditName: "Artist",
-						rolesCodes: ["composer", "arranger"],
-					}),
-				},
+				postJson({
+					id: "tc_001",
+					artistId: "ar_test_001",
+					creditName: "Artist",
+					rolesCodes: ["composer", "arranger"],
+				}),
 			);
 
-			expect(res.status).toBe(201);
+			await expectCreated<TrackCreditResponse>(res);
 
 			// 役割が登録されているか確認
 			const checkRes = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
 			);
-			const credits = (await checkRes.json()) as TrackCreditResponse[];
+			const credits = await expectSuccess<TrackCreditResponse[]>(checkRes);
 			expect(credits[0]?.roles).toHaveLength(2);
 		});
 
@@ -372,18 +347,14 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						id: "tc_001",
-						artistId: "ar_test_001",
-						creditName: "Artist 2",
-					}),
-				},
+				postJson({
+					id: "tc_001",
+					artistId: "ar_test_001",
+					creditName: "Artist 2",
+				}),
 			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("同一トラックで同一アーティスト・別名義の重複は409を返す", async () => {
@@ -405,18 +376,14 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						id: "tc_002",
-						artistId: "ar_test_001",
-						creditName: "Artist Same",
-					}),
-				},
+				postJson({
+					id: "tc_002",
+					artistId: "ar_test_001",
+					creditName: "Artist Same",
+				}),
 			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
@@ -433,14 +400,10 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_nonexistent",
-				{
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ creditName: "Updated" }),
-				},
+				putJson({ creditName: "Updated" }),
 			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("クレジット名を更新できる", async () => {
@@ -462,15 +425,10 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001",
-				{
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ creditName: "New Name" }),
-				},
+				putJson({ creditName: "New Name" }),
 			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as TrackCreditResponse;
+			const json = await expectSuccess<TrackCreditResponse>(res);
 			expect(json.creditName).toBe("New Name");
 		});
 
@@ -503,23 +461,19 @@ describe("Admin Track Credits API", () => {
 			// creditNameも一緒に送信（rolesCodes単独では更新値がなくなるため）
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001",
-				{
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						creditName: "Artist",
-						rolesCodes: ["lyricist"],
-					}),
-				},
+				putJson({
+					creditName: "Artist",
+					rolesCodes: ["lyricist"],
+				}),
 			);
 
-			expect(res.status).toBe(200);
+			await expectSuccess<TrackCreditResponse>(res);
 
 			// 役割が更新されたか確認
 			const checkRes = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
 			);
-			const credits = (await checkRes.json()) as TrackCreditResponse[];
+			const credits = await expectSuccess<TrackCreditResponse[]>(checkRes);
 			expect(credits[0]?.roles).toHaveLength(1);
 		});
 
@@ -543,17 +497,13 @@ describe("Admin Track Credits API", () => {
 			const oldTimestamp = new Date(2000, 0, 1).toISOString();
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001",
-				{
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						creditName: "Updated",
-						updatedAt: oldTimestamp,
-					}),
-				},
+				putJson({
+					creditName: "Updated",
+					updatedAt: oldTimestamp,
+				}),
 			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
@@ -570,12 +520,10 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_nonexistent",
-				{
-					method: "DELETE",
-				},
+				deleteRequest(),
 			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("クレジットを削除できる", async () => {
@@ -597,20 +545,17 @@ describe("Admin Track Credits API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001",
-				{
-					method: "DELETE",
-				},
+				deleteRequest(),
 			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 
 			// 削除されたことを確認
 			const checkRes = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
 			);
-			const credits = (await checkRes.json()) as TrackCreditResponse[];
+			const credits = await expectSuccess<TrackCreditResponse[]>(checkRes);
 			expect(credits).toHaveLength(0);
 		});
 	});
@@ -621,7 +566,7 @@ describe("Admin Track Credits API", () => {
 			const res = await unauthApp.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
 			);
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -631,7 +576,7 @@ describe("Admin Track Credits API", () => {
 			const res = await nonAdminApp.request(
 				"/rel_test_001/tracks/tr_test_001/credits",
 			);
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

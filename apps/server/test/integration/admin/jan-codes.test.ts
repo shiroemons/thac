@@ -18,6 +18,19 @@ import { releaseJanCodesRouter } from "../../../src/routes/admin/releases/jan-co
 import { createTestRelease } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectForbidden,
+	expectNotFound,
+	expectSuccess,
+	expectUnauthorized,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface JanCodeResponse {
@@ -25,16 +38,6 @@ interface JanCodeResponse {
 	releaseId: string;
 	janCode: string;
 	isPrimary: boolean;
-}
-
-interface ErrorResponse {
-	error: string;
-	details?: unknown;
-}
-
-interface DeleteResponse {
-	success: boolean;
-	id: string;
 }
 
 describe("Admin JAN Codes API", () => {
@@ -60,7 +63,7 @@ describe("Admin JAN Codes API", () => {
 	describe("GET /:releaseId/jan-codes - JANコード一覧取得", () => {
 		test("存在しないリリースは404を返す", async () => {
 			const res = await app.request("/rel_nonexistent/jan-codes");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("JANコードがない場合は空配列を返す", async () => {
@@ -69,9 +72,7 @@ describe("Admin JAN Codes API", () => {
 				.values(createTestRelease({ id: "rel_test_001" }));
 
 			const res = await app.request("/rel_test_001/jan-codes");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as JanCodeResponse[];
+			const json = await expectSuccess<JanCodeResponse[]>(res);
 			expect(json).toEqual([]);
 		});
 
@@ -95,25 +96,22 @@ describe("Admin JAN Codes API", () => {
 			]);
 
 			const res = await app.request("/rel_test_001/jan-codes");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as JanCodeResponse[];
+			const json = await expectSuccess<JanCodeResponse[]>(res);
 			expect(json).toHaveLength(2);
 		});
 	});
 
 	describe("POST /:releaseId/jan-codes - JANコード追加", () => {
 		test("存在しないリリースは404を返す", async () => {
-			const res = await app.request("/rel_nonexistent/jan-codes", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_nonexistent/jan-codes",
+				postJson({
 					id: "jan_001",
 					janCode: "4988001234567",
 					isPrimary: true,
 				}),
-			});
-			expect(res.status).toBe(404);
+			);
+			await expectNotFound(res);
 		});
 
 		test("新しいJANコードを追加できる", async () => {
@@ -121,18 +119,16 @@ describe("Admin JAN Codes API", () => {
 				.insert(releases)
 				.values(createTestRelease({ id: "rel_test_001" }));
 
-			const res = await app.request("/rel_test_001/jan-codes", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_001/jan-codes",
+				postJson({
 					id: "jan_001",
 					janCode: "4988001234567",
 					isPrimary: true,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as JanCodeResponse;
+			const json = await expectCreated<JanCodeResponse>(res);
 			expect(json.id).toBe("jan_001");
 			expect(json.janCode).toBe("4988001234567");
 			expect(json.isPrimary).toBe(true);
@@ -149,17 +145,16 @@ describe("Admin JAN Codes API", () => {
 				isPrimary: true,
 			});
 
-			const res = await app.request("/rel_test_001/jan-codes", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_001/jan-codes",
+				postJson({
 					id: "jan_001",
 					janCode: "4988009999999",
 					isPrimary: false,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("JANコードのグローバル重複は409を返す", async () => {
@@ -177,17 +172,16 @@ describe("Admin JAN Codes API", () => {
 			});
 
 			// 異なるリリースで同じJANコードを追加しようとする
-			const res = await app.request("/rel_test_002/jan-codes", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_002/jan-codes",
+				postJson({
 					id: "jan_002",
 					janCode: "4988001234567",
 					isPrimary: true,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("同一リリース内で複数のprimaryは409を返す", async () => {
@@ -201,17 +195,16 @@ describe("Admin JAN Codes API", () => {
 				isPrimary: true,
 			});
 
-			const res = await app.request("/rel_test_001/jan-codes", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_001/jan-codes",
+				postJson({
 					id: "jan_002",
 					janCode: "4988009876543",
 					isPrimary: true,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("同一リリース内で非primaryは複数追加可能", async () => {
@@ -225,17 +218,16 @@ describe("Admin JAN Codes API", () => {
 				isPrimary: false,
 			});
 
-			const res = await app.request("/rel_test_001/jan-codes", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_001/jan-codes",
+				postJson({
 					id: "jan_002",
 					janCode: "4988009876543",
 					isPrimary: false,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
+			await expectCreated<JanCodeResponse>(res);
 		});
 
 		test("バリデーションエラーは400を返す", async () => {
@@ -243,18 +235,16 @@ describe("Admin JAN Codes API", () => {
 				.insert(releases)
 				.values(createTestRelease({ id: "rel_test_001" }));
 
-			const res = await app.request("/rel_test_001/jan-codes", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_001/jan-codes",
+				postJson({
 					// id missing
 					janCode: "4988001234567",
 					isPrimary: true,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(400);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectBadRequest(res);
 			expect(json.error).toBeDefined();
 		});
 	});
@@ -265,13 +255,12 @@ describe("Admin JAN Codes API", () => {
 				.insert(releases)
 				.values(createTestRelease({ id: "rel_test_001" }));
 
-			const res = await app.request("/rel_test_001/jan-codes/jan_nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ isPrimary: false }),
-			});
+			const res = await app.request(
+				"/rel_test_001/jan-codes/jan_nonexistent",
+				putJson({ isPrimary: false }),
+			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("isPrimaryを更新できる", async () => {
@@ -285,14 +274,12 @@ describe("Admin JAN Codes API", () => {
 				isPrimary: false,
 			});
 
-			const res = await app.request("/rel_test_001/jan-codes/jan_001", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ isPrimary: true }),
-			});
+			const res = await app.request(
+				"/rel_test_001/jan-codes/jan_001",
+				putJson({ isPrimary: true }),
+			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as JanCodeResponse;
+			const json = await expectSuccess<JanCodeResponse>(res);
 			expect(json.isPrimary).toBe(true);
 		});
 
@@ -315,13 +302,12 @@ describe("Admin JAN Codes API", () => {
 				},
 			]);
 
-			const res = await app.request("/rel_test_001/jan-codes/jan_002", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ isPrimary: true }),
-			});
+			const res = await app.request(
+				"/rel_test_001/jan-codes/jan_002",
+				putJson({ isPrimary: true }),
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
@@ -331,11 +317,12 @@ describe("Admin JAN Codes API", () => {
 				.insert(releases)
 				.values(createTestRelease({ id: "rel_test_001" }));
 
-			const res = await app.request("/rel_test_001/jan-codes/jan_nonexistent", {
-				method: "DELETE",
-			});
+			const res = await app.request(
+				"/rel_test_001/jan-codes/jan_nonexistent",
+				deleteRequest(),
+			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("JANコードを削除できる", async () => {
@@ -349,18 +336,18 @@ describe("Admin JAN Codes API", () => {
 				isPrimary: true,
 			});
 
-			const res = await app.request("/rel_test_001/jan-codes/jan_001", {
-				method: "DELETE",
-			});
+			const res = await app.request(
+				"/rel_test_001/jan-codes/jan_001",
+				deleteRequest(),
+			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 			expect(json.id).toBe("jan_001");
 
 			// 削除されたことを確認
 			const checkRes = await app.request("/rel_test_001/jan-codes");
-			const codes = (await checkRes.json()) as JanCodeResponse[];
+			const codes = await expectSuccess<JanCodeResponse[]>(checkRes);
 			expect(codes).toHaveLength(0);
 		});
 	});
@@ -371,7 +358,7 @@ describe("Admin JAN Codes API", () => {
 				user: null,
 			});
 			const res = await unauthApp.request("/rel_test_001/jan-codes");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -379,7 +366,7 @@ describe("Admin JAN Codes API", () => {
 				user: { role: "user" },
 			});
 			const res = await nonAdminApp.request("/rel_test_001/jan-codes");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

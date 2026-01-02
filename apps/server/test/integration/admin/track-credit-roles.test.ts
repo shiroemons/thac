@@ -26,6 +26,18 @@ import {
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectForbidden,
+	expectNotFound,
+	expectSuccess,
+	expectUnauthorized,
+	postJson,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface CreditRoleResponse {
@@ -36,16 +48,6 @@ interface CreditRoleResponse {
 		code: string;
 		label: string;
 	} | null;
-}
-
-interface ErrorResponse {
-	error: string;
-	details?: unknown;
-}
-
-interface DeleteResponse {
-	success: boolean;
-	id: string;
 }
 
 describe("Admin Track Credit Roles API", () => {
@@ -108,16 +110,12 @@ describe("Admin Track Credit Roles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_nonexistent/roles",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						roleCode: "composer",
-						rolePosition: 1,
-					}),
-				},
+				postJson({
+					roleCode: "composer",
+					rolePosition: 1,
+				}),
 			);
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("存在しない役割マスターは400を返す", async () => {
@@ -125,16 +123,12 @@ describe("Admin Track Credit Roles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						roleCode: "nonexistent_role",
-						rolePosition: 1,
-					}),
-				},
+				postJson({
+					roleCode: "nonexistent_role",
+					rolePosition: 1,
+				}),
 			);
-			expect(res.status).toBe(400);
+			await expectBadRequest(res);
 		});
 
 		test("新しい役割を追加できる", async () => {
@@ -142,18 +136,13 @@ describe("Admin Track Credit Roles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						roleCode: "composer",
-						rolePosition: 1,
-					}),
-				},
+				postJson({
+					roleCode: "composer",
+					rolePosition: 1,
+				}),
 			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as CreditRoleResponse;
+			const json = await expectCreated<CreditRoleResponse>(res);
 			expect(json.roleCode).toBe("composer");
 			expect(json.rolePosition).toBe(1);
 			expect(json.role?.label).toBe("Composer");
@@ -165,31 +154,22 @@ describe("Admin Track Credit Roles API", () => {
 			// 1つ目の役割
 			await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						roleCode: "composer",
-						rolePosition: 1,
-					}),
-				},
+				postJson({
+					roleCode: "composer",
+					rolePosition: 1,
+				}),
 			);
 
 			// 2つ目の役割
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						roleCode: "arranger",
-						rolePosition: 2,
-					}),
-				},
+				postJson({
+					roleCode: "arranger",
+					rolePosition: 2,
+				}),
 			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as CreditRoleResponse;
+			const json = await expectCreated<CreditRoleResponse>(res);
 			expect(json.roleCode).toBe("arranger");
 		});
 
@@ -203,17 +183,13 @@ describe("Admin Track Credit Roles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						roleCode: "composer",
-						rolePosition: 1,
-					}),
-				},
+				postJson({
+					roleCode: "composer",
+					rolePosition: 1,
+				}),
 			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("同じ役割でも異なる順序は追加可能", async () => {
@@ -226,17 +202,13 @@ describe("Admin Track Credit Roles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						roleCode: "composer",
-						rolePosition: 2,
-					}),
-				},
+				postJson({
+					roleCode: "composer",
+					rolePosition: 2,
+				}),
 			);
 
-			expect(res.status).toBe(201);
+			await expectCreated<CreditRoleResponse>(res);
 		});
 
 		test("バリデーションエラーは400を返す", async () => {
@@ -244,18 +216,13 @@ describe("Admin Track Credit Roles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						// roleCode missing
-						rolePosition: 1,
-					}),
-				},
+				postJson({
+					// roleCode missing
+					rolePosition: 1,
+				}),
 			);
 
-			expect(res.status).toBe(400);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectBadRequest(res);
 			expect(json.error).toBeDefined();
 		});
 	});
@@ -273,11 +240,9 @@ describe("Admin Track Credit Roles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_nonexistent/roles/composer/1",
-				{
-					method: "DELETE",
-				},
+				deleteRequest(),
 			);
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("存在しない役割は404を返す", async () => {
@@ -285,11 +250,9 @@ describe("Admin Track Credit Roles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles/composer/1",
-				{
-					method: "DELETE",
-				},
+				deleteRequest(),
 			);
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("役割を削除できる", async () => {
@@ -302,13 +265,10 @@ describe("Admin Track Credit Roles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles/composer/1",
-				{
-					method: "DELETE",
-				},
+				deleteRequest(),
 			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 			expect(json.id).toBe("composer");
 		});
@@ -318,12 +278,10 @@ describe("Admin Track Credit Roles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles/composer/invalid",
-				{
-					method: "DELETE",
-				},
+				deleteRequest(),
 			);
 
-			expect(res.status).toBe(400);
+			await expectBadRequest(res);
 		});
 	});
 
@@ -334,13 +292,9 @@ describe("Admin Track Credit Roles API", () => {
 			});
 			const res = await unauthApp.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ roleCode: "composer", rolePosition: 1 }),
-				},
+				postJson({ roleCode: "composer", rolePosition: 1 }),
 			);
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -349,13 +303,9 @@ describe("Admin Track Credit Roles API", () => {
 			});
 			const res = await nonAdminApp.request(
 				"/rel_test_001/tracks/tr_test_001/credits/tc_001/roles",
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ roleCode: "composer", rolePosition: 1 }),
-				},
+				postJson({ roleCode: "composer", rolePosition: 1 }),
 			);
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

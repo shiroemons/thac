@@ -32,6 +32,11 @@ import {
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	expectForbidden,
+	expectSuccess,
+	expectUnauthorized,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface CircleArtistResponse {
@@ -98,9 +103,7 @@ describe("Admin Circle Subroutes API", () => {
 			await db.insert(circles).values(createTestCircle({ id: "ci_test_001" }));
 
 			const res = await artistsApp.request("/ci_test_001/artists");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as CircleArtistsResult;
+			const json = await expectSuccess<CircleArtistsResult>(res);
 			expect(json.artists).toEqual([]);
 			expect(json.statistics.totalArtistCount).toBe(0);
 			expect(json.statistics.totalTrackCount).toBe(0);
@@ -144,9 +147,7 @@ describe("Admin Circle Subroutes API", () => {
 			});
 
 			const res = await artistsApp.request("/ci_test_001/artists");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as CircleArtistsResult;
+			const json = await expectSuccess<CircleArtistsResult>(res);
 			expect(json.artists).toHaveLength(1);
 			expect(json.artists[0]?.artistId).toBe("ar_test_001");
 			expect(json.artists[0]?.artistName).toBe("Test Artist");
@@ -197,9 +198,7 @@ describe("Admin Circle Subroutes API", () => {
 			]);
 
 			const res = await artistsApp.request("/ci_test_001/artists");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as CircleArtistsResult;
+			const json = await expectSuccess<CircleArtistsResult>(res);
 			expect(json.artists).toHaveLength(1);
 			expect(json.artists[0]?.roles).toContain("composer");
 			expect(json.artists[0]?.roles).toContain("arranger");
@@ -267,9 +266,7 @@ describe("Admin Circle Subroutes API", () => {
 			]);
 
 			const res = await artistsApp.request("/ci_test_001/artists");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as CircleArtistsResult;
+			const json = await expectSuccess<CircleArtistsResult>(res);
 			expect(json.artists[0]?.trackCount).toBe(2);
 			expect(json.artists[0]?.releaseCount).toBe(2);
 			expect(json.statistics.earliestReleaseDate).toBe("2024-01-01");
@@ -282,9 +279,7 @@ describe("Admin Circle Subroutes API", () => {
 			await db.insert(circles).values(createTestCircle({ id: "ci_test_001" }));
 
 			const res = await releasesApp.request("/ci_test_001/releases");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as CircleReleaseGroup[];
+			const json = await expectSuccess<CircleReleaseGroup[]>(res);
 			expect(json).toEqual([]);
 		});
 
@@ -318,9 +313,7 @@ describe("Admin Circle Subroutes API", () => {
 			]);
 
 			const res = await releasesApp.request("/ci_test_001/releases");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as CircleReleaseGroup[];
+			const json = await expectSuccess<CircleReleaseGroup[]>(res);
 			expect(json).toHaveLength(2);
 
 			const hostGroup = json.find((g) => g.participationType === "host");
@@ -373,9 +366,7 @@ describe("Admin Circle Subroutes API", () => {
 			]);
 
 			const res = await releasesApp.request("/ci_test_001/releases");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as CircleReleaseGroup[];
+			const json = await expectSuccess<CircleReleaseGroup[]>(res);
 			expect(json).toHaveLength(1);
 
 			const hostGroup = json.find((g) => g.participationType === "host");
@@ -390,7 +381,7 @@ describe("Admin Circle Subroutes API", () => {
 			const unauthApp = createTestAdminApp(combinedRouter, { user: null });
 
 			const res = await unauthApp.request("/ci_test_001/artists");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -401,7 +392,7 @@ describe("Admin Circle Subroutes API", () => {
 			});
 
 			const res = await nonAdminApp.request("/ci_test_001/artists");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

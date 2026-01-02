@@ -22,6 +22,19 @@ import {
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectForbidden,
+	expectNotFound,
+	expectSuccess,
+	expectUnauthorized,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface TrackOfficialSongResponse {
@@ -35,11 +48,6 @@ interface TrackOfficialSongResponse {
 		name: string;
 		nameJa: string;
 	} | null;
-}
-
-interface DeleteResponse {
-	success: boolean;
-	id: string;
 }
 
 describe("Admin Track Official Songs API", () => {
@@ -65,16 +73,14 @@ describe("Admin Track Official Songs API", () => {
 	describe("GET /:trackId/official-songs - 原曲紐付け一覧取得", () => {
 		test("存在しないトラックは404を返す", async () => {
 			const res = await app.request("/tr_nonexistent/official-songs");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("紐付けがない場合は空配列を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
 
 			const res = await app.request("/tr_test_001/official-songs");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackOfficialSongResponse[];
+			const json = await expectSuccess<TrackOfficialSongResponse[]>(res);
 			expect(json).toEqual([]);
 		});
 
@@ -95,9 +101,7 @@ describe("Admin Track Official Songs API", () => {
 			});
 
 			const res = await app.request("/tr_test_001/official-songs");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackOfficialSongResponse[];
+			const json = await expectSuccess<TrackOfficialSongResponse[]>(res);
 			expect(json).toHaveLength(1);
 			expect(json[0]?.officialSongId).toBe("os_test_001");
 			expect(json[0]?.officialSong?.name).toBe("Official Song");
@@ -127,9 +131,7 @@ describe("Admin Track Official Songs API", () => {
 			]);
 
 			const res = await app.request("/tr_test_001/official-songs");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackOfficialSongResponse[];
+			const json = await expectSuccess<TrackOfficialSongResponse[]>(res);
 			expect(json[0]?.partPosition).toBe(1);
 			expect(json[1]?.partPosition).toBe(2);
 		});
@@ -141,29 +143,27 @@ describe("Admin Track Official Songs API", () => {
 				.insert(officialSongs)
 				.values(createTestOfficialSong({ id: "os_test_001" }));
 
-			const res = await app.request("/tr_nonexistent/official-songs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_nonexistent/official-songs",
+				postJson({
 					id: "tos_001",
 					officialSongId: "os_test_001",
 				}),
-			});
-			expect(res.status).toBe(404);
+			);
+			await expectNotFound(res);
 		});
 
 		test("存在しない公式楽曲は404を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
 
-			const res = await app.request("/tr_test_001/official-songs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/official-songs",
+				postJson({
 					id: "tos_001",
 					officialSongId: "os_nonexistent",
 				}),
-			});
-			expect(res.status).toBe(404);
+			);
+			await expectNotFound(res);
 		});
 
 		test("新しい原曲紐付けを追加できる", async () => {
@@ -172,17 +172,15 @@ describe("Admin Track Official Songs API", () => {
 				.insert(officialSongs)
 				.values(createTestOfficialSong({ id: "os_test_001" }));
 
-			const res = await app.request("/tr_test_001/official-songs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/official-songs",
+				postJson({
 					id: "tos_001",
 					officialSongId: "os_test_001",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as TrackOfficialSongResponse;
+			const json = await expectCreated<TrackOfficialSongResponse>(res);
 			expect(json.id).toBe("tos_001");
 			expect(json.officialSongId).toBe("os_test_001");
 		});
@@ -197,27 +195,24 @@ describe("Admin Track Official Songs API", () => {
 				]);
 
 			// 1つ目を追加
-			await app.request("/tr_test_001/official-songs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			await app.request(
+				"/tr_test_001/official-songs",
+				postJson({
 					id: "tos_001",
 					officialSongId: "os_test_001",
 				}),
-			});
+			);
 
 			// 2つ目を追加（partPosition自動設定）
-			const res = await app.request("/tr_test_001/official-songs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/official-songs",
+				postJson({
 					id: "tos_002",
 					officialSongId: "os_test_002",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as TrackOfficialSongResponse;
+			const json = await expectCreated<TrackOfficialSongResponse>(res);
 			expect(json.partPosition).toBe(2);
 		});
 
@@ -236,16 +231,15 @@ describe("Admin Track Official Songs API", () => {
 				partPosition: 1,
 			});
 
-			const res = await app.request("/tr_test_001/official-songs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/official-songs",
+				postJson({
 					id: "tos_001",
 					officialSongId: "os_test_002",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("同一公式楽曲・順序の重複は409を返す", async () => {
@@ -260,17 +254,16 @@ describe("Admin Track Official Songs API", () => {
 				partPosition: 1,
 			});
 
-			const res = await app.request("/tr_test_001/official-songs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/official-songs",
+				postJson({
 					id: "tos_002",
 					officialSongId: "os_test_001",
 					partPosition: 1,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("メモ付きで紐付けを追加できる", async () => {
@@ -279,18 +272,16 @@ describe("Admin Track Official Songs API", () => {
 				.insert(officialSongs)
 				.values(createTestOfficialSong({ id: "os_test_001" }));
 
-			const res = await app.request("/tr_test_001/official-songs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/official-songs",
+				postJson({
 					id: "tos_001",
 					officialSongId: "os_test_001",
 					notes: "イントロアレンジ",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as TrackOfficialSongResponse;
+			const json = await expectCreated<TrackOfficialSongResponse>(res);
 			expect(json.notes).toBe("イントロアレンジ");
 		});
 	});
@@ -301,14 +292,10 @@ describe("Admin Track Official Songs API", () => {
 
 			const res = await app.request(
 				"/tr_test_001/official-songs/tos_nonexistent",
-				{
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ notes: "Updated" }),
-				},
+				putJson({ notes: "Updated" }),
 			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("メモを更新できる", async () => {
@@ -323,14 +310,12 @@ describe("Admin Track Official Songs API", () => {
 				partPosition: 1,
 			});
 
-			const res = await app.request("/tr_test_001/official-songs/tos_001", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ notes: "Updated notes" }),
-			});
+			const res = await app.request(
+				"/tr_test_001/official-songs/tos_001",
+				putJson({ notes: "Updated notes" }),
+			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as TrackOfficialSongResponse;
+			const json = await expectSuccess<TrackOfficialSongResponse>(res);
 			expect(json.notes).toBe("Updated notes");
 		});
 	});
@@ -341,12 +326,10 @@ describe("Admin Track Official Songs API", () => {
 
 			const res = await app.request(
 				"/tr_test_001/official-songs/tos_nonexistent",
-				{
-					method: "DELETE",
-				},
+				deleteRequest(),
 			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("紐付けを削除できる", async () => {
@@ -361,18 +344,19 @@ describe("Admin Track Official Songs API", () => {
 				partPosition: 1,
 			});
 
-			const res = await app.request("/tr_test_001/official-songs/tos_001", {
-				method: "DELETE",
-			});
+			const res = await app.request(
+				"/tr_test_001/official-songs/tos_001",
+				deleteRequest(),
+			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 			expect(json.id).toBe("tos_001");
 
 			// 削除されたことを確認
 			const checkRes = await app.request("/tr_test_001/official-songs");
-			const relations = (await checkRes.json()) as TrackOfficialSongResponse[];
+			const relations =
+				await expectSuccess<TrackOfficialSongResponse[]>(checkRes);
 			expect(relations).toHaveLength(0);
 		});
 	});
@@ -390,7 +374,7 @@ describe("Admin Track Official Songs API", () => {
 				},
 			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("先頭の要素をupできない", async () => {
@@ -425,7 +409,7 @@ describe("Admin Track Official Songs API", () => {
 				},
 			);
 
-			expect(res.status).toBe(400);
+			await expectBadRequest(res);
 		});
 
 		test("末尾の要素をdownできない", async () => {
@@ -460,7 +444,7 @@ describe("Admin Track Official Songs API", () => {
 				},
 			);
 
-			expect(res.status).toBe(400);
+			await expectBadRequest(res);
 		});
 
 		test("順序を入れ替えられる", async () => {
@@ -496,8 +480,7 @@ describe("Admin Track Official Songs API", () => {
 				},
 			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as TrackOfficialSongResponse[];
+			const json = await expectSuccess<TrackOfficialSongResponse[]>(res);
 			// tos_002が先頭になっている
 			expect(json[0]?.id).toBe("tos_002");
 			expect(json[0]?.partPosition).toBe(1);
@@ -510,7 +493,7 @@ describe("Admin Track Official Songs API", () => {
 				user: null,
 			});
 			const res = await unauthApp.request("/tr_test_001/official-songs");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -518,7 +501,7 @@ describe("Admin Track Official Songs API", () => {
 				user: { role: "user" },
 			});
 			const res = await nonAdminApp.request("/tr_test_001/official-songs");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

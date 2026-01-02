@@ -18,6 +18,19 @@ import { trackIsrcsRouter } from "../../../src/routes/admin/tracks/isrcs";
 import { createTestTrack } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectForbidden,
+	expectNotFound,
+	expectSuccess,
+	expectUnauthorized,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface IsrcResponse {
@@ -25,16 +38,6 @@ interface IsrcResponse {
 	trackId: string;
 	isrc: string;
 	isPrimary: boolean;
-}
-
-interface ErrorResponse {
-	error: string;
-	details?: unknown;
-}
-
-interface DeleteResponse {
-	success: boolean;
-	id: string;
 }
 
 describe("Admin Track ISRCs API", () => {
@@ -60,16 +63,14 @@ describe("Admin Track ISRCs API", () => {
 	describe("GET /:trackId/isrcs - ISRC一覧取得", () => {
 		test("存在しないトラックは404を返す", async () => {
 			const res = await app.request("/tr_nonexistent/isrcs");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("ISRCがない場合は空配列を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
 
 			const res = await app.request("/tr_test_001/isrcs");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as IsrcResponse[];
+			const json = await expectSuccess<IsrcResponse[]>(res);
 			expect(json).toEqual([]);
 		});
 
@@ -91,42 +92,37 @@ describe("Admin Track ISRCs API", () => {
 			]);
 
 			const res = await app.request("/tr_test_001/isrcs");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as IsrcResponse[];
+			const json = await expectSuccess<IsrcResponse[]>(res);
 			expect(json).toHaveLength(2);
 		});
 	});
 
 	describe("POST /:trackId/isrcs - ISRC追加", () => {
 		test("存在しないトラックは404を返す", async () => {
-			const res = await app.request("/tr_nonexistent/isrcs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_nonexistent/isrcs",
+				postJson({
 					id: "isrc_001",
 					isrc: "JPXX01234567",
 					isPrimary: true,
 				}),
-			});
-			expect(res.status).toBe(404);
+			);
+			await expectNotFound(res);
 		});
 
 		test("新しいISRCを追加できる", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
 
-			const res = await app.request("/tr_test_001/isrcs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/isrcs",
+				postJson({
 					id: "isrc_001",
 					isrc: "JPXX01234567",
 					isPrimary: true,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as IsrcResponse;
+			const json = await expectCreated<IsrcResponse>(res);
 			expect(json.id).toBe("isrc_001");
 			expect(json.isrc).toBe("JPXX01234567");
 			expect(json.isPrimary).toBe(true);
@@ -141,17 +137,16 @@ describe("Admin Track ISRCs API", () => {
 				isPrimary: true,
 			});
 
-			const res = await app.request("/tr_test_001/isrcs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/isrcs",
+				postJson({
 					id: "isrc_001",
 					isrc: "JPXX09999999",
 					isPrimary: false,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("同一トラックで同じISRCの重複は409を返す", async () => {
@@ -163,17 +158,16 @@ describe("Admin Track ISRCs API", () => {
 				isPrimary: false,
 			});
 
-			const res = await app.request("/tr_test_001/isrcs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/isrcs",
+				postJson({
 					id: "isrc_002",
 					isrc: "JPXX01234567",
 					isPrimary: false,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("同一トラック内で複数のprimaryは409を返す", async () => {
@@ -185,34 +179,31 @@ describe("Admin Track ISRCs API", () => {
 				isPrimary: true,
 			});
 
-			const res = await app.request("/tr_test_001/isrcs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/isrcs",
+				postJson({
 					id: "isrc_002",
 					isrc: "JPXX09876543",
 					isPrimary: true,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("バリデーションエラーは400を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
 
-			const res = await app.request("/tr_test_001/isrcs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/isrcs",
+				postJson({
 					// id missing
 					isrc: "JPXX01234567",
 					isPrimary: true,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(400);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectBadRequest(res);
 			expect(json.error).toBeDefined();
 		});
 	});
@@ -221,13 +212,12 @@ describe("Admin Track ISRCs API", () => {
 		test("存在しないISRCは404を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
 
-			const res = await app.request("/tr_test_001/isrcs/isrc_nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ isPrimary: false }),
-			});
+			const res = await app.request(
+				"/tr_test_001/isrcs/isrc_nonexistent",
+				putJson({ isPrimary: false }),
+			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("isPrimaryを更新できる", async () => {
@@ -239,14 +229,12 @@ describe("Admin Track ISRCs API", () => {
 				isPrimary: false,
 			});
 
-			const res = await app.request("/tr_test_001/isrcs/isrc_001", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ isPrimary: true }),
-			});
+			const res = await app.request(
+				"/tr_test_001/isrcs/isrc_001",
+				putJson({ isPrimary: true }),
+			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as IsrcResponse;
+			const json = await expectSuccess<IsrcResponse>(res);
 			expect(json.isPrimary).toBe(true);
 		});
 
@@ -267,13 +255,12 @@ describe("Admin Track ISRCs API", () => {
 				},
 			]);
 
-			const res = await app.request("/tr_test_001/isrcs/isrc_002", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ isPrimary: true }),
-			});
+			const res = await app.request(
+				"/tr_test_001/isrcs/isrc_002",
+				putJson({ isPrimary: true }),
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
@@ -281,11 +268,12 @@ describe("Admin Track ISRCs API", () => {
 		test("存在しないISRCは404を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
 
-			const res = await app.request("/tr_test_001/isrcs/isrc_nonexistent", {
-				method: "DELETE",
-			});
+			const res = await app.request(
+				"/tr_test_001/isrcs/isrc_nonexistent",
+				deleteRequest(),
+			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("ISRCを削除できる", async () => {
@@ -297,18 +285,18 @@ describe("Admin Track ISRCs API", () => {
 				isPrimary: true,
 			});
 
-			const res = await app.request("/tr_test_001/isrcs/isrc_001", {
-				method: "DELETE",
-			});
+			const res = await app.request(
+				"/tr_test_001/isrcs/isrc_001",
+				deleteRequest(),
+			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 			expect(json.id).toBe("isrc_001");
 
 			// 削除されたことを確認
 			const checkRes = await app.request("/tr_test_001/isrcs");
-			const isrcs = (await checkRes.json()) as IsrcResponse[];
+			const isrcs = await expectSuccess<IsrcResponse[]>(checkRes);
 			expect(isrcs).toHaveLength(0);
 		});
 	});
@@ -317,7 +305,7 @@ describe("Admin Track ISRCs API", () => {
 		test("未認証リクエストは401を返す", async () => {
 			const unauthApp = createTestAdminApp(trackIsrcsRouter, { user: null });
 			const res = await unauthApp.request("/tr_test_001/isrcs");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -325,7 +313,7 @@ describe("Admin Track ISRCs API", () => {
 				user: { role: "user" },
 			});
 			const res = await nonAdminApp.request("/tr_test_001/isrcs");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

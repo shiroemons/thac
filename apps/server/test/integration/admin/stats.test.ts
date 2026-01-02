@@ -21,6 +21,11 @@ import { statsRouter } from "../../../src/routes/admin/stats";
 import { createTestArtist, createTestCircle } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	expectForbidden,
+	expectSuccess,
+	expectUnauthorized,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface StatsResponse {
@@ -63,9 +68,7 @@ describe("Admin Stats API", () => {
 	describe("GET / - 統計情報取得", () => {
 		test("空のデータベースでは全てのカウントが0を返す", async () => {
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as StatsResponse;
+			const json = await expectSuccess<StatsResponse>(res);
 			expect(json.users).toBe(0);
 			expect(json.platforms).toBe(0);
 			expect(json.artists).toBe(0);
@@ -98,9 +101,7 @@ describe("Admin Stats API", () => {
 			});
 
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as StatsResponse;
+			const json = await expectSuccess<StatsResponse>(res);
 			expect(json.artists).toBe(2);
 			expect(json.circles).toBe(3);
 			expect(json.platforms).toBe(1);
@@ -130,9 +131,7 @@ describe("Admin Stats API", () => {
 			]);
 
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as StatsResponse;
+			const json = await expectSuccess<StatsResponse>(res);
 			expect(json.eventSeries).toBe(1);
 			expect(json.events).toBe(2);
 		});
@@ -142,7 +141,7 @@ describe("Admin Stats API", () => {
 		test("未認証リクエストは401を返す", async () => {
 			const unauthApp = createTestAdminApp(statsRouter, { user: null });
 			const res = await unauthApp.request("/");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -150,7 +149,7 @@ describe("Admin Stats API", () => {
 				user: { role: "user" },
 			});
 			const res = await nonAdminApp.request("/");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

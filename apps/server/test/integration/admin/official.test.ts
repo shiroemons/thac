@@ -36,22 +36,33 @@ import {
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectEmptyList,
+	expectForbidden,
+	expectNotFound,
+	expectPagination,
+	expectSuccess,
+	expectUnauthorized,
+	type PaginatedResponse,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
 
 // 型定義
-interface WorkListResponse {
-	data: Array<{
-		id: string;
-		categoryCode: string;
-		name: string;
-		nameJa: string;
-		nameEn: string | null;
-		position: number | null;
-		createdAt: string;
-		updatedAt: string;
-	}>;
-	total: number;
-	page: number;
-	limit: number;
+interface WorkData {
+	id: string;
+	categoryCode: string;
+	name: string;
+	nameJa: string;
+	nameEn: string | null;
+	position: number | null;
+	createdAt: string;
+	updatedAt: string;
 }
 
 interface WorkResponse {
@@ -64,19 +75,14 @@ interface WorkResponse {
 	updatedAt: string;
 }
 
-interface SongListResponse {
-	data: Array<{
-		id: string;
-		officialWorkId: string | null;
-		name: string;
-		nameJa: string;
-		isOriginal: boolean;
-		createdAt: string;
-		updatedAt: string;
-	}>;
-	total: number;
-	page: number;
-	limit: number;
+interface SongData {
+	id: string;
+	officialWorkId: string | null;
+	name: string;
+	nameJa: string;
+	isOriginal: boolean;
+	createdAt: string;
+	updatedAt: string;
 }
 
 interface SongResponse {
@@ -96,16 +102,6 @@ interface LinkResponse {
 	sortOrder: number;
 	createdAt: string;
 	updatedAt: string;
-}
-
-interface DeleteResponse {
-	success: boolean;
-	id: string;
-}
-
-interface ErrorResponse {
-	error: string;
-	details?: Record<string, string[]>;
 }
 
 // 共有テストデータベース
@@ -148,11 +144,7 @@ describe("Admin Official Works API", () => {
 			const app = createTestAdminApp(worksRouter);
 
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as WorkListResponse;
-			expect(json.data).toEqual([]);
-			expect(json.total).toBe(0);
+			await expectEmptyList<WorkData>(res);
 		});
 
 		test("作品一覧をページネーション付きで返す", async () => {
@@ -164,13 +156,8 @@ describe("Admin Official Works API", () => {
 			await testDb.insert(officialWorks).values([work1, work2]);
 
 			const res = await app.request("/?page=1&limit=10");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as WorkListResponse;
-			expect(json.data.length).toBe(2);
-			expect(json.total).toBe(2);
-			expect(json.page).toBe(1);
-			expect(json.limit).toBe(10);
+			const json = await expectSuccess<PaginatedResponse<WorkData>>(res);
+			expectPagination(json, { total: 2, page: 1, limit: 10, length: 2 });
 		});
 
 		test("カテゴリでフィルタリングできる", async () => {
@@ -189,9 +176,7 @@ describe("Admin Official Works API", () => {
 			await testDb.insert(officialWorks).values([work1, work2]);
 
 			const res = await app.request("/?category=game");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as WorkListResponse;
+			const json = await expectSuccess<PaginatedResponse<WorkData>>(res);
 			expect(json.data.length).toBe(1);
 			expect(json.data[0]?.name).toBe("Game Work");
 		});
@@ -211,9 +196,7 @@ describe("Admin Official Works API", () => {
 			await testDb.insert(officialWorks).values([work1, work2]);
 
 			const res = await app.request("/?search=紅魔郷");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as WorkListResponse;
+			const json = await expectSuccess<PaginatedResponse<WorkData>>(res);
 			expect(json.data.length).toBe(1);
 			expect(json.data[0]?.nameJa).toBe("東方紅魔郷");
 		});
@@ -228,9 +211,7 @@ describe("Admin Official Works API", () => {
 			await testDb.insert(officialWorks).values(work);
 
 			const res = await app.request(`/${work.id}`);
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as WorkResponse;
+			const json = await expectSuccess<WorkResponse>(res);
 			expect(json.id).toBe(work.id);
 			expect(json.name).toBe("Test Work");
 		});
@@ -239,7 +220,7 @@ describe("Admin Official Works API", () => {
 			const app = createTestAdminApp(worksRouter);
 
 			const res = await app.request("/nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -249,15 +230,9 @@ describe("Admin Official Works API", () => {
 
 			await setupTestCategory();
 			const work = createTestOfficialWork();
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(work),
-			});
+			const res = await app.request("/", postJson(work));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as WorkResponse;
+			const json = await expectCreated<WorkResponse>(res);
 			expect(json.id).toBe(work.id);
 			expect(json.name).toBe(work.name);
 		});
@@ -270,27 +245,17 @@ describe("Admin Official Works API", () => {
 			await testDb.insert(officialWorks).values(work);
 
 			const duplicateWork = createTestOfficialWork({ id: work.id });
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateWork),
-			});
+			const res = await app.request("/", postJson(duplicateWork));
 
-			expect(res.status).toBe(409);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectConflict(res);
 			expect(json.error).toContain("ID");
 		});
 
 		test("必須フィールドが欠けている場合は400を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ id: "test" }),
-			});
-
-			expect(res.status).toBe(400);
+			const res = await app.request("/", postJson({ id: "test" }));
+			await expectBadRequest(res);
 		});
 	});
 
@@ -304,33 +269,28 @@ describe("Admin Official Works API", () => {
 
 			// 最新のupdatedAtを取得
 			const getRes = await app.request(`/${work.id}`);
-			const existingWork = (await getRes.json()) as WorkResponse;
+			const existingWork = await expectSuccess<WorkResponse>(getRes);
 
-			const updateRes = await app.request(`/${work.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const updateRes = await app.request(
+				`/${work.id}`,
+				putJson({
 					name: "Updated",
 					updatedAt: existingWork.updatedAt,
 				}),
-			});
+			);
 
-			expect(updateRes.status).toBe(200);
-
-			const json = (await updateRes.json()) as WorkResponse;
+			const json = await expectSuccess<WorkResponse>(updateRes);
 			expect(json.name).toBe("Updated");
 		});
 
 		test("存在しない作品は404を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "Updated" }),
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				"/nonexistent",
+				putJson({ name: "Updated" }),
+			);
+			await expectNotFound(res);
 		});
 
 		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
@@ -340,17 +300,15 @@ describe("Admin Official Works API", () => {
 			const work = createTestOfficialWork();
 			await testDb.insert(officialWorks).values(work);
 
-			const res = await app.request(`/${work.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${work.id}`,
+				putJson({
 					name: "Updated",
 					updatedAt: "2020-01-01T00:00:00.000Z",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectConflict(res);
 			expect(json.error).toContain("更新");
 		});
 	});
@@ -363,27 +321,20 @@ describe("Admin Official Works API", () => {
 			const work = createTestOfficialWork();
 			await testDb.insert(officialWorks).values(work);
 
-			const res = await app.request(`/${work.id}`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const res = await app.request(`/${work.id}`, deleteRequest());
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 
 			// 削除されたことを確認
 			const getRes = await app.request(`/${work.id}`);
-			expect(getRes.status).toBe(404);
+			await expectNotFound(getRes);
 		});
 
 		test("存在しない作品は404を返す", async () => {
 			const app = createTestAdminApp(worksRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request("/nonexistent", deleteRequest());
+			await expectNotFound(res);
 		});
 	});
 
@@ -392,14 +343,14 @@ describe("Admin Official Works API", () => {
 			const app = createTestAdminApp(worksRouter, { user: null });
 
 			const res = await app.request("/");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(worksRouter, { user: { role: "user" } });
 
 			const res = await app.request("/");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });
@@ -421,9 +372,7 @@ describe("Admin Official Work Links API", () => {
 			await testDb.insert(officialWorkLinks).values(link);
 
 			const res = await app.request(`/${work.id}/links`);
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as LinkResponse[];
+			const json = await expectSuccess<LinkResponse[]>(res);
 			expect(json.length).toBe(1);
 			expect(json[0]?.id).toBe(link.id);
 		});
@@ -432,7 +381,7 @@ describe("Admin Official Work Links API", () => {
 			const app = createTestAdminApp(worksRouter);
 
 			const res = await app.request("/nonexistent/links");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -450,15 +399,8 @@ describe("Admin Official Work Links API", () => {
 				platformCode: "test_platform",
 			});
 
-			const res = await app.request(`/${work.id}/links`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(link),
-			});
-
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as LinkResponse;
+			const res = await app.request(`/${work.id}/links`, postJson(link));
+			const json = await expectCreated<LinkResponse>(res);
 			expect(json.id).toBe(link.id);
 		});
 
@@ -483,13 +425,8 @@ describe("Admin Official Work Links API", () => {
 				url: "https://example.com/same",
 			});
 
-			const res = await app.request(`/${work.id}/links`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(link2),
-			});
-
-			expect(res.status).toBe(409);
+			const res = await app.request(`/${work.id}/links`, postJson(link2));
+			await expectConflict(res);
 		});
 	});
 
@@ -508,12 +445,11 @@ describe("Admin Official Work Links API", () => {
 			});
 			await testDb.insert(officialWorkLinks).values(link);
 
-			const res = await app.request(`/${work.id}/links/${link.id}`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const res = await app.request(
+				`/${work.id}/links/${link.id}`,
+				deleteRequest(),
+			);
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 		});
 
@@ -524,11 +460,11 @@ describe("Admin Official Work Links API", () => {
 			const work = createTestOfficialWork();
 			await testDb.insert(officialWorks).values(work);
 
-			const res = await app.request(`/${work.id}/links/nonexistent`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				`/${work.id}/links/nonexistent`,
+				deleteRequest(),
+			);
+			await expectNotFound(res);
 		});
 	});
 });
@@ -539,11 +475,7 @@ describe("Admin Official Songs API", () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as SongListResponse;
-			expect(json.data).toEqual([]);
-			expect(json.total).toBe(0);
+			await expectEmptyList<SongData>(res);
 		});
 
 		test("楽曲一覧をページネーション付きで返す", async () => {
@@ -554,11 +486,8 @@ describe("Admin Official Songs API", () => {
 			await testDb.insert(officialSongs).values([song1, song2]);
 
 			const res = await app.request("/?page=1&limit=10");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as SongListResponse;
-			expect(json.data.length).toBe(2);
-			expect(json.total).toBe(2);
+			const json = await expectSuccess<PaginatedResponse<SongData>>(res);
+			expectPagination(json, { total: 2, length: 2 });
 		});
 
 		test("作品IDでフィルタリングできる", async () => {
@@ -576,9 +505,7 @@ describe("Admin Official Songs API", () => {
 			await testDb.insert(officialSongs).values([song1, song2]);
 
 			const res = await app.request(`/?workId=${work.id}`);
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as SongListResponse;
+			const json = await expectSuccess<PaginatedResponse<SongData>>(res);
 			expect(json.data.length).toBe(1);
 			expect(json.data[0]?.name).toBe("Work Song");
 		});
@@ -597,9 +524,7 @@ describe("Admin Official Songs API", () => {
 			await testDb.insert(officialSongs).values([song1, song2]);
 
 			const res = await app.request("/?search=Luna");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as SongListResponse;
+			const json = await expectSuccess<PaginatedResponse<SongData>>(res);
 			expect(json.data.length).toBe(1);
 			expect(json.data[0]?.name).toBe("Luna Clock");
 		});
@@ -613,9 +538,7 @@ describe("Admin Official Songs API", () => {
 			await testDb.insert(officialSongs).values(song);
 
 			const res = await app.request(`/${song.id}`);
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as SongResponse;
+			const json = await expectSuccess<SongResponse>(res);
 			expect(json.id).toBe(song.id);
 			expect(json.name).toBe("Test Song");
 		});
@@ -624,7 +547,7 @@ describe("Admin Official Songs API", () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const res = await app.request("/nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -633,15 +556,9 @@ describe("Admin Official Songs API", () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const song = createTestOfficialSong();
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(song),
-			});
+			const res = await app.request("/", postJson(song));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as SongResponse;
+			const json = await expectCreated<SongResponse>(res);
 			expect(json.id).toBe(song.id);
 			expect(json.name).toBe(song.name);
 		});
@@ -653,13 +570,8 @@ describe("Admin Official Songs API", () => {
 			await testDb.insert(officialSongs).values(song);
 
 			const duplicateSong = createTestOfficialSong({ id: song.id });
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateSong),
-			});
-
-			expect(res.status).toBe(409);
+			const res = await app.request("/", postJson(duplicateSong));
+			await expectConflict(res);
 		});
 
 		test("sourceSongIdが自身を参照している場合は400を返す", async () => {
@@ -669,13 +581,8 @@ describe("Admin Official Songs API", () => {
 				id: "self_ref_song",
 				sourceSongId: "self_ref_song",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(song),
-			});
-
-			expect(res.status).toBe(400);
+			const res = await app.request("/", postJson(song));
+			await expectBadRequest(res);
 		});
 	});
 
@@ -688,33 +595,28 @@ describe("Admin Official Songs API", () => {
 
 			// 最新のupdatedAtを取得
 			const getRes = await app.request(`/${song.id}`);
-			const existingSong = (await getRes.json()) as SongResponse;
+			const existingSong = await expectSuccess<SongResponse>(getRes);
 
-			const updateRes = await app.request(`/${song.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const updateRes = await app.request(
+				`/${song.id}`,
+				putJson({
 					name: "Updated",
 					updatedAt: existingSong.updatedAt,
 				}),
-			});
+			);
 
-			expect(updateRes.status).toBe(200);
-
-			const json = (await updateRes.json()) as SongResponse;
+			const json = await expectSuccess<SongResponse>(updateRes);
 			expect(json.name).toBe("Updated");
 		});
 
 		test("存在しない楽曲は404を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "Updated" }),
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				"/nonexistent",
+				putJson({ name: "Updated" }),
+			);
+			await expectNotFound(res);
 		});
 
 		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
@@ -723,17 +625,15 @@ describe("Admin Official Songs API", () => {
 			const song = createTestOfficialSong();
 			await testDb.insert(officialSongs).values(song);
 
-			const res = await app.request(`/${song.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${song.id}`,
+				putJson({
 					name: "Updated",
 					updatedAt: "2020-01-01T00:00:00.000Z",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectConflict(res);
 			expect(json.error).toContain("更新");
 		});
 
@@ -745,18 +645,16 @@ describe("Admin Official Songs API", () => {
 
 			// 最新のupdatedAtを取得
 			const getRes = await app.request(`/${song.id}`);
-			const existingSong = (await getRes.json()) as SongResponse;
+			const existingSong = await expectSuccess<SongResponse>(getRes);
 
-			const res = await app.request(`/${song.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${song.id}`,
+				putJson({
 					sourceSongId: "test_song_123",
 					updatedAt: existingSong.updatedAt,
 				}),
-			});
-
-			expect(res.status).toBe(400);
+			);
+			await expectBadRequest(res);
 		});
 	});
 
@@ -767,27 +665,20 @@ describe("Admin Official Songs API", () => {
 			const song = createTestOfficialSong();
 			await testDb.insert(officialSongs).values(song);
 
-			const res = await app.request(`/${song.id}`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const res = await app.request(`/${song.id}`, deleteRequest());
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 
 			// 削除されたことを確認
 			const getRes = await app.request(`/${song.id}`);
-			expect(getRes.status).toBe(404);
+			await expectNotFound(getRes);
 		});
 
 		test("存在しない楽曲は404を返す", async () => {
 			const app = createTestAdminApp(songsRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request("/nonexistent", deleteRequest());
+			await expectNotFound(res);
 		});
 	});
 
@@ -796,14 +687,14 @@ describe("Admin Official Songs API", () => {
 			const app = createTestAdminApp(songsRouter, { user: null });
 
 			const res = await app.request("/");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
 			const app = createTestAdminApp(songsRouter, { user: { role: "user" } });
 
 			const res = await app.request("/");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });
@@ -824,9 +715,7 @@ describe("Admin Official Song Links API", () => {
 			await testDb.insert(officialSongLinks).values(link);
 
 			const res = await app.request(`/${song.id}/links`);
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as LinkResponse[];
+			const json = await expectSuccess<LinkResponse[]>(res);
 			expect(json.length).toBe(1);
 			expect(json[0]?.id).toBe(link.id);
 		});
@@ -835,7 +724,7 @@ describe("Admin Official Song Links API", () => {
 			const app = createTestAdminApp(songsRouter);
 
 			const res = await app.request("/nonexistent/links");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -852,15 +741,8 @@ describe("Admin Official Song Links API", () => {
 				platformCode: "test_platform",
 			});
 
-			const res = await app.request(`/${song.id}/links`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(link),
-			});
-
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as LinkResponse;
+			const res = await app.request(`/${song.id}/links`, postJson(link));
+			const json = await expectCreated<LinkResponse>(res);
 			expect(json.id).toBe(link.id);
 		});
 
@@ -884,13 +766,8 @@ describe("Admin Official Song Links API", () => {
 				url: "https://example.com/same",
 			});
 
-			const res = await app.request(`/${song.id}/links`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(link2),
-			});
-
-			expect(res.status).toBe(409);
+			const res = await app.request(`/${song.id}/links`, postJson(link2));
+			await expectConflict(res);
 		});
 	});
 
@@ -908,12 +785,11 @@ describe("Admin Official Song Links API", () => {
 			});
 			await testDb.insert(officialSongLinks).values(link);
 
-			const res = await app.request(`/${song.id}/links/${link.id}`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const res = await app.request(
+				`/${song.id}/links/${link.id}`,
+				deleteRequest(),
+			);
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 		});
 
@@ -923,11 +799,11 @@ describe("Admin Official Song Links API", () => {
 			const song = createTestOfficialSong();
 			await testDb.insert(officialSongs).values(song);
 
-			const res = await app.request(`/${song.id}/links/nonexistent`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				`/${song.id}/links/nonexistent`,
+				deleteRequest(),
+			);
+			await expectNotFound(res);
 		});
 	});
 });

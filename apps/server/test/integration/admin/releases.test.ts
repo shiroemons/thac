@@ -29,22 +29,32 @@ import {
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectConflict,
+	expectCreated,
+	expectEmptyList,
+	expectForbidden,
+	expectNotFound,
+	expectPagination,
+	expectSuccess,
+	expectUnauthorized,
+	type PaginatedResponse,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
 
-// 型定義
-interface ReleaseListResponse {
-	data: Array<{
-		id: string;
-		name: string;
-		releaseDate: string | null;
-		releaseType: string;
-		discCount: number;
-		trackCount: number;
-		createdAt: string;
-		updatedAt: string;
-	}>;
-	total: number;
-	page: number;
-	limit: number;
+// 型定義（エンティティ固有）
+interface ReleaseListItem {
+	id: string;
+	name: string;
+	releaseDate: string | null;
+	releaseType: string;
+	discCount: number;
+	trackCount: number;
+	createdAt: string;
+	updatedAt: string;
 }
 
 interface ReleaseResponse {
@@ -81,16 +91,6 @@ interface TrackResponse {
 	name: string;
 	createdAt: string;
 	updatedAt: string;
-}
-
-interface DeleteResponse {
-	success: boolean;
-	id: string;
-}
-
-interface ErrorResponse {
-	error: string;
-	details?: Record<string, string[]>;
 }
 
 // 共有テストデータベース
@@ -153,11 +153,7 @@ describe("Admin Releases API", () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ReleaseListResponse;
-			expect(json.data).toEqual([]);
-			expect(json.total).toBe(0);
+			await expectEmptyList<ReleaseListItem>(res);
 		});
 
 		test("リリース一覧をページネーション付きで返す", async () => {
@@ -167,13 +163,8 @@ describe("Admin Releases API", () => {
 			await setupTestRelease({ name: "Release B" });
 
 			const res = await app.request("/?page=1&limit=10");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ReleaseListResponse;
-			expect(json.data.length).toBe(2);
-			expect(json.total).toBe(2);
-			expect(json.page).toBe(1);
-			expect(json.limit).toBe(10);
+			const json = await expectSuccess<PaginatedResponse<ReleaseListItem>>(res);
+			expectPagination(json, { total: 2, page: 1, limit: 10, length: 2 });
 		});
 
 		test("リリースタイプでフィルタリングできる", async () => {
@@ -183,10 +174,8 @@ describe("Admin Releases API", () => {
 			await setupTestRelease({ name: "Single", releaseType: "single" });
 
 			const res = await app.request("/?releaseType=album");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ReleaseListResponse;
-			expect(json.data.length).toBe(1);
+			const json = await expectSuccess<PaginatedResponse<ReleaseListItem>>(res);
+			expectPagination(json, { length: 1 });
 			expect(json.data[0]?.name).toBe("Album");
 		});
 
@@ -197,10 +186,8 @@ describe("Admin Releases API", () => {
 			await setupTestRelease({ name: "東方永夜抄" });
 
 			const res = await app.request("/?search=紅魔郷");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ReleaseListResponse;
-			expect(json.data.length).toBe(1);
+			const json = await expectSuccess<PaginatedResponse<ReleaseListItem>>(res);
+			expectPagination(json, { length: 1 });
 			expect(json.data[0]?.name).toBe("東方紅魔郷");
 		});
 	});
@@ -213,9 +200,7 @@ describe("Admin Releases API", () => {
 			await setupTestDisc(release.id, { discNumber: 1 });
 
 			const res = await app.request(`/${release.id}`);
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ReleaseResponse;
+			const json = await expectSuccess<ReleaseResponse>(res);
 			expect(json.id).toBe(release.id);
 			expect(json.name).toBe("Test Release");
 			expect(json.discs.length).toBe(1);
@@ -225,7 +210,7 @@ describe("Admin Releases API", () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const res = await app.request("/nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -234,15 +219,9 @@ describe("Admin Releases API", () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const release = createTestRelease();
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(release),
-			});
+			const res = await app.request("/", postJson(release));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as ReleaseResponse;
+			const json = await expectCreated<ReleaseResponse>(res);
 			expect(json.id).toBe(release.id);
 			expect(json.name).toBe(release.name);
 		});
@@ -256,14 +235,9 @@ describe("Admin Releases API", () => {
 				id: release.id,
 				name: "Different Name",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateRelease),
-			});
+			const res = await app.request("/", postJson(duplicateRelease));
 
-			expect(res.status).toBe(409);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectConflict(res);
 			expect(json.error).toContain("ID");
 		});
 	});
@@ -276,33 +250,28 @@ describe("Admin Releases API", () => {
 
 			// 最新のupdatedAtを取得
 			const getRes = await app.request(`/${release.id}`);
-			const existingRelease = (await getRes.json()) as ReleaseResponse;
+			const existingRelease = await expectSuccess<ReleaseResponse>(getRes);
 
-			const updateRes = await app.request(`/${release.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const updateRes = await app.request(
+				`/${release.id}`,
+				putJson({
 					name: "Updated",
 					updatedAt: existingRelease.updatedAt,
 				}),
-			});
+			);
 
-			expect(updateRes.status).toBe(200);
-
-			const json = (await updateRes.json()) as ReleaseResponse;
+			const json = await expectSuccess<ReleaseResponse>(updateRes);
 			expect(json.name).toBe("Updated");
 		});
 
 		test("存在しないリリースは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "Updated" }),
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				"/nonexistent",
+				putJson({ name: "Updated" }),
+			);
+			await expectNotFound(res);
 		});
 
 		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
@@ -310,17 +279,15 @@ describe("Admin Releases API", () => {
 
 			const release = await setupTestRelease();
 
-			const res = await app.request(`/${release.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${release.id}`,
+				putJson({
 					name: "Updated",
 					updatedAt: "2020-01-01T00:00:00.000Z",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectConflict(res);
 			expect(json.error).toContain("更新");
 		});
 	});
@@ -331,27 +298,20 @@ describe("Admin Releases API", () => {
 
 			const release = await setupTestRelease();
 
-			const res = await app.request(`/${release.id}`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const res = await app.request(`/${release.id}`, deleteRequest());
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 
 			// 削除されたことを確認
 			const getRes = await app.request(`/${release.id}`);
-			expect(getRes.status).toBe(404);
+			await expectNotFound(getRes);
 		});
 
 		test("存在しないリリースは404を返す", async () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request("/nonexistent", deleteRequest());
+			await expectNotFound(res);
 		});
 	});
 
@@ -360,7 +320,7 @@ describe("Admin Releases API", () => {
 			const app = createTestAdminApp(releasesAdminRouter, { user: null });
 
 			const res = await app.request("/");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -369,7 +329,7 @@ describe("Admin Releases API", () => {
 			});
 
 			const res = await app.request("/");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });
@@ -384,9 +344,7 @@ describe("Admin Discs API", () => {
 			await setupTestDisc(release.id, { discNumber: 2 });
 
 			const res = await app.request(`/${release.id}/discs`);
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as DiscResponse[];
+			const json = await expectSuccess<DiscResponse[]>(res);
 			expect(json.length).toBe(2);
 		});
 
@@ -394,7 +352,7 @@ describe("Admin Discs API", () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const res = await app.request("/nonexistent/discs");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -405,15 +363,9 @@ describe("Admin Discs API", () => {
 			const release = await setupTestRelease();
 			const disc = createTestDisc({ releaseId: release.id, discNumber: 1 });
 
-			const res = await app.request(`/${release.id}/discs`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(disc),
-			});
+			const res = await app.request(`/${release.id}/discs`, postJson(disc));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as DiscResponse;
+			const json = await expectCreated<DiscResponse>(res);
 			expect(json.id).toBe(disc.id);
 			expect(json.discNumber).toBe(1);
 		});
@@ -428,13 +380,12 @@ describe("Admin Discs API", () => {
 				releaseId: release.id,
 				discNumber: 1,
 			});
-			const res = await app.request(`/${release.id}/discs`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateDisc),
-			});
+			const res = await app.request(
+				`/${release.id}/discs`,
+				postJson(duplicateDisc),
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
@@ -447,21 +398,18 @@ describe("Admin Discs API", () => {
 
 			// 最新のupdatedAtを取得
 			const getRes = await app.request(`/${release.id}/discs`);
-			const discList = (await getRes.json()) as DiscResponse[];
+			const discList = await expectSuccess<DiscResponse[]>(getRes);
 			const existingDisc = discList.find((d) => d.id === disc.id);
 
-			const updateRes = await app.request(`/${release.id}/discs/${disc.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const updateRes = await app.request(
+				`/${release.id}/discs/${disc.id}`,
+				putJson({
 					discNumber: 2,
 					updatedAt: existingDisc?.updatedAt,
 				}),
-			});
+			);
 
-			expect(updateRes.status).toBe(200);
-
-			const json = (await updateRes.json()) as DiscResponse;
+			const json = await expectSuccess<DiscResponse>(updateRes);
 			expect(json.discNumber).toBe(2);
 		});
 
@@ -470,13 +418,11 @@ describe("Admin Discs API", () => {
 
 			const release = await setupTestRelease();
 
-			const res = await app.request(`/${release.id}/discs/nonexistent`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "Updated" }),
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				`/${release.id}/discs/nonexistent`,
+				putJson({ name: "Updated" }),
+			);
+			await expectNotFound(res);
 		});
 	});
 
@@ -487,12 +433,11 @@ describe("Admin Discs API", () => {
 			const release = await setupTestRelease();
 			const disc = await setupTestDisc(release.id, { discNumber: 1 });
 
-			const res = await app.request(`/${release.id}/discs/${disc.id}`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const res = await app.request(
+				`/${release.id}/discs/${disc.id}`,
+				deleteRequest(),
+			);
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 		});
 
@@ -501,11 +446,11 @@ describe("Admin Discs API", () => {
 
 			const release = await setupTestRelease();
 
-			const res = await app.request(`/${release.id}/discs/nonexistent`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				`/${release.id}/discs/nonexistent`,
+				deleteRequest(),
+			);
+			await expectNotFound(res);
 		});
 	});
 });
@@ -526,9 +471,7 @@ describe("Admin Release Tracks API", () => {
 			});
 
 			const res = await app.request(`/${release.id}/tracks`);
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackResponse[];
+			const json = await expectSuccess<TrackResponse[]>(res);
 			expect(json.length).toBe(2);
 		});
 
@@ -536,7 +479,7 @@ describe("Admin Release Tracks API", () => {
 			const app = createTestAdminApp(releasesAdminRouter);
 
 			const res = await app.request("/nonexistent/tracks");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -551,15 +494,9 @@ describe("Admin Release Tracks API", () => {
 				name: "New Track",
 			});
 
-			const res = await app.request(`/${release.id}/tracks`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(track),
-			});
+			const res = await app.request(`/${release.id}/tracks`, postJson(track));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as TrackResponse;
+			const json = await expectCreated<TrackResponse>(res);
 			expect(json.id).toBe(track.id);
 			expect(json.name).toBe("New Track");
 		});
@@ -576,13 +513,12 @@ describe("Admin Release Tracks API", () => {
 				discId: disc.id,
 				trackNumber: 1,
 			});
-			const res = await app.request(`/${release.id}/tracks`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateTrack),
-			});
+			const res = await app.request(
+				`/${release.id}/tracks`,
+				postJson(duplicateTrack),
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("存在しないリリースは404を返す", async () => {
@@ -592,13 +528,9 @@ describe("Admin Release Tracks API", () => {
 				releaseId: "nonexistent",
 				trackNumber: 1,
 			});
-			const res = await app.request("/nonexistent/tracks", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(track),
-			});
+			const res = await app.request("/nonexistent/tracks", postJson(track));
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -614,21 +546,18 @@ describe("Admin Release Tracks API", () => {
 
 			// 最新のupdatedAtを取得
 			const getRes = await app.request(`/${release.id}/tracks`);
-			const trackList = (await getRes.json()) as TrackResponse[];
+			const trackList = await expectSuccess<TrackResponse[]>(getRes);
 			const existingTrack = trackList.find((t) => t.id === track.id);
 
-			const updateRes = await app.request(`/${release.id}/tracks/${track.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const updateRes = await app.request(
+				`/${release.id}/tracks/${track.id}`,
+				putJson({
 					name: "Updated Track",
 					updatedAt: existingTrack?.updatedAt,
 				}),
-			});
+			);
 
-			expect(updateRes.status).toBe(200);
-
-			const json = (await updateRes.json()) as TrackResponse;
+			const json = await expectSuccess<TrackResponse>(updateRes);
 			expect(json.name).toBe("Updated Track");
 		});
 
@@ -637,13 +566,11 @@ describe("Admin Release Tracks API", () => {
 
 			const release = await setupTestRelease();
 
-			const res = await app.request(`/${release.id}/tracks/nonexistent`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "Updated" }),
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				`/${release.id}/tracks/nonexistent`,
+				putJson({ name: "Updated" }),
+			);
+			await expectNotFound(res);
 		});
 
 		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
@@ -654,17 +581,15 @@ describe("Admin Release Tracks API", () => {
 				trackNumber: 1,
 			});
 
-			const res = await app.request(`/${release.id}/tracks/${track.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${release.id}/tracks/${track.id}`,
+				putJson({
 					name: "Updated",
 					updatedAt: "2020-01-01T00:00:00.000Z",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectConflict(res);
 			expect(json.error).toContain("更新");
 		});
 	});
@@ -678,12 +603,11 @@ describe("Admin Release Tracks API", () => {
 				trackNumber: 1,
 			});
 
-			const res = await app.request(`/${release.id}/tracks/${track.id}`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const res = await app.request(
+				`/${release.id}/tracks/${track.id}`,
+				deleteRequest(),
+			);
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 		});
 
@@ -692,11 +616,11 @@ describe("Admin Release Tracks API", () => {
 
 			const release = await setupTestRelease();
 
-			const res = await app.request(`/${release.id}/tracks/nonexistent`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				`/${release.id}/tracks/nonexistent`,
+				deleteRequest(),
+			);
+			await expectNotFound(res);
 		});
 	});
 });

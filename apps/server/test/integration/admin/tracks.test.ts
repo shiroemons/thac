@@ -29,24 +29,29 @@ import {
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	expectBadRequest,
+	expectEmptyList,
+	expectForbidden,
+	expectNotFound,
+	expectPagination,
+	expectSuccess,
+	expectUnauthorized,
+	type PaginatedResponse,
+} from "../../helpers/test-response";
 
-// 型定義
-interface TrackListResponse {
-	data: Array<{
-		id: string;
-		releaseId: string | null;
-		discId: string | null;
-		trackNumber: number;
-		name: string;
-		releaseName: string | null;
-		discNumber: number | null;
-		creditCount: number;
-		createdAt: string;
-		updatedAt: string;
-	}>;
-	total: number;
-	page: number;
-	limit: number;
+// 型定義（エンティティ固有）
+interface TrackListItem {
+	id: string;
+	releaseId: string | null;
+	discId: string | null;
+	trackNumber: number;
+	name: string;
+	releaseName: string | null;
+	discNumber: number | null;
+	creditCount: number;
+	createdAt: string;
+	updatedAt: string;
 }
 
 interface TrackDetailResponse {
@@ -131,17 +136,24 @@ async function setupTestTrack(
 	return track;
 }
 
+// ヘルパー: バッチ削除リクエスト
+function deleteBatchJson(
+	items: Array<{ trackId: string; releaseId: string }>,
+): RequestInit {
+	return {
+		method: "DELETE",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ items }),
+	};
+}
+
 describe("Admin Tracks API (Standalone)", () => {
 	describe("GET / - 一覧取得", () => {
 		test("トラックが存在しない場合、空配列を返す", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackListResponse;
-			expect(json.data).toEqual([]);
-			expect(json.total).toBe(0);
+			await expectEmptyList<TrackListItem>(res);
 		});
 
 		test("トラック一覧をページネーション付きで返す", async () => {
@@ -158,13 +170,8 @@ describe("Admin Tracks API (Standalone)", () => {
 			});
 
 			const res = await app.request("/?page=1&limit=10");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackListResponse;
-			expect(json.data.length).toBe(2);
-			expect(json.total).toBe(2);
-			expect(json.page).toBe(1);
-			expect(json.limit).toBe(10);
+			const json = await expectSuccess<PaginatedResponse<TrackListItem>>(res);
+			expectPagination(json, { length: 2, total: 2, page: 1, limit: 10 });
 		});
 
 		test("リリースIDでフィルタリングできる", async () => {
@@ -182,10 +189,8 @@ describe("Admin Tracks API (Standalone)", () => {
 			});
 
 			const res = await app.request(`/?releaseId=${release1.id}`);
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackListResponse;
-			expect(json.data.length).toBe(1);
+			const json = await expectSuccess<PaginatedResponse<TrackListItem>>(res);
+			expectPagination(json, { length: 1 });
 			expect(json.data[0]?.name).toBe("Track from Release 1");
 		});
 
@@ -203,10 +208,8 @@ describe("Admin Tracks API (Standalone)", () => {
 			});
 
 			const res = await app.request("/?search=紅魔");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackListResponse;
-			expect(json.data.length).toBe(1);
+			const json = await expectSuccess<PaginatedResponse<TrackListItem>>(res);
+			expectPagination(json, { length: 1 });
 			expect(json.data[0]?.name).toBe("紅魔館");
 		});
 	});
@@ -223,9 +226,7 @@ describe("Admin Tracks API (Standalone)", () => {
 			});
 
 			const res = await app.request(`/${track.id}`);
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as TrackDetailResponse;
+			const json = await expectSuccess<TrackDetailResponse>(res);
 			expect(json.id).toBe(track.id);
 			expect(json.name).toBe("Test Track");
 			expect(json.release?.name).toBe("Test Release");
@@ -236,7 +237,7 @@ describe("Admin Tracks API (Standalone)", () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const res = await app.request("/nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -252,19 +253,15 @@ describe("Admin Tracks API (Standalone)", () => {
 				trackNumber: 2,
 			});
 
-			const res = await app.request("/batch", {
-				method: "DELETE",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					items: [
-						{ trackId: track1.id, releaseId: release.id },
-						{ trackId: track2.id, releaseId: release.id },
-					],
-				}),
-			});
+			const res = await app.request(
+				"/batch",
+				deleteBatchJson([
+					{ trackId: track1.id, releaseId: release.id },
+					{ trackId: track2.id, releaseId: release.id },
+				]),
+			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as BatchDeleteResponse;
+			const json = await expectSuccess<BatchDeleteResponse>(res);
 			expect(json.success).toBe(true);
 			expect(json.deleted.length).toBe(2);
 		});
@@ -272,13 +269,8 @@ describe("Admin Tracks API (Standalone)", () => {
 		test("空の配列は400を返す", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
-			const res = await app.request("/batch", {
-				method: "DELETE",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ items: [] }),
-			});
-
-			expect(res.status).toBe(400);
+			const res = await app.request("/batch", deleteBatchJson([]));
+			await expectBadRequest(res);
 		});
 
 		test("存在しないトラックはfailedに含まれる", async () => {
@@ -289,19 +281,15 @@ describe("Admin Tracks API (Standalone)", () => {
 				trackNumber: 1,
 			});
 
-			const res = await app.request("/batch", {
-				method: "DELETE",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					items: [
-						{ trackId: track.id, releaseId: release.id },
-						{ trackId: "nonexistent", releaseId: release.id },
-					],
-				}),
-			});
+			const res = await app.request(
+				"/batch",
+				deleteBatchJson([
+					{ trackId: track.id, releaseId: release.id },
+					{ trackId: "nonexistent", releaseId: release.id },
+				]),
+			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as BatchDeleteResponse;
+			const json = await expectSuccess<BatchDeleteResponse>(res);
 			expect(json.success).toBe(false);
 			expect(json.deleted.length).toBe(1);
 			expect(json.failed.length).toBe(1);
@@ -314,7 +302,7 @@ describe("Admin Tracks API (Standalone)", () => {
 			const app = createTestAdminApp(tracksAdminRouter, { user: null });
 
 			const res = await app.request("/");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -323,7 +311,7 @@ describe("Admin Tracks API (Standalone)", () => {
 			});
 
 			const res = await app.request("/");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

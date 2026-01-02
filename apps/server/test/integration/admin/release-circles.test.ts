@@ -19,6 +19,19 @@ import { releaseCirclesRouter } from "../../../src/routes/admin/releases/release
 import { createTestCircle, createTestRelease } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectForbidden,
+	expectNotFound,
+	expectSuccess,
+	expectUnauthorized,
+	patchJson,
+	postJson,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface ReleaseCircleResponse {
@@ -32,16 +45,6 @@ interface ReleaseCircleResponse {
 		nameJa: string | null;
 		nameEn: string | null;
 	};
-}
-
-interface ErrorResponse {
-	error: string;
-	details?: unknown;
-}
-
-interface DeleteResponse {
-	success: boolean;
-	id: string;
 }
 
 describe("Admin Release Circles API", () => {
@@ -67,7 +70,7 @@ describe("Admin Release Circles API", () => {
 	describe("GET /:releaseId/circles - 作品の関連サークル一覧取得", () => {
 		test("存在しないリリースは404を返す", async () => {
 			const res = await app.request("/rel_nonexistent/circles");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("関連サークルがない場合は空配列を返す", async () => {
@@ -76,9 +79,7 @@ describe("Admin Release Circles API", () => {
 				.values(createTestRelease({ id: "rel_test_001" }));
 
 			const res = await app.request("/rel_test_001/circles");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ReleaseCircleResponse[];
+			const json = await expectSuccess<ReleaseCircleResponse[]>(res);
 			expect(json).toEqual([]);
 		});
 
@@ -97,9 +98,7 @@ describe("Admin Release Circles API", () => {
 			});
 
 			const res = await app.request("/rel_test_001/circles");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ReleaseCircleResponse[];
+			const json = await expectSuccess<ReleaseCircleResponse[]>(res);
 			expect(json).toHaveLength(1);
 			expect(json[0]?.circleId).toBe("ci_test_001");
 			expect(json[0]?.participationType).toBe("host");
@@ -139,9 +138,7 @@ describe("Admin Release Circles API", () => {
 			]);
 
 			const res = await app.request("/rel_test_001/circles");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ReleaseCircleResponse[];
+			const json = await expectSuccess<ReleaseCircleResponse[]>(res);
 			expect(json[0]?.circle?.name).toBe("Circle A");
 			expect(json[1]?.circle?.name).toBe("Circle B");
 			expect(json[2]?.circle?.name).toBe("Circle C");
@@ -150,15 +147,14 @@ describe("Admin Release Circles API", () => {
 
 	describe("POST /:releaseId/circles - サークル関連付け追加", () => {
 		test("存在しないリリースは404を返す", async () => {
-			const res = await app.request("/rel_nonexistent/circles", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_nonexistent/circles",
+				postJson({
 					circleId: "ci_test_001",
 					participationType: "host",
 				}),
-			});
-			expect(res.status).toBe(404);
+			);
+			await expectNotFound(res);
 		});
 
 		test("存在しないサークルは404を返す", async () => {
@@ -166,15 +162,14 @@ describe("Admin Release Circles API", () => {
 				.insert(releases)
 				.values(createTestRelease({ id: "rel_test_001" }));
 
-			const res = await app.request("/rel_test_001/circles", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_001/circles",
+				postJson({
 					circleId: "ci_nonexistent",
 					participationType: "host",
 				}),
-			});
-			expect(res.status).toBe(404);
+			);
+			await expectNotFound(res);
 		});
 
 		test("新しい関連付けを作成できる", async () => {
@@ -183,17 +178,15 @@ describe("Admin Release Circles API", () => {
 				.values(createTestRelease({ id: "rel_test_001" }));
 			await db.insert(circles).values(createTestCircle({ id: "ci_test_001" }));
 
-			const res = await app.request("/rel_test_001/circles", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_001/circles",
+				postJson({
 					circleId: "ci_test_001",
 					participationType: "host",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as ReleaseCircleResponse;
+			const json = await expectCreated<ReleaseCircleResponse>(res);
 			expect(json.releaseId).toBe("rel_test_001");
 			expect(json.circleId).toBe("ci_test_001");
 			expect(json.participationType).toBe("host");
@@ -211,27 +204,24 @@ describe("Admin Release Circles API", () => {
 				]);
 
 			// 1つ目を追加
-			await app.request("/rel_test_001/circles", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			await app.request(
+				"/rel_test_001/circles",
+				postJson({
 					circleId: "ci_test_001",
 					participationType: "host",
 				}),
-			});
+			);
 
 			// 2つ目を追加（position自動設定）
-			const res = await app.request("/rel_test_001/circles", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_001/circles",
+				postJson({
 					circleId: "ci_test_002",
 					participationType: "guest",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as ReleaseCircleResponse;
+			const json = await expectCreated<ReleaseCircleResponse>(res);
 			expect(json.position).toBeGreaterThan(0);
 		});
 
@@ -247,16 +237,15 @@ describe("Admin Release Circles API", () => {
 				position: 1,
 			});
 
-			const res = await app.request("/rel_test_001/circles", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_001/circles",
+				postJson({
 					circleId: "ci_test_001",
 					participationType: "host",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("同じサークルでも異なる参加形態は追加可能", async () => {
@@ -271,16 +260,15 @@ describe("Admin Release Circles API", () => {
 				position: 1,
 			});
 
-			const res = await app.request("/rel_test_001/circles", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_001/circles",
+				postJson({
 					circleId: "ci_test_001",
 					participationType: "guest",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
+			await expectCreated<ReleaseCircleResponse>(res);
 		});
 
 		test("無効な参加形態は400を返す", async () => {
@@ -289,17 +277,15 @@ describe("Admin Release Circles API", () => {
 				.values(createTestRelease({ id: "rel_test_001" }));
 			await db.insert(circles).values(createTestCircle({ id: "ci_test_001" }));
 
-			const res = await app.request("/rel_test_001/circles", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/rel_test_001/circles",
+				postJson({
 					circleId: "ci_test_001",
 					participationType: "invalid_type",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(400);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectBadRequest(res);
 			expect(json.error).toBeDefined();
 		});
 	});
@@ -317,13 +303,12 @@ describe("Admin Release Circles API", () => {
 				position: 1,
 			});
 
-			const res = await app.request("/rel_test_001/circles/ci_test_001", {
-				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ position: 2 }),
-			});
+			const res = await app.request(
+				"/rel_test_001/circles/ci_test_001",
+				patchJson({ position: 2 }),
+			);
 
-			expect(res.status).toBe(400);
+			await expectBadRequest(res);
 		});
 
 		test("存在しない関連付けは404を返す", async () => {
@@ -334,14 +319,10 @@ describe("Admin Release Circles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/circles/ci_test_001?participationType=host",
-				{
-					method: "PATCH",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ position: 2 }),
-				},
+				patchJson({ position: 2 }),
 			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("positionを更新できる", async () => {
@@ -358,26 +339,22 @@ describe("Admin Release Circles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/circles/ci_test_001?participationType=host",
-				{
-					method: "PATCH",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ position: 5 }),
-				},
+				patchJson({ position: 5 }),
 			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as ReleaseCircleResponse;
+			const json = await expectSuccess<ReleaseCircleResponse>(res);
 			expect(json.position).toBe(5);
 		});
 	});
 
 	describe("DELETE /:releaseId/circles/:circleId - 関連付け解除", () => {
 		test("participationTypeクエリパラメータがない場合は400を返す", async () => {
-			const res = await app.request("/rel_test_001/circles/ci_test_001", {
-				method: "DELETE",
-			});
+			const res = await app.request(
+				"/rel_test_001/circles/ci_test_001",
+				deleteRequest(),
+			);
 
-			expect(res.status).toBe(400);
+			await expectBadRequest(res);
 		});
 
 		test("存在しない関連付けは404を返す", async () => {
@@ -388,12 +365,10 @@ describe("Admin Release Circles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/circles/ci_test_001?participationType=host",
-				{
-					method: "DELETE",
-				},
+				deleteRequest(),
 			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("関連付けを削除できる", async () => {
@@ -410,19 +385,16 @@ describe("Admin Release Circles API", () => {
 
 			const res = await app.request(
 				"/rel_test_001/circles/ci_test_001?participationType=host",
-				{
-					method: "DELETE",
-				},
+				deleteRequest(),
 			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 
 			// 削除されたことを確認
 			const checkRes = await app.request("/rel_test_001/circles");
 			const remainingCircles =
-				(await checkRes.json()) as ReleaseCircleResponse[];
+				await expectSuccess<ReleaseCircleResponse[]>(checkRes);
 			expect(remainingCircles).toHaveLength(0);
 		});
 	});
@@ -433,7 +405,7 @@ describe("Admin Release Circles API", () => {
 				user: null,
 			});
 			const res = await unauthApp.request("/rel_test_001/circles");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -441,7 +413,7 @@ describe("Admin Release Circles API", () => {
 				user: { role: "user" },
 			});
 			const res = await nonAdminApp.request("/rel_test_001/circles");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

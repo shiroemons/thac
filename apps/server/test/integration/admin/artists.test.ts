@@ -12,8 +12,24 @@ import { artistsRouter } from "../../../src/routes/admin/artists";
 import { createTestArtist } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectEmptyList,
+	expectForbidden,
+	expectNotFound,
+	expectPagination,
+	expectSuccess,
+	expectUnauthorized,
+	type PaginatedResponse,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
 
-// レスポンスの型定義
+// エンティティ固有のレスポンス型
 interface ArtistResponse {
 	id: string;
 	name: string;
@@ -26,25 +42,6 @@ interface ArtistResponse {
 	aliases?: unknown[];
 	createdAt?: unknown;
 	updatedAt?: unknown;
-}
-
-interface ListResponse {
-	data: ArtistResponse[];
-	total: number;
-	page: number;
-	limit: number;
-}
-
-interface ErrorResponse {
-	error: string;
-	details?: unknown;
-}
-
-interface DeleteResponse {
-	success: boolean;
-	id?: string;
-	deleted?: string[];
-	failed?: unknown[];
 }
 
 describe("Admin Artists API", () => {
@@ -70,27 +67,18 @@ describe("Admin Artists API", () => {
 	describe("GET / - 一覧取得", () => {
 		test("アーティストが存在しない場合、空配列を返す", async () => {
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ListResponse;
-			expect(json.data).toEqual([]);
-			expect(json.total).toBe(0);
+			await expectEmptyList<ArtistResponse>(res);
 		});
 
 		test("アーティスト一覧をページネーション付きで返す", async () => {
-			// テストデータ挿入
 			const artist = createTestArtist({ name: "テストアーティスト" });
 			await db.insert(artists).values(artist);
 
 			const res = await app.request("/?page=1&limit=10");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<PaginatedResponse<ArtistResponse>>(res);
 
-			const json = (await res.json()) as ListResponse;
-			expect(json.data).toHaveLength(1);
+			expectPagination(json, { total: 1, page: 1, limit: 10, length: 1 });
 			expect(json.data[0]?.name).toBe("テストアーティスト");
-			expect(json.total).toBe(1);
-			expect(json.page).toBe(1);
-			expect(json.limit).toBe(10);
 		});
 
 		test("検索クエリでフィルタリングできる", async () => {
@@ -102,9 +90,8 @@ describe("Admin Artists API", () => {
 				]);
 
 			const res = await app.request("/?search=Alpha");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<PaginatedResponse<ArtistResponse>>(res);
 
-			const json = (await res.json()) as ListResponse;
 			expect(json.data).toHaveLength(1);
 			expect(json.data[0]?.name).toBe("Alpha Artist");
 		});
@@ -118,9 +105,8 @@ describe("Admin Artists API", () => {
 				]);
 
 			const res = await app.request("/?initialScript=hiragana");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<PaginatedResponse<ArtistResponse>>(res);
 
-			const json = (await res.json()) as ListResponse;
 			expect(json.data).toHaveLength(1);
 			expect(json.data[0]?.name).toBe("ひらがな");
 		});
@@ -135,9 +121,8 @@ describe("Admin Artists API", () => {
 				]);
 
 			const res = await app.request("/?sortBy=name&sortOrder=asc");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<PaginatedResponse<ArtistResponse>>(res);
 
-			const json = (await res.json()) as ListResponse;
 			expect(json.data[0]?.name).toBe("A Artist");
 			expect(json.data[1]?.name).toBe("B Artist");
 			expect(json.data[2]?.name).toBe("C Artist");
@@ -153,9 +138,8 @@ describe("Admin Artists API", () => {
 			await db.insert(artists).values(artist);
 
 			const res = await app.request("/ar_test_001");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<ArtistResponse>(res);
 
-			const json = (await res.json()) as ArtistResponse;
 			expect(json.id).toBe("ar_test_001");
 			expect(json.name).toBe("取得テスト");
 			expect(json.aliases).toEqual([]);
@@ -163,54 +147,45 @@ describe("Admin Artists API", () => {
 
 		test("存在しないアーティストは404を返す", async () => {
 			const res = await app.request("/ar_nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
 	describe("POST / - 新規作成", () => {
 		test("新しいアーティストを作成できる", async () => {
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/",
+				postJson({
 					id: "ar_new_001",
 					name: "新規アーティスト",
-					initialScript: "kanji", // kanji/digit/symbol/otherはnameInitial不要
+					initialScript: "kanji",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as ArtistResponse;
+			const json = await expectCreated<ArtistResponse>(res);
 			expect(json.id).toBe("ar_new_001");
 			expect(json.name).toBe("新規アーティスト");
 		});
 
 		test("latin/hiragana/katakanaの場合はnameInitialが必須", async () => {
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/",
+				postJson({
 					id: "ar_new_002",
 					name: "Test Artist",
 					initialScript: "latin",
 					nameInitial: "T",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as ArtistResponse;
+			const json = await expectCreated<ArtistResponse>(res);
 			expect(json.nameInitial).toBe("T");
 		});
 
 		test("必須フィールドが欠けている場合は400を返す", async () => {
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "名前のみ" }),
-			});
+			const res = await app.request("/", postJson({ name: "名前のみ" }));
 
-			expect(res.status).toBe(400);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectBadRequest(res);
 			expect(json.error).toBeDefined();
 		});
 
@@ -218,34 +193,32 @@ describe("Admin Artists API", () => {
 			const artist = createTestArtist({ id: "ar_dup_001" });
 			await db.insert(artists).values(artist);
 
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/",
+				postJson({
 					id: "ar_dup_001",
 					name: "別の名前",
 					initialScript: "kanji",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("重複する名前は409を返す", async () => {
 			const artist = createTestArtist({ name: "既存の名前" });
 			await db.insert(artists).values(artist);
 
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/",
+				postJson({
 					id: "ar_new_003",
 					name: "既存の名前",
 					initialScript: "kanji",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
@@ -254,25 +227,18 @@ describe("Admin Artists API", () => {
 			const artist = createTestArtist({ id: "ar_upd_001", name: "更新前" });
 			await db.insert(artists).values(artist);
 
-			const res = await app.request("/ar_upd_001", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "更新後" }),
-			});
+			const res = await app.request("/ar_upd_001", putJson({ name: "更新後" }));
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as ArtistResponse;
+			const json = await expectSuccess<ArtistResponse>(res);
 			expect(json.name).toBe("更新後");
 		});
 
 		test("存在しないアーティストは404を返す", async () => {
-			const res = await app.request("/ar_nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "更新" }),
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				"/ar_nonexistent",
+				putJson({ name: "更新" }),
+			);
+			await expectNotFound(res);
 		});
 
 		test("他のアーティストと重複する名前は409を返す", async () => {
@@ -283,13 +249,12 @@ describe("Admin Artists API", () => {
 					createTestArtist({ id: "ar_upd_003", name: "アーティストB" }),
 				]);
 
-			const res = await app.request("/ar_upd_002", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "アーティストB" }),
-			});
+			const res = await app.request(
+				"/ar_upd_002",
+				putJson({ name: "アーティストB" }),
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
@@ -299,20 +264,16 @@ describe("Admin Artists API", () => {
 			});
 			await db.insert(artists).values(artist);
 
-			// 古いタイムスタンプで更新を試みる
 			const oldTimestamp = new Date(2000, 0, 1).toISOString();
-			const res = await app.request("/ar_lock_001", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/ar_lock_001",
+				putJson({
 					name: "更新",
 					updatedAt: oldTimestamp,
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
-			const json = (await res.json()) as ErrorResponse;
-			// 楽観的ロックエラーメッセージを確認
+			const json = await expectConflict(res);
 			expect(json.error).toContain("更新されています");
 		});
 	});
@@ -322,17 +283,16 @@ describe("Admin Artists API", () => {
 			const artist = createTestArtist({ id: "ar_del_001" });
 			await db.insert(artists).values(artist);
 
-			const res = await app.request("/ar_del_001", { method: "DELETE" });
-			expect(res.status).toBe(200);
+			const res = await app.request("/ar_del_001", deleteRequest());
+			const json = await expectSuccess<DeleteResponse>(res);
 
-			const json = (await res.json()) as DeleteResponse;
 			expect(json.success).toBe(true);
 			expect(json.id).toBe("ar_del_001");
 		});
 
 		test("存在しないアーティストは404を返す", async () => {
-			const res = await app.request("/ar_nonexistent", { method: "DELETE" });
-			expect(res.status).toBe(404);
+			const res = await app.request("/ar_nonexistent", deleteRequest());
+			await expectNotFound(res);
 		});
 	});
 
@@ -354,8 +314,7 @@ describe("Admin Artists API", () => {
 				body: JSON.stringify({ ids: ["ar_batch_001", "ar_batch_002"] }),
 			});
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 			expect(json.deleted).toHaveLength(2);
 		});
@@ -367,7 +326,7 @@ describe("Admin Artists API", () => {
 				body: JSON.stringify({ ids: [] }),
 			});
 
-			expect(res.status).toBe(400);
+			await expectBadRequest(res);
 		});
 	});
 
@@ -375,7 +334,7 @@ describe("Admin Artists API", () => {
 		test("未認証リクエストは401を返す", async () => {
 			const unauthApp = createTestAdminApp(artistsRouter, { user: null });
 			const res = await unauthApp.request("/");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -383,7 +342,7 @@ describe("Admin Artists API", () => {
 				user: { role: "user" },
 			});
 			const res = await nonAdminApp.request("/");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

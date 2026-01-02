@@ -34,6 +34,11 @@ import {
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	expectForbidden,
+	expectSuccess,
+	expectUnauthorized,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface AliasCircleResponse {
@@ -107,9 +112,7 @@ describe("Admin Artist Alias Subroutes API", () => {
 			);
 
 			const res = await circlesApp.request("/aa_test_001/circles");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as AliasCircleResponse[];
+			const json = await expectSuccess<AliasCircleResponse[]>(res);
 			expect(json).toEqual([]);
 		});
 
@@ -155,9 +158,7 @@ describe("Admin Artist Alias Subroutes API", () => {
 			});
 
 			const res = await circlesApp.request("/aa_test_001/circles");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as AliasCircleResponse[];
+			const json = await expectSuccess<AliasCircleResponse[]>(res);
 			expect(json).toHaveLength(1);
 			expect(json[0]?.circleId).toBe("ci_test_001");
 			expect(json[0]?.circleName).toBe("Test Circle");
@@ -231,13 +232,13 @@ describe("Admin Artist Alias Subroutes API", () => {
 
 			// Alias A のサークル（Circle A のみ）
 			const resA = await circlesApp.request("/aa_test_001/circles");
-			const jsonA = (await resA.json()) as AliasCircleResponse[];
+			const jsonA = await expectSuccess<AliasCircleResponse[]>(resA);
 			expect(jsonA).toHaveLength(1);
 			expect(jsonA[0]?.circleName).toBe("Circle A");
 
 			// Alias B のサークル（Circle B のみ）
 			const resB = await circlesApp.request("/aa_test_002/circles");
-			const jsonB = (await resB.json()) as AliasCircleResponse[];
+			const jsonB = await expectSuccess<AliasCircleResponse[]>(resB);
 			expect(jsonB).toHaveLength(1);
 			expect(jsonB[0]?.circleName).toBe("Circle B");
 		});
@@ -254,9 +255,7 @@ describe("Admin Artist Alias Subroutes API", () => {
 			);
 
 			const res = await tracksApp.request("/aa_test_001/tracks");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as AliasTracksResult;
+			const json = await expectSuccess<AliasTracksResult>(res);
 			expect(json.totalUniqueTrackCount).toBe(0);
 			expect(json.tracks).toEqual([]);
 			expect(json.byRole).toEqual({});
@@ -295,9 +294,7 @@ describe("Admin Artist Alias Subroutes API", () => {
 			});
 
 			const res = await tracksApp.request("/aa_test_001/tracks");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as AliasTracksResult;
+			const json = await expectSuccess<AliasTracksResult>(res);
 			expect(json.totalUniqueTrackCount).toBe(1);
 			expect(json.tracks).toHaveLength(1);
 			expect(json.tracks[0]?.name).toBe("Track 1");
@@ -354,9 +351,7 @@ describe("Admin Artist Alias Subroutes API", () => {
 			]);
 
 			const res = await tracksApp.request("/aa_test_001/tracks");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as AliasTracksResult;
+			const json = await expectSuccess<AliasTracksResult>(res);
 			expect(json.byRole.vocal).toBe(2);
 			expect(json.byRole.guitar).toBe(1);
 		});
@@ -399,9 +394,7 @@ describe("Admin Artist Alias Subroutes API", () => {
 			]);
 
 			const res = await tracksApp.request("/aa_test_001/tracks");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as AliasTracksResult;
+			const json = await expectSuccess<AliasTracksResult>(res);
 			expect(json.statistics.releaseCount).toBe(2);
 			expect(json.statistics.earliestReleaseDate).toBe("2022-03-15");
 			expect(json.statistics.latestReleaseDate).toBe("2024-08-20");
@@ -415,7 +408,7 @@ describe("Admin Artist Alias Subroutes API", () => {
 			const unauthApp = createTestAdminApp(combinedRouter, { user: null });
 
 			const res = await unauthApp.request("/aa_test_001/circles");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -426,7 +419,7 @@ describe("Admin Artist Alias Subroutes API", () => {
 			});
 
 			const res = await nonAdminApp.request("/aa_test_001/tracks");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

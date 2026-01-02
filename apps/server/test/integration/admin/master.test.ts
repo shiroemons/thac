@@ -34,23 +34,23 @@ import {
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectEmptyList,
+	expectForbidden,
+	expectNotFound,
+	expectPagination,
+	expectSuccess,
+	expectUnauthorized,
+	type PaginatedResponse,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
 
-// 型定義
-interface PlatformListResponse {
-	data: Array<{
-		code: string;
-		name: string;
-		category: string | null;
-		urlPattern: string | null;
-		sortOrder: number;
-		createdAt: string;
-		updatedAt: string;
-	}>;
-	total: number;
-	page: number;
-	limit: number;
-}
-
+// 型定義（エンティティ固有のレスポンス型のみ）
 interface PlatformResponse {
 	code: string;
 	name: string;
@@ -61,19 +61,6 @@ interface PlatformResponse {
 	updatedAt: string;
 }
 
-interface CreditRoleListResponse {
-	data: Array<{
-		code: string;
-		label: string;
-		sortOrder: number;
-		createdAt: string;
-		updatedAt: string;
-	}>;
-	total: number;
-	page: number;
-	limit: number;
-}
-
 interface CreditRoleResponse {
 	code: string;
 	label: string;
@@ -82,39 +69,12 @@ interface CreditRoleResponse {
 	updatedAt: string;
 }
 
-interface AliasTypeListResponse {
-	data: Array<{
-		code: string;
-		label: string;
-		sortOrder: number;
-		createdAt: string;
-		updatedAt: string;
-	}>;
-	total: number;
-	page: number;
-	limit: number;
-}
-
 interface AliasTypeResponse {
 	code: string;
 	label: string;
 	sortOrder: number;
 	createdAt: string;
 	updatedAt: string;
-}
-
-interface OfficialWorkCategoryListResponse {
-	data: Array<{
-		code: string;
-		name: string;
-		description: string | null;
-		sortOrder: number;
-		createdAt: string;
-		updatedAt: string;
-	}>;
-	total: number;
-	page: number;
-	limit: number;
 }
 
 interface OfficialWorkCategoryResponse {
@@ -152,11 +112,7 @@ describe("Admin Platforms API", () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as PlatformListResponse;
-			expect(json.data).toEqual([]);
-			expect(json.total).toBe(0);
+			await expectEmptyList<PlatformResponse>(res);
 		});
 
 		test("プラットフォーム一覧をページネーション付きで返す", async () => {
@@ -167,11 +123,9 @@ describe("Admin Platforms API", () => {
 			await testDb.insert(platforms).values([platform1, platform2]);
 
 			const res = await app.request("/?page=1&limit=10");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as PlatformListResponse;
-			expect(json.data.length).toBe(2);
-			expect(json.total).toBe(2);
+			const json =
+				await expectSuccess<PaginatedResponse<PlatformResponse>>(res);
+			expectPagination(json, { length: 2, total: 2 });
 		});
 
 		test("カテゴリでフィルタリングできる", async () => {
@@ -188,10 +142,9 @@ describe("Admin Platforms API", () => {
 			await testDb.insert(platforms).values([platform1, platform2]);
 
 			const res = await app.request("/?category=sns");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as PlatformListResponse;
-			expect(json.data.length).toBe(1);
+			const json =
+				await expectSuccess<PaginatedResponse<PlatformResponse>>(res);
+			expectPagination(json, { length: 1 });
 			expect(json.data[0]?.name).toBe("Twitter");
 		});
 
@@ -209,10 +162,9 @@ describe("Admin Platforms API", () => {
 			await testDb.insert(platforms).values([platform1, platform2]);
 
 			const res = await app.request("/?search=tube");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as PlatformListResponse;
-			expect(json.data.length).toBe(1);
+			const json =
+				await expectSuccess<PaginatedResponse<PlatformResponse>>(res);
+			expectPagination(json, { length: 1 });
 			expect(json.data[0]?.name).toBe("YouTube");
 		});
 	});
@@ -225,9 +177,7 @@ describe("Admin Platforms API", () => {
 			await testDb.insert(platforms).values(platform);
 
 			const res = await app.request("/twitter");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as PlatformResponse;
+			const json = await expectSuccess<PlatformResponse>(res);
 			expect(json.code).toBe("twitter");
 			expect(json.name).toBe("Twitter");
 		});
@@ -236,7 +186,7 @@ describe("Admin Platforms API", () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const res = await app.request("/nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -245,15 +195,9 @@ describe("Admin Platforms API", () => {
 			const app = createTestAdminApp(platformsRouter);
 
 			const platform = createTestPlatform({ code: "twitter", name: "Twitter" });
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(platform),
-			});
+			const res = await app.request("/", postJson(platform));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as PlatformResponse;
+			const json = await expectCreated<PlatformResponse>(res);
 			expect(json.code).toBe(platform.code);
 			expect(json.name).toBe(platform.name);
 		});
@@ -266,14 +210,9 @@ describe("Admin Platforms API", () => {
 
 			const newPlatform = createTestPlatform();
 			const { sortOrder: _, ...platformWithoutSortOrder } = newPlatform;
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(platformWithoutSortOrder),
-			});
+			const res = await app.request("/", postJson(platformWithoutSortOrder));
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as PlatformResponse;
+			const json = await expectCreated<PlatformResponse>(res);
 			expect(json.sortOrder).toBe(6);
 		});
 
@@ -287,25 +226,17 @@ describe("Admin Platforms API", () => {
 				code: "twitter",
 				name: "Different",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicatePlatform),
-			});
+			const res = await app.request("/", postJson(duplicatePlatform));
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("必須フィールドが欠けている場合は400を返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "Test" }),
-			});
+			const res = await app.request("/", postJson({ name: "Test" }));
 
-			expect(res.status).toBe(400);
+			await expectBadRequest(res);
 		});
 	});
 
@@ -318,32 +249,29 @@ describe("Admin Platforms API", () => {
 
 			// 最新のupdatedAtを取得
 			const getRes = await app.request("/twitter");
-			const existingPlatform = (await getRes.json()) as PlatformResponse;
+			const existingPlatform = await expectSuccess<PlatformResponse>(getRes);
 
-			const updateRes = await app.request("/twitter", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const updateRes = await app.request(
+				"/twitter",
+				putJson({
 					name: "X (Twitter)",
 					updatedAt: existingPlatform.updatedAt,
 				}),
-			});
+			);
 
-			expect(updateRes.status).toBe(200);
-			const json = (await updateRes.json()) as PlatformResponse;
+			const json = await expectSuccess<PlatformResponse>(updateRes);
 			expect(json.name).toBe("X (Twitter)");
 		});
 
 		test("存在しないプラットフォームは404を返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "Updated" }),
-			});
+			const res = await app.request(
+				"/nonexistent",
+				putJson({ name: "Updated" }),
+			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
@@ -352,16 +280,15 @@ describe("Admin Platforms API", () => {
 			const platform = createTestPlatform({ code: "twitter" });
 			await testDb.insert(platforms).values(platform);
 
-			const res = await app.request("/twitter", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/twitter",
+				putJson({
 					name: "Updated",
 					updatedAt: "2020-01-01T00:00:00.000Z",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
@@ -372,25 +299,20 @@ describe("Admin Platforms API", () => {
 			const platform = createTestPlatform({ code: "twitter" });
 			await testDb.insert(platforms).values(platform);
 
-			const res = await app.request("/twitter", {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
+			const res = await app.request("/twitter", deleteRequest());
+			await expectSuccess(res);
 
 			// 削除されたことを確認
 			const getRes = await app.request("/twitter");
-			expect(getRes.status).toBe(404);
+			await expectNotFound(getRes);
 		});
 
 		test("存在しないプラットフォームは404を返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "DELETE",
-			});
+			const res = await app.request("/nonexistent", deleteRequest());
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -402,39 +324,34 @@ describe("Admin Platforms API", () => {
 			const platform2 = createTestPlatform({ code: "p2", sortOrder: 1 });
 			await testDb.insert(platforms).values([platform1, platform2]);
 
-			const res = await app.request("/reorder", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/reorder",
+				putJson({
 					items: [
 						{ code: "p1", sortOrder: 1 },
 						{ code: "p2", sortOrder: 0 },
 					],
 				}),
-			});
+			);
 
-			expect(res.status).toBe(200);
+			await expectSuccess(res);
 
 			// 更新されたことを確認
 			const getRes1 = await app.request("/p1");
-			const json1 = (await getRes1.json()) as PlatformResponse;
+			const json1 = await expectSuccess<PlatformResponse>(getRes1);
 			expect(json1.sortOrder).toBe(1);
 
 			const getRes2 = await app.request("/p2");
-			const json2 = (await getRes2.json()) as PlatformResponse;
+			const json2 = await expectSuccess<PlatformResponse>(getRes2);
 			expect(json2.sortOrder).toBe(0);
 		});
 
 		test("itemsが配列でない場合は400を返す", async () => {
 			const app = createTestAdminApp(platformsRouter);
 
-			const res = await app.request("/reorder", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ items: "invalid" }),
-			});
+			const res = await app.request("/reorder", putJson({ items: "invalid" }));
 
-			expect(res.status).toBe(400);
+			await expectBadRequest(res);
 		});
 	});
 
@@ -443,7 +360,7 @@ describe("Admin Platforms API", () => {
 			const app = createTestAdminApp(platformsRouter, { user: null });
 
 			const res = await app.request("/");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -452,7 +369,7 @@ describe("Admin Platforms API", () => {
 			});
 
 			const res = await app.request("/");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });
@@ -463,11 +380,7 @@ describe("Admin Credit Roles API", () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as CreditRoleListResponse;
-			expect(json.data).toEqual([]);
-			expect(json.total).toBe(0);
+			await expectEmptyList<CreditRoleResponse>(res);
 		});
 
 		test("クレジットロール一覧をページネーション付きで返す", async () => {
@@ -478,11 +391,9 @@ describe("Admin Credit Roles API", () => {
 			await testDb.insert(creditRoles).values([role1, role2]);
 
 			const res = await app.request("/?page=1&limit=10");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as CreditRoleListResponse;
-			expect(json.data.length).toBe(2);
-			expect(json.total).toBe(2);
+			const json =
+				await expectSuccess<PaginatedResponse<CreditRoleResponse>>(res);
+			expectPagination(json, { length: 2, total: 2 });
 		});
 
 		test("検索クエリでフィルタリングできる", async () => {
@@ -493,10 +404,9 @@ describe("Admin Credit Roles API", () => {
 			await testDb.insert(creditRoles).values([role1, role2]);
 
 			const res = await app.request("/?search=composer");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as CreditRoleListResponse;
-			expect(json.data.length).toBe(1);
+			const json =
+				await expectSuccess<PaginatedResponse<CreditRoleResponse>>(res);
+			expectPagination(json, { length: 1 });
 			expect(json.data[0]?.code).toBe("composer");
 		});
 	});
@@ -509,9 +419,7 @@ describe("Admin Credit Roles API", () => {
 			await testDb.insert(creditRoles).values(role);
 
 			const res = await app.request("/composer");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as CreditRoleResponse;
+			const json = await expectSuccess<CreditRoleResponse>(res);
 			expect(json.code).toBe("composer");
 			expect(json.label).toBe("作曲");
 		});
@@ -520,7 +428,7 @@ describe("Admin Credit Roles API", () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const res = await app.request("/nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -529,15 +437,9 @@ describe("Admin Credit Roles API", () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
 			const role = createTestCreditRole({ code: "composer", label: "作曲" });
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(role),
-			});
+			const res = await app.request("/", postJson(role));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as CreditRoleResponse;
+			const json = await expectCreated<CreditRoleResponse>(res);
 			expect(json.code).toBe(role.code);
 			expect(json.label).toBe(role.label);
 		});
@@ -550,14 +452,9 @@ describe("Admin Credit Roles API", () => {
 
 			const newRole = createTestCreditRole();
 			const { sortOrder: _, ...roleWithoutSortOrder } = newRole;
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(roleWithoutSortOrder),
-			});
+			const res = await app.request("/", postJson(roleWithoutSortOrder));
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as CreditRoleResponse;
+			const json = await expectCreated<CreditRoleResponse>(res);
 			expect(json.sortOrder).toBe(6);
 		});
 
@@ -571,13 +468,9 @@ describe("Admin Credit Roles API", () => {
 				code: "composer",
 				label: "Different",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateRole),
-			});
+			const res = await app.request("/", postJson(duplicateRole));
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
@@ -588,27 +481,24 @@ describe("Admin Credit Roles API", () => {
 			const role = createTestCreditRole({ code: "composer", label: "作曲" });
 			await testDb.insert(creditRoles).values(role);
 
-			const updateRes = await app.request("/composer", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ label: "Compose" }),
-			});
+			const updateRes = await app.request(
+				"/composer",
+				putJson({ label: "Compose" }),
+			);
 
-			expect(updateRes.status).toBe(200);
-			const json = (await updateRes.json()) as CreditRoleResponse;
+			const json = await expectSuccess<CreditRoleResponse>(updateRes);
 			expect(json.label).toBe("Compose");
 		});
 
 		test("存在しないクレジットロールは404を返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ label: "Updated" }),
-			});
+			const res = await app.request(
+				"/nonexistent",
+				putJson({ label: "Updated" }),
+			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -619,25 +509,20 @@ describe("Admin Credit Roles API", () => {
 			const role = createTestCreditRole({ code: "composer" });
 			await testDb.insert(creditRoles).values(role);
 
-			const res = await app.request("/composer", {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
+			const res = await app.request("/composer", deleteRequest());
+			await expectSuccess(res);
 
 			// 削除されたことを確認
 			const getRes = await app.request("/composer");
-			expect(getRes.status).toBe(404);
+			await expectNotFound(getRes);
 		});
 
 		test("存在しないクレジットロールは404を返す", async () => {
 			const app = createTestAdminApp(creditRolesRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "DELETE",
-			});
+			const res = await app.request("/nonexistent", deleteRequest());
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -649,22 +534,21 @@ describe("Admin Credit Roles API", () => {
 			const role2 = createTestCreditRole({ code: "r2", sortOrder: 1 });
 			await testDb.insert(creditRoles).values([role1, role2]);
 
-			const res = await app.request("/reorder", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/reorder",
+				putJson({
 					items: [
 						{ code: "r1", sortOrder: 1 },
 						{ code: "r2", sortOrder: 0 },
 					],
 				}),
-			});
+			);
 
-			expect(res.status).toBe(200);
+			await expectSuccess(res);
 
 			// 更新されたことを確認
 			const getRes1 = await app.request("/r1");
-			const json1 = (await getRes1.json()) as CreditRoleResponse;
+			const json1 = await expectSuccess<CreditRoleResponse>(getRes1);
 			expect(json1.sortOrder).toBe(1);
 		});
 	});
@@ -674,7 +558,7 @@ describe("Admin Credit Roles API", () => {
 			const app = createTestAdminApp(creditRolesRouter, { user: null });
 
 			const res = await app.request("/");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -683,7 +567,7 @@ describe("Admin Credit Roles API", () => {
 			});
 
 			const res = await app.request("/");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });
@@ -694,11 +578,7 @@ describe("Admin Alias Types API", () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as AliasTypeListResponse;
-			expect(json.data).toEqual([]);
-			expect(json.total).toBe(0);
+			await expectEmptyList<AliasTypeResponse>(res);
 		});
 
 		test("別名タイプ一覧をページネーション付きで返す", async () => {
@@ -709,11 +589,9 @@ describe("Admin Alias Types API", () => {
 			await testDb.insert(aliasTypes).values([type1, type2]);
 
 			const res = await app.request("/?page=1&limit=10");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as AliasTypeListResponse;
-			expect(json.data.length).toBe(2);
-			expect(json.total).toBe(2);
+			const json =
+				await expectSuccess<PaginatedResponse<AliasTypeResponse>>(res);
+			expectPagination(json, { length: 2, total: 2 });
 		});
 
 		test("検索クエリでフィルタリングできる", async () => {
@@ -724,10 +602,9 @@ describe("Admin Alias Types API", () => {
 			await testDb.insert(aliasTypes).values([type1, type2]);
 
 			const res = await app.request("/?search=alias");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as AliasTypeListResponse;
-			expect(json.data.length).toBe(1);
+			const json =
+				await expectSuccess<PaginatedResponse<AliasTypeResponse>>(res);
+			expectPagination(json, { length: 1 });
 			expect(json.data[0]?.code).toBe("alias");
 		});
 	});
@@ -740,9 +617,7 @@ describe("Admin Alias Types API", () => {
 			await testDb.insert(aliasTypes).values(type);
 
 			const res = await app.request("/alias");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as AliasTypeResponse;
+			const json = await expectSuccess<AliasTypeResponse>(res);
 			expect(json.code).toBe("alias");
 			expect(json.label).toBe("別名");
 		});
@@ -751,7 +626,7 @@ describe("Admin Alias Types API", () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const res = await app.request("/nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -760,15 +635,9 @@ describe("Admin Alias Types API", () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
 			const type = createTestAliasType({ code: "alias", label: "別名" });
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(type),
-			});
+			const res = await app.request("/", postJson(type));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as AliasTypeResponse;
+			const json = await expectCreated<AliasTypeResponse>(res);
 			expect(json.code).toBe(type.code);
 			expect(json.label).toBe(type.label);
 		});
@@ -781,14 +650,9 @@ describe("Admin Alias Types API", () => {
 
 			const newType = createTestAliasType();
 			const { sortOrder: _, ...typeWithoutSortOrder } = newType;
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(typeWithoutSortOrder),
-			});
+			const res = await app.request("/", postJson(typeWithoutSortOrder));
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as AliasTypeResponse;
+			const json = await expectCreated<AliasTypeResponse>(res);
 			expect(json.sortOrder).toBe(6);
 		});
 
@@ -802,13 +666,9 @@ describe("Admin Alias Types API", () => {
 				code: "alias",
 				label: "Different",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateType),
-			});
+			const res = await app.request("/", postJson(duplicateType));
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
@@ -819,27 +679,24 @@ describe("Admin Alias Types API", () => {
 			const type = createTestAliasType({ code: "alias", label: "別名" });
 			await testDb.insert(aliasTypes).values(type);
 
-			const updateRes = await app.request("/alias", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ label: "エイリアス" }),
-			});
+			const updateRes = await app.request(
+				"/alias",
+				putJson({ label: "エイリアス" }),
+			);
 
-			expect(updateRes.status).toBe(200);
-			const json = (await updateRes.json()) as AliasTypeResponse;
+			const json = await expectSuccess<AliasTypeResponse>(updateRes);
 			expect(json.label).toBe("エイリアス");
 		});
 
 		test("存在しない別名タイプは404を返す", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ label: "Updated" }),
-			});
+			const res = await app.request(
+				"/nonexistent",
+				putJson({ label: "Updated" }),
+			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -850,25 +707,20 @@ describe("Admin Alias Types API", () => {
 			const type = createTestAliasType({ code: "alias" });
 			await testDb.insert(aliasTypes).values(type);
 
-			const res = await app.request("/alias", {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
+			const res = await app.request("/alias", deleteRequest());
+			await expectSuccess(res);
 
 			// 削除されたことを確認
 			const getRes = await app.request("/alias");
-			expect(getRes.status).toBe(404);
+			await expectNotFound(getRes);
 		});
 
 		test("存在しない別名タイプは404を返す", async () => {
 			const app = createTestAdminApp(aliasTypesRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "DELETE",
-			});
+			const res = await app.request("/nonexistent", deleteRequest());
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -880,22 +732,21 @@ describe("Admin Alias Types API", () => {
 			const type2 = createTestAliasType({ code: "t2", sortOrder: 1 });
 			await testDb.insert(aliasTypes).values([type1, type2]);
 
-			const res = await app.request("/reorder", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/reorder",
+				putJson({
 					items: [
 						{ code: "t1", sortOrder: 1 },
 						{ code: "t2", sortOrder: 0 },
 					],
 				}),
-			});
+			);
 
-			expect(res.status).toBe(200);
+			await expectSuccess(res);
 
 			// 更新されたことを確認
 			const getRes1 = await app.request("/t1");
-			const json1 = (await getRes1.json()) as AliasTypeResponse;
+			const json1 = await expectSuccess<AliasTypeResponse>(getRes1);
 			expect(json1.sortOrder).toBe(1);
 		});
 	});
@@ -905,7 +756,7 @@ describe("Admin Alias Types API", () => {
 			const app = createTestAdminApp(aliasTypesRouter, { user: null });
 
 			const res = await app.request("/");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -914,7 +765,7 @@ describe("Admin Alias Types API", () => {
 			});
 
 			const res = await app.request("/");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });
@@ -925,11 +776,7 @@ describe("Admin Official Work Categories API", () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as OfficialWorkCategoryListResponse;
-			expect(json.data).toEqual([]);
-			expect(json.total).toBe(0);
+			await expectEmptyList<OfficialWorkCategoryResponse>(res);
 		});
 
 		test("カテゴリ一覧をページネーション付きで返す", async () => {
@@ -940,11 +787,11 @@ describe("Admin Official Work Categories API", () => {
 			await testDb.insert(officialWorkCategories).values([cat1, cat2]);
 
 			const res = await app.request("/?page=1&limit=10");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as OfficialWorkCategoryListResponse;
-			expect(json.data.length).toBe(2);
-			expect(json.total).toBe(2);
+			const json =
+				await expectSuccess<PaginatedResponse<OfficialWorkCategoryResponse>>(
+					res,
+				);
+			expectPagination(json, { length: 2, total: 2 });
 		});
 
 		test("検索クエリでフィルタリングできる", async () => {
@@ -961,10 +808,11 @@ describe("Admin Official Work Categories API", () => {
 			await testDb.insert(officialWorkCategories).values([cat1, cat2]);
 
 			const res = await app.request("/?search=game");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as OfficialWorkCategoryListResponse;
-			expect(json.data.length).toBe(1);
+			const json =
+				await expectSuccess<PaginatedResponse<OfficialWorkCategoryResponse>>(
+					res,
+				);
+			expectPagination(json, { length: 1 });
 			expect(json.data[0]?.code).toBe("game");
 		});
 	});
@@ -980,9 +828,7 @@ describe("Admin Official Work Categories API", () => {
 			await testDb.insert(officialWorkCategories).values(cat);
 
 			const res = await app.request("/game");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as OfficialWorkCategoryResponse;
+			const json = await expectSuccess<OfficialWorkCategoryResponse>(res);
 			expect(json.code).toBe("game");
 			expect(json.name).toBe("ゲーム");
 		});
@@ -991,7 +837,7 @@ describe("Admin Official Work Categories API", () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
 			const res = await app.request("/nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -1003,15 +849,9 @@ describe("Admin Official Work Categories API", () => {
 				code: "game",
 				name: "ゲーム",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(cat),
-			});
+			const res = await app.request("/", postJson(cat));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as OfficialWorkCategoryResponse;
+			const json = await expectCreated<OfficialWorkCategoryResponse>(res);
 			expect(json.code).toBe(cat.code);
 			expect(json.name).toBe(cat.name);
 		});
@@ -1024,14 +864,9 @@ describe("Admin Official Work Categories API", () => {
 
 			const newCat = createTestOfficialWorkCategory();
 			const { sortOrder: _, ...catWithoutSortOrder } = newCat;
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(catWithoutSortOrder),
-			});
+			const res = await app.request("/", postJson(catWithoutSortOrder));
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as OfficialWorkCategoryResponse;
+			const json = await expectCreated<OfficialWorkCategoryResponse>(res);
 			expect(json.sortOrder).toBe(6);
 		});
 
@@ -1045,13 +880,9 @@ describe("Admin Official Work Categories API", () => {
 				code: "game",
 				name: "Different",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateCat),
-			});
+			const res = await app.request("/", postJson(duplicateCat));
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
@@ -1065,27 +896,24 @@ describe("Admin Official Work Categories API", () => {
 			});
 			await testDb.insert(officialWorkCategories).values(cat);
 
-			const updateRes = await app.request("/game", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "PCゲーム" }),
-			});
+			const updateRes = await app.request(
+				"/game",
+				putJson({ name: "PCゲーム" }),
+			);
 
-			expect(updateRes.status).toBe(200);
-			const json = (await updateRes.json()) as OfficialWorkCategoryResponse;
+			const json = await expectSuccess<OfficialWorkCategoryResponse>(updateRes);
 			expect(json.name).toBe("PCゲーム");
 		});
 
 		test("存在しないカテゴリは404を返す", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "Updated" }),
-			});
+			const res = await app.request(
+				"/nonexistent",
+				putJson({ name: "Updated" }),
+			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -1096,25 +924,20 @@ describe("Admin Official Work Categories API", () => {
 			const cat = createTestOfficialWorkCategory({ code: "game" });
 			await testDb.insert(officialWorkCategories).values(cat);
 
-			const res = await app.request("/game", {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
+			const res = await app.request("/game", deleteRequest());
+			await expectSuccess(res);
 
 			// 削除されたことを確認
 			const getRes = await app.request("/game");
-			expect(getRes.status).toBe(404);
+			await expectNotFound(getRes);
 		});
 
 		test("存在しないカテゴリは404を返す", async () => {
 			const app = createTestAdminApp(officialWorkCategoriesRouter);
 
-			const res = await app.request("/nonexistent", {
-				method: "DELETE",
-			});
+			const res = await app.request("/nonexistent", deleteRequest());
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
@@ -1126,22 +949,21 @@ describe("Admin Official Work Categories API", () => {
 			const cat2 = createTestOfficialWorkCategory({ code: "c2", sortOrder: 1 });
 			await testDb.insert(officialWorkCategories).values([cat1, cat2]);
 
-			const res = await app.request("/reorder", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/reorder",
+				putJson({
 					items: [
 						{ code: "c1", sortOrder: 1 },
 						{ code: "c2", sortOrder: 0 },
 					],
 				}),
-			});
+			);
 
-			expect(res.status).toBe(200);
+			await expectSuccess(res);
 
 			// 更新されたことを確認
 			const getRes1 = await app.request("/c1");
-			const json1 = (await getRes1.json()) as OfficialWorkCategoryResponse;
+			const json1 = await expectSuccess<OfficialWorkCategoryResponse>(getRes1);
 			expect(json1.sortOrder).toBe(1);
 		});
 	});
@@ -1153,7 +975,7 @@ describe("Admin Official Work Categories API", () => {
 			});
 
 			const res = await app.request("/");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -1162,7 +984,7 @@ describe("Admin Official Work Categories API", () => {
 			});
 
 			const res = await app.request("/");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

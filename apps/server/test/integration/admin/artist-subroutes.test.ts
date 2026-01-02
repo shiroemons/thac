@@ -32,6 +32,11 @@ import {
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	expectForbidden,
+	expectSuccess,
+	expectUnauthorized,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface ArtistCircleResponse {
@@ -97,9 +102,7 @@ describe("Admin Artist Subroutes API", () => {
 			await db.insert(artists).values(createTestArtist({ id: "ar_test_001" }));
 
 			const res = await circlesApp.request("/ar_test_001/circles");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ArtistCircleResponse[];
+			const json = await expectSuccess<ArtistCircleResponse[]>(res);
 			expect(json).toEqual([]);
 		});
 
@@ -137,9 +140,7 @@ describe("Admin Artist Subroutes API", () => {
 			});
 
 			const res = await circlesApp.request("/ar_test_001/circles");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ArtistCircleResponse[];
+			const json = await expectSuccess<ArtistCircleResponse[]>(res);
 			expect(json).toHaveLength(1);
 			expect(json[0]?.circleId).toBe("ci_test_001");
 			expect(json[0]?.circleName).toBe("Test Circle");
@@ -207,9 +208,7 @@ describe("Admin Artist Subroutes API", () => {
 			]);
 
 			const res = await circlesApp.request("/ar_test_001/circles");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ArtistCircleResponse[];
+			const json = await expectSuccess<ArtistCircleResponse[]>(res);
 			expect(json).toHaveLength(2);
 		});
 	});
@@ -219,9 +218,7 @@ describe("Admin Artist Subroutes API", () => {
 			await db.insert(artists).values(createTestArtist({ id: "ar_test_001" }));
 
 			const res = await tracksApp.request("/ar_test_001/tracks");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ArtistTracksResult;
+			const json = await expectSuccess<ArtistTracksResult>(res);
 			expect(json.totalUniqueTrackCount).toBe(0);
 			expect(json.tracks).toEqual([]);
 			expect(json.byRole).toEqual({});
@@ -254,9 +251,7 @@ describe("Admin Artist Subroutes API", () => {
 			});
 
 			const res = await tracksApp.request("/ar_test_001/tracks");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ArtistTracksResult;
+			const json = await expectSuccess<ArtistTracksResult>(res);
 			expect(json.totalUniqueTrackCount).toBe(1);
 			expect(json.tracks).toHaveLength(1);
 			expect(json.tracks[0]?.name).toBe("Test Track");
@@ -306,9 +301,7 @@ describe("Admin Artist Subroutes API", () => {
 			]);
 
 			const res = await tracksApp.request("/ar_test_001/tracks");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ArtistTracksResult;
+			const json = await expectSuccess<ArtistTracksResult>(res);
 			expect(json.byRole.composer).toBe(2); // 2トラックで作曲
 			expect(json.byRole.lyricist).toBe(1); // 1トラックで作詞
 		});
@@ -340,9 +333,7 @@ describe("Admin Artist Subroutes API", () => {
 			});
 
 			const res = await tracksApp.request("/ar_test_001/tracks");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ArtistTracksResult;
+			const json = await expectSuccess<ArtistTracksResult>(res);
 			expect(json.tracks[0]?.release?.circleNames).toBe("Test Circle");
 		});
 
@@ -376,9 +367,7 @@ describe("Admin Artist Subroutes API", () => {
 			]);
 
 			const res = await tracksApp.request("/ar_test_001/tracks");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as ArtistTracksResult;
+			const json = await expectSuccess<ArtistTracksResult>(res);
 			expect(json.statistics.releaseCount).toBe(2);
 			expect(json.statistics.earliestReleaseDate).toBe("2020-01-01");
 			expect(json.statistics.latestReleaseDate).toBe("2024-12-01");
@@ -392,7 +381,7 @@ describe("Admin Artist Subroutes API", () => {
 			const unauthApp = createTestAdminApp(combinedRouter, { user: null });
 
 			const res = await unauthApp.request("/ar_test_001/circles");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -403,7 +392,7 @@ describe("Admin Artist Subroutes API", () => {
 			});
 
 			const res = await nonAdminApp.request("/ar_test_001/tracks");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

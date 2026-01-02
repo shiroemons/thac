@@ -19,6 +19,18 @@ import { trackDerivationsRouter } from "../../../src/routes/admin/tracks/derivat
 import { createTestRelease, createTestTrack } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectForbidden,
+	expectNotFound,
+	expectSuccess,
+	expectUnauthorized,
+	postJson,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface DerivationResponse {
@@ -31,16 +43,6 @@ interface DerivationResponse {
 		name: string;
 		releaseName?: string | null;
 	} | null;
-}
-
-interface ErrorResponse {
-	error: string;
-	details?: unknown;
-}
-
-interface DeleteResponse {
-	success: boolean;
-	id: string;
 }
 
 describe("Admin Track Derivations API", () => {
@@ -66,16 +68,14 @@ describe("Admin Track Derivations API", () => {
 	describe("GET /:trackId/derivations - 派生関係一覧取得", () => {
 		test("存在しないトラックは404を返す", async () => {
 			const res = await app.request("/tr_nonexistent/derivations");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("派生関係がない場合は空配列を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
 
 			const res = await app.request("/tr_test_001/derivations");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as DerivationResponse[];
+			const json = await expectSuccess<DerivationResponse[]>(res);
 			expect(json).toEqual([]);
 		});
 
@@ -100,9 +100,7 @@ describe("Admin Track Derivations API", () => {
 			});
 
 			const res = await app.request("/tr_child/derivations");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as DerivationResponse[];
+			const json = await expectSuccess<DerivationResponse[]>(res);
 			expect(json).toHaveLength(1);
 			expect(json[0]?.parentTrackId).toBe("tr_parent");
 			expect(json[0]?.parentTrack?.name).toBe("Parent Track");
@@ -131,9 +129,7 @@ describe("Admin Track Derivations API", () => {
 			]);
 
 			const res = await app.request("/tr_child/derivations");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as DerivationResponse[];
+			const json = await expectSuccess<DerivationResponse[]>(res);
 			expect(json).toHaveLength(2);
 		});
 	});
@@ -142,29 +138,27 @@ describe("Admin Track Derivations API", () => {
 		test("存在しないトラック（子）は404を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_parent" }));
 
-			const res = await app.request("/tr_nonexistent/derivations", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_nonexistent/derivations",
+				postJson({
 					id: "deriv_001",
 					parentTrackId: "tr_parent",
 				}),
-			});
-			expect(res.status).toBe(404);
+			);
+			await expectNotFound(res);
 		});
 
 		test("存在しない親トラックは404を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_child" }));
 
-			const res = await app.request("/tr_child/derivations", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_child/derivations",
+				postJson({
 					id: "deriv_001",
 					parentTrackId: "tr_nonexistent",
 				}),
-			});
-			expect(res.status).toBe(404);
+			);
+			await expectNotFound(res);
 		});
 
 		test("新しい派生関係を追加できる", async () => {
@@ -175,17 +169,15 @@ describe("Admin Track Derivations API", () => {
 					createTestTrack({ id: "tr_child", name: "Child" }),
 				]);
 
-			const res = await app.request("/tr_child/derivations", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_child/derivations",
+				postJson({
 					id: "deriv_001",
 					parentTrackId: "tr_parent",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as DerivationResponse;
+			const json = await expectCreated<DerivationResponse>(res);
 			expect(json.id).toBe("deriv_001");
 			expect(json.childTrackId).toBe("tr_child");
 			expect(json.parentTrackId).toBe("tr_parent");
@@ -199,18 +191,16 @@ describe("Admin Track Derivations API", () => {
 					createTestTrack({ id: "tr_child" }),
 				]);
 
-			const res = await app.request("/tr_child/derivations", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_child/derivations",
+				postJson({
 					id: "deriv_001",
 					parentTrackId: "tr_parent",
 					notes: "アレンジバージョン",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as DerivationResponse;
+			const json = await expectCreated<DerivationResponse>(res);
 			expect(json.notes).toBe("アレンジバージョン");
 		});
 
@@ -227,16 +217,15 @@ describe("Admin Track Derivations API", () => {
 				parentTrackId: "tr_parent",
 			});
 
-			const res = await app.request("/tr_child/derivations", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_child/derivations",
+				postJson({
 					id: "deriv_001",
 					parentTrackId: "tr_parent",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("同一子・親の重複は409を返す", async () => {
@@ -252,16 +241,15 @@ describe("Admin Track Derivations API", () => {
 				parentTrackId: "tr_parent",
 			});
 
-			const res = await app.request("/tr_child/derivations", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_child/derivations",
+				postJson({
 					id: "deriv_002",
 					parentTrackId: "tr_parent",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("バリデーションエラーは400を返す", async () => {
@@ -272,17 +260,15 @@ describe("Admin Track Derivations API", () => {
 					createTestTrack({ id: "tr_parent" }),
 				]);
 
-			const res = await app.request("/tr_child/derivations", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_child/derivations",
+				postJson({
 					// id missing
 					parentTrackId: "tr_parent",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(400);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectBadRequest(res);
 			expect(json.error).toBeDefined();
 		});
 	});
@@ -291,10 +277,11 @@ describe("Admin Track Derivations API", () => {
 		test("存在しない派生関係は404を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_child" }));
 
-			const res = await app.request("/tr_child/derivations/deriv_nonexistent", {
-				method: "DELETE",
-			});
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				"/tr_child/derivations/deriv_nonexistent",
+				deleteRequest(),
+			);
+			await expectNotFound(res);
 		});
 
 		test("派生関係を削除できる", async () => {
@@ -310,18 +297,18 @@ describe("Admin Track Derivations API", () => {
 				parentTrackId: "tr_parent",
 			});
 
-			const res = await app.request("/tr_child/derivations/deriv_001", {
-				method: "DELETE",
-			});
+			const res = await app.request(
+				"/tr_child/derivations/deriv_001",
+				deleteRequest(),
+			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 			expect(json.id).toBe("deriv_001");
 
 			// 削除されたことを確認
 			const checkRes = await app.request("/tr_child/derivations");
-			const derivations = (await checkRes.json()) as DerivationResponse[];
+			const derivations = await expectSuccess<DerivationResponse[]>(checkRes);
 			expect(derivations).toHaveLength(0);
 		});
 	});
@@ -332,7 +319,7 @@ describe("Admin Track Derivations API", () => {
 				user: null,
 			});
 			const res = await unauthApp.request("/tr_test_001/derivations");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -340,7 +327,7 @@ describe("Admin Track Derivations API", () => {
 				user: { role: "user" },
 			});
 			const res = await nonAdminApp.request("/tr_test_001/derivations");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });

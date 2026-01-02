@@ -27,8 +27,24 @@ import {
 import { createTestEvent, createTestEventSeries } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectEmptyList,
+	expectForbidden,
+	expectNotFound,
+	expectPagination,
+	expectSuccess,
+	expectUnauthorized,
+	type PaginatedResponse,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
 
-// 型定義
+// エンティティ固有のレスポンス型
 interface EventSeriesListResponse {
 	data: Array<{
 		id: string;
@@ -49,25 +65,6 @@ interface EventSeriesResponse {
 	events?: Array<unknown>;
 }
 
-interface EventListResponse {
-	data: Array<{
-		id: string;
-		eventSeriesId: string | null;
-		name: string;
-		edition: number | null;
-		totalDays: number;
-		venue: string | null;
-		startDate: string | null;
-		endDate: string | null;
-		createdAt: string;
-		updatedAt: string;
-		seriesName: string | null;
-	}>;
-	total: number;
-	page: number;
-	limit: number;
-}
-
 interface EventResponse {
 	id: string;
 	eventSeriesId: string | null;
@@ -81,11 +78,6 @@ interface EventResponse {
 	updatedAt: string;
 	seriesName?: string | null;
 	days?: Array<unknown>;
-}
-
-interface ErrorResponse {
-	error: string;
-	details?: Record<string, string[]>;
 }
 
 // 共有テストデータベース
@@ -109,21 +101,22 @@ afterAll(() => {
 });
 
 describe("Admin Event Series API", () => {
+	let app: ReturnType<typeof createTestAdminApp>;
+
+	beforeAll(() => {
+		app = createTestAdminApp(eventSeriesRouter);
+	});
+
 	describe("GET / - 一覧取得", () => {
 		test("イベントシリーズが存在しない場合、空配列を返す", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<EventSeriesListResponse>(res);
 
-			const json = (await res.json()) as EventSeriesListResponse;
 			expect(json.data).toEqual([]);
 			expect(json.total).toBe(0);
 		});
 
 		test("イベントシリーズ一覧を返す", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const series1 = createTestEventSeries({
 				name: "コミックマーケット",
 				sortOrder: 1,
@@ -135,93 +128,67 @@ describe("Admin Event Series API", () => {
 			await testDb.insert(eventSeries).values([series1, series2]);
 
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<EventSeriesListResponse>(res);
 
-			const json = (await res.json()) as EventSeriesListResponse;
-			expect(json.data.length).toBe(2);
+			expect(json.data).toHaveLength(2);
 			expect(json.total).toBe(2);
 		});
 
 		test("検索クエリでフィルタリングできる", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const series1 = createTestEventSeries({ name: "コミックマーケット" });
 			const series2 = createTestEventSeries({ name: "博麗神社例大祭" });
 			await testDb.insert(eventSeries).values([series1, series2]);
 
 			const res = await app.request("/?search=コミック");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<EventSeriesListResponse>(res);
 
-			const json = (await res.json()) as EventSeriesListResponse;
-			expect(json.data.length).toBe(1);
+			expect(json.data).toHaveLength(1);
 			expect(json.data[0]?.name).toBe("コミックマーケット");
 		});
 	});
 
 	describe("GET /:id - 個別取得", () => {
 		test("存在するイベントシリーズを返す", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const series = createTestEventSeries({ name: "コミックマーケット" });
 			await testDb.insert(eventSeries).values(series);
 
 			const res = await app.request(`/${series.id}`);
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<EventSeriesResponse>(res);
 
-			const json = (await res.json()) as EventSeriesResponse;
 			expect(json.id).toBe(series.id);
 			expect(json.name).toBe("コミックマーケット");
 			expect(json.events).toBeDefined();
 		});
 
 		test("存在しないイベントシリーズは404を返す", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const res = await app.request("/nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
 	describe("POST / - 新規作成", () => {
 		test("新しいイベントシリーズを作成できる", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const series = createTestEventSeries({ name: "新しいイベント" });
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(series),
-			});
+			const res = await app.request("/", postJson(series));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as EventSeriesResponse;
+			const json = await expectCreated<EventSeriesResponse>(res);
 			expect(json.id).toBe(series.id);
 			expect(json.name).toBe(series.name);
 		});
 
 		test("sortOrderが未指定の場合は自動設定される", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const existingSeries = createTestEventSeries({ sortOrder: 5 });
 			await testDb.insert(eventSeries).values(existingSeries);
 
 			const newSeries = createTestEventSeries();
 			const { sortOrder: _, ...seriesWithoutSortOrder } = newSeries;
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(seriesWithoutSortOrder),
-			});
+			const res = await app.request("/", postJson(seriesWithoutSortOrder));
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as EventSeriesResponse;
+			const json = await expectCreated<EventSeriesResponse>(res);
 			expect(json.sortOrder).toBe(6);
 		});
 
 		test("重複するIDは409を返す", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const series = createTestEventSeries();
 			await testDb.insert(eventSeries).values(series);
 
@@ -229,223 +196,175 @@ describe("Admin Event Series API", () => {
 				id: series.id,
 				name: "Different Name",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateSeries),
-			});
+			const res = await app.request("/", postJson(duplicateSeries));
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("重複する名前は409を返す", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const series = createTestEventSeries({ name: "コミックマーケット" });
 			await testDb.insert(eventSeries).values(series);
 
 			const duplicateSeries = createTestEventSeries({
 				name: "コミックマーケット",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateSeries),
-			});
+			const res = await app.request("/", postJson(duplicateSeries));
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
 	describe("PUT /:id - 更新", () => {
 		test("イベントシリーズを更新できる", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const series = createTestEventSeries({ name: "Original Series" });
 			await testDb.insert(eventSeries).values(series);
 
 			// 最新のupdatedAtを取得
 			const getRes = await app.request(`/${series.id}`);
-			const existingSeries = (await getRes.json()) as EventSeriesResponse;
+			const existingSeries = await expectSuccess<EventSeriesResponse>(getRes);
 
-			const updateRes = await app.request(`/${series.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${series.id}`,
+				putJson({
 					name: "Updated Series",
 					updatedAt: existingSeries.updatedAt,
 				}),
-			});
+			);
 
-			expect(updateRes.status).toBe(200);
-			const json = (await updateRes.json()) as EventSeriesResponse;
+			const json = await expectSuccess<EventSeriesResponse>(res);
 			expect(json.name).toBe("Updated Series");
 		});
 
 		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const series = createTestEventSeries();
 			await testDb.insert(eventSeries).values(series);
 
-			const res = await app.request(`/${series.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${series.id}`,
+				putJson({
 					name: "Updated",
 					updatedAt: "2020-01-01T00:00:00.000Z",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
 	describe("DELETE /:id - 削除", () => {
 		test("イベントシリーズを削除できる", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const series = createTestEventSeries();
 			await testDb.insert(eventSeries).values(series);
 
-			const res = await app.request(`/${series.id}`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
+			const res = await app.request(`/${series.id}`, deleteRequest());
+			await expectSuccess<DeleteResponse>(res);
 
 			// 削除されたことを確認
 			const getRes = await app.request(`/${series.id}`);
-			expect(getRes.status).toBe(404);
+			await expectNotFound(getRes);
 		});
 
 		test("イベントが紐付いている場合は削除できない", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const series = createTestEventSeries();
 			await testDb.insert(eventSeries).values(series);
 
 			const event = createTestEvent({ eventSeriesId: series.id });
 			await testDb.insert(events).values(event);
 
-			const res = await app.request(`/${series.id}`, {
-				method: "DELETE",
-			});
+			const res = await app.request(`/${series.id}`, deleteRequest());
 
-			expect(res.status).toBe(409);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectConflict(res);
 			expect(json.error).toContain("イベント");
 		});
 	});
 
 	describe("PUT /reorder - ソート順一括更新", () => {
 		test("複数のイベントシリーズのsortOrderを一括更新できる", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
 			const series1 = createTestEventSeries({ sortOrder: 0 });
 			const series2 = createTestEventSeries({ sortOrder: 1 });
 			await testDb.insert(eventSeries).values([series1, series2]);
 
-			const res = await app.request("/reorder", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/reorder",
+				putJson({
 					items: [
 						{ id: series1.id, sortOrder: 1 },
 						{ id: series2.id, sortOrder: 0 },
 					],
 				}),
-			});
+			);
 
-			expect(res.status).toBe(200);
+			await expectSuccess(res);
 
 			// 更新されたことを確認
 			const getRes1 = await app.request(`/${series1.id}`);
-			const json1 = (await getRes1.json()) as EventSeriesResponse;
+			const json1 = await expectSuccess<EventSeriesResponse>(getRes1);
 			expect(json1.sortOrder).toBe(1);
 
 			const getRes2 = await app.request(`/${series2.id}`);
-			const json2 = (await getRes2.json()) as EventSeriesResponse;
+			const json2 = await expectSuccess<EventSeriesResponse>(getRes2);
 			expect(json2.sortOrder).toBe(0);
 		});
 
 		test("itemsが配列でない場合は400を返す", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
-			const res = await app.request("/reorder", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ items: "invalid" }),
-			});
-
-			expect(res.status).toBe(400);
+			const res = await app.request("/reorder", putJson({ items: "invalid" }));
+			await expectBadRequest(res);
 		});
 
 		test("itemsが不正な形式の場合は400を返す", async () => {
-			const app = createTestAdminApp(eventSeriesRouter);
-
-			const res = await app.request("/reorder", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/reorder",
+				putJson({
 					items: [{ id: "test" }], // sortOrder missing
 				}),
-			});
+			);
 
-			expect(res.status).toBe(400);
+			await expectBadRequest(res);
 		});
 	});
 
 	describe("認証・認可", () => {
 		test("未認証リクエストは401を返す", async () => {
-			const app = createTestAdminApp(eventSeriesRouter, { user: null });
-
-			const res = await app.request("/");
-			expect(res.status).toBe(401);
+			const unauthApp = createTestAdminApp(eventSeriesRouter, { user: null });
+			const res = await unauthApp.request("/");
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
-			const app = createTestAdminApp(eventSeriesRouter, {
+			const nonAdminApp = createTestAdminApp(eventSeriesRouter, {
 				user: { role: "user" },
 			});
-
-			const res = await app.request("/");
-			expect(res.status).toBe(403);
+			const res = await nonAdminApp.request("/");
+			await expectForbidden(res);
 		});
 	});
 });
 
 describe("Admin Events API", () => {
+	let app: ReturnType<typeof createTestAdminApp>;
+
+	beforeAll(() => {
+		app = createTestAdminApp(eventsAdminRouter);
+	});
+
 	describe("GET / - 一覧取得", () => {
 		test("イベントが存在しない場合、空配列を返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as EventListResponse;
-			expect(json.data).toEqual([]);
-			expect(json.total).toBe(0);
+			await expectEmptyList<EventResponse>(res);
 		});
 
 		test("イベント一覧をページネーション付きで返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const event1 = createTestEvent({ name: "Event 1" });
 			const event2 = createTestEvent({ name: "Event 2" });
 			await testDb.insert(events).values([event1, event2]);
 
 			const res = await app.request("/?page=1&limit=10");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<PaginatedResponse<EventResponse>>(res);
 
-			const json = (await res.json()) as EventListResponse;
-			expect(json.data.length).toBe(2);
-			expect(json.total).toBe(2);
+			expectPagination(json, { total: 2, length: 2 });
 		});
 
 		test("シリーズIDでフィルタリングできる", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const series = createTestEventSeries();
 			await testDb.insert(eventSeries).values(series);
 
@@ -457,74 +376,55 @@ describe("Admin Events API", () => {
 			await testDb.insert(events).values([event1, event2]);
 
 			const res = await app.request(`/?seriesId=${series.id}`);
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<PaginatedResponse<EventResponse>>(res);
 
-			const json = (await res.json()) as EventListResponse;
-			expect(json.data.length).toBe(1);
+			expect(json.data).toHaveLength(1);
 			expect(json.data[0]?.name).toBe("Linked Event");
 		});
 
 		test("検索クエリでフィルタリングできる", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const event1 = createTestEvent({ name: "コミックマーケット101" });
 			const event2 = createTestEvent({ name: "例大祭21" });
 			await testDb.insert(events).values([event1, event2]);
 
 			const res = await app.request("/?search=コミック");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<PaginatedResponse<EventResponse>>(res);
 
-			const json = (await res.json()) as EventListResponse;
-			expect(json.data.length).toBe(1);
+			expect(json.data).toHaveLength(1);
 			expect(json.data[0]?.name).toBe("コミックマーケット101");
 		});
 	});
 
 	describe("GET /:id - 個別取得", () => {
 		test("存在するイベントを返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const event = createTestEvent({ name: "Test Event" });
 			await testDb.insert(events).values(event);
 
 			const res = await app.request(`/${event.id}`);
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<EventResponse>(res);
 
-			const json = (await res.json()) as EventResponse;
 			expect(json.id).toBe(event.id);
 			expect(json.name).toBe("Test Event");
 			expect(json.days).toBeDefined();
 		});
 
 		test("存在しないイベントは404を返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const res = await app.request("/nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
 	describe("POST / - 新規作成", () => {
 		test("新しいイベントを作成できる", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const event = createTestEvent({ name: "New Event" });
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(event),
-			});
+			const res = await app.request("/", postJson(event));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as EventResponse;
+			const json = await expectCreated<EventResponse>(res);
 			expect(json.id).toBe(event.id);
 			expect(json.name).toBe(event.name);
 		});
 
 		test("シリーズを紐付けてイベントを作成できる", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const series = createTestEventSeries();
 			await testDb.insert(eventSeries).values(series);
 
@@ -533,34 +433,21 @@ describe("Admin Events API", () => {
 				eventSeriesId: series.id,
 				edition: 101,
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(event),
-			});
+			const res = await app.request("/", postJson(event));
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as EventResponse;
+			const json = await expectCreated<EventResponse>(res);
 			expect(json.eventSeriesId).toBe(series.id);
 			expect(json.edition).toBe(101);
 		});
 
 		test("存在しないシリーズIDは404を返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const event = createTestEvent({ eventSeriesId: "nonexistent" });
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(event),
-			});
+			const res = await app.request("/", postJson(event));
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("同一シリーズ内で重複する回次は409を返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const series = createTestEventSeries();
 			await testDb.insert(eventSeries).values(series);
 
@@ -574,18 +461,12 @@ describe("Admin Events API", () => {
 				eventSeriesId: series.id,
 				edition: 101,
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(event2),
-			});
+			const res = await app.request("/", postJson(event2));
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("重複するIDは409を返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const event = createTestEvent();
 			await testDb.insert(events).values(event);
 
@@ -593,116 +474,89 @@ describe("Admin Events API", () => {
 				id: event.id,
 				name: "Different Name",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateEvent),
-			});
+			const res = await app.request("/", postJson(duplicateEvent));
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
 	describe("PUT /:id - 更新", () => {
 		test("イベントを更新できる", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const event = createTestEvent({ name: "Original Event" });
 			await testDb.insert(events).values(event);
 
 			// 最新のupdatedAtを取得
 			const getRes = await app.request(`/${event.id}`);
-			const existingEvent = (await getRes.json()) as EventResponse;
+			const existingEvent = await expectSuccess<EventResponse>(getRes);
 
-			const updateRes = await app.request(`/${event.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${event.id}`,
+				putJson({
 					name: "Updated Event",
 					updatedAt: existingEvent.updatedAt,
 				}),
-			});
+			);
 
-			expect(updateRes.status).toBe(200);
-			const json = (await updateRes.json()) as EventResponse;
+			const json = await expectSuccess<EventResponse>(res);
 			expect(json.name).toBe("Updated Event");
 		});
 
 		test("存在しないイベントは404を返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
-			const res = await app.request("/nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "Updated" }),
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				"/nonexistent",
+				putJson({ name: "Updated" }),
+			);
+			await expectNotFound(res);
 		});
 
 		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const event = createTestEvent();
 			await testDb.insert(events).values(event);
 
-			const res = await app.request(`/${event.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${event.id}`,
+				putJson({
 					name: "Updated",
 					updatedAt: "2020-01-01T00:00:00.000Z",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
 	describe("DELETE /:id - 削除", () => {
 		test("イベントを削除できる", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
 			const event = createTestEvent();
 			await testDb.insert(events).values(event);
 
-			const res = await app.request(`/${event.id}`, {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(200);
+			const res = await app.request(`/${event.id}`, deleteRequest());
+			await expectSuccess<DeleteResponse>(res);
 
 			// 削除されたことを確認
 			const getRes = await app.request(`/${event.id}`);
-			expect(getRes.status).toBe(404);
+			await expectNotFound(getRes);
 		});
 
 		test("存在しないイベントは404を返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter);
-
-			const res = await app.request("/nonexistent", {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request("/nonexistent", deleteRequest());
+			await expectNotFound(res);
 		});
 	});
 
 	describe("認証・認可", () => {
 		test("未認証リクエストは401を返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter, { user: null });
-
-			const res = await app.request("/");
-			expect(res.status).toBe(401);
+			const unauthApp = createTestAdminApp(eventsAdminRouter, { user: null });
+			const res = await unauthApp.request("/");
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
-			const app = createTestAdminApp(eventsAdminRouter, {
+			const nonAdminApp = createTestAdminApp(eventsAdminRouter, {
 				user: { role: "user" },
 			});
-
-			const res = await app.request("/");
-			expect(res.status).toBe(403);
+			const res = await nonAdminApp.request("/");
+			await expectForbidden(res);
 		});
 	});
 });

@@ -1,0 +1,13 @@
+[test]
+# テストのタイムアウト（ミリ秒）
+timeout = 10000
+
+# カバレッジ設定
+coverage = false
+coverageDir = "coverage"
+
+# テストファイルのパターン
+root = "."
+
+# 除外パターン
+coverageSkipSourceFiles = ["node_modules/**", "dist/**"]

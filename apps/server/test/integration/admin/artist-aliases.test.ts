@@ -27,27 +27,23 @@ import {
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectConflict,
+	expectCreated,
+	expectEmptyList,
+	expectForbidden,
+	expectNotFound,
+	expectPagination,
+	expectSuccess,
+	expectUnauthorized,
+	type PaginatedResponse,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
 
-// 型定義
-interface AliasListResponse {
-	data: Array<{
-		id: string;
-		artistId: string;
-		name: string;
-		aliasTypeCode: string | null;
-		nameInitial: string | null;
-		initialScript: string;
-		periodFrom: string | null;
-		periodTo: string | null;
-		artistName: string | null;
-		createdAt: string;
-		updatedAt: string;
-	}>;
-	total: number;
-	page: number;
-	limit: number;
-}
-
+// エンティティ固有のレスポンス型
 interface AliasResponse {
 	id: string;
 	artistId: string;
@@ -62,25 +58,17 @@ interface AliasResponse {
 	updatedAt: string;
 }
 
-interface DeleteResponse {
-	success: boolean;
-	id: string;
-}
-
-interface ErrorResponse {
-	error: string;
-	details?: Record<string, string[]>;
-}
-
 // 共有テストデータベース
 let testDb: ReturnType<typeof createTestDatabase>["db"];
 let sqlite: Database;
+let app: ReturnType<typeof createTestAdminApp>;
 
 beforeAll(() => {
 	const result = createTestDatabase();
 	testDb = result.db;
 	sqlite = result.sqlite;
 	__setTestDatabase(testDb);
+	app = createTestAdminApp(artistAliasesRouter);
 });
 
 beforeEach(() => {
@@ -102,19 +90,11 @@ async function setupTestArtist(id?: string) {
 describe("Admin Artist Aliases API", () => {
 	describe("GET / - 一覧取得", () => {
 		test("別名が存在しない場合、空配列を返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const res = await app.request("/");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as AliasListResponse;
-			expect(json.data).toEqual([]);
-			expect(json.total).toBe(0);
+			await expectEmptyList<AliasResponse>(res);
 		});
 
 		test("別名一覧をページネーション付きで返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const artist = await setupTestArtist();
 			const alias1 = createTestArtistAlias({
 				name: "Alias A",
@@ -127,18 +107,12 @@ describe("Admin Artist Aliases API", () => {
 			await testDb.insert(artistAliases).values([alias1, alias2]);
 
 			const res = await app.request("/?page=1&limit=10");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<PaginatedResponse<AliasResponse>>(res);
 
-			const json = (await res.json()) as AliasListResponse;
-			expect(json.data.length).toBe(2);
-			expect(json.total).toBe(2);
-			expect(json.page).toBe(1);
-			expect(json.limit).toBe(10);
+			expectPagination(json, { total: 2, page: 1, limit: 10, length: 2 });
 		});
 
 		test("アーティストIDでフィルタリングできる", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const artist1 = await setupTestArtist();
 			const artist2 = await setupTestArtist();
 
@@ -153,16 +127,13 @@ describe("Admin Artist Aliases API", () => {
 			await testDb.insert(artistAliases).values([alias1, alias2]);
 
 			const res = await app.request(`/?artistId=${artist1.id}`);
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<PaginatedResponse<AliasResponse>>(res);
 
-			const json = (await res.json()) as AliasListResponse;
-			expect(json.data.length).toBe(1);
+			expect(json.data).toHaveLength(1);
 			expect(json.data[0]?.name).toBe("Alias for Artist 1");
 		});
 
 		test("検索クエリでフィルタリングできる", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const artist = await setupTestArtist();
 			const alias1 = createTestArtistAlias({
 				name: "ZUN",
@@ -175,18 +146,15 @@ describe("Admin Artist Aliases API", () => {
 			await testDb.insert(artistAliases).values([alias1, alias2]);
 
 			const res = await app.request("/?search=ZUN");
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<PaginatedResponse<AliasResponse>>(res);
 
-			const json = (await res.json()) as AliasListResponse;
-			expect(json.data.length).toBe(1);
+			expect(json.data).toHaveLength(1);
 			expect(json.data[0]?.name).toBe("ZUN");
 		});
 	});
 
 	describe("GET /:id - 個別取得", () => {
 		test("存在する別名を返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const artist = await setupTestArtist();
 			const alias = createTestArtistAlias({
 				name: "Test Alias",
@@ -195,56 +163,37 @@ describe("Admin Artist Aliases API", () => {
 			await testDb.insert(artistAliases).values(alias);
 
 			const res = await app.request(`/${alias.id}`);
-			expect(res.status).toBe(200);
+			const json = await expectSuccess<AliasResponse>(res);
 
-			const json = (await res.json()) as AliasResponse;
 			expect(json.id).toBe(alias.id);
 			expect(json.name).toBe("Test Alias");
 		});
 
 		test("存在しない別名は404を返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const res = await app.request("/nonexistent");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 	});
 
 	describe("POST / - 新規作成", () => {
 		test("新しい別名を作成できる", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const artist = await setupTestArtist();
 			const alias = createTestArtistAlias({ artistId: artist.id });
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(alias),
-			});
+			const res = await app.request("/", postJson(alias));
 
-			expect(res.status).toBe(201);
-
-			const json = (await res.json()) as AliasResponse;
+			const json = await expectCreated<AliasResponse>(res);
 			expect(json.id).toBe(alias.id);
 			expect(json.name).toBe(alias.name);
 		});
 
 		test("存在しないアーティストIDは404を返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const alias = createTestArtistAlias({ artistId: "nonexistent" });
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(alias),
-			});
+			const res = await app.request("/", postJson(alias));
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("重複するIDは409を返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const artist = await setupTestArtist();
 			const alias = createTestArtistAlias({ artistId: artist.id });
 			await testDb.insert(artistAliases).values(alias);
@@ -254,20 +203,13 @@ describe("Admin Artist Aliases API", () => {
 				artistId: artist.id,
 				name: "Different Name",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateAlias),
-			});
+			const res = await app.request("/", postJson(duplicateAlias));
 
-			expect(res.status).toBe(409);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectConflict(res);
 			expect(json.error).toContain("ID");
 		});
 
 		test("同一アーティスト内で重複する名前は409を返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const artist = await setupTestArtist();
 			const alias = createTestArtistAlias({
 				artistId: artist.id,
@@ -279,20 +221,14 @@ describe("Admin Artist Aliases API", () => {
 				artistId: artist.id,
 				name: "Same Name",
 			});
-			const res = await app.request("/", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(duplicateAlias),
-			});
+			const res = await app.request("/", postJson(duplicateAlias));
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
 	describe("PUT /:id - 更新", () => {
 		test("別名を更新できる", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const artist = await setupTestArtist();
 			const alias = createTestArtistAlias({
 				name: "Original",
@@ -302,59 +238,46 @@ describe("Admin Artist Aliases API", () => {
 
 			// 最新のupdatedAtを取得
 			const getRes = await app.request(`/${alias.id}`);
-			const existingAlias = (await getRes.json()) as AliasResponse;
+			const existingAlias = await expectSuccess<AliasResponse>(getRes);
 
-			const updateRes = await app.request(`/${alias.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${alias.id}`,
+				putJson({
 					name: "Updated",
 					updatedAt: existingAlias.updatedAt,
 				}),
-			});
+			);
 
-			expect(updateRes.status).toBe(200);
-
-			const json = (await updateRes.json()) as AliasResponse;
+			const json = await expectSuccess<AliasResponse>(res);
 			expect(json.name).toBe("Updated");
 		});
 
 		test("存在しない別名は404を返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
-			const res = await app.request("/nonexistent", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: "Updated" }),
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request(
+				"/nonexistent",
+				putJson({ name: "Updated" }),
+			);
+			await expectNotFound(res);
 		});
 
 		test("楽観的ロック: 古いupdatedAtでは競合エラーを返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const artist = await setupTestArtist();
 			const alias = createTestArtistAlias({ artistId: artist.id });
 			await testDb.insert(artistAliases).values(alias);
 
-			const res = await app.request(`/${alias.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${alias.id}`,
+				putJson({
 					name: "Updated",
 					updatedAt: "2020-01-01T00:00:00.000Z",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectConflict(res);
 			expect(json.error).toContain("更新");
 		});
 
 		test("同一アーティスト内で他の別名と重複する名前は409を返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const artist = await setupTestArtist();
 			const alias1 = createTestArtistAlias({
 				artistId: artist.id,
@@ -368,68 +291,55 @@ describe("Admin Artist Aliases API", () => {
 
 			// 最新のupdatedAtを取得
 			const getRes = await app.request(`/${alias2.id}`);
-			const existingAlias = (await getRes.json()) as AliasResponse;
+			const existingAlias = await expectSuccess<AliasResponse>(getRes);
 
-			const updateRes = await app.request(`/${alias2.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				`/${alias2.id}`,
+				putJson({
 					name: "Alias One",
 					updatedAt: existingAlias.updatedAt,
 				}),
-			});
+			);
 
-			expect(updateRes.status).toBe(409);
+			await expectConflict(res);
 		});
 	});
 
 	describe("DELETE /:id - 削除", () => {
 		test("別名を削除できる", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
 			const artist = await setupTestArtist();
 			const alias = createTestArtistAlias({ artistId: artist.id });
 			await testDb.insert(artistAliases).values(alias);
 
-			const res = await app.request(`/${alias.id}`, {
-				method: "DELETE",
-			});
+			const res = await app.request(`/${alias.id}`, deleteRequest());
+			const json = await expectSuccess<DeleteResponse>(res);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
 			expect(json.success).toBe(true);
 
 			// 削除されたことを確認
 			const getRes = await app.request(`/${alias.id}`);
-			expect(getRes.status).toBe(404);
+			await expectNotFound(getRes);
 		});
 
 		test("存在しない別名は404を返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter);
-
-			const res = await app.request("/nonexistent", {
-				method: "DELETE",
-			});
-
-			expect(res.status).toBe(404);
+			const res = await app.request("/nonexistent", deleteRequest());
+			await expectNotFound(res);
 		});
 	});
 
 	describe("認証・認可", () => {
 		test("未認証リクエストは401を返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter, { user: null });
-
-			const res = await app.request("/");
-			expect(res.status).toBe(401);
+			const unauthApp = createTestAdminApp(artistAliasesRouter, { user: null });
+			const res = await unauthApp.request("/");
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
-			const app = createTestAdminApp(artistAliasesRouter, {
+			const nonAdminApp = createTestAdminApp(artistAliasesRouter, {
 				user: { role: "user" },
 			});
-
-			const res = await app.request("/");
-			expect(res.status).toBe(403);
+			const res = await nonAdminApp.request("/");
+			await expectForbidden(res);
 		});
 	});
 });

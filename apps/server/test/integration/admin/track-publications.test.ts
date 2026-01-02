@@ -19,6 +19,19 @@ import { trackPublicationsRouter } from "../../../src/routes/admin/tracks/public
 import { createTestPlatform, createTestTrack } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
+import {
+	type DeleteResponse,
+	deleteRequest,
+	expectBadRequest,
+	expectConflict,
+	expectCreated,
+	expectForbidden,
+	expectNotFound,
+	expectSuccess,
+	expectUnauthorized,
+	postJson,
+	putJson,
+} from "../../helpers/test-response";
 
 // レスポンスの型定義
 interface PublicationResponse {
@@ -31,16 +44,6 @@ interface PublicationResponse {
 		name: string;
 		category: string;
 	} | null;
-}
-
-interface ErrorResponse {
-	error: string;
-	details?: unknown;
-}
-
-interface DeleteResponse {
-	success: boolean;
-	id: string;
 }
 
 describe("Admin Track Publications API", () => {
@@ -66,16 +69,14 @@ describe("Admin Track Publications API", () => {
 	describe("GET /:trackId/publications - 公開リンク一覧取得", () => {
 		test("存在しないトラックは404を返す", async () => {
 			const res = await app.request("/tr_nonexistent/publications");
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("公開リンクがない場合は空配列を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
 
 			const res = await app.request("/tr_test_001/publications");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as PublicationResponse[];
+			const json = await expectSuccess<PublicationResponse[]>(res);
 			expect(json).toEqual([]);
 		});
 
@@ -96,9 +97,7 @@ describe("Admin Track Publications API", () => {
 			});
 
 			const res = await app.request("/tr_test_001/publications");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as PublicationResponse[];
+			const json = await expectSuccess<PublicationResponse[]>(res);
 			expect(json).toHaveLength(1);
 			expect(json[0]?.platformCode).toBe("spotify");
 			expect(json[0]?.url).toBe("https://open.spotify.com/track/test123");
@@ -135,9 +134,7 @@ describe("Admin Track Publications API", () => {
 			]);
 
 			const res = await app.request("/tr_test_001/publications");
-			expect(res.status).toBe(200);
-
-			const json = (await res.json()) as PublicationResponse[];
+			const json = await expectSuccess<PublicationResponse[]>(res);
 			expect(json).toHaveLength(2);
 		});
 	});
@@ -148,31 +145,29 @@ describe("Admin Track Publications API", () => {
 				.insert(platforms)
 				.values(createTestPlatform({ code: "spotify" }));
 
-			const res = await app.request("/tr_nonexistent/publications", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_nonexistent/publications",
+				postJson({
 					id: "tpub_001",
 					platformCode: "spotify",
 					url: "https://open.spotify.com/track/test123",
 				}),
-			});
-			expect(res.status).toBe(404);
+			);
+			await expectNotFound(res);
 		});
 
 		test("存在しないプラットフォームは404を返す", async () => {
 			await db.insert(tracks).values(createTestTrack({ id: "tr_test_001" }));
 
-			const res = await app.request("/tr_test_001/publications", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/publications",
+				postJson({
 					id: "tpub_001",
 					platformCode: "nonexistent",
 					url: "https://example.com/track/test123",
 				}),
-			});
-			expect(res.status).toBe(404);
+			);
+			await expectNotFound(res);
 		});
 
 		test("新しい公開リンクを追加できる", async () => {
@@ -181,18 +176,16 @@ describe("Admin Track Publications API", () => {
 				.insert(platforms)
 				.values(createTestPlatform({ code: "spotify", name: "Spotify" }));
 
-			const res = await app.request("/tr_test_001/publications", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/publications",
+				postJson({
 					id: "tpub_001",
 					platformCode: "spotify",
 					url: "https://open.spotify.com/track/test123",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(201);
-			const json = (await res.json()) as PublicationResponse;
+			const json = await expectCreated<PublicationResponse>(res);
 			expect(json.id).toBe("tpub_001");
 			expect(json.platformCode).toBe("spotify");
 			expect(json.url).toBe("https://open.spotify.com/track/test123");
@@ -210,17 +203,16 @@ describe("Admin Track Publications API", () => {
 				url: "https://open.spotify.com/track/original",
 			});
 
-			const res = await app.request("/tr_test_001/publications", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/publications",
+				postJson({
 					id: "tpub_001",
 					platformCode: "spotify",
 					url: "https://open.spotify.com/track/different",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("URL重複は409を返す", async () => {
@@ -241,17 +233,16 @@ describe("Admin Track Publications API", () => {
 			});
 
 			// 別のトラックでも同じURLは拒否される
-			const res = await app.request("/tr_test_002/publications", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_002/publications",
+				postJson({
 					id: "tpub_002",
 					platformCode: "spotify",
 					url: "https://open.spotify.com/track/same",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("バリデーションエラーは400を返す", async () => {
@@ -260,18 +251,16 @@ describe("Admin Track Publications API", () => {
 				.insert(platforms)
 				.values(createTestPlatform({ code: "spotify" }));
 
-			const res = await app.request("/tr_test_001/publications", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/publications",
+				postJson({
 					// id missing
 					platformCode: "spotify",
 					url: "https://open.spotify.com/track/test123",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(400);
-			const json = (await res.json()) as ErrorResponse;
+			const json = await expectBadRequest(res);
 			expect(json.error).toBeDefined();
 		});
 	});
@@ -282,16 +271,12 @@ describe("Admin Track Publications API", () => {
 
 			const res = await app.request(
 				"/tr_test_001/publications/tpub_nonexistent",
-				{
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						url: "https://example.com/new-url",
-					}),
-				},
+				putJson({
+					url: "https://example.com/new-url",
+				}),
 			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("URLを更新できる", async () => {
@@ -306,16 +291,14 @@ describe("Admin Track Publications API", () => {
 				url: "https://open.spotify.com/track/old",
 			});
 
-			const res = await app.request("/tr_test_001/publications/tpub_001", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/publications/tpub_001",
+				putJson({
 					url: "https://open.spotify.com/track/new",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as PublicationResponse;
+			const json = await expectSuccess<PublicationResponse>(res);
 			expect(json.url).toBe("https://open.spotify.com/track/new");
 		});
 
@@ -339,15 +322,14 @@ describe("Admin Track Publications API", () => {
 				},
 			]);
 
-			const res = await app.request("/tr_test_001/publications/tpub_002", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/publications/tpub_002",
+				putJson({
 					url: "https://open.spotify.com/track/first",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(409);
+			await expectConflict(res);
 		});
 
 		test("同じURLへの更新は許可される", async () => {
@@ -362,15 +344,14 @@ describe("Admin Track Publications API", () => {
 				url: "https://open.spotify.com/track/same",
 			});
 
-			const res = await app.request("/tr_test_001/publications/tpub_001", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
+			const res = await app.request(
+				"/tr_test_001/publications/tpub_001",
+				putJson({
 					url: "https://open.spotify.com/track/same",
 				}),
-			});
+			);
 
-			expect(res.status).toBe(200);
+			await expectSuccess<PublicationResponse>(res);
 		});
 	});
 
@@ -380,12 +361,10 @@ describe("Admin Track Publications API", () => {
 
 			const res = await app.request(
 				"/tr_test_001/publications/tpub_nonexistent",
-				{
-					method: "DELETE",
-				},
+				deleteRequest(),
 			);
 
-			expect(res.status).toBe(404);
+			await expectNotFound(res);
 		});
 
 		test("公開リンクを削除できる", async () => {
@@ -400,18 +379,18 @@ describe("Admin Track Publications API", () => {
 				url: "https://open.spotify.com/track/test",
 			});
 
-			const res = await app.request("/tr_test_001/publications/tpub_001", {
-				method: "DELETE",
-			});
+			const res = await app.request(
+				"/tr_test_001/publications/tpub_001",
+				deleteRequest(),
+			);
 
-			expect(res.status).toBe(200);
-			const json = (await res.json()) as DeleteResponse;
+			const json = await expectSuccess<DeleteResponse>(res);
 			expect(json.success).toBe(true);
 			expect(json.id).toBe("tpub_001");
 
 			// 削除されたことを確認
 			const checkRes = await app.request("/tr_test_001/publications");
-			const publications = (await checkRes.json()) as PublicationResponse[];
+			const publications = await expectSuccess<PublicationResponse[]>(checkRes);
 			expect(publications).toHaveLength(0);
 		});
 	});
@@ -422,7 +401,7 @@ describe("Admin Track Publications API", () => {
 				user: null,
 			});
 			const res = await unauthApp.request("/tr_test_001/publications");
-			expect(res.status).toBe(401);
+			await expectUnauthorized(res);
 		});
 
 		test("非管理者ユーザーは403を返す", async () => {
@@ -430,7 +409,7 @@ describe("Admin Track Publications API", () => {
 				user: { role: "user" },
 			});
 			const res = await nonAdminApp.request("/tr_test_001/publications");
-			expect(res.status).toBe(403);
+			await expectForbidden(res);
 		});
 	});
 });
