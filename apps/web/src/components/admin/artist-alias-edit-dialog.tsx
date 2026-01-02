@@ -272,11 +272,11 @@ export function ArtistAliasEditDialog({
 							</div>
 						)}
 						<div className="grid gap-2">
-							<Label htmlFor="alias-name">
+							<Label htmlFor={`${mode}-alias-name`}>
 								名義名 <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="alias-name"
+								id={`${mode}-alias-name`}
 								value={form.name}
 								onChange={(e) => handleNameChange(e.target.value)}
 								placeholder="例: ZUN"
@@ -285,7 +285,7 @@ export function ArtistAliasEditDialog({
 						</div>
 						<div className="grid gap-2">
 							<div className="flex items-center justify-between">
-								<Label htmlFor="alias-artist">
+								<Label htmlFor={`${mode}-alias-artist`}>
 									アーティスト <span className="text-error">*</span>
 								</Label>
 								<Button
@@ -299,7 +299,7 @@ export function ArtistAliasEditDialog({
 								</Button>
 							</div>
 							<SearchableSelect
-								id="alias-artist"
+								id={`${mode}-alias-artist`}
 								value={form.artistId}
 								onChange={(val) => setForm({ ...form, artistId: val })}
 								options={artistOptions}
@@ -310,9 +310,9 @@ export function ArtistAliasEditDialog({
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="alias-type">名義種別</Label>
+							<Label htmlFor={`${mode}-alias-type`}>名義種別</Label>
 							<Select
-								id="alias-type"
+								id={`${mode}-alias-type`}
 								value={form.aliasTypeCode || ""}
 								onChange={(e) =>
 									setForm({ ...form, aliasTypeCode: e.target.value || null })
@@ -329,9 +329,9 @@ export function ArtistAliasEditDialog({
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="period-from">活動開始</Label>
+								<Label htmlFor={`${mode}-period-from`}>活動開始</Label>
 								<Input
-									id="period-from"
+									id={`${mode}-period-from`}
 									type="month"
 									value={form.periodFrom || ""}
 									onChange={(e) =>
@@ -341,9 +341,9 @@ export function ArtistAliasEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="period-to">活動終了</Label>
+								<Label htmlFor={`${mode}-period-to`}>活動終了</Label>
 								<Input
-									id="period-to"
+									id={`${mode}-period-to`}
 									type="month"
 									value={form.periodTo || ""}
 									onChange={(e) =>
