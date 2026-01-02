@@ -389,11 +389,11 @@ export function ArtistAliasEditDialog({
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
-							<Label htmlFor="artist-name">
+							<Label htmlFor="new-artist-name">
 								名前 <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="artist-name"
+								id="new-artist-name"
 								value={artistCreateForm.name || ""}
 								onChange={(e) => {
 									const name = e.target.value;
@@ -410,9 +410,9 @@ export function ArtistAliasEditDialog({
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="artist-nameJa">日本語名</Label>
+								<Label htmlFor="new-artist-nameJa">日本語名</Label>
 								<Input
-									id="artist-nameJa"
+									id="new-artist-nameJa"
 									value={artistCreateForm.nameJa || ""}
 									onChange={(e) =>
 										setArtistCreateForm({
@@ -424,9 +424,9 @@ export function ArtistAliasEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="artist-nameEn">英語名</Label>
+								<Label htmlFor="new-artist-nameEn">英語名</Label>
 								<Input
-									id="artist-nameEn"
+									id="new-artist-nameEn"
 									value={artistCreateForm.nameEn || ""}
 									onChange={(e) =>
 										setArtistCreateForm({
@@ -439,9 +439,9 @@ export function ArtistAliasEditDialog({
 							</div>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="artist-sortName">ソート用名</Label>
+							<Label htmlFor="new-artist-sortName">ソート用名</Label>
 							<Input
-								id="artist-sortName"
+								id="new-artist-sortName"
 								value={artistCreateForm.sortName || ""}
 								onChange={(e) =>
 									setArtistCreateForm({
