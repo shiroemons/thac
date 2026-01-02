@@ -270,5 +270,50 @@ export const getRouter = () => {
 };
 ```
 
+## ハイドレーションエラーの回避
+
+### 無効なHTMLネスト
+
+SSRでは、サーバーとクライアントで同一のHTMLを生成する必要がある。
+HTMLの仕様に違反したネストがあると、ハイドレーションエラーが発生する。
+
+### 主な違反パターン
+
+| 親要素 | 禁止されるネスト |
+|--------|------------------|
+| `<p>` | `<div>`, `<p>`, `<ul>`, `<ol>`, `<table>` |
+| `<a>` | `<a>` (ネストされたリンク) |
+| `<button>` | `<button>`, `<a>` |
+
+### コンポーネント設計の注意点
+
+`children`や`ReactNode`型のpropsを受け取るコンポーネントは、
+ブロックレベル要素が渡される可能性を考慮する。
+
+```tsx
+// NG: <p>を使うとブロック要素を含められない
+function Description({ children }: { children: React.ReactNode }) {
+  return <p>{children}</p>;  // ❌ children に <div> が含まれるとエラー
+}
+
+// OK: <div>を使えばどんな要素も含められる
+function Description({ children }: { children: React.ReactNode }) {
+  return <div className="text-sm">{children}</div>;  // ✅
+}
+```
+
+### 自動検出
+
+`eslint-plugin-validate-jsx-nesting`を使用してCIとpre-commitで検出:
+
+```bash
+# 手動実行
+bun run --cwd apps/web lint:jsx-nesting
+```
+
+### 既知の修正済みコンポーネント
+
+- `DialogDescription` (`components/ui/dialog.tsx`): `<p>` → `<div>` に修正済み
+
 ---
-_Last updated: 2025-12_
+_Last updated: 2026-01_
