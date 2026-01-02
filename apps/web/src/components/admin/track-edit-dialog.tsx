@@ -369,6 +369,7 @@ export function TrackEditDialog({
 								</>
 							) : (
 								<SearchableSelect
+									id="track-event"
 									value={editForm.eventId || ""}
 									onChange={(value) => {
 										setEditForm({
@@ -400,6 +401,7 @@ export function TrackEditDialog({
 								</p>
 							) : (
 								<SearchableSelect
+									id="track-event-day"
 									value={editForm.eventDayId || ""}
 									onChange={(value) => {
 										const selectedDay = eventDaysData?.find(
