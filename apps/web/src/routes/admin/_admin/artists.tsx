@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Eye, Home, Pencil, Trash2 } from "lucide-react";
+import { Download, Eye, Home, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ArtistEditDialog } from "@/components/admin/artist-edit-dialog";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
@@ -28,6 +28,8 @@ import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
 	type Artist,
 	artistsApi,
+	type ExportFormat,
+	exportApi,
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 } from "@/lib/api-client";
@@ -114,6 +116,9 @@ function ArtistsPage() {
 	const [deleteTarget, setDeleteTarget] = useState<Artist | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
 
+	// エクスポート状態
+	const [isExporting, setIsExporting] = useState(false);
+
 	// ensureQueryData + queryOptionsパターン
 	// ローダーでプリフェッチしたデータを自動的に使用
 	const { data, isPending, isFetching, error } = useQuery(
@@ -132,6 +137,27 @@ function ArtistsPage() {
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["artists"] });
+	};
+
+	const handleExport = async (
+		format: ExportFormat,
+		includeRelations: boolean,
+	) => {
+		setIsExporting(true);
+		try {
+			await exportApi.artists({
+				format,
+				includeRelations,
+				search: debouncedSearch || undefined,
+				initialScript: initialScript || undefined,
+			});
+		} catch (e) {
+			setMutationError(
+				e instanceof Error ? e.message : "エクスポートに失敗しました",
+			);
+		} finally {
+			setIsExporting(false);
+		}
 	};
 
 	const handleDelete = async () => {
@@ -240,8 +266,8 @@ function ArtistsPage() {
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
-					secondaryActions={
-						selectedCount > 0
+					secondaryActions={[
+						...(selectedCount > 0
 							? [
 									{
 										label: `選択中の${selectedCount}件を削除`,
@@ -249,8 +275,32 @@ function ArtistsPage() {
 										onClick: () => setIsBatchDeleteDialogOpen(true),
 									},
 								]
-							: undefined
-					}
+							: []),
+						{
+							label: "TSVでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", false),
+							disabled: isExporting,
+						},
+						{
+							label: "JSONでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", false),
+							disabled: isExporting,
+						},
+						{
+							label: "TSV（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", true),
+							disabled: isExporting,
+						},
+						{
+							label: "JSON（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", true),
+							disabled: isExporting,
+						},
+					]}
 				>
 					{selectedCount > 0 && (
 						<div className="flex items-center gap-2">

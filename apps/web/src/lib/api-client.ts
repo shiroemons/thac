@@ -2290,6 +2290,161 @@ export interface ReleaseJanCode {
 	updatedAt: Date | null;
 }
 
+// ===== エクスポート機能 =====
+
+const getApiBaseUrlForExport = () => {
+	// クライアントサイドのみで使用（ダウンロード処理）
+	return import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+};
+
+async function downloadExport(endpoint: string): Promise<void> {
+	const baseUrl = getApiBaseUrlForExport();
+	const res = await fetch(`${baseUrl}${endpoint}`, {
+		credentials: "include",
+	});
+
+	if (!res.ok) {
+		const error = await res.json().catch(() => ({ error: "Unknown error" }));
+		throw new Error(error.error || `HTTP ${res.status}`);
+	}
+
+	// Content-Dispositionからファイル名を取得
+	const contentDisposition = res.headers.get("Content-Disposition");
+	let filename = "export";
+	if (contentDisposition) {
+		// filename*=UTF-8''... 形式を優先（RFC 5987）
+		const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;\s]+)/i);
+		if (utf8Match) {
+			filename = decodeURIComponent(utf8Match[1]);
+		} else {
+			// フォールバック: filename="..." 形式
+			const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+			if (match) {
+				filename = match[1];
+			}
+		}
+	}
+
+	const blob = await res.blob();
+	const url = window.URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = filename;
+	document.body.appendChild(a);
+	a.click();
+	a.remove();
+	window.URL.revokeObjectURL(url);
+}
+
+export type ExportFormat = "tsv" | "json";
+
+export const exportApi = {
+	artists: (params: {
+		format: ExportFormat;
+		includeRelations?: boolean;
+		search?: string;
+		initialScript?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		searchParams.set("format", params.format);
+		if (params.includeRelations) searchParams.set("includeRelations", "true");
+		if (params.search) searchParams.set("search", params.search);
+		if (params.initialScript)
+			searchParams.set("initialScript", params.initialScript);
+		return downloadExport(`/api/admin/export/artists?${searchParams}`);
+	},
+
+	circles: (params: {
+		format: ExportFormat;
+		includeRelations?: boolean;
+		search?: string;
+		initialScript?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		searchParams.set("format", params.format);
+		if (params.includeRelations) searchParams.set("includeRelations", "true");
+		if (params.search) searchParams.set("search", params.search);
+		if (params.initialScript)
+			searchParams.set("initialScript", params.initialScript);
+		return downloadExport(`/api/admin/export/circles?${searchParams}`);
+	},
+
+	events: (params: {
+		format: ExportFormat;
+		includeRelations?: boolean;
+		search?: string;
+		seriesId?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		searchParams.set("format", params.format);
+		if (params.includeRelations) searchParams.set("includeRelations", "true");
+		if (params.search) searchParams.set("search", params.search);
+		if (params.seriesId) searchParams.set("seriesId", params.seriesId);
+		return downloadExport(`/api/admin/export/events?${searchParams}`);
+	},
+
+	releases: (params: {
+		format: ExportFormat;
+		includeRelations?: boolean;
+		search?: string;
+		releaseType?: string;
+		eventId?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		searchParams.set("format", params.format);
+		if (params.includeRelations) searchParams.set("includeRelations", "true");
+		if (params.search) searchParams.set("search", params.search);
+		if (params.releaseType) searchParams.set("releaseType", params.releaseType);
+		if (params.eventId) searchParams.set("eventId", params.eventId);
+		return downloadExport(`/api/admin/export/releases?${searchParams}`);
+	},
+
+	tracks: (params: {
+		format: ExportFormat;
+		includeRelations?: boolean;
+		search?: string;
+		releaseId?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		searchParams.set("format", params.format);
+		if (params.includeRelations) searchParams.set("includeRelations", "true");
+		if (params.search) searchParams.set("search", params.search);
+		if (params.releaseId) searchParams.set("releaseId", params.releaseId);
+		return downloadExport(`/api/admin/export/tracks?${searchParams}`);
+	},
+
+	officialWorks: (params: {
+		format: ExportFormat;
+		includeRelations?: boolean;
+		search?: string;
+		categoryCode?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		searchParams.set("format", params.format);
+		if (params.includeRelations) searchParams.set("includeRelations", "true");
+		if (params.search) searchParams.set("search", params.search);
+		if (params.categoryCode)
+			searchParams.set("categoryCode", params.categoryCode);
+		return downloadExport(`/api/admin/export/official/works?${searchParams}`);
+	},
+
+	officialSongs: (params: {
+		format: ExportFormat;
+		includeRelations?: boolean;
+		search?: string;
+		workId?: string;
+		isOriginal?: string;
+	}) => {
+		const searchParams = new URLSearchParams();
+		searchParams.set("format", params.format);
+		if (params.includeRelations) searchParams.set("includeRelations", "true");
+		if (params.search) searchParams.set("search", params.search);
+		if (params.workId) searchParams.set("workId", params.workId);
+		if (params.isOriginal) searchParams.set("isOriginal", params.isOriginal);
+		return downloadExport(`/api/admin/export/official/songs?${searchParams}`);
+	},
+};
+
 export const releaseJanCodesApi = {
 	list: (releaseId: string) =>
 		fetchWithAuth<ReleaseJanCode[]>(

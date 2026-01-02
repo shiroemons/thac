@@ -59,7 +59,7 @@
 | コンポーネント | 用途 |
 |--------------|------|
 | `nav.breadcrumbs` | daisyUIパンくずナビゲーション |
-| `DataTableActionBar` | 検索、フィルター、カラム表示制御、新規作成ボタン |
+| `DataTableActionBar` | 検索、フィルター、カラム表示制御、新規作成ボタン、セカンダリアクション（ドロップダウンメニュー） |
 | `Table` | データ一覧表示（zebraスタイル） |
 | `DataTablePagination` | ページネーション、ページサイズ選択 |
 | `DataTableSkeleton` | ローディング中のスケルトン表示 |

@@ -158,9 +158,12 @@ function DataTableActionBar({
 									key={action.label}
 									onClick={action.onClick}
 									disabled={action.disabled}
+									className="flex items-center whitespace-nowrap"
 								>
-									{action.icon}
-									{action.label}
+									{action.icon && (
+										<span className="shrink-0">{action.icon}</span>
+									)}
+									<span>{action.label}</span>
 								</DropdownMenuItem>
 							))}
 						</DropdownMenuContent>

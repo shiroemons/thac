@@ -3,7 +3,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Calendar, Eye, Home, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+	Calendar,
+	Download,
+	Eye,
+	Home,
+	Pencil,
+	Plus,
+	Trash2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -38,9 +46,11 @@ import {
 	type Event,
 	type EventDay,
 	type EventWithDays,
+	type ExportFormat,
 	eventDaysApi,
 	eventSeriesApi,
 	eventsApi,
+	exportApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 import { eventsListQueryOptions } from "@/lib/query-options";
@@ -116,6 +126,9 @@ function EventsPage() {
 	// 開催日削除ダイアログ状態
 	const [deleteDayTarget, setDeleteDayTarget] = useState<EventDay | null>(null);
 	const [isDeletingDay, setIsDeletingDay] = useState(false);
+
+	// エクスポート状態
+	const [isExporting, setIsExporting] = useState(false);
 
 	// シリーズ一覧取得
 	const { data: seriesData } = useQuery({
@@ -326,6 +339,27 @@ function EventsPage() {
 		setPage(1);
 	};
 
+	const handleExport = async (
+		format: ExportFormat,
+		includeRelations: boolean,
+	) => {
+		setIsExporting(true);
+		try {
+			await exportApi.events({
+				format,
+				includeRelations,
+				search: debouncedSearch || undefined,
+				seriesId: seriesFilter || undefined,
+			});
+		} catch (e) {
+			setMutationError(
+				e instanceof Error ? e.message : "エクスポートに失敗しました",
+			);
+		} finally {
+			setIsExporting(false);
+		}
+	};
+
 	const formatDateRange = (
 		startDate: string | null,
 		endDate: string | null,
@@ -377,6 +411,32 @@ function EventsPage() {
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
+					secondaryActions={[
+						{
+							label: "TSVでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", false),
+							disabled: isExporting,
+						},
+						{
+							label: "JSONでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", false),
+							disabled: isExporting,
+						},
+						{
+							label: "TSV（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", true),
+							disabled: isExporting,
+						},
+						{
+							label: "JSON（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", true),
+							disabled: isExporting,
+						},
+					]}
 				/>
 
 				{displayError && (

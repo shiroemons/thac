@@ -5,6 +5,7 @@ import { detectInitial } from "@thac/utils";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import {
+	Download,
 	ExternalLink,
 	Eye,
 	Home,
@@ -53,6 +54,8 @@ import {
 	type CircleWithLinks,
 	circleLinksApi,
 	circlesApi,
+	type ExportFormat,
+	exportApi,
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
@@ -162,6 +165,9 @@ function CirclesPage() {
 	);
 	const [isDeletingLink, setIsDeletingLink] = useState(false);
 
+	// エクスポート状態
+	const [isExporting, setIsExporting] = useState(false);
+
 	// プラットフォーム一覧取得
 	const { data: platformsData } = useQuery({
 		queryKey: ["platforms", "all"],
@@ -249,6 +255,27 @@ function CirclesPage() {
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["circles"] });
+	};
+
+	const handleExport = async (
+		format: ExportFormat,
+		includeRelations: boolean,
+	) => {
+		setIsExporting(true);
+		try {
+			await exportApi.circles({
+				format,
+				includeRelations,
+				search: debouncedSearch || undefined,
+				initialScript: initialScript || undefined,
+			});
+		} catch (e) {
+			setMutationError(
+				e instanceof Error ? e.message : "エクスポートに失敗しました",
+			);
+		} finally {
+			setIsExporting(false);
+		}
 	};
 
 	const handleUpdate = async () => {
@@ -492,8 +519,8 @@ function CirclesPage() {
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
-					secondaryActions={
-						selectedCount > 0
+					secondaryActions={[
+						...(selectedCount > 0
 							? [
 									{
 										label: `選択中の${selectedCount}件を削除`,
@@ -501,8 +528,32 @@ function CirclesPage() {
 										onClick: () => setIsBatchDeleteDialogOpen(true),
 									},
 								]
-							: undefined
-					}
+							: []),
+						{
+							label: "TSVでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", false),
+							disabled: isExporting,
+						},
+						{
+							label: "JSONでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", false),
+							disabled: isExporting,
+						},
+						{
+							label: "TSV（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", true),
+							disabled: isExporting,
+						},
+						{
+							label: "JSON（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", true),
+							disabled: isExporting,
+						},
+					]}
 				>
 					{selectedCount > 0 && (
 						<div className="flex items-center gap-2">
