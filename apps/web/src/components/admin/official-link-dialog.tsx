@@ -157,10 +157,11 @@ export function OfficialLinkDialog({
 					</div>
 
 					<div className="grid gap-2">
-						<Label>
+						<Label htmlFor="link-url">
 							URL <span className="text-error">*</span>
 						</Label>
 						<Input
+							id="link-url"
 							type="url"
 							value={url}
 							onChange={(e) => setUrl(e.target.value)}

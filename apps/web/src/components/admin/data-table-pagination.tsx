@@ -83,6 +83,7 @@ function DataTablePagination({
 				{onPageSizeChange && (
 					<>
 						<Select
+							id="page-size"
 							size="md"
 							value={pageSize.toString()}
 							onChange={(e) => onPageSizeChange(Number(e.target.value))}
