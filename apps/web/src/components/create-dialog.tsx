@@ -126,6 +126,7 @@ export function CreateDialog({
 								placeholder={field.placeholder}
 								value={formData[field.name]}
 								onChange={(e) => handleChange(field.name, e.target.value)}
+								autoComplete="off"
 							/>
 						</div>
 					))}
