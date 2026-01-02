@@ -587,6 +587,7 @@ function CirclesPage() {
 								<TableRow className="hover:bg-transparent">
 									<TableHead className="w-[50px]">
 										<Checkbox
+											id="select-all-circles"
 											checked={isAllSelected(circles)}
 											indeterminate={isIndeterminate(circles)}
 											onCheckedChange={() => toggleAll(circles)}
@@ -696,6 +697,7 @@ function CirclesPage() {
 										>
 											<TableCell>
 												<Checkbox
+													id={`select-circle-${circle.id}`}
 													checked={isSelected(circle.id)}
 													onCheckedChange={() => toggleItem(circle)}
 													aria-label={`${circle.name}を選択`}
@@ -955,10 +957,10 @@ function CirclesPage() {
 						{/* 外部リンク一覧 */}
 						<div className="mt-2 border-base-300 border-t pt-4">
 							<div className="mb-2 flex items-center justify-between">
-								<Label className="flex items-center gap-2">
+								<span className="flex items-center gap-2 font-medium text-sm">
 									<Link2 className="h-4 w-4" />
 									外部リンク
-								</Label>
+								</span>
 								<Button
 									type="button"
 									variant="outline"
