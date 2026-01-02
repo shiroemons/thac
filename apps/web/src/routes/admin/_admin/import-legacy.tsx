@@ -1194,7 +1194,7 @@ function ImportingStep({
 									) : isCurrent ? (
 										<Loader2 className="h-4 w-4 animate-spin" />
 									) : (
-										<div className="h-4 w-4 rounded-full border border-current" />
+										<span className="block h-4 w-4 rounded-full border border-current" />
 									)}
 									<span>{info.label}</span>
 								</span>

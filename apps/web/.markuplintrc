@@ -5,5 +5,64 @@
 	},
 	"specs": {
 		"\\.[jt]sx$": "@markuplint/react-spec"
-	}
+	},
+	"pretenders": [
+		{
+			"selector": "HeadContent",
+			"as": {
+				"element": "meta",
+				"attrs": [{ "name": "charset", "value": "UTF-8" }]
+			}
+		},
+		{ "selector": "Table", "as": "table" },
+		{ "selector": "TableHeader", "as": "thead" },
+		{ "selector": "TableBody", "as": "tbody" },
+		{ "selector": "TableFooter", "as": "tfoot" },
+		{ "selector": "TableRow", "as": "tr" },
+		{ "selector": "TableHead", "as": "th" },
+		{ "selector": "TableCell", "as": "td" },
+		{ "selector": "DialogTitle", "as": "div" },
+		{ "selector": "Label", "as": "label" }
+	],
+	"rules": {
+		"no-hard-code-id": false,
+		"label-has-control": false,
+		"heading-levels": false,
+		"table-row-column-alignment": false,
+		"use-list": false
+	},
+	"nodeRules": [
+		{
+			"selector": "head",
+			"rules": {
+				"permitted-contents": false,
+				"required-element": false
+			}
+		},
+		{
+			"selector": "table, thead, tbody, tfoot, tr, Table, TableHeader, TableBody, TableFooter, TableRow",
+			"rules": {
+				"wai-aria": false,
+				"require-accessible-name": false
+			}
+		},
+		{
+			"selector": "ol, ul, BreadcrumbList",
+			"rules": {
+				"wai-aria": false
+			}
+		},
+		{
+			"selector": "TableHead, th",
+			"rules": {
+				"require-accessible-name": false
+			}
+		},
+		{
+			"selector": "input[type='checkbox']",
+			"rules": {
+				"require-accessible-name": false
+			}
+		}
+	]
 }
