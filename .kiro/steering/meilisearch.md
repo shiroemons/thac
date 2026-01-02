@@ -110,12 +110,70 @@ make shell-meilisearch
 curl http://localhost:7700/health
 ```
 
+## バージョンアップ
+
+### バージョニングポリシー
+
+- **月1〜2回**のリリース（2025年現在、非常に活発）
+- 最新版のみサポート（LTSなし）
+- Semantic Versioning 2.0.0準拠
+- 定期的なバージョン確認を推奨
+
+### Docker Compose でのアップグレード手順
+
+```bash
+# 1. 現在のバージョン確認
+curl -s -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/version
+
+# 2. スナップショット作成（バックアップ）
+curl -X POST -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/snapshots
+
+# 3. コンテナ停止
+docker compose stop meilisearch
+
+# 4. docker-compose.yml のイメージタグを更新
+# image: getmeili/meilisearch:v1.31 → v1.32 など
+
+# 5. 古いコンテナ削除・新バージョンで起動
+docker compose up -d meilisearch
+
+# 6. バージョン確認
+curl -s -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/version
+```
+
+### Dumplessアップグレード（v1.12+ → v1.13+）
+
+データ移行なしでアップグレード可能。内部で自動的にデータベースを更新。
+
+### Dump経由のアップグレード（大きなバージョン差がある場合）
+
+```bash
+# 1. ダンプ作成
+curl -X POST -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/dumps
+
+# 2. タスク完了を確認
+curl -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/tasks?types=dumpCreation
+
+# 3. ダンプファイルをコピー（ボリューム内）
+docker compose exec meilisearch ls /meili_data/dumps/
+
+# 4. 新バージョンで --import-dump オプション付きで起動
+```
+
+### ベストプラクティス
+
+- アップグレード前に必ずスナップショット作成
+- [リリースノート](https://github.com/meilisearch/meilisearch/releases)で破壊的変更を確認
+- 開発環境で事前テスト
+- 月1回程度の定期的なバージョン確認を推奨
+
 ## 参考資料
 
 - [Meilisearch Language Support](https://www.meilisearch.com/docs/learn/what_is_meilisearch/language)
 - [Japanese Support Discussion](https://github.com/orgs/meilisearch/discussions/532)
 - [Tokenization Guide](https://www.meilisearch.com/docs/learn/indexing/tokenization)
 - [Meilisearch Docker Guide](https://www.meilisearch.com/docs/guides/docker)
+- [Meilisearch Releases](https://github.com/meilisearch/meilisearch/releases)
 
 ---
 _Document standards and patterns, not every configuration option_
