@@ -4,7 +4,9 @@
 pre-commit:
   parallel: false
   commands:
-    check-types:
-      run: bun run check-types
     biome:
       run: bun run check
+    check-types:
+      run: bun run check-types
+    lint-jsx-nesting:
+      run: bun run --cwd apps/web lint:jsx-nesting
