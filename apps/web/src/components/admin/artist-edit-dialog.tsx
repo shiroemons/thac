@@ -211,11 +211,11 @@ export function ArtistEditDialog({
 							</div>
 						)}
 						<div className="grid gap-2">
-							<Label htmlFor="artist-name">
+							<Label htmlFor={`${mode}-artist-name`}>
 								名前 <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="artist-name"
+								id={`${mode}-artist-name`}
 								value={form.name}
 								onChange={(e) => handleNameChange(e.target.value)}
 								placeholder="例: ZUN"
@@ -224,9 +224,9 @@ export function ArtistEditDialog({
 						</div>
 						<div className="grid gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="artist-nameJa">日本語名</Label>
+								<Label htmlFor={`${mode}-artist-nameJa`}>日本語名</Label>
 								<Input
-									id="artist-nameJa"
+									id={`${mode}-artist-nameJa`}
 									value={form.nameJa || ""}
 									onChange={(e) =>
 										setForm({ ...form, nameJa: e.target.value || null })
@@ -236,9 +236,9 @@ export function ArtistEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="artist-nameEn">英語名</Label>
+								<Label htmlFor={`${mode}-artist-nameEn`}>英語名</Label>
 								<Input
-									id="artist-nameEn"
+									id={`${mode}-artist-nameEn`}
 									value={form.nameEn || ""}
 									onChange={(e) =>
 										setForm({ ...form, nameEn: e.target.value || null })
@@ -249,9 +249,9 @@ export function ArtistEditDialog({
 							</div>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="artist-sortName">ソート用名</Label>
+							<Label htmlFor={`${mode}-artist-sortName`}>ソート用名</Label>
 							<Input
-								id="artist-sortName"
+								id={`${mode}-artist-sortName`}
 								value={form.sortName || ""}
 								onChange={(e) =>
 									setForm({ ...form, sortName: e.target.value || null })
@@ -261,9 +261,9 @@ export function ArtistEditDialog({
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="artist-notes">備考</Label>
+							<Label htmlFor={`${mode}-artist-notes`}>備考</Label>
 							<Textarea
-								id="artist-notes"
+								id={`${mode}-artist-notes`}
 								value={form.notes || ""}
 								onChange={(e) =>
 									setForm({ ...form, notes: e.target.value || null })
