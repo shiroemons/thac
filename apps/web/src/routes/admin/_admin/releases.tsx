@@ -485,6 +485,7 @@ function ReleasesPage() {
 								<TableRow className="hover:bg-transparent">
 									<TableHead className="w-[50px]">
 										<Checkbox
+											id="releases-select-all"
 											checked={isAllSelected(releases)}
 											indeterminate={isIndeterminate(releases)}
 											onCheckedChange={() => toggleAll(releases)}
@@ -604,6 +605,7 @@ function ReleasesPage() {
 										>
 											<TableCell>
 												<Checkbox
+													id={`releases-select-${release.id}`}
 													checked={isSelected(release.id)}
 													onCheckedChange={() => toggleItem(release)}
 													aria-label={`${release.name}を選択`}
