@@ -196,7 +196,7 @@ officialExportRouter.get("/works", async (c) => {
 				exportData,
 				columns as ColumnDefinition<(typeof exportData)[number]>[],
 			);
-			const filename = generateFilename("official-works", "tsv");
+			const filename = generateFilename("公式作品", "tsv");
 			return createExportResponse(tsv, filename, "tsv");
 		}
 
@@ -210,7 +210,7 @@ officialExportRouter.get("/works", async (c) => {
 		}));
 
 		const json = formatToJSON(exportData);
-		const filename = generateFilename("official-works", "json");
+		const filename = generateFilename("公式作品", "json");
 		return createExportResponse(json, filename, "json");
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/export/official/works");
@@ -307,7 +307,7 @@ officialExportRouter.get("/songs", async (c) => {
 				exportData,
 				columns as ColumnDefinition<(typeof exportData)[number]>[],
 			);
-			const filename = generateFilename("official-songs", "tsv");
+			const filename = generateFilename("公式楽曲", "tsv");
 			return createExportResponse(tsv, filename, "tsv");
 		}
 
@@ -318,7 +318,7 @@ officialExportRouter.get("/songs", async (c) => {
 		}));
 
 		const json = formatToJSON(exportData);
-		const filename = generateFilename("official-songs", "json");
+		const filename = generateFilename("公式楽曲", "json");
 		return createExportResponse(json, filename, "json");
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/export/official/songs");

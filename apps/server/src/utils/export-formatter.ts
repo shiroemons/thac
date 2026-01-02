@@ -104,16 +104,21 @@ export function getContentType(format: "tsv" | "json"): string {
 
 /**
  * エクスポートレスポンスを生成
+ * RFC 5987に従い、非ASCII文字を含むファイル名を適切にエンコード
  */
 export function createExportResponse(
 	content: string,
 	filename: string,
 	format: "tsv" | "json",
 ): Response {
+	// UTF-8でエンコードされたファイル名（RFC 5987）
+	const encodedFilename = encodeURIComponent(filename).replace(/'/g, "%27");
+
 	return new Response(content, {
 		headers: {
 			"Content-Type": getContentType(format),
-			"Content-Disposition": `attachment; filename="${filename}"`,
+			// filename: ASCII互換のフォールバック, filename*: UTF-8エンコード
+			"Content-Disposition": `attachment; filename="export.${format}"; filename*=UTF-8''${encodedFilename}`,
 		},
 	});
 }

@@ -146,7 +146,7 @@ eventExportRouter.get("/", async (c) => {
 				exportData,
 				columns as ColumnDefinition<(typeof exportData)[number]>[],
 			);
-			const filename = generateFilename("events", "tsv");
+			const filename = generateFilename("イベント", "tsv");
 			return createExportResponse(tsv, filename, "tsv");
 		}
 
@@ -160,7 +160,7 @@ eventExportRouter.get("/", async (c) => {
 		}));
 
 		const json = formatToJSON(exportData);
-		const filename = generateFilename("events", "json");
+		const filename = generateFilename("イベント", "json");
 		return createExportResponse(json, filename, "json");
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/export/events");

@@ -211,7 +211,7 @@ releaseExportRouter.get("/", async (c) => {
 				exportData,
 				columns as ColumnDefinition<(typeof exportData)[number]>[],
 			);
-			const filename = generateFilename("releases", "tsv");
+			const filename = generateFilename("作品", "tsv");
 			return createExportResponse(tsv, filename, "tsv");
 		}
 
@@ -227,7 +227,7 @@ releaseExportRouter.get("/", async (c) => {
 		}));
 
 		const json = formatToJSON(exportData);
-		const filename = generateFilename("releases", "json");
+		const filename = generateFilename("作品", "json");
 		return createExportResponse(json, filename, "json");
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/export/releases");

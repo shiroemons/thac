@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Eye, Home, Pencil, Trash2 } from "lucide-react";
+import { Download, Eye, Home, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -40,8 +40,10 @@ import { useRowSelection } from "@/hooks/use-row-selection";
 import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
 	discsApi,
+	type ExportFormat,
 	eventDaysApi,
 	eventsApi,
+	exportApi,
 	RELEASE_TYPE_COLORS,
 	RELEASE_TYPE_LABELS,
 	type Release,
@@ -149,6 +151,9 @@ function ReleasesPage() {
 		null,
 	);
 	const [isDeleting, setIsDeleting] = useState(false);
+
+	// エクスポート状態
+	const [isExporting, setIsExporting] = useState(false);
 
 	const { data, isPending, isFetching, error } = useQuery(
 		releasesListQueryOptions({
@@ -351,6 +356,27 @@ function ReleasesPage() {
 		setPage(1);
 	};
 
+	const handleExport = async (
+		format: ExportFormat,
+		includeRelations: boolean,
+	) => {
+		setIsExporting(true);
+		try {
+			await exportApi.releases({
+				format,
+				includeRelations,
+				search: debouncedSearch || undefined,
+				releaseType: releaseTypeFilter || undefined,
+			});
+		} catch (e) {
+			setMutationError(
+				e instanceof Error ? e.message : "エクスポートに失敗しました",
+			);
+		} finally {
+			setIsExporting(false);
+		}
+	};
+
 	const displayError =
 		mutationError || (error instanceof Error ? error.message : null);
 
@@ -391,8 +417,8 @@ function ReleasesPage() {
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
-					secondaryActions={
-						selectedCount > 0
+					secondaryActions={[
+						...(selectedCount > 0
 							? [
 									{
 										label: `選択中の${selectedCount}件を削除`,
@@ -400,8 +426,32 @@ function ReleasesPage() {
 										onClick: () => setIsBatchDeleteDialogOpen(true),
 									},
 								]
-							: undefined
-					}
+							: []),
+						{
+							label: "TSVでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", false),
+							disabled: isExporting,
+						},
+						{
+							label: "JSONでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", false),
+							disabled: isExporting,
+						},
+						{
+							label: "TSV（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", true),
+							disabled: isExporting,
+						},
+						{
+							label: "JSON（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", true),
+							disabled: isExporting,
+						},
+					]}
 				>
 					{selectedCount > 0 && (
 						<div className="flex items-center gap-2">

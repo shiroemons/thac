@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Eye, Home, Pencil, Trash2 } from "lucide-react";
+import { Download, Eye, Home, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -37,6 +37,8 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useRowSelection } from "@/hooks/use-row-selection";
 import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
+	type ExportFormat,
+	exportApi,
 	releasesApi,
 	type Track,
 	type TrackListItem,
@@ -119,6 +121,9 @@ function TracksPage() {
 	// 個別削除ダイアログ状態
 	const [deleteTarget, setDeleteTarget] = useState<TrackListItem | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
+
+	// エクスポート状態
+	const [isExporting, setIsExporting] = useState(false);
 
 	// 作品一覧取得（フィルター用・新規作成用）
 	const { data: releasesData } = useQuery({
@@ -270,6 +275,27 @@ function TracksPage() {
 		setPage(1);
 	};
 
+	const handleExport = async (
+		format: ExportFormat,
+		includeRelations: boolean,
+	) => {
+		setIsExporting(true);
+		try {
+			await exportApi.tracks({
+				format,
+				includeRelations,
+				search: debouncedSearch || undefined,
+				releaseId: releaseFilter || undefined,
+			});
+		} catch (e) {
+			setMutationError(
+				e instanceof Error ? e.message : "エクスポートに失敗しました",
+			);
+		} finally {
+			setIsExporting(false);
+		}
+	};
+
 	const releaseOptions =
 		releasesData?.data.map((r) => ({
 			value: r.id,
@@ -312,8 +338,8 @@ function TracksPage() {
 						label: "新規作成",
 						onClick: () => setIsCreateDialogOpen(true),
 					}}
-					secondaryActions={
-						selectedCount > 0
+					secondaryActions={[
+						...(selectedCount > 0
 							? [
 									{
 										label: `選択中の${selectedCount}件を削除`,
@@ -321,8 +347,32 @@ function TracksPage() {
 										onClick: () => setIsBatchDeleteDialogOpen(true),
 									},
 								]
-							: undefined
-					}
+							: []),
+						{
+							label: "TSVでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", false),
+							disabled: isExporting,
+						},
+						{
+							label: "JSONでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", false),
+							disabled: isExporting,
+						},
+						{
+							label: "TSV（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", true),
+							disabled: isExporting,
+						},
+						{
+							label: "JSON（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", true),
+							disabled: isExporting,
+						},
+					]}
 				>
 					<SearchableSelect
 						value={releaseFilter}

@@ -121,7 +121,7 @@ artistExportRouter.get("/", async (c) => {
 				exportData,
 				columns as ColumnDefinition<(typeof exportData)[number]>[],
 			);
-			const filename = generateFilename("artists", "tsv");
+			const filename = generateFilename("アーティスト", "tsv");
 			return createExportResponse(tsv, filename, "tsv");
 		}
 
@@ -132,7 +132,7 @@ artistExportRouter.get("/", async (c) => {
 		}));
 
 		const json = formatToJSON(exportData);
-		const filename = generateFilename("artists", "json");
+		const filename = generateFilename("アーティスト", "json");
 		return createExportResponse(json, filename, "json");
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/export/artists");

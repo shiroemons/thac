@@ -124,7 +124,7 @@ circleExportRouter.get("/", async (c) => {
 				exportData,
 				columns as ColumnDefinition<(typeof exportData)[number]>[],
 			);
-			const filename = generateFilename("circles", "tsv");
+			const filename = generateFilename("サークル", "tsv");
 			return createExportResponse(tsv, filename, "tsv");
 		}
 
@@ -135,7 +135,7 @@ circleExportRouter.get("/", async (c) => {
 		}));
 
 		const json = formatToJSON(exportData);
-		const filename = generateFilename("circles", "json");
+		const filename = generateFilename("サークル", "json");
 		return createExportResponse(json, filename, "json");
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/export/circles");

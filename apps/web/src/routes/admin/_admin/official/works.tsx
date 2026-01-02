@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Eye, Home, Pencil, Trash2, Upload } from "lucide-react";
+import { Download, Eye, Home, Pencil, Trash2, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
@@ -25,6 +25,8 @@ import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
+	type ExportFormat,
+	exportApi,
 	importApi,
 	type OfficialWork,
 	officialWorkCategoriesApi,
@@ -109,6 +111,9 @@ function OfficialWorksPage() {
 	const [deleteTarget, setDeleteTarget] = useState<OfficialWork | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
 
+	// エクスポート状態
+	const [isExporting, setIsExporting] = useState(false);
+
 	// カテゴリ一覧を取得
 	const { data: categoriesData } = useQuery({
 		queryKey: ["officialWorkCategories"],
@@ -173,6 +178,27 @@ function OfficialWorksPage() {
 		setPage(1);
 	};
 
+	const handleExport = async (
+		format: ExportFormat,
+		includeRelations: boolean,
+	) => {
+		setIsExporting(true);
+		try {
+			await exportApi.officialWorks({
+				format,
+				includeRelations,
+				search: debouncedSearch || undefined,
+				categoryCode: category || undefined,
+			});
+		} catch (e) {
+			setMutationError(
+				e instanceof Error ? e.message : "エクスポートに失敗しました",
+			);
+		} finally {
+			setIsExporting(false);
+		}
+	};
+
 	const getCategoryName = (code: string) => {
 		const cat = categoriesData?.data.find((c) => c.code === code);
 		return cat?.name || code;
@@ -227,6 +253,30 @@ function OfficialWorksPage() {
 							label: "インポート",
 							icon: <Upload className="mr-2 h-4 w-4" />,
 							onClick: () => setIsImportDialogOpen(true),
+						},
+						{
+							label: "TSVでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", false),
+							disabled: isExporting,
+						},
+						{
+							label: "JSONでエクスポート",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", false),
+							disabled: isExporting,
+						},
+						{
+							label: "TSV（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("tsv", true),
+							disabled: isExporting,
+						},
+						{
+							label: "JSON（関連データ含む）",
+							icon: <Download className="mr-2 h-4 w-4" />,
+							onClick: () => handleExport("json", true),
+							disabled: isExporting,
 						},
 					]}
 				/>
