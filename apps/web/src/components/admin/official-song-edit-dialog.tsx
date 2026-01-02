@@ -333,20 +333,20 @@ export function OfficialSongEditDialog({
 							</div>
 						)}
 						<div className="grid gap-2">
-							<Label htmlFor="song-id">
+							<Label htmlFor={`${mode}-song-id`}>
 								ID {mode === "create" && "(自動生成)"}
 							</Label>
 							<Input
-								id="song-id"
+								id={`${mode}-song-id`}
 								value={form.id}
 								disabled
 								className="font-mono"
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="song-work">作品</Label>
+							<Label htmlFor={`${mode}-song-work`}>作品</Label>
 							<SearchableGroupedSelect
-								id="song-work"
+								id={`${mode}-song-work`}
 								value={form.officialWorkId || ""}
 								onChange={(val) => handleWorkChange(val || null)}
 								groups={workGroups}
@@ -355,11 +355,11 @@ export function OfficialSongEditDialog({
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="song-name">
+							<Label htmlFor={`${mode}-song-name`}>
 								名前 <span className="text-error">*</span>
 							</Label>
 							<Input
-								id="song-name"
+								id={`${mode}-song-name`}
 								value={form.name}
 								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: A Sacred Lot"
@@ -368,11 +368,11 @@ export function OfficialSongEditDialog({
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="song-nameJa">
+								<Label htmlFor={`${mode}-song-nameJa`}>
 									日本語名 <span className="text-error">*</span>
 								</Label>
 								<Input
-									id="song-nameJa"
+									id={`${mode}-song-nameJa`}
 									value={form.nameJa}
 									onChange={(e) => setForm({ ...form, nameJa: e.target.value })}
 									placeholder="例: A Sacred Lot"
@@ -380,9 +380,9 @@ export function OfficialSongEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="song-nameEn">英語名</Label>
+								<Label htmlFor={`${mode}-song-nameEn`}>英語名</Label>
 								<Input
-									id="song-nameEn"
+									id={`${mode}-song-nameEn`}
 									value={form.nameEn || ""}
 									onChange={(e) =>
 										setForm({ ...form, nameEn: e.target.value || null })
@@ -394,9 +394,9 @@ export function OfficialSongEditDialog({
 						</div>
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="song-trackNumber">トラック番号</Label>
+								<Label htmlFor={`${mode}-song-trackNumber`}>トラック番号</Label>
 								<Input
-									id="song-trackNumber"
+									id={`${mode}-song-trackNumber`}
 									type="number"
 									value={form.trackNumber ?? ""}
 									onChange={(e) =>
@@ -412,9 +412,9 @@ export function OfficialSongEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="song-isOriginal">オリジナル曲</Label>
+								<Label htmlFor={`${mode}-song-isOriginal`}>オリジナル曲</Label>
 								<Select
-									id="song-isOriginal"
+									id={`${mode}-song-isOriginal`}
 									value={form.isOriginal ? "true" : "false"}
 									onChange={(e) =>
 										setForm({
@@ -433,9 +433,9 @@ export function OfficialSongEditDialog({
 						</div>
 						{!form.isOriginal && (
 							<div className="grid gap-2">
-								<Label htmlFor="song-source">原曲</Label>
+								<Label htmlFor={`${mode}-song-source`}>原曲</Label>
 								<SearchableSelect
-									id="song-source"
+									id={`${mode}-song-source`}
 									value={form.sourceSongId || ""}
 									onChange={(val) =>
 										setForm({ ...form, sourceSongId: val || null })
@@ -450,9 +450,9 @@ export function OfficialSongEditDialog({
 						)}
 						<div className="grid grid-cols-2 gap-4">
 							<div className="grid gap-2">
-								<Label htmlFor="song-composerName">作曲者</Label>
+								<Label htmlFor={`${mode}-song-composerName`}>作曲者</Label>
 								<Input
-									id="song-composerName"
+									id={`${mode}-song-composerName`}
 									value={form.composerName || ""}
 									onChange={(e) =>
 										setForm({ ...form, composerName: e.target.value || null })
@@ -462,9 +462,9 @@ export function OfficialSongEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="song-arrangerName">編曲者</Label>
+								<Label htmlFor={`${mode}-song-arrangerName`}>編曲者</Label>
 								<Input
-									id="song-arrangerName"
+									id={`${mode}-song-arrangerName`}
 									value={form.arrangerName || ""}
 									onChange={(e) =>
 										setForm({ ...form, arrangerName: e.target.value || null })
@@ -475,9 +475,9 @@ export function OfficialSongEditDialog({
 							</div>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="song-notes">備考</Label>
+							<Label htmlFor={`${mode}-song-notes`}>備考</Label>
 							<Textarea
-								id="song-notes"
+								id={`${mode}-song-notes`}
 								value={form.notes || ""}
 								onChange={(e) =>
 									setForm({ ...form, notes: e.target.value || null })
