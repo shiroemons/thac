@@ -69,8 +69,10 @@ describe("Admin Export API", () => {
 			expect(res.headers.get("Content-Type")).toContain(
 				"text/tab-separated-values",
 			);
-			expect(res.headers.get("Content-Disposition")).toContain("artists_");
-			expect(res.headers.get("Content-Disposition")).toContain(".tsv");
+			// RFC 5987形式でエンコードされた日本語ファイル名を確認
+			const disposition = res.headers.get("Content-Disposition");
+			expect(disposition).toContain("filename*=UTF-8''");
+			expect(disposition).toContain(".tsv");
 
 			const tsv = await res.text();
 			expect(tsv).toContain("id\tname\tnameJa");
@@ -90,8 +92,10 @@ describe("Admin Export API", () => {
 
 			expect(res.status).toBe(200);
 			expect(res.headers.get("Content-Type")).toContain("application/json");
-			expect(res.headers.get("Content-Disposition")).toContain("artists_");
-			expect(res.headers.get("Content-Disposition")).toContain(".json");
+			// RFC 5987形式でエンコードされた日本語ファイル名を確認
+			const disposition = res.headers.get("Content-Disposition");
+			expect(disposition).toContain("filename*=UTF-8''");
+			expect(disposition).toContain(".json");
 
 			const json = await res.json();
 			expect(Array.isArray(json)).toBe(true);
