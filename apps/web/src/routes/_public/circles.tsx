@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Disc, Music, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	EmptyState,
 	PublicBreadcrumb,
@@ -16,16 +16,6 @@ export const Route = createFileRoute("/_public/circles")({
 
 const STORAGE_KEY_VIEW = "circles-view-mode";
 const STORAGE_KEY_SCRIPT = "circles-script-filter";
-
-function getInitialViewMode(): ViewMode {
-	if (typeof window === "undefined") return "list";
-	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "list";
-}
-
-function getInitialScriptFilter(): ScriptCategory {
-	if (typeof window === "undefined") return "all";
-	return (localStorage.getItem(STORAGE_KEY_SCRIPT) as ScriptCategory) || "all";
-}
 
 interface Circle {
 	id: string;
@@ -161,10 +151,17 @@ const mockCircles: Circle[] = [
 ];
 
 function CirclesPage() {
-	const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
-	const [scriptFilter, setScriptFilterState] = useState<ScriptCategory>(
-		getInitialScriptFilter,
-	);
+	const [viewMode, setViewModeState] = useState<ViewMode>("list");
+	const [scriptFilter, setScriptFilterState] = useState<ScriptCategory>("all");
+
+	useEffect(() => {
+		const savedView = localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode;
+		if (savedView) setViewModeState(savedView);
+		const savedScript = localStorage.getItem(
+			STORAGE_KEY_SCRIPT,
+		) as ScriptCategory;
+		if (savedScript) setScriptFilterState(savedScript);
+	}, []);
 
 	const setViewMode = (view: ViewMode) => {
 		setViewModeState(view);

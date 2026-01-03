@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight, Music } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	EmptyState,
 	PublicBreadcrumb,
@@ -13,11 +13,6 @@ export const Route = createFileRoute("/_public/original-songs")({
 });
 
 const STORAGE_KEY_VIEW = "original-songs-view-mode";
-
-function getInitialViewMode(): ViewMode {
-	if (typeof window === "undefined") return "list";
-	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "list";
-}
 
 interface OriginalSong {
 	id: string;
@@ -183,8 +178,13 @@ const mockOriginalSongs: OriginalSong[] = [
 ];
 
 function OriginalSongsPage() {
-	const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
+	const [viewMode, setViewModeState] = useState<ViewMode>("list");
 	const [selectedWork, setSelectedWork] = useState("all");
+
+	useEffect(() => {
+		const saved = localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode;
+		if (saved) setViewModeState(saved);
+	}, []);
 
 	const setViewMode = (view: ViewMode) => {
 		setViewModeState(view);

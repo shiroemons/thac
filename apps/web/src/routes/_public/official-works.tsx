@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, Disc3, Gamepad2, Music } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	EmptyState,
 	PublicBreadcrumb,
@@ -13,11 +13,6 @@ export const Route = createFileRoute("/_public/official-works")({
 });
 
 const STORAGE_KEY_VIEW = "official-works-view-mode";
-
-function getInitialViewMode(): ViewMode {
-	if (typeof window === "undefined") return "list";
-	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "list";
-}
 
 // 公式作品のカテゴリ
 type WorkCategory = "all" | "game" | "music" | "book";
@@ -159,8 +154,13 @@ const categoryBadgeClass: Record<Exclude<WorkCategory, "all">, string> = {
 };
 
 function OfficialWorksPage() {
-	const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
+	const [viewMode, setViewModeState] = useState<ViewMode>("list");
 	const [category, setCategory] = useState<WorkCategory>("all");
+
+	useEffect(() => {
+		const saved = localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode;
+		if (saved) setViewModeState(saved);
+	}, []);
 
 	const setViewMode = (view: ViewMode) => {
 		setViewModeState(view);

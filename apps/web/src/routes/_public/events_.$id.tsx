@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calendar, Disc3, MapPin, Music, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	EmptyState,
 	PublicBreadcrumb,
@@ -13,11 +13,6 @@ export const Route = createFileRoute("/_public/events_/$id")({
 });
 
 const STORAGE_KEY_VIEW = "event-detail-view-mode";
-
-function getInitialViewMode(): ViewMode {
-	if (typeof window === "undefined") return "list";
-	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "list";
-}
 
 // イベントデータ型（スキーマ準拠）
 interface Event {
@@ -197,7 +192,12 @@ type TabType = "releases" | "tracks";
 function EventDetailPage() {
 	const { id } = Route.useParams();
 	const [activeTab, setActiveTab] = useState<TabType>("releases");
-	const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
+	const [viewMode, setViewModeState] = useState<ViewMode>("list");
+
+	useEffect(() => {
+		const saved = localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode;
+		if (saved) setViewModeState(saved);
+	}, []);
 
 	const setViewMode = (view: ViewMode) => {
 		setViewModeState(view);

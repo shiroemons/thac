@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calendar, ChevronDown, ChevronRight, Disc } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { EmptyState, PublicBreadcrumb } from "@/components/public";
 
 export const Route = createFileRoute("/_public/events")({
@@ -12,30 +12,6 @@ type EventsViewMode = "series" | "year";
 const STORAGE_KEY_VIEW = "events-view-mode";
 const STORAGE_KEY_YEAR = "events-selected-year";
 const STORAGE_KEY_EXPANDED = "events-expanded-series";
-
-function getInitialViewMode(): EventsViewMode {
-	if (typeof window === "undefined") return "series";
-	return (localStorage.getItem(STORAGE_KEY_VIEW) as EventsViewMode) || "series";
-}
-
-function getInitialYear(): number {
-	if (typeof window === "undefined") return 2024;
-	const saved = localStorage.getItem(STORAGE_KEY_YEAR);
-	return saved ? Number(saved) : 2024;
-}
-
-function getInitialExpandedSeries(): Set<string> {
-	if (typeof window === "undefined") return new Set(["comiket"]);
-	const saved = localStorage.getItem(STORAGE_KEY_EXPANDED);
-	if (saved) {
-		try {
-			return new Set(JSON.parse(saved) as string[]);
-		} catch {
-			return new Set(["comiket"]);
-		}
-	}
-	return new Set(["comiket"]);
-}
 
 interface Event {
 	id: string;
@@ -203,12 +179,26 @@ function getYear(dateStr: string): number {
 }
 
 function EventsPage() {
-	const [viewMode, setViewModeState] =
-		useState<EventsViewMode>(getInitialViewMode);
-	const [selectedYear, setSelectedYearState] = useState<number>(getInitialYear);
+	const [viewMode, setViewModeState] = useState<EventsViewMode>("series");
+	const [selectedYear, setSelectedYearState] = useState<number>(2024);
 	const [expandedSeries, setExpandedSeriesState] = useState<Set<string>>(
-		getInitialExpandedSeries,
+		new Set(["comiket"]),
 	);
+
+	useEffect(() => {
+		const savedView = localStorage.getItem(STORAGE_KEY_VIEW) as EventsViewMode;
+		if (savedView) setViewModeState(savedView);
+		const savedYear = localStorage.getItem(STORAGE_KEY_YEAR);
+		if (savedYear) setSelectedYearState(Number(savedYear));
+		const savedExpanded = localStorage.getItem(STORAGE_KEY_EXPANDED);
+		if (savedExpanded) {
+			try {
+				setExpandedSeriesState(new Set(JSON.parse(savedExpanded) as string[]));
+			} catch {
+				// Keep default
+			}
+		}
+	}, []);
 
 	const setViewMode = (view: EventsViewMode) => {
 		setViewModeState(view);

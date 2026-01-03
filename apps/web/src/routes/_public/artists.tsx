@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Music, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	EmptyState,
 	PublicBreadcrumb,
@@ -36,21 +36,6 @@ const roleConfig: Record<RoleType, RoleConfig> = {
 	},
 	vocal: { label: "ボーカル", shortLabel: "Vo", badgeClass: "badge-accent" },
 };
-
-function getInitialViewMode(): ViewMode {
-	if (typeof window === "undefined") return "list";
-	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "list";
-}
-
-function getInitialScriptFilter(): ScriptCategory {
-	if (typeof window === "undefined") return "all";
-	return (localStorage.getItem(STORAGE_KEY_SCRIPT) as ScriptCategory) || "all";
-}
-
-function getInitialRoleFilter(): RoleType {
-	if (typeof window === "undefined") return "all";
-	return (localStorage.getItem(STORAGE_KEY_ROLE) as RoleType) || "all";
-}
 
 interface Artist {
 	id: string;
@@ -247,12 +232,20 @@ const mockArtists: Artist[] = [
 ];
 
 function ArtistsPage() {
-	const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
-	const [scriptFilter, setScriptFilterState] = useState<ScriptCategory>(
-		getInitialScriptFilter,
-	);
-	const [roleFilter, setRoleFilterState] =
-		useState<RoleType>(getInitialRoleFilter);
+	const [viewMode, setViewModeState] = useState<ViewMode>("list");
+	const [scriptFilter, setScriptFilterState] = useState<ScriptCategory>("all");
+	const [roleFilter, setRoleFilterState] = useState<RoleType>("all");
+
+	useEffect(() => {
+		const savedView = localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode;
+		if (savedView) setViewModeState(savedView);
+		const savedScript = localStorage.getItem(
+			STORAGE_KEY_SCRIPT,
+		) as ScriptCategory;
+		if (savedScript) setScriptFilterState(savedScript);
+		const savedRole = localStorage.getItem(STORAGE_KEY_ROLE) as RoleType;
+		if (savedRole) setRoleFilterState(savedRole);
+	}, []);
 
 	const setViewMode = (view: ViewMode) => {
 		setViewModeState(view);
