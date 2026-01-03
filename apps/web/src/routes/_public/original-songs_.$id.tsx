@@ -1,41 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	Calendar,
+	ChevronLeft,
+	ChevronRight,
 	Disc3,
 	ExternalLink,
 	Music,
 	TrendingUp,
 	Users,
 } from "lucide-react";
+import { useMemo } from "react";
 import { PublicBreadcrumb } from "@/components/public";
+import {
+	getArrangeCount,
+	getMockArrangeTracks,
+	getSongById,
+	getSongsByWorkId,
+	getWorkById,
+} from "@/mocks/official";
 
 export const Route = createFileRoute("/_public/original-songs_/$id")({
 	component: OriginalSongDetailPage,
 });
 
-// 公式曲データ型（スキーマ準拠）
-interface OfficialSong {
-	id: string;
-	officialWorkId: string;
-	trackNumber: number | null;
-	name: string;
-	nameJa: string;
-	nameEn: string | null;
-	composerName: string | null;
-	arrangerName: string | null;
-	isOriginal: boolean;
-	sourceSongId: string | null;
-	notes: string | null;
-}
-
-// 親作品データ型
-interface ParentWork {
-	id: string;
-	nameJa: string;
-	shortNameJa: string | null;
-}
-
-// 外部リンクデータ型
+// 外部リンクデータ型（モック）
 interface OfficialSongLink {
 	id: string;
 	officialSongId: string;
@@ -44,176 +32,31 @@ interface OfficialSongLink {
 	sortOrder: number;
 }
 
-// アレンジトラックデータ型
-interface ArrangeTrack {
-	trackId: string;
-	trackName: string;
-	release: {
-		id: string;
-		name: string;
-		releaseDate: string | null;
-	};
-	circles: Array<{
-		id: string;
-		name: string;
-	}>;
-	artists: Array<{
-		id: string;
-		creditName: string;
-		roles: string[];
-	}>;
-}
-
-// モックデータ - 曲
-const mockOfficialSongs: Record<string, OfficialSong> = {
-	"th06-15": {
-		id: "th06-15",
-		officialWorkId: "th06",
-		trackNumber: 15,
-		name: "U.N.オーエンは彼女なのか？",
-		nameJa: "U.N.オーエンは彼女なのか？",
-		nameEn: "U.N. Owen Was Her?",
-		composerName: "ZUN",
-		arrangerName: null,
-		isOriginal: true,
-		sourceSongId: null,
-		notes: "6面ボス フランドール・スカーレットのテーマ",
-	},
-	"th06-13": {
-		id: "th06-13",
-		officialWorkId: "th06",
-		trackNumber: 13,
-		name: "亡き王女の為のセプテット",
-		nameJa: "亡き王女の為のセプテット",
-		nameEn: "Septette for the Dead Princess",
-		composerName: "ZUN",
-		arrangerName: null,
-		isOriginal: true,
-		sourceSongId: null,
-		notes: "5面ボス レミリア・スカーレットのテーマ",
-	},
-	"th06-09": {
-		id: "th06-09",
-		officialWorkId: "th06",
-		trackNumber: 9,
-		name: "ラクトガール 〜 少女密室",
-		nameJa: "ラクトガール",
-		nameEn: "Locked Girl ~ The Girl's Secret Room",
-		composerName: "ZUN",
-		arrangerName: null,
-		isOriginal: true,
-		sourceSongId: null,
-		notes: "4面ボス パチュリー・ノーレッジのテーマ",
-	},
-};
-
-// モックデータ - 親作品
-const mockParentWorks: Record<string, ParentWork> = {
-	th06: {
-		id: "th06",
-		nameJa: "東方紅魔郷",
-		shortNameJa: "紅魔郷",
-	},
-};
-
 // モックデータ - 外部リンク
 const mockSongLinks: Record<string, OfficialSongLink[]> = {
-	"th06-15": [
+	"02010015": [
 		{
 			id: "sl-1",
-			officialSongId: "th06-15",
+			officialSongId: "02010015",
 			platformCode: "youtube",
 			url: "https://www.youtube.com/results?search_query=U.N.%E3%82%AA%E3%83%BC%E3%82%A8%E3%83%B3%E3%81%AF%E5%BD%BC%E5%A5%B3%E3%81%AA%E3%81%AE%E3%81%8B",
 			sortOrder: 1,
 		},
 		{
 			id: "sl-2",
-			officialSongId: "th06-15",
+			officialSongId: "02010015",
 			platformCode: "thwiki",
 			url: "https://thwiki.cc/U.N.%E3%82%AA%E3%83%BC%E3%82%A8%E3%83%B3%E3%81%AF%E5%BD%BC%E5%A5%B3%E3%81%AA%E3%81%AE%E3%81%8B%EF%BC%9F",
 			sortOrder: 2,
 		},
 	],
-};
-
-// モックデータ - アレンジ
-const mockArranges: Record<string, ArrangeTrack[]> = {
-	"th06-15": [
+	"02010013": [
 		{
-			trackId: "track-1",
-			trackName: "最終鬼畜妹フランドール・S",
-			release: {
-				id: "rel-1",
-				name: "東方乙女囃子",
-				releaseDate: "2006-12-31",
-			},
-			circles: [{ id: "circle-iosys", name: "IOSYS" }],
-			artists: [
-				{ id: "artist-arm", creditName: "ARM", roles: ["arrange", "lyrics"] },
-				{ id: "artist-miko", creditName: "miko", roles: ["vocal"] },
-			],
-		},
-		{
-			trackId: "track-2",
-			trackName: "U.N.オーエンは彼女なのか？ Remix",
-			release: {
-				id: "rel-2",
-				name: "Scarlet Destiny",
-				releaseDate: "2008-08-16",
-			},
-			circles: [{ id: "circle-alst", name: "Alstroemeria Records" }],
-			artists: [
-				{
-					id: "artist-masayoshi",
-					creditName: "Masayoshi Minoshima",
-					roles: ["arrange"],
-				},
-				{ id: "artist-nomico", creditName: "nomico", roles: ["vocal"] },
-			],
-		},
-		{
-			trackId: "track-3",
-			trackName: "きゅっとして☆フランドール",
-			release: {
-				id: "rel-3",
-				name: "東方萃翠酒酔",
-				releaseDate: "2007-05-20",
-			},
-			circles: [{ id: "circle-silver", name: "Silver Forest" }],
-			artists: [
-				{ id: "artist-nyu", creditName: "NYO", roles: ["arrange"] },
-				{ id: "artist-aki", creditName: "Aki", roles: ["vocal"] },
-			],
-		},
-		{
-			trackId: "track-4",
-			trackName: "U.N. Owen was her? (eurobeat remix)",
-			release: {
-				id: "rel-4",
-				name: "Toho Eurobeat Vol.1",
-				releaseDate: "2009-12-30",
-			},
-			circles: [{ id: "circle-aands", name: "A-One" }],
-			artists: [
-				{ id: "artist-ysk", creditName: "ELEMENTAS", roles: ["arrange"] },
-			],
-		},
-		{
-			trackId: "track-5",
-			trackName: "フランドール・S",
-			release: {
-				id: "rel-5",
-				name: "東方紅魔狂 〜 Scarlet Arrows",
-				releaseDate: "2010-03-14",
-			},
-			circles: [{ id: "circle-cool", name: "COOL&CREATE" }],
-			artists: [
-				{
-					id: "artist-beatmario",
-					creditName: "ビートまりお",
-					roles: ["arrange", "vocal"],
-				},
-			],
+			id: "sl-3",
+			officialSongId: "02010013",
+			platformCode: "youtube",
+			url: "https://www.youtube.com/results?search_query=%E4%BA%A1%E3%81%8D%E7%8E%8B%E5%A5%B3%E3%81%AE%E7%82%BA%E3%81%AE%E3%82%BB%E3%83%97%E3%83%86%E3%83%83%E3%83%88",
+			sortOrder: 1,
 		},
 	],
 };
@@ -240,14 +83,31 @@ const roleNames: Record<string, string> = {
 function OriginalSongDetailPage() {
 	const { id } = Route.useParams();
 
-	// モックデータから取得
-	const song = mockOfficialSongs[id];
-	const parentWork = song ? mockParentWorks[song.officialWorkId] : null;
+	// 共有モックデータから取得
+	const song = getSongById(id);
+	const work = song ? getWorkById(song.productId) : undefined;
+	const arrangeCount = song ? getArrangeCount(song.id) : 0;
 	const links = mockSongLinks[id] || [];
-	const arranges = mockArranges[id] || [];
+	const arranges = getMockArrangeTracks(id);
+
+	// 同作品の他の楽曲（ナビゲーション用）
+	const siblingNavigation = useMemo(() => {
+		if (!song || !work) return { prev: undefined, next: undefined };
+
+		const workSongs = getSongsByWorkId(work.id);
+		const currentIndex = workSongs.findIndex((s) => s.id === song.id);
+
+		return {
+			prev: currentIndex > 0 ? workSongs[currentIndex - 1] : undefined,
+			next:
+				currentIndex < workSongs.length - 1
+					? workSongs[currentIndex + 1]
+					: undefined,
+		};
+	}, [song, work]);
 
 	// 曲が見つからない場合
-	if (!song || !parentWork) {
+	if (!song || !work) {
 		return (
 			<div className="space-y-6">
 				<PublicBreadcrumb
@@ -271,7 +131,11 @@ function OriginalSongDetailPage() {
 			<PublicBreadcrumb
 				items={[
 					{ label: "原曲", href: "/original-songs" },
-					{ label: song.nameJa },
+					{
+						label: work.shortName,
+						href: `/original-songs?type=${work.productType}&work=${work.id}`,
+					},
+					{ label: song.name },
 				]}
 			/>
 
@@ -281,32 +145,26 @@ function OriginalSongDetailPage() {
 					<div className="space-y-2">
 						<div className="flex flex-wrap items-center gap-2">
 							<span className="badge badge-outline badge-lg">
-								Track {song.trackNumber?.toString().padStart(2, "0")}
+								Track {song.trackNumber.toString().padStart(2, "0")}
 							</span>
-							<h1 className="font-bold text-2xl sm:text-3xl">{song.nameJa}</h1>
+							<h1 className="font-bold text-2xl sm:text-3xl">{song.name}</h1>
 						</div>
-						{song.nameEn && (
-							<p className="text-base-content/70">{song.nameEn}</p>
-						)}
 						<div className="flex flex-wrap items-center gap-4 text-base-content/60 text-sm">
 							<Link
 								to="/official-works/$id"
-								params={{ id: parentWork.id }}
+								params={{ id: work.id }}
 								className="flex items-center gap-1 hover:text-primary"
 							>
 								<Disc3 className="size-4" />
-								{parentWork.nameJa}
+								{work.name}
 							</Link>
-							{song.composerName && (
+							{song.composer && (
 								<span className="flex items-center gap-1">
 									<Music className="size-4" />
-									作曲: {song.composerName}
+									作曲: {song.composer}
 								</span>
 							)}
 						</div>
-						{song.notes && (
-							<p className="text-base-content/60 text-sm">{song.notes}</p>
-						)}
 					</div>
 
 					{/* 外部リンク */}
@@ -334,12 +192,46 @@ function OriginalSongDetailPage() {
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<TrendingUp className="size-5" />
 							<span className="font-bold text-2xl">
-								{arranges.length.toLocaleString()}
+								{arrangeCount.toLocaleString()}
 							</span>
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">アレンジ数</p>
 					</div>
 				</div>
+			</div>
+
+			{/* 前後の楽曲ナビゲーション */}
+			<div className="flex items-center justify-between gap-4">
+				{siblingNavigation.prev ? (
+					<Link
+						to="/original-songs/$id"
+						params={{ id: siblingNavigation.prev.id }}
+						className="btn btn-ghost btn-sm gap-1"
+					>
+						<ChevronLeft className="size-4" />
+						<span className="hidden sm:inline">
+							{siblingNavigation.prev.name}
+						</span>
+						<span className="sm:hidden">前の曲</span>
+					</Link>
+				) : (
+					<div />
+				)}
+				{siblingNavigation.next ? (
+					<Link
+						to="/original-songs/$id"
+						params={{ id: siblingNavigation.next.id }}
+						className="btn btn-ghost btn-sm gap-1"
+					>
+						<span className="hidden sm:inline">
+							{siblingNavigation.next.name}
+						</span>
+						<span className="sm:hidden">次の曲</span>
+						<ChevronRight className="size-4" />
+					</Link>
+				) : (
+					<div />
+				)}
 			</div>
 
 			{/* アレンジ一覧 */}

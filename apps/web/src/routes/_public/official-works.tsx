@@ -1,176 +1,168 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { BookOpen, Disc3, Gamepad2, Music } from "lucide-react";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { BookOpen, Disc3, Gamepad2, Music, Package } from "lucide-react";
+import { useMemo } from "react";
 import {
+	calculateTotalPages,
 	EmptyState,
+	Pagination,
 	PublicBreadcrumb,
+	paginateData,
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import {
+	getWorksByProductType,
+	getWorkWithStats,
+	productTypes,
+} from "@/mocks/official";
+import type { OfficialWorkWithStats, ProductType } from "@/types/official";
+
+// =============================================================================
+// URL パラメータの定義と検証
+// =============================================================================
+
+interface OfficialWorksSearchParams {
+	type?: ProductType | "all";
+	page?: number;
+	view?: ViewMode;
+}
+
+const PRODUCT_TYPES = [
+	"pc98",
+	"windows",
+	"zuns_music_collection",
+	"akyus_untouched_score",
+	"commercial_books",
+	"tasofro",
+	"other",
+] as const;
+
+function isValidProductType(value: unknown): value is ProductType | "all" {
+	if (typeof value !== "string") return false;
+	return value === "all" || PRODUCT_TYPES.includes(value as ProductType);
+}
+
+function parseTypeParam(value: unknown): ProductType | "all" {
+	return isValidProductType(value) ? value : "all";
+}
+
+function parsePageParam(value: unknown): number {
+	if (typeof value === "number" && Number.isInteger(value) && value >= 1) {
+		return value;
+	}
+	if (typeof value === "string") {
+		const parsed = Number.parseInt(value, 10);
+		if (!Number.isNaN(parsed) && parsed >= 1) return parsed;
+	}
+	return 1;
+}
 
 export const Route = createFileRoute("/_public/official-works")({
 	component: OfficialWorksPage,
+	validateSearch: (
+		search: Record<string, unknown>,
+	): OfficialWorksSearchParams => {
+		return {
+			type: parseTypeParam(search.type),
+			page: parsePageParam(search.page),
+			view:
+				search.view === "grid" || search.view === "list" ? search.view : "list",
+		};
+	},
 });
 
-const STORAGE_KEY_VIEW = "official-works-view-mode";
+// =============================================================================
+// カテゴリ設定
+// =============================================================================
 
-// 公式作品のカテゴリ
-type WorkCategory = "all" | "game" | "music" | "book";
-
-interface OfficialWork {
-	id: string;
-	title: string;
-	titleJp: string;
-	category: Exclude<WorkCategory, "all">;
-	releaseDate: string;
-	songCount: number;
+interface CategoryConfig {
+	label: string;
+	icon: React.ReactNode;
+	badgeClass: string;
 }
 
-// モックデータ
-const mockOfficialWorks: OfficialWork[] = [
-	// ゲーム作品
-	{
-		id: "th06",
-		title: "Embodiment of Scarlet Devil",
-		titleJp: "東方紅魔郷",
-		category: "game",
-		releaseDate: "2002-08-11",
-		songCount: 17,
+const categoryConfig: Record<ProductType | "all", CategoryConfig> = {
+	all: { label: "すべて", icon: null, badgeClass: "" },
+	pc98: {
+		label: "PC-98",
+		icon: <Gamepad2 className="size-4" />,
+		badgeClass: "badge-primary",
 	},
-	{
-		id: "th07",
-		title: "Perfect Cherry Blossom",
-		titleJp: "東方妖々夢",
-		category: "game",
-		releaseDate: "2003-08-17",
-		songCount: 19,
+	windows: {
+		label: "Windows",
+		icon: <Gamepad2 className="size-4" />,
+		badgeClass: "badge-primary",
 	},
-	{
-		id: "th08",
-		title: "Imperishable Night",
-		titleJp: "東方永夜抄",
-		category: "game",
-		releaseDate: "2004-08-15",
-		songCount: 21,
+	zuns_music_collection: {
+		label: "ZUN's Music Collection",
+		icon: <Disc3 className="size-4" />,
+		badgeClass: "badge-secondary",
 	},
-	{
-		id: "th10",
-		title: "Mountain of Faith",
-		titleJp: "東方風神録",
-		category: "game",
-		releaseDate: "2007-08-17",
-		songCount: 18,
+	akyus_untouched_score: {
+		label: "幺樂団の歴史",
+		icon: <Disc3 className="size-4" />,
+		badgeClass: "badge-secondary",
 	},
-	{
-		id: "th11",
-		title: "Subterranean Animism",
-		titleJp: "東方地霊殿",
-		category: "game",
-		releaseDate: "2008-08-16",
-		songCount: 17,
+	commercial_books: {
+		label: "商業書籍",
+		icon: <BookOpen className="size-4" />,
+		badgeClass: "badge-accent",
 	},
-	{
-		id: "th17",
-		title: "Wily Beast and Weakest Creature",
-		titleJp: "東方鬼形獣",
-		category: "game",
-		releaseDate: "2019-08-12",
-		songCount: 18,
+	tasofro: {
+		label: "黄昏フロンティア",
+		icon: <Gamepad2 className="size-4" />,
+		badgeClass: "badge-info",
 	},
-	{
-		id: "th18",
-		title: "Unconnected Marketeers",
-		titleJp: "東方虹龍洞",
-		category: "game",
-		releaseDate: "2021-05-04",
-		songCount: 17,
+	other: {
+		label: "その他",
+		icon: <Package className="size-4" />,
+		badgeClass: "badge-ghost",
 	},
-	{
-		id: "th19",
-		title: "Unfinished Dream of All Living Ghost",
-		titleJp: "東方獣王園",
-		category: "game",
-		releaseDate: "2023-08-13",
-		songCount: 18,
-	},
-	// 音楽CD
-	{
-		id: "akyuu",
-		title: "Akyu's Untouched Score vol.1",
-		titleJp: "幺樂団の歴史1",
-		category: "music",
-		releaseDate: "2006-12-31",
-		songCount: 11,
-	},
-	{
-		id: "dolls_in_pseudo",
-		title: "Dolls in Pseudo Paradise",
-		titleJp: "蓬莱人形",
-		category: "music",
-		releaseDate: "2002-08-11",
-		songCount: 13,
-	},
-	{
-		id: "changeability",
-		title: "Changeability of Strange Dream",
-		titleJp: "夢違科学世紀",
-		category: "music",
-		releaseDate: "2004-12-30",
-		songCount: 10,
-	},
-	// 書籍
-	{
-		id: "pmiss",
-		title: "Perfect Memento in Strict Sense",
-		titleJp: "東方求聞史紀",
-		category: "book",
-		releaseDate: "2006-12-27",
-		songCount: 0,
-	},
-	{
-		id: "symposium",
-		title: "Symposium of Post-mysticism",
-		titleJp: "東方求聞口授",
-		category: "book",
-		releaseDate: "2012-04-27",
-		songCount: 0,
-	},
-];
-
-const categoryConfig: Record<
-	WorkCategory,
-	{ label: string; icon: React.ReactNode }
-> = {
-	all: { label: "すべて", icon: null },
-	game: { label: "ゲーム", icon: <Gamepad2 className="size-4" /> },
-	music: { label: "音楽CD", icon: <Disc3 className="size-4" /> },
-	book: { label: "書籍", icon: <BookOpen className="size-4" /> },
 };
 
-const categoryBadgeClass: Record<Exclude<WorkCategory, "all">, string> = {
-	game: "badge-primary",
-	music: "badge-secondary",
-	book: "badge-accent",
-};
+// =============================================================================
+// ページサイズ
+// =============================================================================
+const PAGE_SIZE = 20;
+
+// =============================================================================
+// メインコンポーネント
+// =============================================================================
 
 function OfficialWorksPage() {
-	const [viewMode, setViewModeState] = useState<ViewMode>("list");
-	const [category, setCategory] = useState<WorkCategory>("all");
+	const navigate = useNavigate({ from: Route.fullPath });
+	const { type = "all", page = 1, view = "list" } = Route.useSearch();
 
-	useEffect(() => {
-		const saved = localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode;
-		if (saved) setViewModeState(saved);
-	}, []);
+	// カテゴリでフィルタリングした作品一覧（統計付き）
+	const worksWithStats = useMemo(() => {
+		const works = getWorksByProductType(type);
+		return works.map(getWorkWithStats);
+	}, [type]);
 
-	const setViewMode = (view: ViewMode) => {
-		setViewModeState(view);
-		localStorage.setItem(STORAGE_KEY_VIEW, view);
+	// ページネーション
+	const totalPages = calculateTotalPages(worksWithStats.length, PAGE_SIZE);
+	const paginatedWorks = paginateData(worksWithStats, page, PAGE_SIZE);
+
+	// カテゴリ変更
+	const handleTypeChange = (newType: ProductType | "all") => {
+		navigate({
+			search: { type: newType, page: 1, view },
+		});
 	};
 
-	const filteredWorks =
-		category === "all"
-			? mockOfficialWorks
-			: mockOfficialWorks.filter((work) => work.category === category);
+	// ページ変更
+	const handlePageChange = (newPage: number) => {
+		navigate({
+			search: { type, page: newPage, view },
+		});
+	};
+
+	// 表示モード変更
+	const handleViewChange = (newView: ViewMode) => {
+		navigate({
+			search: { type, page, view: newView },
+		});
+	};
 
 	return (
 		<div className="space-y-6">
@@ -181,112 +173,162 @@ function OfficialWorksPage() {
 				<div>
 					<h1 className="font-bold text-3xl">公式作品一覧</h1>
 					<p className="mt-1 text-base-content/70">
-						東方Project公式作品 · {filteredWorks.length}件
+						東方Project公式作品 · {worksWithStats.length}件
 					</p>
 				</div>
-				<ViewToggle value={viewMode} onChange={setViewMode} />
+				<ViewToggle value={view} onChange={handleViewChange} />
 			</div>
 
 			{/* カテゴリフィルター */}
-			<div className="flex flex-wrap gap-2">
-				{(Object.keys(categoryConfig) as WorkCategory[]).map((cat) => (
+			<div className="space-y-2">
+				<h2 className="font-medium text-base-content/70 text-sm">
+					カテゴリを選択
+				</h2>
+				<div className="flex flex-wrap gap-2">
 					<button
-						key={cat}
 						type="button"
-						className={`btn btn-sm gap-2 ${category === cat ? "btn-primary" : "btn-ghost"}`}
-						onClick={() => setCategory(cat)}
-						aria-pressed={category === cat}
+						className={`btn btn-sm ${type === "all" ? "btn-primary" : "btn-ghost"}`}
+						onClick={() => handleTypeChange("all")}
+						aria-pressed={type === "all"}
 					>
-						{categoryConfig[cat].icon}
-						{categoryConfig[cat].label}
+						すべて
 					</button>
-				))}
+					{productTypes.map((pt) => (
+						<button
+							key={pt.code}
+							type="button"
+							className={`btn btn-sm gap-1 ${type === pt.code ? "btn-primary" : "btn-ghost"}`}
+							onClick={() => handleTypeChange(pt.code)}
+							aria-pressed={type === pt.code}
+						>
+							{categoryConfig[pt.code].icon}
+							{pt.name}
+						</button>
+					))}
+				</div>
 			</div>
 
 			{/* 作品一覧 */}
-			{filteredWorks.length === 0 ? (
+			{paginatedWorks.length === 0 ? (
 				<EmptyState
 					type="filter"
 					title="該当する作品がありません"
 					description="別のカテゴリを選択してお試しください"
 				/>
-			) : viewMode === "grid" ? (
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{filteredWorks.map((work) => (
-						<Link
-							key={work.id}
-							to="/official-works/$id"
-							params={{ id: work.id }}
-							className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
-						>
-							<div className="card-body p-4">
-								<div className="flex items-start justify-between gap-2">
-									<h3 className="card-title text-base">{work.titleJp}</h3>
-									<span
-										className={`badge badge-sm ${categoryBadgeClass[work.category]}`}
-									>
-										{categoryConfig[work.category].label}
-									</span>
-								</div>
-								<p className="text-base-content/70 text-sm">{work.title}</p>
-								<div className="mt-2 flex items-center gap-4 text-base-content/50 text-sm">
-									<span>{work.releaseDate.split("-")[0]}年</span>
-									{work.songCount > 0 && (
-										<span className="flex items-center gap-1">
-											<Music className="size-3" aria-hidden="true" />
-											{work.songCount}曲
-										</span>
-									)}
-								</div>
-							</div>
-						</Link>
-					))}
-				</div>
 			) : (
-				<div className="overflow-x-auto">
-					<table className="table">
-						<thead>
-							<tr>
-								<th>タイトル</th>
-								<th>カテゴリ</th>
-								<th>発売年</th>
-								<th>曲数</th>
-							</tr>
-						</thead>
-						<tbody>
-							{filteredWorks.map((work) => (
-								<tr key={work.id} className="hover:bg-base-200/50">
-									<td>
-										<Link
-											to="/official-works/$id"
-											params={{ id: work.id }}
-											className="hover:text-primary"
-										>
-											<div className="font-medium">{work.titleJp}</div>
-											<div className="text-base-content/70 text-sm">
-												{work.title}
-											</div>
-										</Link>
-									</td>
-									<td>
-										<span
-											className={`badge badge-sm ${categoryBadgeClass[work.category]}`}
-										>
-											{categoryConfig[work.category].label}
-										</span>
-									</td>
-									<td className="text-base-content/70">
-										{work.releaseDate.split("-")[0]}年
-									</td>
-									<td className="text-base-content/70">
-										{work.songCount > 0 ? `${work.songCount}曲` : "-"}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+				<>
+					{view === "grid" ? (
+						<WorksGridView works={paginatedWorks} />
+					) : (
+						<WorksListView works={paginatedWorks} />
+					)}
+
+					{/* ページネーション */}
+					{totalPages > 1 && (
+						<Pagination
+							currentPage={page}
+							totalPages={totalPages}
+							onPageChange={handlePageChange}
+						/>
+					)}
+				</>
 			)}
+		</div>
+	);
+}
+
+// =============================================================================
+// グリッドビュー
+// =============================================================================
+
+interface WorksViewProps {
+	works: OfficialWorkWithStats[];
+}
+
+function WorksGridView({ works }: WorksViewProps) {
+	return (
+		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+			{works.map((work) => (
+				<Link
+					key={work.id}
+					to="/official-works/$id"
+					params={{ id: work.id }}
+					className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+				>
+					<div className="card-body p-4">
+						<div className="flex items-start justify-between gap-2">
+							<h3 className="card-title text-base">{work.shortName}</h3>
+							<span
+								className={`badge badge-sm ${categoryConfig[work.productType].badgeClass}`}
+							>
+								{categoryConfig[work.productType].label}
+							</span>
+						</div>
+						<p className="line-clamp-2 text-base-content/70 text-sm">
+							{work.name}
+						</p>
+						<div className="mt-2 flex items-center gap-4 text-base-content/50 text-sm">
+							<span>No.{work.seriesNumber}</span>
+							{work.songCount > 0 && (
+								<span className="flex items-center gap-1">
+									<Music className="size-3" aria-hidden="true" />
+									{work.songCount}曲
+								</span>
+							)}
+						</div>
+					</div>
+				</Link>
+			))}
+		</div>
+	);
+}
+
+// =============================================================================
+// リストビュー
+// =============================================================================
+
+function WorksListView({ works }: WorksViewProps) {
+	return (
+		<div className="overflow-x-auto">
+			<table className="table">
+				<thead>
+					<tr>
+						<th>No.</th>
+						<th>タイトル</th>
+						<th>カテゴリ</th>
+						<th>曲数</th>
+					</tr>
+				</thead>
+				<tbody>
+					{works.map((work) => (
+						<tr key={work.id} className="hover:bg-base-200/50">
+							<td className="w-16 text-base-content/70">{work.seriesNumber}</td>
+							<td>
+								<Link
+									to="/official-works/$id"
+									params={{ id: work.id }}
+									className="hover:text-primary"
+								>
+									<div className="font-medium">{work.shortName}</div>
+									<div className="line-clamp-1 text-base-content/70 text-sm">
+										{work.name}
+									</div>
+								</Link>
+							</td>
+							<td>
+								<span
+									className={`badge badge-sm ${categoryConfig[work.productType].badgeClass}`}
+								>
+									{categoryConfig[work.productType].label}
+								</span>
+							</td>
+							<td className="text-base-content/70">
+								{work.songCount > 0 ? `${work.songCount}曲` : "-"}
+							</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
 		</div>
 	);
 }
