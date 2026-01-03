@@ -1,24 +1,40 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Music, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
+	calculateTotalPages,
 	EmptyState,
+	Pagination,
 	PublicBreadcrumb,
-	type ScriptCategory,
-	ScriptFilter,
+	paginateData,
+	TwoStageScriptFilter,
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { isInKanaRow, type KanaRow } from "@/lib/kana-utils";
+import {
+	type AlphabetInitial,
+	getInitialScripts,
+	type InitialScript,
+	parseInitialParam,
+	parsePageParam,
+	parseRowParam,
+	parseScriptParam,
+	type ScriptCategory,
+} from "@/lib/script-filter-utils";
 
-export const Route = createFileRoute("/_public/artists")({
-	component: ArtistsPage,
-});
-
-const STORAGE_KEY_VIEW = "artists-view-mode";
-const STORAGE_KEY_SCRIPT = "artists-script-filter";
-const STORAGE_KEY_ROLE = "artists-role-filter";
+// =============================================================================
+// 役割フィルター
+// =============================================================================
 
 type RoleType = "all" | "arrange" | "lyrics" | "vocal";
+
+const ROLE_TYPES: readonly RoleType[] = [
+	"all",
+	"arrange",
+	"lyrics",
+	"vocal",
+] as const;
 
 interface RoleConfig {
 	label: string;
@@ -37,251 +53,436 @@ const roleConfig: Record<RoleType, RoleConfig> = {
 	vocal: { label: "ボーカル", shortLabel: "Vo", badgeClass: "badge-accent" },
 };
 
+function isValidRoleType(value: unknown): value is RoleType {
+	return typeof value === "string" && ROLE_TYPES.includes(value as RoleType);
+}
+
+function parseRoleParam(value: unknown): RoleType {
+	return isValidRoleType(value) ? value : "all";
+}
+
+// =============================================================================
+// URL パラメータの定義と検証
+// =============================================================================
+
+interface ArtistsSearchParams {
+	script?: ScriptCategory;
+	initial?: string; // A-Z
+	row?: string; // あ, か, さ...
+	role?: RoleType;
+	page?: number;
+	view?: ViewMode;
+}
+
+export const Route = createFileRoute("/_public/artists")({
+	component: ArtistsPage,
+	validateSearch: (search: Record<string, unknown>): ArtistsSearchParams => {
+		const script = parseScriptParam(search.script);
+		return {
+			script,
+			initial:
+				script === "alphabet" ? parseInitialParam(search.initial) : undefined,
+			row: script === "kana" ? parseRowParam(search.row) : undefined,
+			role: parseRoleParam(search.role),
+			page: parsePageParam(search.page),
+			view:
+				search.view === "grid" || search.view === "list" ? search.view : "list",
+		};
+	},
+});
+
+// =============================================================================
+// モックデータ（DBスキーマ準拠）
+// =============================================================================
+
 interface Artist {
 	id: string;
 	name: string;
-	nameReading: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	sortName: string;
+	nameInitial: string | null;
+	initialScript: InitialScript;
 	roles: Exclude<RoleType, "all">[];
 	trackCount: number;
 	releaseCount: number;
-	scriptCategory: Exclude<ScriptCategory, "all">;
 }
 
-// モックデータ
 const mockArtists: Artist[] = [
 	{
 		id: "arm",
 		name: "ARM",
-		nameReading: "あーむ",
+		nameJa: "ARM",
+		nameEn: "ARM",
+		sortName: "ARM",
+		nameInitial: "A",
+		initialScript: "latin",
 		roles: ["arrange"],
 		trackCount: 456,
 		releaseCount: 78,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "miko",
 		name: "miko",
-		nameReading: "みこ",
+		nameJa: "みこ",
+		nameEn: "miko",
+		sortName: "miko",
+		nameInitial: "M",
+		initialScript: "latin",
 		roles: ["vocal"],
 		trackCount: 234,
 		releaseCount: 45,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "beatmario",
 		name: "ビートまりお",
-		nameReading: "びーとまりお",
+		nameJa: "ビートまりお",
+		nameEn: "Beatmario",
+		sortName: "びーとまりお",
+		nameInitial: "ひ",
+		initialScript: "katakana",
 		roles: ["arrange", "vocal"],
 		trackCount: 389,
 		releaseCount: 67,
-		scriptCategory: "kana",
 	},
 	{
 		id: "ranko",
 		name: "ランコ",
-		nameReading: "らんこ",
+		nameJa: "ランコ",
+		nameEn: "Ranko",
+		sortName: "らんこ",
+		nameInitial: "ら",
+		initialScript: "katakana",
 		roles: ["vocal"],
 		trackCount: 312,
 		releaseCount: 56,
-		scriptCategory: "kana",
 	},
 	{
 		id: "comp",
 		name: "Comp",
-		nameReading: "こんぷ",
+		nameJa: "コンプ",
+		nameEn: "Comp",
+		sortName: "Comp",
+		nameInitial: "C",
+		initialScript: "latin",
 		roles: ["arrange"],
 		trackCount: 278,
 		releaseCount: 42,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "recog",
 		name: "REDALiCE",
-		nameReading: "れだりす",
+		nameJa: "レダリス",
+		nameEn: "REDALiCE",
+		sortName: "REDALiCE",
+		nameInitial: "R",
+		initialScript: "latin",
 		roles: ["arrange"],
 		trackCount: 423,
 		releaseCount: 89,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "nayuta",
 		name: "ナユタ",
-		nameReading: "なゆた",
+		nameJa: "ナユタ",
+		nameEn: "Nayuta",
+		sortName: "なゆた",
+		nameInitial: "な",
+		initialScript: "katakana",
 		roles: ["vocal"],
 		trackCount: 189,
 		releaseCount: 34,
-		scriptCategory: "kana",
 	},
 	{
 		id: "kouki",
 		name: "幽閉サテライト",
-		nameReading: "ゆうへいさてらいと",
+		nameJa: "幽閉サテライト",
+		nameEn: "Yuuhei Satellite",
+		sortName: "ゆうへいさてらいと",
+		nameInitial: null,
+		initialScript: "kanji",
 		roles: ["arrange", "lyrics"],
 		trackCount: 567,
 		releaseCount: 98,
-		scriptCategory: "kanji",
 	},
 	{
 		id: "zun",
 		name: "ZUN",
-		nameReading: "ずん",
+		nameJa: "ZUN",
+		nameEn: "ZUN",
+		sortName: "ZUN",
+		nameInitial: "Z",
+		initialScript: "latin",
 		roles: ["arrange"],
 		trackCount: 789,
 		releaseCount: 34,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "marika",
 		name: "まらしぃ",
-		nameReading: "まらしぃ",
+		nameJa: "まらしぃ",
+		nameEn: "Marasy",
+		sortName: "まらしぃ",
+		nameInitial: "ま",
+		initialScript: "hiragana",
 		roles: ["arrange"],
 		trackCount: 234,
 		releaseCount: 45,
-		scriptCategory: "kana",
 	},
 	{
 		id: "senya",
 		name: "せにゃ",
-		nameReading: "せにゃ",
+		nameJa: "せにゃ",
+		nameEn: "Senya",
+		sortName: "せにゃ",
+		nameInitial: "せ",
+		initialScript: "hiragana",
 		roles: ["vocal", "lyrics"],
 		trackCount: 298,
 		releaseCount: 52,
-		scriptCategory: "kana",
 	},
 	{
 		id: "merami",
 		name: "めらみぽっぷ",
-		nameReading: "めらみぽっぷ",
+		nameJa: "めらみぽっぷ",
+		nameEn: "Meramipop",
+		sortName: "めらみぽっぷ",
+		nameInitial: "め",
+		initialScript: "hiragana",
 		roles: ["vocal"],
 		trackCount: 412,
 		releaseCount: 78,
-		scriptCategory: "kana",
 	},
 	{
 		id: "hachijo",
 		name: "8-3",
-		nameReading: "はちさん",
+		nameJa: "ハチサン",
+		nameEn: "8-3",
+		sortName: "8-3",
+		nameInitial: null,
+		initialScript: "digit",
 		roles: ["arrange"],
 		trackCount: 178,
 		releaseCount: 29,
-		scriptCategory: "symbol",
 	},
 	{
 		id: "kissing",
 		name: "Kissing the Mirror",
-		nameReading: "きっしんぐざみらー",
+		nameJa: "キッシングザミラー",
+		nameEn: "Kissing the Mirror",
+		sortName: "Kissing the Mirror",
+		nameInitial: "K",
+		initialScript: "latin",
 		roles: ["arrange", "vocal"],
 		trackCount: 234,
 		releaseCount: 41,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "tamaonsen",
 		name: "魂音泉",
-		nameReading: "たまおんせん",
+		nameJa: "魂音泉",
+		nameEn: "Tama Onsen",
+		sortName: "たまおんせん",
+		nameInitial: null,
+		initialScript: "kanji",
 		roles: ["arrange", "lyrics", "vocal"],
 		trackCount: 523,
 		releaseCount: 87,
-		scriptCategory: "kanji",
 	},
 	{
 		id: "yukina",
 		name: "yukina",
-		nameReading: "ゆきな",
+		nameJa: "ゆきな",
+		nameEn: "yukina",
+		sortName: "yukina",
+		nameInitial: "Y",
+		initialScript: "latin",
 		roles: ["vocal"],
 		trackCount: 189,
 		releaseCount: 32,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "masayoshi",
 		name: "Masayoshi Minoshima",
-		nameReading: "みのしままさよし",
+		nameJa: "みのしままさよし",
+		nameEn: "Masayoshi Minoshima",
+		sortName: "Masayoshi Minoshima",
+		nameInitial: "M",
+		initialScript: "latin",
 		roles: ["arrange"],
 		trackCount: 567,
 		releaseCount: 89,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "taishi",
 		name: "タイシ",
-		nameReading: "たいし",
+		nameJa: "タイシ",
+		nameEn: "Taishi",
+		sortName: "たいし",
+		nameInitial: "た",
+		initialScript: "katakana",
 		roles: ["arrange"],
 		trackCount: 345,
 		releaseCount: 56,
-		scriptCategory: "kana",
 	},
 	{
 		id: "nachi",
 		name: "nachi",
-		nameReading: "なち",
+		nameJa: "なち",
+		nameEn: "nachi",
+		sortName: "nachi",
+		nameInitial: "N",
+		initialScript: "latin",
 		roles: ["vocal"],
 		trackCount: 276,
 		releaseCount: 48,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "azuki",
 		name: "あずき",
-		nameReading: "あずき",
+		nameJa: "あずき",
+		nameEn: "Azuki",
+		sortName: "あずき",
+		nameInitial: "あ",
+		initialScript: "hiragana",
 		roles: ["vocal", "lyrics"],
 		trackCount: 223,
 		releaseCount: 41,
-		scriptCategory: "kana",
 	},
 ];
 
+// =============================================================================
+// コンポーネント
+// =============================================================================
+
 function ArtistsPage() {
-	const [viewMode, setViewModeState] = useState<ViewMode>("list");
-	const [scriptFilter, setScriptFilterState] = useState<ScriptCategory>("all");
-	const [roleFilter, setRoleFilterState] = useState<RoleType>("all");
+	const navigate = useNavigate();
+	const {
+		script = "all",
+		initial,
+		row,
+		role = "all",
+		page = 1,
+		view = "list",
+	} = Route.useSearch();
 
-	useEffect(() => {
-		const savedView = localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode;
-		if (savedView) setViewModeState(savedView);
-		const savedScript = localStorage.getItem(
-			STORAGE_KEY_SCRIPT,
-		) as ScriptCategory;
-		if (savedScript) setScriptFilterState(savedScript);
-		const savedRole = localStorage.getItem(STORAGE_KEY_ROLE) as RoleType;
-		if (savedRole) setRoleFilterState(savedRole);
-	}, []);
+	// 型安全なパラメータ
+	const scriptCategory = script as ScriptCategory;
+	const alphabetInitial = initial as AlphabetInitial | undefined;
+	const kanaRow = row as KanaRow | undefined;
+	const roleFilter = role as RoleType;
 
-	const setViewMode = (view: ViewMode) => {
-		setViewModeState(view);
-		localStorage.setItem(STORAGE_KEY_VIEW, view);
-	};
-
-	const setScriptFilter = (script: ScriptCategory) => {
-		setScriptFilterState(script);
-		localStorage.setItem(STORAGE_KEY_SCRIPT, script);
-	};
-
-	const setRoleFilter = (role: RoleType) => {
-		setRoleFilterState(role);
-		localStorage.setItem(STORAGE_KEY_ROLE, role);
-	};
-
+	// フィルタリング
 	const filteredArtists = useMemo(() => {
-		let artists = mockArtists;
+		let result = mockArtists;
 
-		// 文字種フィルター
-		if (scriptFilter !== "all") {
-			artists = artists.filter(
-				(artist) => artist.scriptCategory === scriptFilter,
+		// 1段目フィルター（initialScriptでフィルター）
+		if (scriptCategory !== "all") {
+			const scripts = getInitialScripts(scriptCategory);
+			result = result.filter((artist) =>
+				scripts.includes(artist.initialScript),
+			);
+		}
+
+		// 2段目フィルター
+		if (scriptCategory === "alphabet" && alphabetInitial) {
+			result = result.filter(
+				(artist) => artist.nameInitial?.toUpperCase() === alphabetInitial,
+			);
+		} else if (scriptCategory === "kana" && kanaRow) {
+			result = result.filter((artist) =>
+				isInKanaRow(artist.nameInitial, kanaRow),
 			);
 		}
 
 		// 役割フィルター
 		if (roleFilter !== "all") {
-			artists = artists.filter((artist) => artist.roles.includes(roleFilter));
+			result = result.filter((artist) => artist.roles.includes(roleFilter));
 		}
 
 		// トラック数で降順ソート
-		return [...artists].sort((a, b) => b.trackCount - a.trackCount);
-	}, [scriptFilter, roleFilter]);
+		return [...result].sort((a, b) => b.trackCount - a.trackCount);
+	}, [scriptCategory, alphabetInitial, kanaRow, roleFilter]);
 
-	const roleFilterOptions: RoleType[] = ["all", "arrange", "lyrics", "vocal"];
+	// ページネーション
+	const totalPages = calculateTotalPages(filteredArtists.length);
+	const paginatedArtists = paginateData(filteredArtists, page);
+
+	// ナビゲーションハンドラー
+	const handleScriptCategoryChange = (newScript: ScriptCategory) => {
+		navigate({
+			to: "/artists",
+			search: { script: newScript, role: roleFilter, page: 1, view },
+		});
+	};
+
+	const handleAlphabetInitialChange = (newInitial: AlphabetInitial | null) => {
+		navigate({
+			to: "/artists",
+			search: {
+				script: scriptCategory,
+				initial: newInitial ?? undefined,
+				role: roleFilter,
+				page: 1,
+				view,
+			},
+		});
+	};
+
+	const handleKanaRowChange = (newRow: KanaRow | null) => {
+		navigate({
+			to: "/artists",
+			search: {
+				script: scriptCategory,
+				row: newRow ?? undefined,
+				role: roleFilter,
+				page: 1,
+				view,
+			},
+		});
+	};
+
+	const handleRoleChange = (newRole: RoleType) => {
+		navigate({
+			to: "/artists",
+			search: {
+				script: scriptCategory,
+				initial: alphabetInitial,
+				row: kanaRow,
+				role: newRole,
+				page: 1,
+				view,
+			},
+		});
+	};
+
+	const handlePageChange = (newPage: number) => {
+		navigate({
+			to: "/artists",
+			search: {
+				script: scriptCategory,
+				initial: alphabetInitial,
+				row: kanaRow,
+				role: roleFilter,
+				page: newPage,
+				view,
+			},
+		});
+	};
+
+	const handleViewChange = (newView: ViewMode) => {
+		navigate({
+			to: "/artists",
+			search: {
+				script: scriptCategory,
+				initial: alphabetInitial,
+				row: kanaRow,
+				role: roleFilter,
+				page,
+				view: newView,
+			},
+		});
+	};
 
 	return (
 		<div className="space-y-6">
@@ -295,50 +496,55 @@ function ArtistsPage() {
 						アーティスト · {filteredArtists.length}件
 					</p>
 				</div>
-				<ViewToggle value={viewMode} onChange={setViewMode} />
+				<ViewToggle value={view} onChange={handleViewChange} />
 			</div>
 
 			{/* フィルター */}
-			<div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:gap-8">
-				{/* 文字種フィルター */}
-				<div>
-					<span className="mb-2 block font-medium text-sm">文字種:</span>
-					<ScriptFilter value={scriptFilter} onChange={setScriptFilter} />
-				</div>
-
+			<div className="space-y-4">
 				{/* 役割フィルター */}
 				<div>
 					<span className="mb-2 block font-medium text-sm">役割:</span>
 					<div className="flex flex-wrap gap-2">
-						{roleFilterOptions.map((role) => (
+						{ROLE_TYPES.map((r) => (
 							<button
-								key={role}
+								key={r}
 								type="button"
-								onClick={() => setRoleFilter(role)}
+								onClick={() => handleRoleChange(r)}
 								className={`btn btn-sm ${
-									roleFilter === role
-										? "btn-primary"
-										: "btn-ghost border-base-300"
+									roleFilter === r ? "btn-primary" : "btn-ghost border-base-300"
 								}`}
-								aria-pressed={roleFilter === role}
+								aria-pressed={roleFilter === r}
 							>
-								{roleConfig[role].label}
+								{roleConfig[r].label}
 							</button>
 						))}
 					</div>
 				</div>
+
+				{/* 文字種フィルター（2段階） */}
+				<div>
+					<span className="mb-2 block font-medium text-sm">文字種:</span>
+					<TwoStageScriptFilter
+						scriptCategory={scriptCategory}
+						alphabetInitial={alphabetInitial ?? null}
+						kanaRow={kanaRow ?? null}
+						onScriptCategoryChange={handleScriptCategoryChange}
+						onAlphabetInitialChange={handleAlphabetInitialChange}
+						onKanaRowChange={handleKanaRowChange}
+					/>
+				</div>
 			</div>
 
 			{/* アーティスト一覧 */}
-			{filteredArtists.length === 0 ? (
+			{paginatedArtists.length === 0 ? (
 				<EmptyState
 					type="filter"
 					title="該当するアーティストがありません"
 					description="フィルター条件を変更してお試しください"
 				/>
-			) : viewMode === "grid" ? (
+			) : view === "grid" ? (
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{filteredArtists.map((artist) => (
+					{paginatedArtists.map((artist) => (
 						<Link
 							key={artist.id}
 							to="/artists/$id"
@@ -355,18 +561,18 @@ function ArtistsPage() {
 											{artist.name}
 										</h3>
 										<p className="truncate text-base-content/50 text-sm">
-											{artist.nameReading}
+											{artist.sortName}
 										</p>
 									</div>
 								</div>
 								{/* 役割バッジ */}
 								<div className="mt-2 flex flex-wrap gap-1">
-									{artist.roles.map((role) => (
+									{artist.roles.map((r) => (
 										<span
-											key={role}
-											className={`badge badge-sm ${roleConfig[role].badgeClass}`}
+											key={r}
+											className={`badge badge-sm ${roleConfig[r].badgeClass}`}
 										>
-											{roleConfig[role].shortLabel}
+											{roleConfig[r].shortLabel}
 										</span>
 									))}
 								</div>
@@ -392,7 +598,7 @@ function ArtistsPage() {
 							</tr>
 						</thead>
 						<tbody>
-							{filteredArtists.map((artist) => (
+							{paginatedArtists.map((artist) => (
 								<tr key={artist.id} className="hover:bg-base-200/50">
 									<td>
 										<Link
@@ -409,15 +615,15 @@ function ArtistsPage() {
 											<span className="font-medium">{artist.name}</span>
 										</Link>
 									</td>
-									<td className="text-base-content/70">{artist.nameReading}</td>
+									<td className="text-base-content/70">{artist.sortName}</td>
 									<td>
 										<div className="flex flex-wrap gap-1">
-											{artist.roles.map((role) => (
+											{artist.roles.map((r) => (
 												<span
-													key={role}
-													className={`badge badge-sm ${roleConfig[role].badgeClass}`}
+													key={r}
+													className={`badge badge-sm ${roleConfig[r].badgeClass}`}
 												>
-													{roleConfig[role].shortLabel}
+													{roleConfig[r].shortLabel}
 												</span>
 											))}
 										</div>
@@ -428,6 +634,15 @@ function ArtistsPage() {
 						</tbody>
 					</table>
 				</div>
+			)}
+
+			{/* ページネーション */}
+			{totalPages > 1 && (
+				<Pagination
+					currentPage={page}
+					totalPages={totalPages}
+					onPageChange={handlePageChange}
+				/>
 			)}
 		</div>
 	);

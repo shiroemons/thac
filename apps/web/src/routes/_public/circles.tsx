@@ -1,187 +1,403 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Disc, Music, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import {
+	calculateTotalPages,
 	EmptyState,
+	Pagination,
 	PublicBreadcrumb,
-	type ScriptCategory,
-	ScriptFilter,
+	paginateData,
+	TwoStageScriptFilter,
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { isInKanaRow, type KanaRow } from "@/lib/kana-utils";
+import {
+	type AlphabetInitial,
+	getInitialScripts,
+	type InitialScript,
+	parseInitialParam,
+	parsePageParam,
+	parseRowParam,
+	parseScriptParam,
+	type ScriptCategory,
+} from "@/lib/script-filter-utils";
+
+// =============================================================================
+// URL パラメータの定義と検証
+// =============================================================================
+
+interface CirclesSearchParams {
+	script?: ScriptCategory;
+	initial?: string; // A-Z
+	row?: string; // あ, か, さ...
+	page?: number;
+	view?: ViewMode;
+}
 
 export const Route = createFileRoute("/_public/circles")({
 	component: CirclesPage,
+	validateSearch: (search: Record<string, unknown>): CirclesSearchParams => {
+		const script = parseScriptParam(search.script);
+		return {
+			script,
+			initial:
+				script === "alphabet" ? parseInitialParam(search.initial) : undefined,
+			row: script === "kana" ? parseRowParam(search.row) : undefined,
+			page: parsePageParam(search.page),
+			view:
+				search.view === "grid" || search.view === "list" ? search.view : "list",
+		};
+	},
 });
 
-const STORAGE_KEY_VIEW = "circles-view-mode";
-const STORAGE_KEY_SCRIPT = "circles-script-filter";
+// =============================================================================
+// モックデータ（DBスキーマ準拠）
+// =============================================================================
 
 interface Circle {
 	id: string;
 	name: string;
-	nameReading: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	sortName: string;
+	nameInitial: string | null;
+	initialScript: InitialScript;
 	releaseCount: number;
 	trackCount: number;
-	scriptCategory: Exclude<ScriptCategory, "all">;
 }
 
-// モックデータ
 const mockCircles: Circle[] = [
 	{
 		id: "iosys",
 		name: "IOSYS",
-		nameReading: "いおしす",
+		nameJa: "イオシス",
+		nameEn: "IOSYS",
+		sortName: "IOSYS",
+		nameInitial: "I",
+		initialScript: "latin",
 		releaseCount: 156,
 		trackCount: 1234,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "alstroemeria",
 		name: "Alstroemeria Records",
-		nameReading: "あるすとろめりあれこーず",
+		nameJa: "アルストロメリアレコーズ",
+		nameEn: "Alstroemeria Records",
+		sortName: "Alstroemeria Records",
+		nameInitial: "A",
+		initialScript: "latin",
 		releaseCount: 89,
 		trackCount: 892,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "sound-holic",
 		name: "SOUND HOLIC",
-		nameReading: "さうんどほりっく",
+		nameJa: "サウンドホリック",
+		nameEn: "SOUND HOLIC",
+		sortName: "SOUND HOLIC",
+		nameInitial: "S",
+		initialScript: "latin",
 		releaseCount: 134,
 		trackCount: 1567,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "butaotome",
 		name: "豚乙女",
-		nameReading: "ぶたおとめ",
+		nameJa: "豚乙女",
+		nameEn: "Butaotome",
+		sortName: "ぶたおとめ",
+		nameInitial: null,
+		initialScript: "kanji",
 		releaseCount: 78,
 		trackCount: 689,
-		scriptCategory: "kanji",
 	},
 	{
 		id: "diao-ye-zong",
 		name: "凋叶棕",
-		nameReading: "てぃあおいえつぉん",
+		nameJa: "凋叶棕",
+		nameEn: "Diao ye zong",
+		sortName: "てぃあおいえつぉん",
+		nameInitial: null,
+		initialScript: "kanji",
 		releaseCount: 67,
 		trackCount: 534,
-		scriptCategory: "kanji",
 	},
 	{
 		id: "touhou-jihen",
 		name: "東方事変",
-		nameReading: "とうほうじへん",
+		nameJa: "東方事変",
+		nameEn: null,
+		sortName: "とうほうじへん",
+		nameInitial: null,
+		initialScript: "kanji",
 		releaseCount: 45,
 		trackCount: 423,
-		scriptCategory: "kanji",
 	},
 	{
 		id: "shinra-bansho",
 		name: "森羅万象",
-		nameReading: "しんらばんしょう",
+		nameJa: "森羅万象",
+		nameEn: "Shinra-Bansho",
+		sortName: "しんらばんしょう",
+		nameInitial: null,
+		initialScript: "kanji",
 		releaseCount: 56,
 		trackCount: 478,
-		scriptCategory: "kanji",
 	},
 	{
 		id: "cool-and-create",
 		name: "COOL&CREATE",
-		nameReading: "くーるあんどくりえいと",
+		nameJa: "クール&クリエイト",
+		nameEn: "COOL&CREATE",
+		sortName: "COOL&CREATE",
+		nameInitial: "C",
+		initialScript: "latin",
 		releaseCount: 112,
 		trackCount: 987,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "tamusic",
 		name: "TAMusic",
-		nameReading: "たみゅーじっく",
+		nameJa: "タミュージック",
+		nameEn: "TAMusic",
+		sortName: "TAMusic",
+		nameInitial: "T",
+		initialScript: "latin",
 		releaseCount: 98,
 		trackCount: 1123,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "sekken-ya",
 		name: "石鹸屋",
-		nameReading: "せっけんや",
+		nameJa: "石鹸屋",
+		nameEn: "Sekken-ya",
+		sortName: "せっけんや",
+		nameInitial: null,
+		initialScript: "kanji",
 		releaseCount: 34,
 		trackCount: 312,
-		scriptCategory: "kanji",
 	},
 	{
 		id: "demetori",
 		name: "Demetori",
-		nameReading: "でめとり",
+		nameJa: "デメトリ",
+		nameEn: "Demetori",
+		sortName: "Demetori",
+		nameInitial: "D",
+		initialScript: "latin",
 		releaseCount: 23,
 		trackCount: 234,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "silver-forest",
 		name: "Silver Forest",
-		nameReading: "しるばーふぉれすと",
+		nameJa: "シルバーフォレスト",
+		nameEn: "Silver Forest",
+		sortName: "Silver Forest",
+		nameInitial: "S",
+		initialScript: "latin",
 		releaseCount: 45,
 		trackCount: 389,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "a-one",
 		name: "A-One",
-		nameReading: "えーわん",
+		nameJa: "エーワン",
+		nameEn: "A-One",
+		sortName: "A-One",
+		nameInitial: "A",
+		initialScript: "latin",
 		releaseCount: 87,
 		trackCount: 756,
-		scriptCategory: "alphabet",
 	},
 	{
 		id: "7th-heaven-maxion",
 		name: "7thHeaven MAXION",
-		nameReading: "せぶんすへぶんまきしおん",
+		nameJa: "セブンスヘブンマキシオン",
+		nameEn: "7thHeaven MAXION",
+		sortName: "7thHeaven MAXION",
+		nameInitial: null,
+		initialScript: "digit",
 		releaseCount: 42,
 		trackCount: 398,
-		scriptCategory: "symbol",
 	},
 	{
 		id: "ui70",
 		name: "UI-70",
-		nameReading: "ゆーあいななじゅう",
+		nameJa: "ユーアイナナジュウ",
+		nameEn: "UI-70",
+		sortName: "UI-70",
+		nameInitial: "U",
+		initialScript: "latin",
 		releaseCount: 31,
 		trackCount: 287,
-		scriptCategory: "alphabet",
+	},
+	// かなで始まるサークルを追加
+	{
+		id: "akatsuki-records",
+		name: "暁Records",
+		nameJa: "暁Records",
+		nameEn: "Akatsuki Records",
+		sortName: "あかつきれこーず",
+		nameInitial: "あ",
+		initialScript: "hiragana",
+		releaseCount: 65,
+		trackCount: 543,
+	},
+	{
+		id: "karuinori",
+		name: "かるいノリ",
+		nameJa: "かるいノリ",
+		nameEn: null,
+		sortName: "かるいのり",
+		nameInitial: "か",
+		initialScript: "hiragana",
+		releaseCount: 12,
+		trackCount: 98,
+	},
+	{
+		id: "sasakure-uk",
+		name: "ささくれUK",
+		nameJa: "ささくれUK",
+		nameEn: "sasakure.UK",
+		sortName: "ささくれゆーけー",
+		nameInitial: "さ",
+		initialScript: "hiragana",
+		releaseCount: 8,
+		trackCount: 72,
+	},
+	{
+		id: "tamaonsen",
+		name: "たまおんせん",
+		nameJa: "たまおんせん",
+		nameEn: "Tama Onsen",
+		sortName: "たまおんせん",
+		nameInitial: "た",
+		initialScript: "hiragana",
+		releaseCount: 22,
+		trackCount: 187,
+	},
+	{
+		id: "nanahira",
+		name: "ナナヒラ",
+		nameJa: "ナナヒラ",
+		nameEn: "Nanahira",
+		sortName: "ななひら",
+		nameInitial: "な",
+		initialScript: "katakana",
+		releaseCount: 35,
+		trackCount: 298,
 	},
 ];
 
+// =============================================================================
+// コンポーネント
+// =============================================================================
+
 function CirclesPage() {
-	const [viewMode, setViewModeState] = useState<ViewMode>("list");
-	const [scriptFilter, setScriptFilterState] = useState<ScriptCategory>("all");
+	const navigate = useNavigate();
+	const {
+		script = "all",
+		initial,
+		row,
+		page = 1,
+		view = "list",
+	} = Route.useSearch();
 
-	useEffect(() => {
-		const savedView = localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode;
-		if (savedView) setViewModeState(savedView);
-		const savedScript = localStorage.getItem(
-			STORAGE_KEY_SCRIPT,
-		) as ScriptCategory;
-		if (savedScript) setScriptFilterState(savedScript);
-	}, []);
+	// 型安全なパラメータ
+	const scriptCategory = script as ScriptCategory;
+	const alphabetInitial = initial as AlphabetInitial | undefined;
+	const kanaRow = row as KanaRow | undefined;
 
-	const setViewMode = (view: ViewMode) => {
-		setViewModeState(view);
-		localStorage.setItem(STORAGE_KEY_VIEW, view);
+	// フィルタリング
+	const filteredCircles = useMemo(() => {
+		let result = mockCircles;
+
+		// 1段目フィルター（initialScriptでフィルター）
+		if (scriptCategory !== "all") {
+			const scripts = getInitialScripts(scriptCategory);
+			result = result.filter((circle) =>
+				scripts.includes(circle.initialScript),
+			);
+		}
+
+		// 2段目フィルター
+		if (scriptCategory === "alphabet" && alphabetInitial) {
+			result = result.filter(
+				(circle) => circle.nameInitial?.toUpperCase() === alphabetInitial,
+			);
+		} else if (scriptCategory === "kana" && kanaRow) {
+			result = result.filter((circle) =>
+				isInKanaRow(circle.nameInitial, kanaRow),
+			);
+		}
+
+		// リリース数で降順ソート
+		return [...result].sort((a, b) => b.releaseCount - a.releaseCount);
+	}, [scriptCategory, alphabetInitial, kanaRow]);
+
+	// ページネーション
+	const totalPages = calculateTotalPages(filteredCircles.length);
+	const paginatedCircles = paginateData(filteredCircles, page);
+
+	// ナビゲーションハンドラー
+	const handleScriptCategoryChange = (newScript: ScriptCategory) => {
+		navigate({
+			to: "/circles",
+			search: { script: newScript, page: 1, view },
+		});
 	};
 
-	const setScriptFilter = (script: ScriptCategory) => {
-		setScriptFilterState(script);
-		localStorage.setItem(STORAGE_KEY_SCRIPT, script);
+	const handleAlphabetInitialChange = (newInitial: AlphabetInitial | null) => {
+		navigate({
+			to: "/circles",
+			search: {
+				script: scriptCategory,
+				initial: newInitial ?? undefined,
+				page: 1,
+				view,
+			},
+		});
 	};
 
-	const filteredCircles =
-		scriptFilter === "all"
-			? mockCircles
-			: mockCircles.filter((circle) => circle.scriptCategory === scriptFilter);
+	const handleKanaRowChange = (newRow: KanaRow | null) => {
+		navigate({
+			to: "/circles",
+			search: {
+				script: scriptCategory,
+				row: newRow ?? undefined,
+				page: 1,
+				view,
+			},
+		});
+	};
 
-	// リリース数で降順ソート
-	const sortedCircles = [...filteredCircles].sort(
-		(a, b) => b.releaseCount - a.releaseCount,
-	);
+	const handlePageChange = (newPage: number) => {
+		navigate({
+			to: "/circles",
+			search: {
+				script: scriptCategory,
+				initial: alphabetInitial,
+				row: kanaRow,
+				page: newPage,
+				view,
+			},
+		});
+	};
+
+	const handleViewChange = (newView: ViewMode) => {
+		navigate({
+			to: "/circles",
+			search: {
+				script: scriptCategory,
+				initial: alphabetInitial,
+				row: kanaRow,
+				page,
+				view: newView,
+			},
+		});
+	};
 
 	return (
 		<div className="space-y-6">
@@ -192,28 +408,35 @@ function CirclesPage() {
 				<div>
 					<h1 className="font-bold text-3xl">サークル一覧</h1>
 					<p className="mt-1 text-base-content/70">
-						同人サークル · {sortedCircles.length}件
+						同人サークル · {filteredCircles.length}件
 					</p>
 				</div>
-				<ViewToggle value={viewMode} onChange={setViewMode} />
+				<ViewToggle value={view} onChange={handleViewChange} />
 			</div>
 
-			{/* 文字種フィルター */}
+			{/* 文字種フィルター（2段階） */}
 			<div>
 				<span className="mb-2 block font-medium text-sm">文字種:</span>
-				<ScriptFilter value={scriptFilter} onChange={setScriptFilter} />
+				<TwoStageScriptFilter
+					scriptCategory={scriptCategory}
+					alphabetInitial={alphabetInitial ?? null}
+					kanaRow={kanaRow ?? null}
+					onScriptCategoryChange={handleScriptCategoryChange}
+					onAlphabetInitialChange={handleAlphabetInitialChange}
+					onKanaRowChange={handleKanaRowChange}
+				/>
 			</div>
 
 			{/* サークル一覧 */}
-			{sortedCircles.length === 0 ? (
+			{paginatedCircles.length === 0 ? (
 				<EmptyState
 					type="filter"
 					title="該当するサークルがありません"
 					description="フィルター条件を変更してお試しください"
 				/>
-			) : viewMode === "grid" ? (
+			) : view === "grid" ? (
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{sortedCircles.map((circle) => (
+					{paginatedCircles.map((circle) => (
 						<Link
 							key={circle.id}
 							to="/circles/$id"
@@ -230,7 +453,7 @@ function CirclesPage() {
 											{circle.name}
 										</h3>
 										<p className="truncate text-base-content/50 text-sm">
-											{circle.nameReading}
+											{circle.sortName}
 										</p>
 									</div>
 								</div>
@@ -260,7 +483,7 @@ function CirclesPage() {
 							</tr>
 						</thead>
 						<tbody>
-							{sortedCircles.map((circle) => (
+							{paginatedCircles.map((circle) => (
 								<tr key={circle.id} className="hover:bg-base-200/50">
 									<td>
 										<Link
@@ -277,7 +500,7 @@ function CirclesPage() {
 											<span className="font-medium">{circle.name}</span>
 										</Link>
 									</td>
-									<td className="text-base-content/70">{circle.nameReading}</td>
+									<td className="text-base-content/70">{circle.sortName}</td>
 									<td className="text-base-content/70">
 										{circle.releaseCount}
 									</td>
@@ -287,6 +510,15 @@ function CirclesPage() {
 						</tbody>
 					</table>
 				</div>
+			)}
+
+			{/* ページネーション */}
+			{totalPages > 1 && (
+				<Pagination
+					currentPage={page}
+					totalPages={totalPages}
+					onPageChange={handlePageChange}
+				/>
 			)}
 		</div>
 	);
