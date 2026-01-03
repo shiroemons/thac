@@ -176,23 +176,29 @@ function OfficialWorkDetailPage() {
 						</div>
 					</div>
 
-					{/* 外部リンク */}
-					{links.length > 0 && (
-						<div className="flex flex-wrap gap-2">
-							{links.map((link) => (
-								<a
-									key={link.id}
-									href={link.url}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="btn btn-outline btn-sm gap-1"
-								>
-									<ExternalLink className="size-3" />
-									{platformNames[link.platformCode] || link.platformCode}
-								</a>
-							))}
-						</div>
-					)}
+					{/* 外部リンク + 原曲一覧リンク */}
+					<div className="flex flex-wrap gap-2">
+						{links.map((link) => (
+							<a
+								key={link.id}
+								href={link.url}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="btn btn-outline btn-sm gap-1"
+							>
+								<ExternalLink className="size-3" />
+								{platformNames[link.platformCode] || link.platformCode}
+							</a>
+						))}
+						<Link
+							to="/original-songs"
+							search={{ type: work.productType }}
+							className="btn btn-outline btn-sm gap-1"
+						>
+							<Music className="size-4" />
+							原曲一覧
+						</Link>
+					</div>
 				</div>
 
 				{/* 統計カード */}
@@ -267,18 +273,6 @@ function OfficialWorkDetailPage() {
 						</table>
 					</div>
 				)}
-			</div>
-
-			{/* 原曲一覧へのリンク */}
-			<div className="rounded-box bg-base-200 p-4">
-				<Link
-					to="/original-songs"
-					search={{ type: work.productType }}
-					className="group flex items-center gap-2 hover:text-primary"
-				>
-					<Music className="size-5" aria-hidden="true" />
-					<span>この作品の原曲一覧を見る</span>
-				</Link>
 			</div>
 		</div>
 	);

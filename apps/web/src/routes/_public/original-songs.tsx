@@ -150,6 +150,11 @@ function OriginalSongsPage() {
 						曲
 					</p>
 				</div>
+				<Link to="/official-works" className="btn btn-outline btn-sm gap-1">
+					<Music className="size-4" />
+					公式作品一覧
+					<ChevronRight className="size-4" />
+				</Link>
 			</div>
 
 			{/* Step 1: カテゴリフィルター */}
@@ -201,21 +206,6 @@ function OriginalSongsPage() {
 						))}
 					</div>
 				)}
-			</div>
-
-			{/* 公式作品一覧へのリンク */}
-			<div className="rounded-box bg-base-200 p-4">
-				<Link
-					to="/official-works"
-					className="group flex items-center gap-2 hover:text-primary"
-				>
-					<Music className="size-5" aria-hidden="true" />
-					<span>公式作品の詳細一覧を見る</span>
-					<ChevronRight
-						className="size-4 transition-transform group-hover:translate-x-1"
-						aria-hidden="true"
-					/>
-				</Link>
 			</div>
 		</div>
 	);
