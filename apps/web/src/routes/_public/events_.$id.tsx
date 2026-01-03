@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calendar, Disc3, MapPin, Music, Users } from "lucide-react";
 import { useState } from "react";
 import {
+	EmptyState,
 	PublicBreadcrumb,
 	type ViewMode,
 	ViewToggle,
@@ -344,7 +345,9 @@ function EventDetailPage() {
 
 			{/* リリース一覧 */}
 			{activeTab === "releases" &&
-				(viewMode === "grid" ? (
+				(releases.length === 0 ? (
+					<EmptyState type="empty" title="頒布物がありません" />
+				) : viewMode === "grid" ? (
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						{releases.map((release) => (
 							<div

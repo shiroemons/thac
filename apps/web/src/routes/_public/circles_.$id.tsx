@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calendar, Disc3, ExternalLink, Music, Users } from "lucide-react";
 import { useState } from "react";
 import {
+	EmptyState,
 	PublicBreadcrumb,
 	type ViewMode,
 	ViewToggle,
@@ -416,7 +417,9 @@ function CircleDetailPage() {
 
 			{/* リリース一覧 */}
 			{activeTab === "releases" &&
-				(viewMode === "grid" ? (
+				(releases.length === 0 ? (
+					<EmptyState type="empty" title="リリースがありません" />
+				) : viewMode === "grid" ? (
 					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						{releases.map((release) => (
 							<div
@@ -517,65 +520,70 @@ function CircleDetailPage() {
 				))}
 
 			{/* トラック一覧 */}
-			{activeTab === "tracks" && (
-				<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
-					<table className="table">
-						<thead>
-							<tr>
-								<th>曲名</th>
-								<th>リリース</th>
-								<th className="hidden md:table-cell">アーティスト</th>
-								<th className="hidden sm:table-cell">原曲</th>
-							</tr>
-						</thead>
-						<tbody>
-							{tracks.map((track) => (
-								<tr key={track.id} className="hover:bg-base-200/50">
-									<td>
-										<div className="font-medium">{track.name}</div>
-									</td>
-									<td className="text-base-content/70">{track.releaseName}</td>
-									<td className="hidden md:table-cell">
-										<div className="flex flex-wrap gap-1">
-											{track.artists.map((artist) => (
-												<Link
-													key={artist.id}
-													to="/artists/$id"
-													params={{ id: artist.id }}
-													className="inline-flex items-center gap-1 hover:text-primary"
-												>
-													<Users className="size-3" />
-													<span>{artist.creditName}</span>
-													<span className="text-base-content/50 text-xs">
-														(
-														{artist.roles
-															.map((r) => roleNames[r] || r)
-															.join("/")}
-														)
-													</span>
-												</Link>
-											))}
-										</div>
-									</td>
-									<td className="hidden sm:table-cell">
-										{track.originalSong ? (
-											<Link
-												to="/original-songs/$id"
-												params={{ id: track.originalSong.id }}
-												className="text-base-content/70 hover:text-primary"
-											>
-												{track.originalSong.name}
-											</Link>
-										) : (
-											"-"
-										)}
-									</td>
+			{activeTab === "tracks" &&
+				(tracks.length === 0 ? (
+					<EmptyState type="empty" title="トラックがありません" />
+				) : (
+					<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
+						<table className="table">
+							<thead>
+								<tr>
+									<th>曲名</th>
+									<th>リリース</th>
+									<th className="hidden md:table-cell">アーティスト</th>
+									<th className="hidden sm:table-cell">原曲</th>
 								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
-			)}
+							</thead>
+							<tbody>
+								{tracks.map((track) => (
+									<tr key={track.id} className="hover:bg-base-200/50">
+										<td>
+											<div className="font-medium">{track.name}</div>
+										</td>
+										<td className="text-base-content/70">
+											{track.releaseName}
+										</td>
+										<td className="hidden md:table-cell">
+											<div className="flex flex-wrap gap-1">
+												{track.artists.map((artist) => (
+													<Link
+														key={artist.id}
+														to="/artists/$id"
+														params={{ id: artist.id }}
+														className="inline-flex items-center gap-1 hover:text-primary"
+													>
+														<Users className="size-3" />
+														<span>{artist.creditName}</span>
+														<span className="text-base-content/50 text-xs">
+															(
+															{artist.roles
+																.map((r) => roleNames[r] || r)
+																.join("/")}
+															)
+														</span>
+													</Link>
+												))}
+											</div>
+										</td>
+										<td className="hidden sm:table-cell">
+											{track.originalSong ? (
+												<Link
+													to="/original-songs/$id"
+													params={{ id: track.originalSong.id }}
+													className="text-base-content/70 hover:text-primary"
+												>
+													{track.originalSong.name}
+												</Link>
+											) : (
+												"-"
+											)}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				))}
 		</div>
 	);
 }

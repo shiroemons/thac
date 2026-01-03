@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Disc, Music, Users } from "lucide-react";
 import { useState } from "react";
 import {
+	EmptyState,
 	PublicBreadcrumb,
 	type ScriptCategory,
 	ScriptFilter,
@@ -207,7 +208,13 @@ function CirclesPage() {
 			</div>
 
 			{/* サークル一覧 */}
-			{viewMode === "grid" ? (
+			{sortedCircles.length === 0 ? (
+				<EmptyState
+					type="filter"
+					title="該当するサークルがありません"
+					description="フィルター条件を変更してお試しください"
+				/>
+			) : viewMode === "grid" ? (
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 					{sortedCircles.map((circle) => (
 						<Link

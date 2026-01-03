@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, Disc3, Gamepad2, Music } from "lucide-react";
 import { useState } from "react";
 import {
+	EmptyState,
 	PublicBreadcrumb,
 	type ViewMode,
 	ViewToggle,
@@ -203,7 +204,13 @@ function OfficialWorksPage() {
 			</div>
 
 			{/* 作品一覧 */}
-			{viewMode === "grid" ? (
+			{filteredWorks.length === 0 ? (
+				<EmptyState
+					type="filter"
+					title="該当する作品がありません"
+					description="別のカテゴリを選択してお試しください"
+				/>
+			) : viewMode === "grid" ? (
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 					{filteredWorks.map((work) => (
 						<Link

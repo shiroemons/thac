@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Music, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
+	EmptyState,
 	PublicBreadcrumb,
 	type ScriptCategory,
 	ScriptFilter,
@@ -336,7 +337,13 @@ function ArtistsPage() {
 			</div>
 
 			{/* アーティスト一覧 */}
-			{viewMode === "grid" ? (
+			{filteredArtists.length === 0 ? (
+				<EmptyState
+					type="filter"
+					title="該当するアーティストがありません"
+					description="フィルター条件を変更してお試しください"
+				/>
+			) : viewMode === "grid" ? (
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 					{filteredArtists.map((artist) => (
 						<Link

@@ -1,3 +1,4 @@
+export { EmptyState, type EmptyStateType } from "./empty-state";
 export { type Badge, EntityCard } from "./entity-card";
 export { HeroSection } from "./hero-section";
 export { type BreadcrumbItemData, PublicBreadcrumb } from "./public-breadcrumb";

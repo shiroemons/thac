@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight, Music } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
+	EmptyState,
 	PublicBreadcrumb,
 	type ViewMode,
 	ViewToggle,
@@ -248,7 +249,13 @@ function OriginalSongsPage() {
 			</div>
 
 			{/* 原曲一覧 */}
-			{viewMode === "grid" ? (
+			{sortedSongs.length === 0 ? (
+				<EmptyState
+					type="filter"
+					title="該当する原曲がありません"
+					description="別の作品を選択してお試しください"
+				/>
+			) : viewMode === "grid" ? (
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 					{sortedSongs.map((song) => (
 						<Link

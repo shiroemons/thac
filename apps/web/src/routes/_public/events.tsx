@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calendar, ChevronDown, ChevronRight, Disc } from "lucide-react";
 import { useState } from "react";
-import { PublicBreadcrumb } from "@/components/public";
+import { EmptyState, PublicBreadcrumb } from "@/components/public";
 
 export const Route = createFileRoute("/_public/events")({
 	component: EventsPage,
@@ -295,137 +295,151 @@ function EventsPage() {
 			</div>
 
 			{/* シリーズ別表示 */}
-			{viewMode === "series" && (
-				<div className="space-y-2">
-					{eventsBySeries.map((series) => (
-						<div
-							key={series.id}
-							className="overflow-hidden rounded-lg border border-base-300 bg-base-100"
-						>
-							{/* シリーズヘッダー */}
-							<button
-								type="button"
-								className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-base-200/50"
-								onClick={() => toggleSeries(series.id)}
-								aria-expanded={expandedSeries.has(series.id)}
-							>
-								<div className="flex items-center gap-3">
-									{expandedSeries.has(series.id) ? (
-										<ChevronDown className="size-5" aria-hidden="true" />
-									) : (
-										<ChevronRight className="size-5" aria-hidden="true" />
-									)}
-									<span className="font-bold text-lg">{series.name}</span>
-								</div>
-								<span className="badge badge-ghost">{series.eventCount}回</span>
-							</button>
-
-							{/* イベントリスト */}
-							{expandedSeries.has(series.id) && (
-								<div className="border-base-300 border-t">
-									{series.events.map((event) => (
-										<Link
-											key={event.id}
-											to="/events/$id"
-											params={{ id: event.id }}
-											className="flex items-center justify-between border-base-200 border-b px-4 py-3 pl-12 last:border-b-0 hover:bg-base-200/30"
-										>
-											<div className="flex items-center gap-4">
-												<span className="font-medium">{event.name}</span>
-												<span className="flex items-center gap-1 text-base-content/50 text-sm">
-													<Calendar className="size-4" aria-hidden="true" />
-													{formatDateRange(event.dateStart, event.dateEnd)}
-												</span>
-											</div>
-											<span className="flex items-center gap-1 text-base-content/70 text-sm">
-												<Disc className="size-4" aria-hidden="true" />
-												{event.releaseCount}リリース
-											</span>
-										</Link>
-									))}
-								</div>
-							)}
-						</div>
-					))}
-				</div>
-			)}
-
-			{/* 年別表示 */}
-			{viewMode === "year" && (
-				<div className="space-y-6">
-					{/* 年選択タブ */}
-					<div className="flex flex-wrap gap-2">
-						{years.map((year) => (
-							<button
-								key={year}
-								type="button"
-								className={`btn btn-sm ${selectedYear === year ? "btn-primary" : "btn-ghost"}`}
-								onClick={() => setSelectedYear(year)}
-								aria-pressed={selectedYear === year}
-							>
-								{year}
-							</button>
-						))}
-					</div>
-
-					{/* 選択年のイベント一覧 */}
-					{eventsByYear
-						.filter((group) => group.year === selectedYear)
-						.map((group) => (
+			{viewMode === "series" &&
+				(eventsBySeries.length === 0 ? (
+					<EmptyState type="empty" title="イベントがありません" />
+				) : (
+					<div className="space-y-2">
+						{eventsBySeries.map((series) => (
 							<div
-								key={group.year}
+								key={series.id}
 								className="overflow-hidden rounded-lg border border-base-300 bg-base-100"
 							>
-								<div className="border-base-300 border-b bg-base-200/50 px-4 py-3">
-									<h2 className="font-bold text-lg">{group.year}年</h2>
-									<p className="text-base-content/70 text-sm">
-										{group.events.length}イベント
-									</p>
-								</div>
-								<div className="overflow-x-auto">
-									<table className="table">
-										<thead>
-											<tr>
-												<th>月</th>
-												<th>イベント名</th>
-												<th>開催日</th>
-												<th>リリース数</th>
-											</tr>
-										</thead>
-										<tbody>
-											{group.events.map((event) => {
-												const month = new Date(event.dateStart).getMonth() + 1;
-												return (
-													<tr key={event.id} className="hover:bg-base-200/50">
-														<td className="text-base-content/70">{month}月</td>
-														<td>
-															<Link
-																to="/events/$id"
-																params={{ id: event.id }}
-																className="font-medium hover:text-primary"
-															>
-																{event.name}
-															</Link>
-														</td>
-														<td className="text-base-content/70">
-															{formatDateRange(event.dateStart, event.dateEnd)}
-														</td>
-														<td className="text-base-content/70">
-															<span className="flex items-center gap-1">
-																<Disc className="size-4" aria-hidden="true" />
-																{event.releaseCount}
-															</span>
-														</td>
-													</tr>
-												);
-											})}
-										</tbody>
-									</table>
-								</div>
+								{/* シリーズヘッダー */}
+								<button
+									type="button"
+									className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-base-200/50"
+									onClick={() => toggleSeries(series.id)}
+									aria-expanded={expandedSeries.has(series.id)}
+								>
+									<div className="flex items-center gap-3">
+										{expandedSeries.has(series.id) ? (
+											<ChevronDown className="size-5" aria-hidden="true" />
+										) : (
+											<ChevronRight className="size-5" aria-hidden="true" />
+										)}
+										<span className="font-bold text-lg">{series.name}</span>
+									</div>
+									<span className="badge badge-ghost">
+										{series.eventCount}回
+									</span>
+								</button>
+
+								{/* イベントリスト */}
+								{expandedSeries.has(series.id) && (
+									<div className="border-base-300 border-t">
+										{series.events.map((event) => (
+											<Link
+												key={event.id}
+												to="/events/$id"
+												params={{ id: event.id }}
+												className="flex items-center justify-between border-base-200 border-b px-4 py-3 pl-12 last:border-b-0 hover:bg-base-200/30"
+											>
+												<div className="flex items-center gap-4">
+													<span className="font-medium">{event.name}</span>
+													<span className="flex items-center gap-1 text-base-content/50 text-sm">
+														<Calendar className="size-4" aria-hidden="true" />
+														{formatDateRange(event.dateStart, event.dateEnd)}
+													</span>
+												</div>
+												<span className="flex items-center gap-1 text-base-content/70 text-sm">
+													<Disc className="size-4" aria-hidden="true" />
+													{event.releaseCount}リリース
+												</span>
+											</Link>
+										))}
+									</div>
+								)}
 							</div>
 						))}
-				</div>
-			)}
+					</div>
+				))}
+
+			{/* 年別表示 */}
+			{viewMode === "year" &&
+				(years.length === 0 ? (
+					<EmptyState type="empty" title="イベントがありません" />
+				) : (
+					<div className="space-y-6">
+						{/* 年選択タブ */}
+						<div className="flex flex-wrap gap-2">
+							{years.map((year) => (
+								<button
+									key={year}
+									type="button"
+									className={`btn btn-sm ${selectedYear === year ? "btn-primary" : "btn-ghost"}`}
+									onClick={() => setSelectedYear(year)}
+									aria-pressed={selectedYear === year}
+								>
+									{year}
+								</button>
+							))}
+						</div>
+
+						{/* 選択年のイベント一覧 */}
+						{eventsByYear
+							.filter((group) => group.year === selectedYear)
+							.map((group) => (
+								<div
+									key={group.year}
+									className="overflow-hidden rounded-lg border border-base-300 bg-base-100"
+								>
+									<div className="border-base-300 border-b bg-base-200/50 px-4 py-3">
+										<h2 className="font-bold text-lg">{group.year}年</h2>
+										<p className="text-base-content/70 text-sm">
+											{group.events.length}イベント
+										</p>
+									</div>
+									<div className="overflow-x-auto">
+										<table className="table">
+											<thead>
+												<tr>
+													<th>月</th>
+													<th>イベント名</th>
+													<th>開催日</th>
+													<th>リリース数</th>
+												</tr>
+											</thead>
+											<tbody>
+												{group.events.map((event) => {
+													const month =
+														new Date(event.dateStart).getMonth() + 1;
+													return (
+														<tr key={event.id} className="hover:bg-base-200/50">
+															<td className="text-base-content/70">
+																{month}月
+															</td>
+															<td>
+																<Link
+																	to="/events/$id"
+																	params={{ id: event.id }}
+																	className="font-medium hover:text-primary"
+																>
+																	{event.name}
+																</Link>
+															</td>
+															<td className="text-base-content/70">
+																{formatDateRange(
+																	event.dateStart,
+																	event.dateEnd,
+																)}
+															</td>
+															<td className="text-base-content/70">
+																<span className="flex items-center gap-1">
+																	<Disc className="size-4" aria-hidden="true" />
+																	{event.releaseCount}
+																</span>
+															</td>
+														</tr>
+													);
+												})}
+											</tbody>
+										</table>
+									</div>
+								</div>
+							))}
+					</div>
+				))}
 		</div>
 	);
 }

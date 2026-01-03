@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Disc3, Music, Users } from "lucide-react";
 import { useMemo, useState } from "react";
-import { PublicBreadcrumb } from "@/components/public";
+import { EmptyState, PublicBreadcrumb } from "@/components/public";
 
 export const Route = createFileRoute("/_public/artists_/$id")({
 	component: ArtistDetailPage,
@@ -545,11 +545,11 @@ function ArtistDetailPage() {
 				</div>
 
 				{filteredCredits.length === 0 && (
-					<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
-						<p className="text-base-content/70">
-							フィルター条件に一致するトラックがありません
-						</p>
-					</div>
+					<EmptyState
+						type="filter"
+						title="該当するトラックがありません"
+						description="フィルター条件を変更してお試しください"
+					/>
 				)}
 			</div>
 
