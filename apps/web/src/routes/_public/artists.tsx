@@ -37,8 +37,8 @@ const roleConfig: Record<RoleType, RoleConfig> = {
 };
 
 function getInitialViewMode(): ViewMode {
-	if (typeof window === "undefined") return "grid";
-	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "grid";
+	if (typeof window === "undefined") return "list";
+	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "list";
 }
 
 function getInitialScriptFilter(): ScriptCategory {

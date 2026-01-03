@@ -11,6 +11,13 @@ export const Route = createFileRoute("/_public/circles_/$id")({
 	component: CircleDetailPage,
 });
 
+const STORAGE_KEY_VIEW = "circle-detail-view-mode";
+
+function getInitialViewMode(): ViewMode {
+	if (typeof window === "undefined") return "list";
+	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "list";
+}
+
 // サークルデータ型（スキーマ準拠）
 interface Circle {
 	id: string;
@@ -273,7 +280,12 @@ type TabType = "releases" | "tracks";
 function CircleDetailPage() {
 	const { id } = Route.useParams();
 	const [activeTab, setActiveTab] = useState<TabType>("releases");
-	const [viewMode, setViewMode] = useState<ViewMode>("grid");
+	const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
+
+	const setViewMode = (view: ViewMode) => {
+		setViewModeState(view);
+		localStorage.setItem(STORAGE_KEY_VIEW, view);
+	};
 
 	// モックデータから取得
 	const circle = mockCircles[id];

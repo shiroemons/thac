@@ -11,6 +11,13 @@ export const Route = createFileRoute("/_public/original-songs")({
 	component: OriginalSongsPage,
 });
 
+const STORAGE_KEY_VIEW = "original-songs-view-mode";
+
+function getInitialViewMode(): ViewMode {
+	if (typeof window === "undefined") return "list";
+	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "list";
+}
+
 interface OriginalSong {
 	id: string;
 	title: string;
@@ -175,8 +182,13 @@ const mockOriginalSongs: OriginalSong[] = [
 ];
 
 function OriginalSongsPage() {
-	const [viewMode, setViewMode] = useState<ViewMode>("grid");
+	const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
 	const [selectedWork, setSelectedWork] = useState("all");
+
+	const setViewMode = (view: ViewMode) => {
+		setViewModeState(view);
+		localStorage.setItem(STORAGE_KEY_VIEW, view);
+	};
 
 	const filteredSongs = useMemo(() => {
 		if (selectedWork === "all") {

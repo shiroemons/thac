@@ -11,6 +11,13 @@ export const Route = createFileRoute("/_public/official-works")({
 	component: OfficialWorksPage,
 });
 
+const STORAGE_KEY_VIEW = "official-works-view-mode";
+
+function getInitialViewMode(): ViewMode {
+	if (typeof window === "undefined") return "list";
+	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "list";
+}
+
 // 公式作品のカテゴリ
 type WorkCategory = "all" | "game" | "music" | "book";
 
@@ -151,8 +158,13 @@ const categoryBadgeClass: Record<Exclude<WorkCategory, "all">, string> = {
 };
 
 function OfficialWorksPage() {
-	const [viewMode, setViewMode] = useState<ViewMode>("grid");
+	const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
 	const [category, setCategory] = useState<WorkCategory>("all");
+
+	const setViewMode = (view: ViewMode) => {
+		setViewModeState(view);
+		localStorage.setItem(STORAGE_KEY_VIEW, view);
+	};
 
 	const filteredWorks =
 		category === "all"

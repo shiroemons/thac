@@ -11,6 +11,13 @@ export const Route = createFileRoute("/_public/events_/$id")({
 	component: EventDetailPage,
 });
 
+const STORAGE_KEY_VIEW = "event-detail-view-mode";
+
+function getInitialViewMode(): ViewMode {
+	if (typeof window === "undefined") return "list";
+	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "list";
+}
+
 // イベントデータ型（スキーマ準拠）
 interface Event {
 	id: string;
@@ -189,7 +196,12 @@ type TabType = "releases" | "tracks";
 function EventDetailPage() {
 	const { id } = Route.useParams();
 	const [activeTab, setActiveTab] = useState<TabType>("releases");
-	const [viewMode, setViewMode] = useState<ViewMode>("grid");
+	const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
+
+	const setViewMode = (view: ViewMode) => {
+		setViewModeState(view);
+		localStorage.setItem(STORAGE_KEY_VIEW, view);
+	};
 
 	// モックデータから取得
 	const event = mockEvents[id];
