@@ -13,6 +13,19 @@ export const Route = createFileRoute("/_public/circles")({
 	component: CirclesPage,
 });
 
+const STORAGE_KEY_VIEW = "circles-view-mode";
+const STORAGE_KEY_SCRIPT = "circles-script-filter";
+
+function getInitialViewMode(): ViewMode {
+	if (typeof window === "undefined") return "grid";
+	return (localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode) || "grid";
+}
+
+function getInitialScriptFilter(): ScriptCategory {
+	if (typeof window === "undefined") return "all";
+	return (localStorage.getItem(STORAGE_KEY_SCRIPT) as ScriptCategory) || "all";
+}
+
 interface Circle {
 	id: string;
 	name: string;
@@ -147,8 +160,20 @@ const mockCircles: Circle[] = [
 ];
 
 function CirclesPage() {
-	const [viewMode, setViewMode] = useState<ViewMode>("grid");
-	const [scriptFilter, setScriptFilter] = useState<ScriptCategory>("all");
+	const [viewMode, setViewModeState] = useState<ViewMode>(getInitialViewMode);
+	const [scriptFilter, setScriptFilterState] = useState<ScriptCategory>(
+		getInitialScriptFilter,
+	);
+
+	const setViewMode = (view: ViewMode) => {
+		setViewModeState(view);
+		localStorage.setItem(STORAGE_KEY_VIEW, view);
+	};
+
+	const setScriptFilter = (script: ScriptCategory) => {
+		setScriptFilterState(script);
+		localStorage.setItem(STORAGE_KEY_SCRIPT, script);
+	};
 
 	const filteredCircles =
 		scriptFilter === "all"

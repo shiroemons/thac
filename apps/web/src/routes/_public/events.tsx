@@ -7,7 +7,21 @@ export const Route = createFileRoute("/_public/events")({
 	component: EventsPage,
 });
 
-type ViewMode = "series" | "year";
+type EventsViewMode = "series" | "year";
+
+const STORAGE_KEY_VIEW = "events-view-mode";
+const STORAGE_KEY_YEAR = "events-selected-year";
+
+function getInitialViewMode(): EventsViewMode {
+	if (typeof window === "undefined") return "series";
+	return (localStorage.getItem(STORAGE_KEY_VIEW) as EventsViewMode) || "series";
+}
+
+function getInitialYear(): number {
+	if (typeof window === "undefined") return 2024;
+	const saved = localStorage.getItem(STORAGE_KEY_YEAR);
+	return saved ? Number(saved) : 2024;
+}
 
 interface Event {
 	id: string;
@@ -175,11 +189,22 @@ function getYear(dateStr: string): number {
 }
 
 function EventsPage() {
-	const [viewMode, setViewMode] = useState<ViewMode>("series");
+	const [viewMode, setViewModeState] =
+		useState<EventsViewMode>(getInitialViewMode);
+	const [selectedYear, setSelectedYearState] = useState<number>(getInitialYear);
 	const [expandedSeries, setExpandedSeries] = useState<Set<string>>(
 		new Set(["comiket"]),
 	);
-	const [selectedYear, setSelectedYear] = useState<number>(2024);
+
+	const setViewMode = (view: EventsViewMode) => {
+		setViewModeState(view);
+		localStorage.setItem(STORAGE_KEY_VIEW, view);
+	};
+
+	const setSelectedYear = (year: number) => {
+		setSelectedYearState(year);
+		localStorage.setItem(STORAGE_KEY_YEAR, String(year));
+	};
 
 	const toggleSeries = (seriesId: string) => {
 		setExpandedSeries((prev) => {

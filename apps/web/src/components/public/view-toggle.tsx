@@ -9,10 +9,10 @@ interface ViewToggleProps {
 
 export function ViewToggle({ value, onChange }: ViewToggleProps) {
 	return (
-		<div className="join">
+		<div className="flex gap-1 rounded-lg bg-base-200 p-1">
 			<button
 				type="button"
-				className={`btn btn-sm join-item ${value === "grid" ? "btn-active" : "btn-ghost"}`}
+				className={`btn btn-sm ${value === "grid" ? "btn-primary" : "btn-ghost"}`}
 				onClick={() => onChange("grid")}
 				aria-label="グリッド表示"
 				aria-pressed={value === "grid"}
@@ -21,7 +21,7 @@ export function ViewToggle({ value, onChange }: ViewToggleProps) {
 			</button>
 			<button
 				type="button"
-				className={`btn btn-sm join-item ${value === "list" ? "btn-active" : "btn-ghost"}`}
+				className={`btn btn-sm ${value === "list" ? "btn-primary" : "btn-ghost"}`}
 				onClick={() => onChange("list")}
 				aria-label="リスト表示"
 				aria-pressed={value === "list"}
