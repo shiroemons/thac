@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { HeroSection, RecentReleases, StatsCards } from "@/components/public";
 
 export const Route = createFileRoute("/_public/")({
 	component: HomePage,
@@ -6,9 +7,10 @@ export const Route = createFileRoute("/_public/")({
 
 function HomePage() {
 	return (
-		<div>
-			<h1 className="font-bold text-3xl">トップページ</h1>
-			<p className="mt-2 text-base-content/70">Phase 3で実装予定</p>
+		<div className="space-y-8">
+			<HeroSection />
+			<StatsCards />
+			<RecentReleases />
 		</div>
 	);
 }
