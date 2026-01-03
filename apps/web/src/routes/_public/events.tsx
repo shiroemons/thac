@@ -11,6 +11,7 @@ type EventsViewMode = "series" | "year";
 
 const STORAGE_KEY_VIEW = "events-view-mode";
 const STORAGE_KEY_YEAR = "events-selected-year";
+const STORAGE_KEY_EXPANDED = "events-expanded-series";
 
 function getInitialViewMode(): EventsViewMode {
 	if (typeof window === "undefined") return "series";
@@ -21,6 +22,19 @@ function getInitialYear(): number {
 	if (typeof window === "undefined") return 2024;
 	const saved = localStorage.getItem(STORAGE_KEY_YEAR);
 	return saved ? Number(saved) : 2024;
+}
+
+function getInitialExpandedSeries(): Set<string> {
+	if (typeof window === "undefined") return new Set(["comiket"]);
+	const saved = localStorage.getItem(STORAGE_KEY_EXPANDED);
+	if (saved) {
+		try {
+			return new Set(JSON.parse(saved) as string[]);
+		} catch {
+			return new Set(["comiket"]);
+		}
+	}
+	return new Set(["comiket"]);
 }
 
 interface Event {
@@ -192,8 +206,8 @@ function EventsPage() {
 	const [viewMode, setViewModeState] =
 		useState<EventsViewMode>(getInitialViewMode);
 	const [selectedYear, setSelectedYearState] = useState<number>(getInitialYear);
-	const [expandedSeries, setExpandedSeries] = useState<Set<string>>(
-		new Set(["comiket"]),
+	const [expandedSeries, setExpandedSeriesState] = useState<Set<string>>(
+		getInitialExpandedSeries,
 	);
 
 	const setViewMode = (view: EventsViewMode) => {
@@ -207,13 +221,14 @@ function EventsPage() {
 	};
 
 	const toggleSeries = (seriesId: string) => {
-		setExpandedSeries((prev) => {
+		setExpandedSeriesState((prev) => {
 			const next = new Set(prev);
 			if (next.has(seriesId)) {
 				next.delete(seriesId);
 			} else {
 				next.add(seriesId);
 			}
+			localStorage.setItem(STORAGE_KEY_EXPANDED, JSON.stringify([...next]));
 			return next;
 		});
 	};
