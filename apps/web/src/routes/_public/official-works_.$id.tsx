@@ -11,51 +11,39 @@ import {
 import { PublicBreadcrumb } from "@/components/public";
 import { formatNumber } from "@/lib/format";
 import { createPublicOfficialWorkHead } from "@/lib/head";
-import {
-	getArrangeCount,
-	getSongsByWorkId,
-	getWorkById,
-	productTypes,
-} from "@/mocks/official";
-import type { ProductType } from "@/types/official";
+import { type PublicWorkDetail, publicApi } from "@/lib/public-api";
 
 export const Route = createFileRoute("/_public/official-works_/$id")({
-	loader: ({ params }) => ({ work: getWorkById(params.id) }),
+	loader: async ({ params }) => {
+		try {
+			const work = await publicApi.works.get(params.id);
+			return { work };
+		} catch {
+			return { work: null };
+		}
+	},
 	head: ({ loaderData }) =>
-		createPublicOfficialWorkHead(loaderData?.work?.name),
+		createPublicOfficialWorkHead(loaderData?.work?.nameJa),
 	component: OfficialWorkDetailPage,
 });
 
-// 外部リンクデータ型（モック）
-interface OfficialWorkLink {
-	id: string;
-	officialWorkId: string;
-	platformCode: string;
-	url: string;
-	sortOrder: number;
-}
-
-// モックデータ - 外部リンク
-const mockWorkLinks: Record<string, OfficialWorkLink[]> = {
-	"0201": [
-		{
-			id: "wl-0201-1",
-			officialWorkId: "0201",
-			platformCode: "official",
-			url: "https://www16.big.or.jp/~zun/html/th06.html",
-			sortOrder: 1,
-		},
-	],
-};
-
+// =============================================================================
 // カテゴリ設定
+// =============================================================================
+
 interface CategoryConfig {
 	label: string;
 	icon: React.ReactNode;
 	badgeClass: string;
 }
 
-const categoryConfig: Record<ProductType, CategoryConfig> = {
+const defaultCategoryConfig: CategoryConfig = {
+	label: "その他",
+	icon: <Package className="size-4" />,
+	badgeClass: "badge-ghost",
+};
+
+const categoryConfigMap: Record<string, CategoryConfig> = {
 	pc98: {
 		label: "PC-98",
 		icon: <Gamepad2 className="size-4" />,
@@ -93,31 +81,22 @@ const categoryConfig: Record<ProductType, CategoryConfig> = {
 	},
 };
 
+function getCategoryConfig(code: string): CategoryConfig {
+	return categoryConfigMap[code] ?? defaultCategoryConfig;
+}
+
 // プラットフォーム名
 const platformNames: Record<string, string> = {
 	official: "公式サイト",
 	wikipedia: "Wikipedia",
 	thwiki: "東方Wiki",
+	youtube: "YouTube",
+	nicovideo: "ニコニコ動画",
 };
 
 function OfficialWorkDetailPage() {
 	const { id } = Route.useParams();
-	const { work } = Route.useLoaderData();
-	const songs = work ? getSongsByWorkId(work.id) : [];
-	const songsWithArrangeCount = songs.map((song) => ({
-		...song,
-		arrangeCount: getArrangeCount(song.id),
-	}));
-	const links = mockWorkLinks[id] || [];
-
-	// 統計計算
-	const stats = {
-		songCount: songsWithArrangeCount.length,
-		arrangeCount: songsWithArrangeCount.reduce(
-			(sum, song) => sum + song.arrangeCount,
-			0,
-		),
-	};
+	const { work } = Route.useLoaderData() as { work: PublicWorkDetail | null };
 
 	// 作品が見つからない場合
 	if (!work) {
@@ -142,10 +121,14 @@ function OfficialWorkDetailPage() {
 		);
 	}
 
-	const category = categoryConfig[work.productType];
-	const productTypeInfo = productTypes.find(
-		(pt) => pt.code === work.productType,
-	);
+	const category = getCategoryConfig(work.categoryCode);
+	const displayName = work.shortNameJa ?? work.nameJa;
+
+	// 統計計算（APIから取得済みのデータを使用）
+	const stats = {
+		songCount: work.songCount,
+		arrangeCount: work.totalArrangeCount,
+	};
 
 	return (
 		<div className="space-y-6">
@@ -153,10 +136,10 @@ function OfficialWorkDetailPage() {
 				items={[
 					{ label: "公式作品", href: "/official-works" },
 					{
-						label: productTypeInfo?.name || category.label,
-						href: `/official-works?type=${work.productType}`,
+						label: work.categoryName ?? category.label,
+						href: `/official-works?type=${work.categoryCode}`,
 					},
-					{ label: work.shortName },
+					{ label: displayName },
 				]}
 			/>
 
@@ -165,37 +148,39 @@ function OfficialWorkDetailPage() {
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 					<div className="space-y-2">
 						<div className="flex flex-wrap items-center gap-2">
-							<h1 className="font-bold text-2xl sm:text-3xl">
-								{work.shortName}
-							</h1>
+							<h1 className="font-bold text-2xl sm:text-3xl">{displayName}</h1>
 							<span className={`badge gap-1 ${category.badgeClass}`}>
 								{category.icon}
 								{category.label}
 							</span>
 						</div>
 						<p className="text-base-content/70">{work.name}</p>
-						<div className="flex flex-wrap gap-4 text-base-content/60 text-sm">
-							<span>No.{work.seriesNumber}</span>
-						</div>
+						{work.numberInSeries != null && (
+							<div className="flex flex-wrap gap-4 text-base-content/60 text-sm">
+								<span>No.{work.numberInSeries}</span>
+							</div>
+						)}
 					</div>
 
 					{/* 外部リンク + 原曲一覧リンク */}
 					<div className="flex flex-wrap gap-2">
-						{links.map((link) => (
+						{work.links.map((link) => (
 							<a
-								key={link.id}
+								key={`${link.platformCode}-${link.url}`}
 								href={link.url}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="btn btn-outline btn-sm gap-1"
 							>
 								<ExternalLink className="size-3" />
-								{platformNames[link.platformCode] || link.platformCode}
+								{link.platformName ||
+									platformNames[link.platformCode] ||
+									link.platformCode}
 							</a>
 						))}
 						<Link
 							to="/original-songs"
-							search={{ type: work.productType }}
+							search={{ type: work.categoryCode }}
 							className="btn btn-outline btn-sm gap-1"
 						>
 							<Music className="size-4" />
@@ -228,7 +213,7 @@ function OfficialWorkDetailPage() {
 			{/* 収録曲一覧 */}
 			<div className="space-y-4">
 				<h2 className="font-bold text-xl">収録曲</h2>
-				{songsWithArrangeCount.length === 0 ? (
+				{work.songs.length === 0 ? (
 					<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
 						<p className="text-base-content/70">
 							楽曲データはまだ登録されていません
@@ -246,12 +231,14 @@ function OfficialWorkDetailPage() {
 								</tr>
 							</thead>
 							<tbody>
-								{songsWithArrangeCount
-									.sort((a, b) => a.trackNumber - b.trackNumber)
+								{[...work.songs]
+									.sort((a, b) => (a.trackNumber ?? 0) - (b.trackNumber ?? 0))
 									.map((song) => (
 										<tr key={song.id} className="hover:bg-base-200/50">
 											<td className="text-base-content/50">
-												{song.trackNumber.toString().padStart(2, "0")}
+												{song.trackNumber != null
+													? song.trackNumber.toString().padStart(2, "0")
+													: "-"}
 											</td>
 											<td>
 												<Link
@@ -259,11 +246,11 @@ function OfficialWorkDetailPage() {
 													params={{ id: song.id }}
 													className="hover:text-primary"
 												>
-													<div className="font-medium">{song.name}</div>
+													<div className="font-medium">{song.nameJa}</div>
 												</Link>
 											</td>
 											<td className="hidden text-base-content/70 sm:table-cell">
-												{song.composer || "-"}
+												{song.composerName || "-"}
 											</td>
 											<td className="text-right">
 												<span className="font-medium text-primary">

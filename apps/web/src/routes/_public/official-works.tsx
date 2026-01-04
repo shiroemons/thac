@@ -1,50 +1,32 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { BookOpen, Disc3, Gamepad2, Music, Package } from "lucide-react";
-import { useMemo } from "react";
 import {
-	calculateTotalPages,
 	EmptyState,
 	Pagination,
 	PublicBreadcrumb,
-	paginateData,
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
 import { createPageHead } from "@/lib/head";
 import {
-	getWorksByProductType,
-	getWorkWithStats,
-	productTypes,
-} from "@/mocks/official";
-import type { OfficialWorkWithStats, ProductType } from "@/types/official";
+	type PublicCategory,
+	type PublicWorkItem,
+	publicApi,
+} from "@/lib/public-api";
 
 // =============================================================================
 // URL パラメータの定義と検証
 // =============================================================================
 
 interface OfficialWorksSearchParams {
-	type?: ProductType | "all";
+	type?: string;
 	page?: number;
 	view?: ViewMode;
 }
 
-const PRODUCT_TYPES = [
-	"pc98",
-	"windows",
-	"zuns_music_collection",
-	"akyus_untouched_score",
-	"commercial_books",
-	"tasofro",
-	"other",
-] as const;
-
-function isValidProductType(value: unknown): value is ProductType | "all" {
-	if (typeof value !== "string") return false;
-	return value === "all" || PRODUCT_TYPES.includes(value as ProductType);
-}
-
-function parseTypeParam(value: unknown): ProductType | "all" {
-	return isValidProductType(value) ? value : "all";
+function parseTypeParam(value: unknown): string {
+	if (typeof value === "string" && value !== "") return value;
+	return "all";
 }
 
 function parsePageParam(value: unknown): number {
@@ -60,6 +42,26 @@ function parsePageParam(value: unknown): number {
 
 export const Route = createFileRoute("/_public/official-works")({
 	head: () => createPageHead("原作"),
+	loaderDeps: ({ search }) => ({
+		type: parseTypeParam(search.type),
+		page: parsePageParam(search.page),
+	}),
+	loader: async ({ deps }) => {
+		const [categoriesRes, worksRes] = await Promise.all([
+			publicApi.categories(),
+			publicApi.works.list({
+				category: deps.type !== "all" ? deps.type : undefined,
+				page: deps.page,
+				limit: PAGE_SIZE,
+			}),
+		]);
+		return {
+			categories: categoriesRes.data,
+			works: worksRes.data,
+			total: worksRes.total,
+			page: worksRes.page,
+		};
+	},
 	component: OfficialWorksPage,
 	validateSearch: (
 		search: Record<string, unknown>,
@@ -83,8 +85,13 @@ interface CategoryConfig {
 	badgeClass: string;
 }
 
-const categoryConfig: Record<ProductType | "all", CategoryConfig> = {
-	all: { label: "すべて", icon: null, badgeClass: "" },
+const defaultCategoryConfig: CategoryConfig = {
+	label: "その他",
+	icon: <Package className="size-4" />,
+	badgeClass: "badge-ghost",
+};
+
+const categoryConfigMap: Record<string, CategoryConfig> = {
 	pc98: {
 		label: "PC-98",
 		icon: <Gamepad2 className="size-4" />,
@@ -122,6 +129,10 @@ const categoryConfig: Record<ProductType | "all", CategoryConfig> = {
 	},
 };
 
+function getCategoryConfig(code: string): CategoryConfig {
+	return categoryConfigMap[code] ?? defaultCategoryConfig;
+}
+
 // =============================================================================
 // ページサイズ
 // =============================================================================
@@ -134,19 +145,13 @@ const PAGE_SIZE = 20;
 function OfficialWorksPage() {
 	const navigate = useNavigate({ from: Route.fullPath });
 	const { type = "all", page = 1, view = "list" } = Route.useSearch();
-
-	// カテゴリでフィルタリングした作品一覧（統計付き）
-	const worksWithStats = useMemo(() => {
-		const works = getWorksByProductType(type);
-		return works.map(getWorkWithStats);
-	}, [type]);
+	const { categories, works, total } = Route.useLoaderData();
 
 	// ページネーション
-	const totalPages = calculateTotalPages(worksWithStats.length, PAGE_SIZE);
-	const paginatedWorks = paginateData(worksWithStats, page, PAGE_SIZE);
+	const totalPages = Math.ceil(total / PAGE_SIZE);
 
 	// カテゴリ変更
-	const handleTypeChange = (newType: ProductType | "all") => {
+	const handleTypeChange = (newType: string) => {
 		navigate({
 			search: { type: newType, page: 1, view },
 		});
@@ -175,7 +180,7 @@ function OfficialWorksPage() {
 				<div>
 					<h1 className="font-bold text-3xl">公式作品一覧</h1>
 					<p className="mt-1 text-base-content/70">
-						東方Project公式作品 · {worksWithStats.length}件
+						東方Project公式作品 · {total}件
 					</p>
 				</div>
 				<ViewToggle value={view} onChange={handleViewChange} />
@@ -195,23 +200,26 @@ function OfficialWorksPage() {
 					>
 						すべて
 					</button>
-					{productTypes.map((pt) => (
-						<button
-							key={pt.code}
-							type="button"
-							className={`btn btn-sm gap-1 ${type === pt.code ? "btn-primary" : "btn-ghost"}`}
-							onClick={() => handleTypeChange(pt.code)}
-							aria-pressed={type === pt.code}
-						>
-							{categoryConfig[pt.code].icon}
-							{pt.name}
-						</button>
-					))}
+					{categories.map((cat: PublicCategory) => {
+						const config = getCategoryConfig(cat.code);
+						return (
+							<button
+								key={cat.code}
+								type="button"
+								className={`btn btn-sm gap-1 ${type === cat.code ? "btn-primary" : "btn-ghost"}`}
+								onClick={() => handleTypeChange(cat.code)}
+								aria-pressed={type === cat.code}
+							>
+								{config.icon}
+								{cat.name}
+							</button>
+						);
+					})}
 				</div>
 			</div>
 
 			{/* 作品一覧 */}
-			{paginatedWorks.length === 0 ? (
+			{works.length === 0 ? (
 				<EmptyState
 					type="filter"
 					title="該当する作品がありません"
@@ -220,9 +228,9 @@ function OfficialWorksPage() {
 			) : (
 				<>
 					{view === "grid" ? (
-						<WorksGridView works={paginatedWorks} />
+						<WorksGridView works={works} />
 					) : (
-						<WorksListView works={paginatedWorks} />
+						<WorksListView works={works} />
 					)}
 
 					{/* ページネーション */}
@@ -244,43 +252,48 @@ function OfficialWorksPage() {
 // =============================================================================
 
 interface WorksViewProps {
-	works: OfficialWorkWithStats[];
+	works: PublicWorkItem[];
 }
 
 function WorksGridView({ works }: WorksViewProps) {
 	return (
 		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-			{works.map((work) => (
-				<Link
-					key={work.id}
-					to="/official-works/$id"
-					params={{ id: work.id }}
-					className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
-				>
-					<div className="card-body p-4">
-						<div className="flex items-start justify-between gap-2">
-							<h3 className="card-title text-base">{work.shortName}</h3>
-							<span
-								className={`badge badge-sm ${categoryConfig[work.productType].badgeClass}`}
-							>
-								{categoryConfig[work.productType].label}
-							</span>
-						</div>
-						<p className="line-clamp-2 text-base-content/70 text-sm">
-							{work.name}
-						</p>
-						<div className="mt-2 flex items-center gap-4 text-base-content/50 text-sm">
-							<span>No.{work.seriesNumber}</span>
-							{work.songCount > 0 && (
-								<span className="flex items-center gap-1">
-									<Music className="size-3" aria-hidden="true" />
-									{work.songCount}曲
+			{works.map((work) => {
+				const category = getCategoryConfig(work.categoryCode);
+				return (
+					<Link
+						key={work.id}
+						to="/official-works/$id"
+						params={{ id: work.id }}
+						className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+					>
+						<div className="card-body p-4">
+							<div className="flex items-start justify-between gap-2">
+								<h3 className="card-title text-base">
+									{work.shortNameJa ?? work.nameJa}
+								</h3>
+								<span className={`badge badge-sm ${category.badgeClass}`}>
+									{category.label}
 								</span>
-							)}
+							</div>
+							<p className="line-clamp-2 text-base-content/70 text-sm">
+								{work.name}
+							</p>
+							<div className="mt-2 flex items-center gap-4 text-base-content/50 text-sm">
+								{work.numberInSeries != null && (
+									<span>No.{work.numberInSeries}</span>
+								)}
+								{work.songCount > 0 && (
+									<span className="flex items-center gap-1">
+										<Music className="size-3" aria-hidden="true" />
+										{work.songCount}曲
+									</span>
+								)}
+							</div>
 						</div>
-					</div>
-				</Link>
-			))}
+					</Link>
+				);
+			})}
 		</div>
 	);
 }
@@ -302,33 +315,38 @@ function WorksListView({ works }: WorksViewProps) {
 					</tr>
 				</thead>
 				<tbody>
-					{works.map((work) => (
-						<tr key={work.id} className="hover:bg-base-200/50">
-							<td className="w-16 text-base-content/70">{work.seriesNumber}</td>
-							<td>
-								<Link
-									to="/official-works/$id"
-									params={{ id: work.id }}
-									className="hover:text-primary"
-								>
-									<div className="font-medium">{work.shortName}</div>
-									<div className="line-clamp-1 text-base-content/70 text-sm">
-										{work.name}
-									</div>
-								</Link>
-							</td>
-							<td>
-								<span
-									className={`badge badge-sm ${categoryConfig[work.productType].badgeClass}`}
-								>
-									{categoryConfig[work.productType].label}
-								</span>
-							</td>
-							<td className="text-base-content/70">
-								{work.songCount > 0 ? `${work.songCount}曲` : "-"}
-							</td>
-						</tr>
-					))}
+					{works.map((work) => {
+						const category = getCategoryConfig(work.categoryCode);
+						return (
+							<tr key={work.id} className="hover:bg-base-200/50">
+								<td className="w-16 text-base-content/70">
+									{work.numberInSeries}
+								</td>
+								<td>
+									<Link
+										to="/official-works/$id"
+										params={{ id: work.id }}
+										className="hover:text-primary"
+									>
+										<div className="font-medium">
+											{work.shortNameJa ?? work.nameJa}
+										</div>
+										<div className="line-clamp-1 text-base-content/70 text-sm">
+											{work.name}
+										</div>
+									</Link>
+								</td>
+								<td>
+									<span className={`badge badge-sm ${category.badgeClass}`}>
+										{category.label}
+									</span>
+								</td>
+								<td className="text-base-content/70">
+									{work.songCount > 0 ? `${work.songCount}曲` : "-"}
+								</td>
+							</tr>
+						);
+					})}
 				</tbody>
 			</table>
 		</div>
