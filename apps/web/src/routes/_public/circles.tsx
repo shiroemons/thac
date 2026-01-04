@@ -69,7 +69,7 @@ interface Circle {
 
 const mockCircles: Circle[] = [
 	{
-		id: "iosys",
+		id: "circle-iosys",
 		name: "IOSYS",
 		nameJa: "イオシス",
 		nameEn: "IOSYS",
@@ -80,7 +80,7 @@ const mockCircles: Circle[] = [
 		trackCount: 1234,
 	},
 	{
-		id: "alstroemeria",
+		id: "circle-alstroemeria",
 		name: "Alstroemeria Records",
 		nameJa: "アルストロメリアレコーズ",
 		nameEn: "Alstroemeria Records",
@@ -91,7 +91,7 @@ const mockCircles: Circle[] = [
 		trackCount: 892,
 	},
 	{
-		id: "sound-holic",
+		id: "circle-sound-holic",
 		name: "SOUND HOLIC",
 		nameJa: "サウンドホリック",
 		nameEn: "SOUND HOLIC",
@@ -102,7 +102,7 @@ const mockCircles: Circle[] = [
 		trackCount: 1567,
 	},
 	{
-		id: "butaotome",
+		id: "circle-butaotome",
 		name: "豚乙女",
 		nameJa: "豚乙女",
 		nameEn: "Butaotome",
@@ -113,7 +113,7 @@ const mockCircles: Circle[] = [
 		trackCount: 689,
 	},
 	{
-		id: "diao-ye-zong",
+		id: "circle-diao-ye-zong",
 		name: "凋叶棕",
 		nameJa: "凋叶棕",
 		nameEn: "Diao ye zong",
@@ -124,7 +124,7 @@ const mockCircles: Circle[] = [
 		trackCount: 534,
 	},
 	{
-		id: "touhou-jihen",
+		id: "circle-touhou-jihen",
 		name: "東方事変",
 		nameJa: "東方事変",
 		nameEn: null,
@@ -135,7 +135,7 @@ const mockCircles: Circle[] = [
 		trackCount: 423,
 	},
 	{
-		id: "shinra-bansho",
+		id: "circle-shinra-bansho",
 		name: "森羅万象",
 		nameJa: "森羅万象",
 		nameEn: "Shinra-Bansho",
@@ -146,7 +146,7 @@ const mockCircles: Circle[] = [
 		trackCount: 478,
 	},
 	{
-		id: "cool-and-create",
+		id: "circle-cool-and-create",
 		name: "COOL&CREATE",
 		nameJa: "クール&クリエイト",
 		nameEn: "COOL&CREATE",
@@ -157,7 +157,7 @@ const mockCircles: Circle[] = [
 		trackCount: 987,
 	},
 	{
-		id: "tamusic",
+		id: "circle-tamusic",
 		name: "TAMusic",
 		nameJa: "タミュージック",
 		nameEn: "TAMusic",
@@ -168,7 +168,7 @@ const mockCircles: Circle[] = [
 		trackCount: 1123,
 	},
 	{
-		id: "sekken-ya",
+		id: "circle-sekken-ya",
 		name: "石鹸屋",
 		nameJa: "石鹸屋",
 		nameEn: "Sekken-ya",
@@ -179,7 +179,7 @@ const mockCircles: Circle[] = [
 		trackCount: 312,
 	},
 	{
-		id: "demetori",
+		id: "circle-demetori",
 		name: "Demetori",
 		nameJa: "デメトリ",
 		nameEn: "Demetori",
@@ -190,7 +190,7 @@ const mockCircles: Circle[] = [
 		trackCount: 234,
 	},
 	{
-		id: "silver-forest",
+		id: "circle-silver-forest",
 		name: "Silver Forest",
 		nameJa: "シルバーフォレスト",
 		nameEn: "Silver Forest",
@@ -201,7 +201,7 @@ const mockCircles: Circle[] = [
 		trackCount: 389,
 	},
 	{
-		id: "a-one",
+		id: "circle-a-one",
 		name: "A-One",
 		nameJa: "エーワン",
 		nameEn: "A-One",
@@ -212,7 +212,7 @@ const mockCircles: Circle[] = [
 		trackCount: 756,
 	},
 	{
-		id: "7th-heaven-maxion",
+		id: "circle-7th-heaven-maxion",
 		name: "7thHeaven MAXION",
 		nameJa: "セブンスヘブンマキシオン",
 		nameEn: "7thHeaven MAXION",
@@ -223,7 +223,7 @@ const mockCircles: Circle[] = [
 		trackCount: 398,
 	},
 	{
-		id: "ui70",
+		id: "circle-ui70",
 		name: "UI-70",
 		nameJa: "ユーアイナナジュウ",
 		nameEn: "UI-70",
@@ -235,7 +235,7 @@ const mockCircles: Circle[] = [
 	},
 	// かなで始まるサークルを追加
 	{
-		id: "akatsuki-records",
+		id: "circle-akatsuki-records",
 		name: "暁Records",
 		nameJa: "暁Records",
 		nameEn: "Akatsuki Records",
@@ -246,7 +246,7 @@ const mockCircles: Circle[] = [
 		trackCount: 543,
 	},
 	{
-		id: "karuinori",
+		id: "circle-karuinori",
 		name: "かるいノリ",
 		nameJa: "かるいノリ",
 		nameEn: null,
@@ -257,7 +257,7 @@ const mockCircles: Circle[] = [
 		trackCount: 98,
 	},
 	{
-		id: "sasakure-uk",
+		id: "circle-sasakure-uk",
 		name: "ささくれUK",
 		nameJa: "ささくれUK",
 		nameEn: "sasakure.UK",
@@ -268,7 +268,7 @@ const mockCircles: Circle[] = [
 		trackCount: 72,
 	},
 	{
-		id: "tamaonsen",
+		id: "circle-tamaonsen",
 		name: "たまおんせん",
 		nameJa: "たまおんせん",
 		nameEn: "Tama Onsen",
@@ -279,7 +279,7 @@ const mockCircles: Circle[] = [
 		trackCount: 187,
 	},
 	{
-		id: "nanahira",
+		id: "circle-nanahira",
 		name: "ナナヒラ",
 		nameJa: "ナナヒラ",
 		nameEn: "Nanahira",

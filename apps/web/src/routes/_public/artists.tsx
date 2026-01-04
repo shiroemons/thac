@@ -110,7 +110,7 @@ interface Artist {
 
 const mockArtists: Artist[] = [
 	{
-		id: "arm",
+		id: "artist-arm",
 		name: "ARM",
 		nameJa: "ARM",
 		nameEn: "ARM",
@@ -122,7 +122,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 78,
 	},
 	{
-		id: "miko",
+		id: "artist-miko",
 		name: "miko",
 		nameJa: "みこ",
 		nameEn: "miko",
@@ -134,7 +134,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 45,
 	},
 	{
-		id: "beatmario",
+		id: "artist-beatmario",
 		name: "ビートまりお",
 		nameJa: "ビートまりお",
 		nameEn: "Beatmario",
@@ -146,7 +146,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 67,
 	},
 	{
-		id: "ranko",
+		id: "artist-ranko",
 		name: "ランコ",
 		nameJa: "ランコ",
 		nameEn: "Ranko",
@@ -158,7 +158,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 56,
 	},
 	{
-		id: "comp",
+		id: "artist-comp",
 		name: "Comp",
 		nameJa: "コンプ",
 		nameEn: "Comp",
@@ -170,7 +170,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 42,
 	},
 	{
-		id: "recog",
+		id: "artist-recog",
 		name: "REDALiCE",
 		nameJa: "レダリス",
 		nameEn: "REDALiCE",
@@ -182,7 +182,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 89,
 	},
 	{
-		id: "nayuta",
+		id: "artist-nayuta",
 		name: "ナユタ",
 		nameJa: "ナユタ",
 		nameEn: "Nayuta",
@@ -194,7 +194,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 34,
 	},
 	{
-		id: "kouki",
+		id: "artist-kouki",
 		name: "幽閉サテライト",
 		nameJa: "幽閉サテライト",
 		nameEn: "Yuuhei Satellite",
@@ -206,7 +206,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 98,
 	},
 	{
-		id: "zun",
+		id: "artist-zun",
 		name: "ZUN",
 		nameJa: "ZUN",
 		nameEn: "ZUN",
@@ -218,7 +218,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 34,
 	},
 	{
-		id: "marika",
+		id: "artist-marika",
 		name: "まらしぃ",
 		nameJa: "まらしぃ",
 		nameEn: "Marasy",
@@ -230,7 +230,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 45,
 	},
 	{
-		id: "senya",
+		id: "artist-senya",
 		name: "せにゃ",
 		nameJa: "せにゃ",
 		nameEn: "Senya",
@@ -242,7 +242,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 52,
 	},
 	{
-		id: "merami",
+		id: "artist-merami",
 		name: "めらみぽっぷ",
 		nameJa: "めらみぽっぷ",
 		nameEn: "Meramipop",
@@ -254,7 +254,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 78,
 	},
 	{
-		id: "hachijo",
+		id: "artist-hachijo",
 		name: "8-3",
 		nameJa: "ハチサン",
 		nameEn: "8-3",
@@ -266,7 +266,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 29,
 	},
 	{
-		id: "kissing",
+		id: "artist-kissing",
 		name: "Kissing the Mirror",
 		nameJa: "キッシングザミラー",
 		nameEn: "Kissing the Mirror",
@@ -278,7 +278,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 41,
 	},
 	{
-		id: "tamaonsen",
+		id: "artist-tamaonsen",
 		name: "魂音泉",
 		nameJa: "魂音泉",
 		nameEn: "Tama Onsen",
@@ -290,7 +290,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 87,
 	},
 	{
-		id: "yukina",
+		id: "artist-yukina",
 		name: "yukina",
 		nameJa: "ゆきな",
 		nameEn: "yukina",
@@ -302,7 +302,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 32,
 	},
 	{
-		id: "masayoshi",
+		id: "artist-masayoshi",
 		name: "Masayoshi Minoshima",
 		nameJa: "みのしままさよし",
 		nameEn: "Masayoshi Minoshima",
@@ -314,7 +314,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 89,
 	},
 	{
-		id: "taishi",
+		id: "artist-taishi",
 		name: "タイシ",
 		nameJa: "タイシ",
 		nameEn: "Taishi",
@@ -326,7 +326,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 56,
 	},
 	{
-		id: "nachi",
+		id: "artist-nachi",
 		name: "nachi",
 		nameJa: "なち",
 		nameEn: "nachi",
@@ -338,7 +338,7 @@ const mockArtists: Artist[] = [
 		releaseCount: 48,
 	},
 	{
-		id: "azuki",
+		id: "artist-azuki",
 		name: "あずき",
 		nameJa: "あずき",
 		nameEn: "Azuki",
