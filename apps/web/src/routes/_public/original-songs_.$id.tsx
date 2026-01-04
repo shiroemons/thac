@@ -5,6 +5,7 @@ import {
 	ChevronRight,
 	Disc3,
 	ExternalLink,
+	Mic,
 	Music,
 	TrendingUp,
 	Users,
@@ -89,6 +90,14 @@ function OriginalSongDetailPage() {
 	const arrangeCount = song ? getArrangeCount(song.id) : 0;
 	const links = mockSongLinks[id] || [];
 	const arranges = getMockArrangeTracks(id);
+
+	// 一意のサークル数・アーティスト数を計算
+	const circleCount = new Set(
+		arranges.flatMap((arr) => arr.circles.map((c) => c.id)),
+	).size;
+	const artistCount = new Set(
+		arranges.flatMap((arr) => arr.artists.map((a) => a.id)),
+	).size;
 
 	// 同作品の他の楽曲（ナビゲーション用）
 	const siblingNavigation = useMemo(() => {
@@ -187,7 +196,7 @@ function OriginalSongDetailPage() {
 				</div>
 
 				{/* 統計カード */}
-				<div className="mt-6">
+				<div className="mt-6 grid grid-cols-3 gap-4">
 					<div className="rounded-lg bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<TrendingUp className="size-5" />
@@ -196,6 +205,24 @@ function OriginalSongDetailPage() {
 							</span>
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">アレンジ数</p>
+					</div>
+					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+						<div className="flex items-center justify-center gap-2 text-primary">
+							<Users className="size-5" />
+							<span className="font-bold text-2xl">
+								{circleCount.toLocaleString()}
+							</span>
+						</div>
+						<p className="mt-1 text-base-content/70 text-sm">サークル数</p>
+					</div>
+					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+						<div className="flex items-center justify-center gap-2 text-primary">
+							<Mic className="size-5" />
+							<span className="font-bold text-2xl">
+								{artistCount.toLocaleString()}
+							</span>
+						</div>
+						<p className="mt-1 text-base-content/70 text-sm">アーティスト数</p>
 					</div>
 				</div>
 			</div>
