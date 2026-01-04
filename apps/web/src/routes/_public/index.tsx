@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { HeroSection, RecentReleases, StatsCards } from "@/components/public";
+import {
+	FeaturesSection,
+	HeroSection,
+	NavigationSection,
+} from "@/components/public";
 
 export const Route = createFileRoute("/_public/")({
 	head: () => ({
@@ -10,10 +14,16 @@ export const Route = createFileRoute("/_public/")({
 
 function HomePage() {
 	return (
-		<div className="space-y-8">
-			<HeroSection />
-			<StatsCards />
-			<RecentReleases />
+		<div className="scrollbar-hide -mx-4 -my-6 h-[calc(100vh-4rem)] snap-y snap-mandatory overflow-y-auto">
+			<div className="snap-start">
+				<HeroSection />
+			</div>
+			<div className="snap-start">
+				<FeaturesSection />
+			</div>
+			<div className="snap-start">
+				<NavigationSection />
+			</div>
 		</div>
 	);
 }

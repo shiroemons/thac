@@ -1,9 +1,42 @@
 import { Link } from "@tanstack/react-router";
-import { Music, Search, Sparkles } from "lucide-react";
+import { Calendar, Disc3, Music, Search, Sparkles, Users } from "lucide-react";
+
+// Mock data for demonstration
+const mockStats = {
+	originalSongs: 1234,
+	events: 567,
+	circles: 456,
+	artists: 890,
+	tracks: 12345,
+};
+
+interface StatLinkProps {
+	href: string;
+	count: number;
+	label: string;
+	icon?: React.ReactNode;
+}
+
+function StatLink({ href, count, label, icon }: StatLinkProps) {
+	return (
+		<Link
+			to={href}
+			className="group flex items-center gap-2 transition-colors hover:text-primary"
+		>
+			{icon}
+			<span>
+				<span className="font-semibold text-base-content group-hover:text-primary">
+					{count.toLocaleString()}
+				</span>{" "}
+				{label}
+			</span>
+		</Link>
+	);
+}
 
 export function HeroSection() {
 	return (
-		<section className="relative -mx-4 -mt-6 overflow-hidden px-4 py-20 md:py-32">
+		<section className="relative flex h-[calc(100vh-4rem)] flex-col justify-center overflow-hidden px-4 py-12">
 			{/* Gradient mesh background */}
 			<div className="gradient-hero absolute inset-0" />
 
@@ -56,29 +89,67 @@ export function HeroSection() {
 					</Link>
 				</div>
 
-				{/* Quick stats */}
-				<div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-base-content/50 text-sm md:gap-10">
-					<div className="flex items-center gap-2">
-						<Music className="h-4 w-4 text-primary" aria-hidden="true" />
-						<span>
-							<span className="font-semibold text-base-content">12,345</span>{" "}
-							トラック
-						</span>
-					</div>
+				{/* Stats with links */}
+				<div className="mt-12 flex flex-wrap items-center justify-center gap-4 text-base-content/50 text-sm md:gap-6">
+					<StatLink
+						href="/original-songs"
+						count={mockStats.originalSongs}
+						label="原曲"
+						icon={
+							<Music
+								className="h-4 w-4 text-primary group-hover:text-primary"
+								aria-hidden="true"
+							/>
+						}
+					/>
 					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
-					<div className="flex items-center gap-2">
-						<span>
-							<span className="font-semibold text-base-content">456</span>{" "}
-							サークル
-						</span>
-					</div>
+					<StatLink
+						href="/events"
+						count={mockStats.events}
+						label="イベント"
+						icon={
+							<Calendar
+								className="h-4 w-4 text-primary group-hover:text-primary"
+								aria-hidden="true"
+							/>
+						}
+					/>
 					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
-					<div className="flex items-center gap-2">
-						<span>
-							<span className="font-semibold text-base-content">890</span>{" "}
-							アーティスト
-						</span>
-					</div>
+					<StatLink
+						href="/circles"
+						count={mockStats.circles}
+						label="サークル"
+						icon={
+							<Users
+								className="h-4 w-4 text-primary group-hover:text-primary"
+								aria-hidden="true"
+							/>
+						}
+					/>
+					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
+					<StatLink
+						href="/artists"
+						count={mockStats.artists}
+						label="アーティスト"
+						icon={
+							<Users
+								className="h-4 w-4 text-primary group-hover:text-primary"
+								aria-hidden="true"
+							/>
+						}
+					/>
+					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
+					<StatLink
+						href="/stats"
+						count={mockStats.tracks}
+						label="トラック"
+						icon={
+							<Disc3
+								className="h-4 w-4 text-primary group-hover:text-primary"
+								aria-hidden="true"
+							/>
+						}
+					/>
 				</div>
 			</div>
 		</section>
