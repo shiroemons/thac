@@ -133,112 +133,85 @@ const mockCircleLinks: Record<string, CircleLink[]> = {
 	],
 };
 
-// モックデータ - リリース
+// モックデータ - リリース（mocks/release.tsと統一されたID）
 const mockReleases: Record<string, Release[]> = {
 	"circle-iosys": [
 		{
-			id: "rel-1",
+			id: "rel-iosys-001",
 			name: "東方乙女囃子",
 			nameJa: "東方乙女囃子",
 			releaseDate: "2006-12-31",
 			releaseType: "album",
 			participationType: "host",
 			event: { id: "c71", name: "C71" },
-			trackCount: 12,
+			trackCount: 4,
 		},
 		{
-			id: "rel-2",
-			name: "東方氷雪歌集",
-			nameJa: "東方氷雪歌集",
-			releaseDate: "2007-08-17",
-			releaseType: "album",
-			participationType: "host",
-			event: { id: "c72", name: "C72" },
-			trackCount: 10,
-		},
-		{
-			id: "rel-3",
-			name: "東方萃奏楽",
-			nameJa: "東方萃奏楽",
+			id: "rel-single-001",
+			name: "チルノのパーフェクトさんすう教室",
+			nameJa: "チルノのパーフェクトさんすう教室",
 			releaseDate: "2008-08-16",
-			releaseType: "album",
-			participationType: "host",
-			event: { id: "c74", name: "C74" },
-			trackCount: 14,
-		},
-		{
-			id: "rel-4",
-			name: "東方超次元",
-			nameJa: "東方超次元",
-			releaseDate: "2010-12-30",
-			releaseType: "album",
-			participationType: "host",
-			event: { id: "c79", name: "C79" },
-			trackCount: 11,
-		},
-		{
-			id: "rel-5",
-			name: "チルノのパーフェクトさんすう教室 THE MOVIE",
-			nameJa: "チルノのパーフェクトさんすう教室 THE MOVIE",
-			releaseDate: "2012-08-11",
 			releaseType: "single",
 			participationType: "host",
-			event: { id: "c82", name: "C82" },
-			trackCount: 3,
+			event: { id: "c74", name: "C74" },
+			trackCount: 1,
 		},
 	],
 };
 
-// モックデータ - トラック
+// モックデータ - トラック（mocks/release.tsと統一されたID）
 const mockTracks: Record<string, Track[]> = {
 	"circle-iosys": [
 		{
-			id: "track-1",
+			id: "track-001",
 			name: "最終鬼畜妹フランドール・S",
-			releaseId: "rel-1",
+			releaseId: "rel-iosys-001",
 			releaseName: "東方乙女囃子",
 			trackNumber: 1,
 			artists: [
 				{ id: "artist-arm", creditName: "ARM", roles: ["arrange", "lyrics"] },
 				{ id: "artist-miko", creditName: "miko", roles: ["vocal"] },
 			],
-			originalSong: { id: "th06-15", name: "U.N.オーエンは彼女なのか？" },
+			originalSong: { id: "02010015", name: "U.N.オーエンは彼女なのか？" },
 		},
 		{
-			id: "track-2",
-			name: "チルノのパーフェクトさんすう教室",
-			releaseId: "rel-2",
-			releaseName: "東方氷雪歌集",
-			trackNumber: 1,
+			id: "track-002",
+			name: "魔理沙は大変なものを盗んでいきました",
+			releaseId: "rel-iosys-001",
+			releaseName: "東方乙女囃子",
+			trackNumber: 2,
 			artists: [
 				{ id: "artist-arm", creditName: "ARM", roles: ["arrange", "lyrics"] },
-				{ id: "artist-miko", creditName: "miko", roles: ["vocal"] },
+				{ id: "artist-fu-rin", creditName: "藤咲かりん", roles: ["vocal"] },
 			],
-			originalSong: { id: "th06-05", name: "おてんば恋娘" },
+			originalSong: { id: "02010008", name: "人形裁判 ～ 人の形弄びし少女" },
 		},
 		{
-			id: "track-3",
-			name: "魔理沙は大変なものを盗んでいきました",
-			releaseId: "rel-1",
+			id: "track-003",
+			name: "患部で止まってすぐ溶ける ～ 狂気の優曇華院",
+			releaseId: "rel-iosys-001",
 			releaseName: "東方乙女囃子",
 			trackNumber: 3,
 			artists: [
 				{ id: "artist-arm", creditName: "ARM", roles: ["arrange", "lyrics"] },
-				{ id: "artist-fujimaru", creditName: "藤山晃太郎", roles: ["vocal"] },
+				{ id: "artist-uno", creditName: "uno", roles: ["vocal"] },
 			],
-			originalSong: { id: "th07-xx", name: "人形裁判" },
+			originalSong: {
+				id: "02080008",
+				name: "狂気の瞳　～ Invisible Full Moon",
+			},
 		},
 		{
-			id: "track-4",
-			name: "患部で止まってすぐ溶ける〜狂気の優曇華院",
-			releaseId: "rel-1",
-			releaseName: "東方乙女囃子",
-			trackNumber: 5,
+			id: "track-single-001",
+			name: "チルノのパーフェクトさんすう教室",
+			releaseId: "rel-single-001",
+			releaseName: "チルノのパーフェクトさんすう教室",
+			trackNumber: 1,
 			artists: [
 				{ id: "artist-arm", creditName: "ARM", roles: ["arrange", "lyrics"] },
 				{ id: "artist-miko", creditName: "miko", roles: ["vocal"] },
 			],
-			originalSong: { id: "th08-xx", name: "狂気の瞳 〜 Invisible Full Moon" },
+			originalSong: { id: "02020004", name: "おてんば恋娘" },
 		},
 	],
 };
@@ -427,7 +400,13 @@ function CircleDetailPage() {
 								className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
 							>
 								<div className="card-body p-4">
-									<h3 className="card-title text-base">{release.name}</h3>
+									<Link
+										to="/releases/$id"
+										params={{ id: release.id }}
+										className="card-title text-base hover:text-primary"
+									>
+										{release.name}
+									</Link>
 									<div className="flex flex-wrap items-center gap-2 text-base-content/60 text-sm">
 										{release.event && (
 											<Link
@@ -480,7 +459,15 @@ function CircleDetailPage() {
 							<tbody>
 								{releases.map((release) => (
 									<tr key={release.id} className="hover:bg-base-200/50">
-										<td className="font-medium">{release.name}</td>
+										<td>
+											<Link
+												to="/releases/$id"
+												params={{ id: release.id }}
+												className="font-medium hover:text-primary"
+											>
+												{release.name}
+											</Link>
+										</td>
 										<td>
 											{release.event ? (
 												<Link

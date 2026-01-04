@@ -116,12 +116,12 @@ const mockEventDays: Record<string, EventDay[]> = {
 	],
 };
 
-// モックデータ - リリース
+// モックデータ - リリース（mocks/release.tsと統一されたID）
 const mockReleases: Record<string, Release[]> = {
 	c105: [
 		{
-			id: "rel-1",
-			name: "東方幻想郷2024",
+			id: "rel-iosys-001",
+			name: "東方乙女囃子",
 			releaseDate: "2024-12-30",
 			releaseType: "album",
 			circles: [
@@ -130,8 +130,8 @@ const mockReleases: Record<string, Release[]> = {
 			trackCount: 12,
 		},
 		{
-			id: "rel-2",
-			name: "Scarlet Destiny III",
+			id: "rel-alst-001",
+			name: "幻想郷を照らす紅",
 			releaseDate: "2024-12-29",
 			releaseType: "album",
 			circles: [
@@ -144,8 +144,8 @@ const mockReleases: Record<string, Release[]> = {
 			trackCount: 10,
 		},
 		{
-			id: "rel-3",
-			name: "東方紅魔狂 2024",
+			id: "rel-butai-001",
+			name: "舞台の裏方",
 			releaseDate: "2024-12-30",
 			releaseType: "album",
 			circles: [
@@ -154,25 +154,29 @@ const mockReleases: Record<string, Release[]> = {
 			trackCount: 8,
 		},
 		{
-			id: "rel-4",
-			name: "幻想郷の音楽",
+			id: "rel-multi-disc",
+			name: "東方交響曲",
 			releaseDate: "2024-12-28",
 			releaseType: "album",
 			circles: [
-				{ id: "circle-sf", name: "Silver Forest", participationType: "host" },
-				{ id: "circle-guest", name: "凋叶棕", participationType: "guest" },
+				{ id: "circle-iosys", name: "IOSYS", participationType: "host" },
+				{
+					id: "circle-alst",
+					name: "Alstroemeria Records",
+					participationType: "guest",
+				},
 			],
 			trackCount: 14,
 		},
 		{
-			id: "rel-5",
-			name: "Toho Eurobeat Vol.30",
+			id: "rel-single-001",
+			name: "チルノのパーフェクトさんすう教室",
 			releaseDate: "2024-12-30",
-			releaseType: "album",
+			releaseType: "single",
 			circles: [
-				{ id: "circle-aone", name: "A-One", participationType: "host" },
+				{ id: "circle-iosys", name: "IOSYS", participationType: "host" },
 			],
-			trackCount: 15,
+			trackCount: 3,
 		},
 	],
 };
@@ -355,7 +359,13 @@ function EventDetailPage() {
 								className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
 							>
 								<div className="card-body p-4">
-									<h3 className="card-title text-base">{release.name}</h3>
+									<Link
+										to="/releases/$id"
+										params={{ id: release.id }}
+										className="card-title text-base hover:text-primary"
+									>
+										{release.name}
+									</Link>
 									<div className="flex flex-wrap gap-1">
 										{release.circles.map((circle) => (
 											<Link
@@ -403,7 +413,15 @@ function EventDetailPage() {
 							<tbody>
 								{releases.map((release) => (
 									<tr key={release.id} className="hover:bg-base-200/50">
-										<td className="font-medium">{release.name}</td>
+										<td>
+											<Link
+												to="/releases/$id"
+												params={{ id: release.id }}
+												className="font-medium hover:text-primary"
+											>
+												{release.name}
+											</Link>
+										</td>
 										<td>
 											{release.circles.map((circle, idx) => (
 												<span key={circle.id}>
