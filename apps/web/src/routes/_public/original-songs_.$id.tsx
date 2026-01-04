@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import { PublicBreadcrumb } from "@/components/public";
+import { createPublicOriginalSongHead } from "@/lib/head";
 import {
 	getArrangeCount,
 	getMockArrangeTracks,
@@ -21,6 +22,9 @@ import {
 } from "@/mocks/official";
 
 export const Route = createFileRoute("/_public/original-songs_/$id")({
+	loader: ({ params }) => ({ song: getSongById(params.id) }),
+	head: ({ loaderData }) =>
+		createPublicOriginalSongHead(loaderData?.song?.name),
 	component: OriginalSongDetailPage,
 });
 

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Clock, Disc, Music, Search, Users, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PublicBreadcrumb } from "@/components/public";
+import { createPageHead } from "@/lib/head";
 
 type SearchCategory = "all" | "artist" | "circle" | "track";
 
@@ -11,6 +12,7 @@ interface SearchParams {
 }
 
 export const Route = createFileRoute("/_public/search")({
+	head: () => createPageHead("検索"),
 	component: SearchPage,
 	validateSearch: (search: Record<string, unknown>): SearchParams => {
 		return {

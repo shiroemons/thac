@@ -7,8 +7,16 @@ import {
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { createPublicCircleHead } from "@/lib/head";
+
+// モックサークル取得関数（loader用）
+function getCircle(id: string) {
+	return mockCircles[id] ?? null;
+}
 
 export const Route = createFileRoute("/_public/circles_/$id")({
+	loader: ({ params }) => ({ circle: getCircle(params.id) }),
+	head: ({ loaderData }) => createPublicCircleHead(loaderData?.circle?.name),
 	component: CircleDetailPage,
 });
 

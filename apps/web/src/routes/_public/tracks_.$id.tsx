@@ -9,11 +9,18 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import { PublicationLinks, PublicBreadcrumb } from "@/components/public";
+import { createPublicTrackHead } from "@/lib/head";
 import { getPublicationsForTrack } from "@/mocks/publication";
 import { getTrackWithDetails } from "@/mocks/release";
 import { roleNames, type TrackCredit } from "@/types/release";
 
 export const Route = createFileRoute("/_public/tracks_/$id")({
+	loader: ({ params }) => ({ track: getTrackWithDetails(params.id) }),
+	head: ({ loaderData }) =>
+		createPublicTrackHead(
+			loaderData?.track?.name,
+			loaderData?.track?.release?.name,
+		),
 	component: TrackDetailPage,
 });
 

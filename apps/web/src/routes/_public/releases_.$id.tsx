@@ -6,6 +6,7 @@ import {
 	PublicationLinks,
 	PublicBreadcrumb,
 } from "@/components/public";
+import { createPublicReleaseHead } from "@/lib/head";
 import { getPublicationsForRelease } from "@/mocks/publication";
 import { getReleaseWithDetails } from "@/mocks/release";
 import {
@@ -18,6 +19,8 @@ import {
 } from "@/types/release";
 
 export const Route = createFileRoute("/_public/releases_/$id")({
+	loader: ({ params }) => ({ release: getReleaseWithDetails(params.id) }),
+	head: ({ loaderData }) => createPublicReleaseHead(loaderData?.release?.name),
 	component: ReleaseDetailPage,
 });
 

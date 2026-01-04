@@ -11,6 +11,7 @@ import {
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { createPageHead } from "@/lib/head";
 import { isInKanaRow, type KanaRow } from "@/lib/kana-utils";
 import {
 	type AlphabetInitial,
@@ -75,6 +76,7 @@ interface ArtistsSearchParams {
 }
 
 export const Route = createFileRoute("/_public/artists")({
+	head: () => createPageHead("アーティスト"),
 	component: ArtistsPage,
 	validateSearch: (search: Record<string, unknown>): ArtistsSearchParams => {
 		const script = parseScriptParam(search.script);

@@ -7,8 +7,16 @@ import {
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { createPublicEventHead } from "@/lib/head";
+
+// モックイベント取得関数（loader用）
+function getEvent(id: string) {
+	return mockEvents[id] ?? null;
+}
 
 export const Route = createFileRoute("/_public/events_/$id")({
+	loader: ({ params }) => ({ event: getEvent(params.id) }),
+	head: ({ loaderData }) => createPublicEventHead(loaderData?.event?.name),
 	component: EventDetailPage,
 });
 

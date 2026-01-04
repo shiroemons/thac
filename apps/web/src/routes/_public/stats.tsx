@@ -8,8 +8,10 @@ import {
 	Users,
 } from "lucide-react";
 import { PublicBreadcrumb } from "@/components/public";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/_public/stats")({
+	head: () => createPageHead("統計"),
 	component: StatsPage,
 });
 

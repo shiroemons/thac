@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight, Music } from "lucide-react";
 import { useMemo } from "react";
 import { PublicBreadcrumb } from "@/components/public";
+import { createPageHead } from "@/lib/head";
 import {
 	getArrangeCount,
 	getSongsByWorkId,
@@ -44,6 +45,7 @@ function parseOpenParam(value: unknown): string | undefined {
 }
 
 export const Route = createFileRoute("/_public/original-songs")({
+	head: () => createPageHead("原曲"),
 	component: OriginalSongsPage,
 	validateSearch: (
 		search: Record<string, unknown>,

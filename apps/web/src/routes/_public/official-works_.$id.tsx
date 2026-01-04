@@ -9,6 +9,7 @@ import {
 	TrendingUp,
 } from "lucide-react";
 import { PublicBreadcrumb } from "@/components/public";
+import { createPublicOfficialWorkHead } from "@/lib/head";
 import {
 	getArrangeCount,
 	getSongsByWorkId,
@@ -18,6 +19,9 @@ import {
 import type { ProductType } from "@/types/official";
 
 export const Route = createFileRoute("/_public/official-works_/$id")({
+	loader: ({ params }) => ({ work: getWorkById(params.id) }),
+	head: ({ loaderData }) =>
+		createPublicOfficialWorkHead(loaderData?.work?.name),
 	component: OfficialWorkDetailPage,
 });
 

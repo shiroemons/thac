@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ExternalLink, Github, Music } from "lucide-react";
 import { PublicBreadcrumb } from "@/components/public";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/_public/about")({
+	head: () => createPageHead("About"),
 	component: AboutPage,
 });
 

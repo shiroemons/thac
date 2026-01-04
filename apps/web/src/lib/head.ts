@@ -65,3 +65,60 @@ export function createArtistAliasDetailHead(aliasName?: string) {
 		meta: [{ title: `名義詳細：${subtitle} | ${APP_NAME}` }],
 	};
 }
+
+// =============================================================================
+// 公開ページ用（「詳細」なしの形式）
+// =============================================================================
+
+export function createPublicArtistHead(artistName?: string) {
+	const subtitle = artistName || "読み込み中";
+	return {
+		meta: [{ title: `アーティスト：${subtitle} | ${APP_NAME}` }],
+	};
+}
+
+export function createPublicCircleHead(circleName?: string) {
+	const subtitle = circleName || "読み込み中";
+	return {
+		meta: [{ title: `サークル：${subtitle} | ${APP_NAME}` }],
+	};
+}
+
+export function createPublicEventHead(eventName?: string) {
+	const subtitle = eventName || "読み込み中";
+	return {
+		meta: [{ title: `イベント：${subtitle} | ${APP_NAME}` }],
+	};
+}
+
+export function createPublicOfficialWorkHead(workName?: string) {
+	const subtitle = workName || "読み込み中";
+	return {
+		meta: [{ title: `原作：${subtitle} | ${APP_NAME}` }],
+	};
+}
+
+export function createPublicOriginalSongHead(songName?: string) {
+	const subtitle = songName || "読み込み中";
+	return {
+		meta: [{ title: `原曲：${subtitle} | ${APP_NAME}` }],
+	};
+}
+
+export function createPublicReleaseHead(releaseName?: string) {
+	const subtitle = releaseName || "読み込み中";
+	return {
+		meta: [{ title: `作品：${subtitle} | ${APP_NAME}` }],
+	};
+}
+
+export function createPublicTrackHead(
+	trackName?: string,
+	releaseName?: string,
+) {
+	const subtitle =
+		trackName && releaseName ? `${trackName} - ${releaseName}` : "読み込み中";
+	return {
+		meta: [{ title: `トラック：${subtitle} | ${APP_NAME}` }],
+	};
+}

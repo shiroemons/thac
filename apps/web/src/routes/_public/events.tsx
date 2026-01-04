@@ -2,8 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calendar, ChevronDown, ChevronRight, Disc } from "lucide-react";
 import { useEffect, useState } from "react";
 import { EmptyState, PublicBreadcrumb } from "@/components/public";
+import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/_public/events")({
+	head: () => createPageHead("イベント"),
 	component: EventsPage,
 });
 

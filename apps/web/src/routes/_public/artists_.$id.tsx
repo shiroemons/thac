@@ -2,8 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Disc3, Music, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { EmptyState, PublicBreadcrumb } from "@/components/public";
+import { createPublicArtistHead } from "@/lib/head";
+
+// モックアーティスト取得関数（loader用）
+function getArtist(id: string) {
+	return mockArtists[id] ?? null;
+}
 
 export const Route = createFileRoute("/_public/artists_/$id")({
+	loader: ({ params }) => ({ artist: getArtist(params.id) }),
+	head: ({ loaderData }) => createPublicArtistHead(loaderData?.artist?.name),
 	component: ArtistDetailPage,
 });
 

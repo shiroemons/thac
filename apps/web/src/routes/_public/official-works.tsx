@@ -10,6 +10,7 @@ import {
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { createPageHead } from "@/lib/head";
 import {
 	getWorksByProductType,
 	getWorkWithStats,
@@ -58,6 +59,7 @@ function parsePageParam(value: unknown): number {
 }
 
 export const Route = createFileRoute("/_public/official-works")({
+	head: () => createPageHead("原作"),
 	component: OfficialWorksPage,
 	validateSearch: (
 		search: Record<string, unknown>,

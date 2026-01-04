@@ -11,6 +11,7 @@ import {
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { createPageHead } from "@/lib/head";
 import { isInKanaRow, type KanaRow } from "@/lib/kana-utils";
 import {
 	type AlphabetInitial,
@@ -36,6 +37,7 @@ interface CirclesSearchParams {
 }
 
 export const Route = createFileRoute("/_public/circles")({
+	head: () => createPageHead("サークル"),
 	component: CirclesPage,
 	validateSearch: (search: Record<string, unknown>): CirclesSearchParams => {
 		const script = parseScriptParam(search.script);
