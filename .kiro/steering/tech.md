@@ -190,6 +190,37 @@ const readRateLimiter = rateLimiter({
 { "error": "リクエスト数が上限を超えました。しばらくしてから再試行してください" }
 ```
 
+## Page Metadata (SEO)
+
+### Head Utility
+
+`apps/web/src/lib/head.ts`でページタイトルを一元管理:
+
+```typescript
+import { createPageHead, createPublicArtistHead } from "@/lib/head";
+
+// 一覧ページ
+export const Route = createFileRoute("/_public/artists")({
+  head: () => createPageHead("アーティスト"),
+  component: ArtistsPage,
+});
+
+// 詳細ページ（loaderDataを使用）
+export const Route = createFileRoute("/_public/artists_/$id")({
+  loader: ({ params }) => fetchArtist(params.id),
+  head: ({ loaderData }) => createPublicArtistHead(loaderData?.name),
+  component: ArtistDetailPage,
+});
+```
+
+### タイトル形式
+
+| ページ種別 | 形式 | 例 |
+|-----------|------|-----|
+| 一覧（公開） | `{ページ名} \| 東方編曲録` | アーティスト \| 東方編曲録 |
+| 詳細（公開） | `{カテゴリ}：{名前} \| 東方編曲録` | アーティスト：ZUN \| 東方編曲録 |
+| 詳細（管理） | `{カテゴリ}詳細：{名前} \| 東方編曲録` | アーティスト詳細：ZUN \| 東方編曲録 |
+
 ## Key Technical Decisions
 
 - **Bunランタイム採用**: 高速な起動と実行、ネイティブTypeScriptサポート

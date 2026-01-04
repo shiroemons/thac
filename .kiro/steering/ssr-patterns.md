@@ -315,5 +315,32 @@ bun run --cwd apps/web lint:jsx-nesting
 
 - `DialogDescription` (`components/ui/dialog.tsx`): `<p>` → `<div>` に修正済み
 
+## ロケール依存のフォーマット
+
+### toLocaleString()のハイドレーション問題
+
+`Number.prototype.toLocaleString()` はサーバーとクライアントで異なる結果を返すことがある。
+これはロケール設定がサーバー（Node.js/Bun）とクライアント（ブラウザ）で異なるため。
+
+### formatNumber ユーティリティ
+
+`apps/web/src/lib/format.ts`に`formatNumber`ユーティリティを提供:
+
+```typescript
+import { formatNumber } from "@/lib/format";
+
+// NG: ハイドレーションエラーの可能性あり
+<span>{count.toLocaleString()}</span>
+
+// OK: 一貫したフォーマット
+<span>{formatNumber(count)}</span>
+```
+
+### 適用対象
+
+- 統計情報の数値表示（`stats.tsx`）
+- ランキング表示
+- その他数値をフォーマットする箇所
+
 ---
 _Last updated: 2026-01_

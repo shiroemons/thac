@@ -32,11 +32,49 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 **Pattern**: `{entity}-edit-dialog.tsx`（編集ダイアログ）、`data-table-*.tsx`（テーブル関連）
 **Example**: `artist-edit-dialog.tsx`, `track-edit-dialog.tsx`, `data-table-pagination.tsx`
 
+### Public Components (`apps/web/src/components/public/`)
+**Location**: `/apps/web/src/components/public/`
+**Purpose**: 公開ページ用コンポーネント
+**Pattern**:
+- レイアウト: `public-header.tsx`, `public-footer.tsx`, `public-breadcrumb.tsx`
+- 共通UI: `entity-card.tsx`, `empty-state.tsx`, `pagination.tsx`, `view-toggle.tsx`
+- 埋め込み: `embeds/youtube-embed.tsx`, `embeds/niconico-embed.tsx`
+- リンク: `external-link.tsx`, `external-link-modal.tsx`, `publication-links.tsx`
+**Example**: `hero-section.tsx`, `stats-cards.tsx`, `script-filter.tsx`
+
+### Public Routes (`apps/web/src/routes/_public/`)
+**Location**: `/apps/web/src/routes/_public/`
+**Purpose**: 公開向けページ（認証不要）
+**Pattern**:
+- 一覧: `{entity}.tsx`（例: `artists.tsx`, `circles.tsx`）
+- 詳細: `{entity}_.$id.tsx`（例: `artists_.$id.tsx`, `releases_.$id.tsx`）
+- 静的: `about.tsx`, `privacy.tsx`, `search.tsx`, `stats.tsx`
+**Layout**: `_public.tsx`（PublicHeader + PublicFooter + ExternalLinkProvider）
+
 ### Database Schema (`packages/db/src/schema/`)
 **Location**: `/packages/db/src/schema/`
 **Purpose**: Drizzle ORMスキーマ定義
 **Pattern**: `{entity}.ts`（スキーマ）+ `{entity}.validation.ts`（Zodバリデーション）
 **Example**: `auth.ts`, `track.ts`, `release.ts`, `artist-circle.ts`
+
+### Mock Data (`apps/web/src/mocks/`)
+**Location**: `/apps/web/src/mocks/`
+**Purpose**: 開発時のモックデータ（API統合前のプレースホルダー）
+**Pattern**: `{domain}.ts`（ドメイン別）
+**Example**: `official.ts`, `publication.ts`, `release.ts`
+**Note**: 本番APIとの統合後は不要になる
+
+### Type Definitions (`apps/web/src/types/`)
+**Location**: `/apps/web/src/types/`
+**Purpose**: フロントエンド固有の型定義（DBスキーマと異なる場合）
+**Pattern**: `{domain}.ts`
+**Example**: `official.ts`（公式作品・楽曲）, `publication.ts`（配信プラットフォーム）, `release.ts`
+
+### Contexts (`apps/web/src/contexts/`)
+**Location**: `/apps/web/src/contexts/`
+**Purpose**: React Contextによるグローバル状態管理
+**Pattern**: `{name}-context.tsx`
+**Example**: `external-link-context.tsx`（外部リンク確認モーダル）
 
 ### Custom Hooks (`apps/web/src/hooks/`)
 **Location**: `/apps/web/src/hooks/`
