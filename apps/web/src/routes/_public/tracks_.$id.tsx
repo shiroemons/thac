@@ -131,13 +131,6 @@ function TrackDetailPage() {
 				</div>
 			</div>
 
-			{/* 配信リンク */}
-			{publications.length > 0 && (
-				<div className="rounded-lg bg-base-100 p-6 shadow-sm">
-					<PublicationLinks publications={publications} showEmbeds />
-				</div>
-			)}
-
 			{/* クレジット */}
 			{track.credits.length > 0 && (
 				<div className="space-y-3">
@@ -234,6 +227,13 @@ function TrackDetailPage() {
 							))}
 						</ul>
 					</div>
+				</div>
+			)}
+
+			{/* 配信リンク */}
+			{publications.length > 0 && (
+				<div className="rounded-lg bg-base-100 p-6 shadow-sm">
+					<PublicationLinks publications={publications} showEmbeds />
 				</div>
 			)}
 
