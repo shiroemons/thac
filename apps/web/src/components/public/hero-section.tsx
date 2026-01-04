@@ -1,41 +1,84 @@
 import { Link } from "@tanstack/react-router";
+import { Music, Search, Sparkles } from "lucide-react";
 
 export function HeroSection() {
 	return (
-		<section className="py-16 text-center md:py-24">
-			<div className="mx-auto max-w-3xl px-4">
-				<h1 className="mb-4 font-bold text-4xl tracking-tight md:text-5xl lg:text-6xl">
-					東方編曲録
+		<section className="relative -mx-4 -mt-6 overflow-hidden px-4 py-20 md:py-32">
+			{/* Gradient mesh background */}
+			<div className="gradient-hero absolute inset-0" />
+
+			{/* Floating decorative elements */}
+			<div className="pointer-events-none absolute inset-0 overflow-hidden">
+				<div className="absolute top-1/4 left-1/6 h-64 w-64 animate-pulse rounded-full bg-primary/10 blur-3xl" />
+				<div className="animation-delay-1000 absolute right-1/6 bottom-1/4 h-48 w-48 animate-pulse rounded-full bg-secondary/10 blur-3xl" />
+				<div className="animation-delay-2000 absolute top-1/2 left-1/2 h-32 w-32 -translate-x-1/2 animate-pulse rounded-full bg-accent/10 blur-2xl" />
+			</div>
+
+			<div className="relative mx-auto max-w-4xl text-center">
+				{/* Badge */}
+				<div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-primary text-sm">
+					<Sparkles className="h-4 w-4" aria-hidden="true" />
+					<span>東方アレンジ楽曲データベース</span>
+				</div>
+
+				{/* Main title with gradient */}
+				<h1 className="mb-4 font-bold text-5xl tracking-tight md:text-6xl lg:text-7xl">
+					<span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+						東方編曲録
+					</span>
 				</h1>
-				<p className="mb-8 text-base-content/70 text-lg md:text-xl">
+
+				<p className="mb-2 text-base-content/60 text-xl md:text-2xl">
 					Touhou Arrangement Chronicle
 				</p>
 
-				{/* Search Bar */}
+				<p className="mx-auto mb-10 max-w-2xl text-base text-base-content/50 md:text-lg">
+					東方Projectの二次創作楽曲を網羅したデータベース。
+					<br className="hidden sm:block" />
+					原曲、サークル、アーティスト情報を検索できます。
+				</p>
+
+				{/* Glass search bar */}
 				<div className="mx-auto max-w-xl">
 					<Link
 						to="/search"
-						className="flex w-full items-center gap-3 rounded-box border border-base-300 bg-base-100 px-4 py-3 text-left shadow-sm transition-shadow hover:shadow-md"
+						className="glass-card-strong group flex w-full items-center gap-4 rounded-2xl px-6 py-4 shadow-lg transition-all duration-300 hover:shadow-xl hover:ring-2 hover:ring-primary/20"
 					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-5 w-5 text-base-content/50"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							strokeWidth={2}
-							aria-hidden="true"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-							/>
-						</svg>
-						<span className="text-base-content/50">
+						<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-content">
+							<Search className="h-5 w-5" aria-hidden="true" />
+						</div>
+						<span className="flex-1 text-left text-base-content/50 transition-colors group-hover:text-base-content/70">
 							アーティスト、曲名、サークル名で検索...
 						</span>
+						<kbd className="hidden rounded-lg border border-base-content/10 bg-base-content/5 px-2.5 py-1.5 font-mono text-base-content/40 text-xs sm:inline-block">
+							⌘K
+						</kbd>
 					</Link>
+				</div>
+
+				{/* Quick stats */}
+				<div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-base-content/50 text-sm md:gap-10">
+					<div className="flex items-center gap-2">
+						<Music className="h-4 w-4 text-primary" aria-hidden="true" />
+						<span>
+							<span className="font-semibold text-base-content">12,345</span>{" "}
+							トラック
+						</span>
+					</div>
+					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
+					<div className="flex items-center gap-2">
+						<span>
+							<span className="font-semibold text-base-content">456</span>{" "}
+							サークル
+						</span>
+					</div>
+					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
+					<div className="flex items-center gap-2">
+						<span>
+							<span className="font-semibold text-base-content">890</span>{" "}
+							アーティスト
+						</span>
+					</div>
 				</div>
 			</div>
 		</section>

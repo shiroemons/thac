@@ -1,4 +1,11 @@
 import { Link } from "@tanstack/react-router";
+import {
+	Calendar,
+	ChevronLeft,
+	ChevronRight,
+	Disc3,
+	Sparkles,
+} from "lucide-react";
 import { useRef, useState } from "react";
 
 interface Release {
@@ -7,6 +14,7 @@ interface Release {
 	circleName: string;
 	eventName: string;
 	imageUrl?: string;
+	isNew?: boolean;
 }
 
 // Mock data for demonstration
@@ -16,12 +24,14 @@ const mockReleases: Release[] = [
 		title: "東方夢幻録",
 		circleName: "サークルA",
 		eventName: "C105",
+		isNew: true,
 	},
 	{
 		id: "2",
 		title: "紅魔館の夜",
 		circleName: "サークルB",
 		eventName: "C105",
+		isNew: true,
 	},
 	{
 		id: "3",
@@ -51,34 +61,42 @@ const mockReleases: Release[] = [
 
 function ReleaseCard({ release }: { release: Release }) {
 	return (
-		<div className="block min-w-[200px] flex-shrink-0 cursor-pointer snap-start">
-			<div className="overflow-hidden rounded-box bg-base-100 shadow-sm transition-shadow hover:shadow-md">
-				{/* Placeholder image */}
-				<div className="flex aspect-square items-center justify-center bg-base-200">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						className="h-12 w-12 text-base-content/30"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-						strokeWidth={2}
-						aria-hidden="true"
-					>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+		<div className="min-w-[180px] flex-shrink-0 snap-start sm:min-w-[200px]">
+			<div className="glass-card group h-full overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+				{/* Album art placeholder */}
+				<div className="relative aspect-square overflow-hidden bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20">
+					<div className="flex h-full items-center justify-center">
+						<Disc3
+							className="h-16 w-16 text-base-content/20 transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110"
+							aria-hidden="true"
 						/>
-					</svg>
+					</div>
+					{release.isNew && (
+						<div className="absolute top-2 right-2">
+							<div className="flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-primary-content text-xs shadow-lg">
+								<Sparkles className="h-3 w-3" aria-hidden="true" />
+								NEW
+							</div>
+						</div>
+					)}
+					{/* Overlay on hover */}
+					<div className="absolute inset-0 flex items-center justify-center bg-base-content/0 opacity-0 transition-all duration-300 group-hover:bg-base-content/10 group-hover:opacity-100">
+						<div className="translate-y-2 transform rounded-full bg-primary px-4 py-2 font-medium text-primary-content text-sm opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+							詳細を見る
+						</div>
+					</div>
 				</div>
-				<div className="p-3">
-					<h3 className="truncate font-medium text-sm">{release.title}</h3>
-					<p className="truncate text-base-content/70 text-xs">
+				<div className="p-4">
+					<h3 className="mb-1 truncate font-semibold text-sm transition-colors group-hover:text-primary">
+						{release.title}
+					</h3>
+					<p className="truncate text-base-content/60 text-xs">
 						{release.circleName}
 					</p>
-					<p className="mt-1 text-base-content/50 text-xs">
-						{release.eventName}
-					</p>
+					<div className="mt-2 flex items-center gap-1 text-base-content/40 text-xs">
+						<Calendar className="h-3 w-3" aria-hidden="true" />
+						<span>{release.eventName}</span>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -99,7 +117,7 @@ export function RecentReleases() {
 
 	const scroll = (direction: "left" | "right") => {
 		if (!scrollRef.current) return;
-		const scrollAmount = 220; // Card width + gap
+		const scrollAmount = 220;
 		scrollRef.current.scrollBy({
 			left: direction === "left" ? -scrollAmount : scrollAmount,
 			behavior: "smooth",
@@ -108,82 +126,48 @@ export function RecentReleases() {
 
 	return (
 		<section className="py-8">
-			<div className="mb-4 flex items-center justify-between">
-				<h2 className="font-bold text-xl">最近のリリース</h2>
-				<Link
-					to="/stats"
-					className="flex items-center gap-1 text-primary text-sm hover:underline"
-				>
-					すべて見る
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						className="h-4 w-4"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-						strokeWidth={2}
-						aria-hidden="true"
+			<div className="mb-6 flex items-center justify-between">
+				<div className="flex items-center gap-3">
+					<h2 className="font-bold text-xl">最近のリリース</h2>
+					<div className="rounded-full bg-primary/10 px-2.5 py-0.5 text-primary text-xs">
+						{mockReleases.length}件
+					</div>
+				</div>
+				<div className="flex items-center gap-2">
+					{/* Desktop scroll buttons */}
+					<div className="hidden items-center gap-1 md:flex">
+						<button
+							type="button"
+							onClick={() => scroll("left")}
+							disabled={!canScrollLeft}
+							className="flex h-8 w-8 items-center justify-center rounded-full bg-base-200 text-base-content/60 transition-all hover:bg-base-300 hover:text-base-content disabled:cursor-not-allowed disabled:opacity-30"
+							aria-label="前へ"
+						>
+							<ChevronLeft className="h-4 w-4" />
+						</button>
+						<button
+							type="button"
+							onClick={() => scroll("right")}
+							disabled={!canScrollRight}
+							className="flex h-8 w-8 items-center justify-center rounded-full bg-base-200 text-base-content/60 transition-all hover:bg-base-300 hover:text-base-content disabled:cursor-not-allowed disabled:opacity-30"
+							aria-label="次へ"
+						>
+							<ChevronRight className="h-4 w-4" />
+						</button>
+					</div>
+					<Link
+						to="/stats"
+						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
 					>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							d="M9 5l7 7-7 7"
-						/>
-					</svg>
-				</Link>
+						すべて見る
+						<span className="transition-transform group-hover:translate-x-0.5">
+							→
+						</span>
+					</Link>
+				</div>
 			</div>
 
 			<div className="relative">
-				{/* Scroll buttons for desktop */}
-				{canScrollLeft && (
-					<button
-						type="button"
-						onClick={() => scroll("left")}
-						className="absolute top-1/2 left-0 z-10 hidden -translate-y-1/2 rounded-full bg-base-100 p-2 shadow-lg transition-transform hover:scale-110 md:block"
-						aria-label="前へ"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-5 w-5"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							strokeWidth={2}
-							aria-hidden="true"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								d="M15 19l-7-7 7-7"
-							/>
-						</svg>
-					</button>
-				)}
-				{canScrollRight && (
-					<button
-						type="button"
-						onClick={() => scroll("right")}
-						className="absolute top-1/2 right-0 z-10 hidden -translate-y-1/2 rounded-full bg-base-100 p-2 shadow-lg transition-transform hover:scale-110 md:block"
-						aria-label="次へ"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-5 w-5"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							strokeWidth={2}
-							aria-hidden="true"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								d="M9 5l7 7-7 7"
-							/>
-						</svg>
-					</button>
-				)}
-
 				{/* Scrollable container */}
 				<div
 					ref={scrollRef}
@@ -194,6 +178,14 @@ export function RecentReleases() {
 						<ReleaseCard key={release.id} release={release} />
 					))}
 				</div>
+
+				{/* Fade edges indicator */}
+				{canScrollRight && (
+					<div className="pointer-events-none absolute top-0 right-0 hidden h-full w-16 bg-gradient-to-l from-base-100 to-transparent md:block" />
+				)}
+				{canScrollLeft && (
+					<div className="pointer-events-none absolute top-0 left-0 hidden h-full w-16 bg-gradient-to-r from-base-100 to-transparent md:block" />
+				)}
 			</div>
 		</section>
 	);

@@ -1,10 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+	BarChart3,
 	Calendar,
-	ChevronRight,
-	Disc,
+	Crown,
+	Disc3,
+	type LucideIcon,
 	Music,
 	PenLine,
+	Sparkles,
+	TrendingUp,
+	Trophy,
 	Users,
 } from "lucide-react";
 import { PublicBreadcrumb } from "@/components/public";
@@ -25,7 +30,7 @@ const mockStats = {
 	tracks: 12345,
 };
 
-// 人気原曲ランキング（アレンジ数順）
+// 人気原曲ランキング
 const popularSongsRanking = [
 	{ id: "un-owen", name: "U.N.オーエンは彼女なのか？", count: 1234 },
 	{ id: "night-of-nights", name: "ナイト・オブ・ナイツ", count: 1123 },
@@ -34,7 +39,7 @@ const popularSongsRanking = [
 	{ id: "kamisama", name: "神々が恋した幻想郷", count: 765 },
 ];
 
-// アクティブサークルランキング（リリース数順）
+// アクティブサークルランキング
 const activeCirclesRanking = [
 	{ id: "iosys", name: "IOSYS", count: 156 },
 	{ id: "sound-holic", name: "SOUND HOLIC", count: 134 },
@@ -43,7 +48,7 @@ const activeCirclesRanking = [
 	{ id: "alstroemeria", name: "Alstroemeria Records", count: 89 },
 ];
 
-// アクティブアーティストランキング（参加トラック数順）
+// アクティブアーティストランキング
 const activeArtistsRanking = [
 	{ id: "zun", name: "ZUN", count: 789 },
 	{ id: "kouki", name: "幽閉サテライト", count: 567 },
@@ -92,18 +97,45 @@ const recentUpdates = [
 ];
 
 interface StatCardProps {
-	icon: React.ReactNode;
+	icon: LucideIcon;
 	count: number;
 	label: string;
 	href?: string;
+	trend?: number;
+	color?: string;
 }
 
-function StatCard({ icon, count, label, href }: StatCardProps) {
+function StatCard({
+	icon: Icon,
+	count,
+	label,
+	href,
+	trend,
+	color = "text-primary",
+}: StatCardProps) {
+	const bgColor = color.replace("text-", "bg-").concat("/10");
+
 	const content = (
-		<div className="flex flex-col items-center gap-2 rounded-box bg-base-100 p-4 shadow-sm transition-shadow hover:shadow-md">
-			<div className="text-2xl text-primary">{icon}</div>
-			<div className="font-bold text-2xl">{formatNumber(count)}</div>
-			<div className="text-base-content/70 text-sm">{label}</div>
+		<div className="glass-card group flex flex-col gap-3 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+			<div className="flex items-center justify-between">
+				<div
+					className={`flex h-11 w-11 items-center justify-center rounded-xl ${bgColor} ${color} transition-transform duration-300 group-hover:scale-110`}
+				>
+					<Icon className="h-5 w-5" aria-hidden="true" />
+				</div>
+				{trend !== undefined && (
+					<div className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-success text-xs">
+						<TrendingUp className="h-3 w-3" aria-hidden="true" />
+						<span>+{trend}%</span>
+					</div>
+				)}
+			</div>
+			<div>
+				<div className="font-bold text-2xl tracking-tight md:text-3xl">
+					{formatNumber(count)}
+				</div>
+				<div className="mt-1 text-base-content/60 text-sm">{label}</div>
+			</div>
 		</div>
 	);
 
@@ -127,18 +159,34 @@ interface RankingItemProps {
 }
 
 function RankingItem({ rank, name, count, unit, href }: RankingItemProps) {
+	const getRankStyle = (r: number) => {
+		switch (r) {
+			case 1:
+				return "bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-md";
+			case 2:
+				return "bg-gradient-to-br from-gray-300 to-gray-400 text-white shadow-sm";
+			case 3:
+				return "bg-gradient-to-br from-amber-600 to-amber-700 text-white shadow-sm";
+			default:
+				return "bg-base-content/10 text-base-content/70";
+		}
+	};
+
 	return (
 		<Link
 			to={href}
-			className="flex items-center gap-4 rounded-lg p-3 transition-colors hover:bg-base-200"
+			className="group flex items-center gap-3 rounded-xl p-3 transition-all duration-300 hover:bg-base-content/5"
 		>
-			<span className="flex size-8 items-center justify-center rounded-full bg-primary/10 font-bold text-primary text-sm">
+			<span
+				className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold text-sm ${getRankStyle(rank)}`}
+			>
 				{rank}
 			</span>
-			<span className="min-w-0 flex-1 truncate">{name}</span>
-			<span className="text-base-content/70 text-sm">
-				{formatNumber(count)}
-				{unit}
+			<span className="min-w-0 flex-1 truncate font-medium transition-colors group-hover:text-primary">
+				{name}
+			</span>
+			<span className="whitespace-nowrap rounded-full bg-base-content/5 px-2.5 py-1 text-base-content/60 text-xs">
+				{formatNumber(count)} {unit}
 			</span>
 		</Link>
 	);
@@ -149,64 +197,85 @@ function StatsPage() {
 		<div className="space-y-8">
 			<PublicBreadcrumb items={[{ label: "統計" }]} />
 
-			{/* ヘッダー */}
-			<div>
-				<h1 className="font-bold text-3xl">統計ダッシュボード</h1>
-				<p className="mt-1 text-base-content/70">
-					東方編曲録のデータベース統計
-				</p>
+			{/* Hero header */}
+			<div className="glass-card relative overflow-hidden rounded-2xl p-6 md:p-8">
+				<div className="gradient-mesh absolute inset-0" />
+				<div className="relative flex items-center gap-4">
+					<div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+						<BarChart3 className="h-7 w-7" aria-hidden="true" />
+					</div>
+					<div>
+						<h1 className="font-bold text-2xl md:text-3xl">
+							統計ダッシュボード
+						</h1>
+						<p className="mt-1 text-base-content/60">
+							東方編曲録のデータベース統計
+						</p>
+					</div>
+				</div>
 			</div>
 
-			{/* 統計カード */}
+			{/* Stats cards */}
 			<section>
 				<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
 					<StatCard
-						icon={<Music className="size-8" aria-hidden="true" />}
+						icon={Music}
 						count={mockStats.originalSongs}
 						label="原曲"
 						href="/original-songs"
+						color="text-secondary"
 					/>
 					<StatCard
-						icon={<Users className="size-8" aria-hidden="true" />}
+						icon={Disc3}
 						count={mockStats.circles}
 						label="サークル"
 						href="/circles"
+						color="text-primary"
 					/>
 					<StatCard
-						icon={<Users className="size-8" aria-hidden="true" />}
+						icon={Users}
 						count={mockStats.artists}
 						label="アーティスト"
 						href="/artists"
+						color="text-accent"
 					/>
 					<StatCard
-						icon={<Calendar className="size-8" aria-hidden="true" />}
+						icon={Calendar}
 						count={mockStats.events}
 						label="イベント"
 						href="/events"
+						color="text-info"
 					/>
 					<StatCard
-						icon={<Disc className="size-8" aria-hidden="true" />}
+						icon={Music}
 						count={mockStats.tracks}
 						label="トラック"
+						trend={12}
+						color="text-success"
 					/>
 				</div>
 			</section>
 
-			{/* ランキングセクション */}
+			{/* Ranking sections */}
 			<div className="grid gap-6 lg:grid-cols-3">
-				{/* 人気原曲ランキング */}
-				<section className="rounded-lg bg-base-100 p-6 shadow-sm">
-					<div className="mb-4 flex items-center justify-between">
-						<h2 className="font-bold text-lg">人気原曲ランキング</h2>
+				{/* Popular songs ranking */}
+				<section className="glass-card overflow-hidden rounded-2xl">
+					<div className="flex items-center justify-between border-base-content/10 border-b p-5">
+						<div className="flex items-center gap-2">
+							<Trophy className="h-5 w-5 text-yellow-500" aria-hidden="true" />
+							<h2 className="font-bold">人気原曲</h2>
+						</div>
 						<Link
 							to="/original-songs"
-							className="flex items-center gap-1 text-primary text-sm hover:underline"
+							className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
 						>
 							すべて見る
-							<ChevronRight className="size-4" aria-hidden="true" />
+							<span className="transition-transform group-hover:translate-x-0.5">
+								→
+							</span>
 						</Link>
 					</div>
-					<div className="space-y-1">
+					<div className="divide-y divide-base-content/5 px-2 py-1">
 						{popularSongsRanking.map((song, index) => (
 							<RankingItem
 								key={song.id}
@@ -220,19 +289,24 @@ function StatsPage() {
 					</div>
 				</section>
 
-				{/* アクティブサークルランキング */}
-				<section className="rounded-lg bg-base-100 p-6 shadow-sm">
-					<div className="mb-4 flex items-center justify-between">
-						<h2 className="font-bold text-lg">アクティブサークル</h2>
+				{/* Active circles ranking */}
+				<section className="glass-card overflow-hidden rounded-2xl">
+					<div className="flex items-center justify-between border-base-content/10 border-b p-5">
+						<div className="flex items-center gap-2">
+							<Crown className="h-5 w-5 text-primary" aria-hidden="true" />
+							<h2 className="font-bold">アクティブサークル</h2>
+						</div>
 						<Link
 							to="/circles"
-							className="flex items-center gap-1 text-primary text-sm hover:underline"
+							className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
 						>
 							すべて見る
-							<ChevronRight className="size-4" aria-hidden="true" />
+							<span className="transition-transform group-hover:translate-x-0.5">
+								→
+							</span>
 						</Link>
 					</div>
-					<div className="space-y-1">
+					<div className="divide-y divide-base-content/5 px-2 py-1">
 						{activeCirclesRanking.map((circle, index) => (
 							<RankingItem
 								key={circle.id}
@@ -246,19 +320,24 @@ function StatsPage() {
 					</div>
 				</section>
 
-				{/* アクティブアーティストランキング */}
-				<section className="rounded-lg bg-base-100 p-6 shadow-sm">
-					<div className="mb-4 flex items-center justify-between">
-						<h2 className="font-bold text-lg">アクティブアーティスト</h2>
+				{/* Active artists ranking */}
+				<section className="glass-card overflow-hidden rounded-2xl">
+					<div className="flex items-center justify-between border-base-content/10 border-b p-5">
+						<div className="flex items-center gap-2">
+							<Sparkles className="h-5 w-5 text-accent" aria-hidden="true" />
+							<h2 className="font-bold">アクティブアーティスト</h2>
+						</div>
 						<Link
 							to="/artists"
-							className="flex items-center gap-1 text-primary text-sm hover:underline"
+							className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
 						>
 							すべて見る
-							<ChevronRight className="size-4" aria-hidden="true" />
+							<span className="transition-transform group-hover:translate-x-0.5">
+								→
+							</span>
 						</Link>
 					</div>
-					<div className="space-y-1">
+					<div className="divide-y divide-base-content/5 px-2 py-1">
 						{activeArtistsRanking.map((artist, index) => (
 							<RankingItem
 								key={artist.id}
@@ -273,37 +352,50 @@ function StatsPage() {
 				</section>
 			</div>
 
-			{/* 最近の更新 */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
-				<div className="mb-4 flex items-center justify-between">
-					<h2 className="font-bold text-lg">最近の更新</h2>
+			{/* Recent updates */}
+			<section className="glass-card overflow-hidden rounded-2xl">
+				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
+					<div className="flex items-center gap-2">
+						<Calendar className="h-5 w-5 text-info" aria-hidden="true" />
+						<h2 className="font-bold">最近の更新</h2>
+					</div>
 				</div>
 				<div className="overflow-x-auto">
-					<table className="table">
+					<table className="w-full">
 						<thead>
-							<tr>
-								<th>状態</th>
-								<th>タイトル</th>
-								<th>サークル</th>
-								<th>日付</th>
+							<tr className="border-base-content/5 border-b text-left text-base-content/50 text-sm">
+								<th className="px-5 py-3 font-medium">状態</th>
+								<th className="px-5 py-3 font-medium">タイトル</th>
+								<th className="px-5 py-3 font-medium">サークル</th>
+								<th className="px-5 py-3 font-medium">日付</th>
 							</tr>
 						</thead>
-						<tbody>
+						<tbody className="divide-y divide-base-content/5">
 							{recentUpdates.map((update) => (
-								<tr key={update.id} className="hover:bg-base-200/50">
-									<td>
+								<tr
+									key={update.id}
+									className="transition-colors hover:bg-base-content/5"
+								>
+									<td className="px-5 py-4">
 										{update.type === "new" ? (
-											<span className="badge badge-primary badge-sm">NEW</span>
+											<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-primary text-xs">
+												<Sparkles className="h-3 w-3" aria-hidden="true" />
+												NEW
+											</span>
 										) : (
-											<span className="badge badge-secondary badge-sm">
-												<PenLine className="mr-1 size-3" aria-hidden="true" />
+											<span className="inline-flex items-center gap-1 rounded-full bg-secondary/10 px-2.5 py-1 text-secondary text-xs">
+												<PenLine className="h-3 w-3" aria-hidden="true" />
 												更新
 											</span>
 										)}
 									</td>
-									<td className="font-medium">{update.title}</td>
-									<td className="text-base-content/70">{update.circleName}</td>
-									<td className="text-base-content/70">{update.date}</td>
+									<td className="px-5 py-4 font-medium">{update.title}</td>
+									<td className="px-5 py-4 text-base-content/60">
+										{update.circleName}
+									</td>
+									<td className="px-5 py-4 text-base-content/60">
+										{update.date}
+									</td>
 								</tr>
 							))}
 						</tbody>
