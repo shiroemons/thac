@@ -619,11 +619,11 @@ function ArtistsPage() {
 									</td>
 									<td className="text-base-content/70">{artist.sortName}</td>
 									<td>
-										<div className="flex flex-wrap gap-1">
+										<div className="flex gap-1">
 											{artist.roles.map((r) => (
 												<span
 													key={r}
-													className={`badge badge-sm ${roleConfig[r].badgeClass}`}
+													className={`badge badge-sm whitespace-nowrap ${roleConfig[r].badgeClass}`}
 												>
 													{roleConfig[r].shortLabel}
 												</span>

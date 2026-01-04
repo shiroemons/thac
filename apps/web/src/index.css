@@ -5,3 +5,66 @@
 		dark --prefersdark;
 	logs: false;
 }
+
+/* Glassmorphism utilities */
+.glass-card {
+	background: oklch(from var(--b1) l c h / 0.7);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid oklch(from var(--bc) l c h / 0.1);
+}
+
+.glass-card-strong {
+	background: oklch(from var(--b1) l c h / 0.85);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	border: 1px solid oklch(from var(--bc) l c h / 0.15);
+}
+
+/* Gradient backgrounds */
+.gradient-mesh {
+	background:
+		radial-gradient(
+			ellipse at 20% 20%,
+			oklch(from var(--p) l c h / 0.15) 0%,
+			transparent 50%
+		),
+		radial-gradient(
+			ellipse at 80% 80%,
+			oklch(from var(--s) l c h / 0.15) 0%,
+			transparent 50%
+		),
+		radial-gradient(
+			ellipse at 40% 60%,
+			oklch(from var(--a) l c h / 0.1) 0%,
+			transparent 40%
+		);
+}
+
+.gradient-hero {
+	background:
+		radial-gradient(
+			ellipse at 50% 0%,
+			oklch(from var(--p) l c h / 0.2) 0%,
+			transparent 60%
+		),
+		radial-gradient(
+			ellipse at 0% 50%,
+			oklch(from var(--s) l c h / 0.12) 0%,
+			transparent 50%
+		),
+		radial-gradient(
+			ellipse at 100% 50%,
+			oklch(from var(--a) l c h / 0.12) 0%,
+			transparent 50%
+		);
+}
+
+/* Scroll hide */
+.scrollbar-hide {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}

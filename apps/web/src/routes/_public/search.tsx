@@ -1,5 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Clock, Disc, Music, Search, Users, X } from "lucide-react";
+import {
+	Clock,
+	Disc3,
+	Music,
+	Search,
+	Sparkles,
+	TrendingUp,
+	Users,
+	X,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PublicBreadcrumb } from "@/components/public";
 import { createPageHead } from "@/lib/head";
@@ -112,22 +121,34 @@ const mockSearchResults: SearchResult[] = [
 	},
 ];
 
+// 人気の検索キーワード
+const popularSearches = [
+	"Bad Apple!!",
+	"IOSYS",
+	"ナイト・オブ・ナイツ",
+	"ZUN",
+	"幽閉サテライト",
+];
+
 const categoryConfig: Record<
 	SearchCategory,
-	{ label: string; icon: React.ReactNode }
+	{ label: string; icon: React.ReactNode; color: string }
 > = {
-	all: { label: "すべて", icon: null },
+	all: { label: "すべて", icon: null, color: "" },
 	artist: {
 		label: "アーティスト",
-		icon: <Users className="size-4" aria-hidden="true" />,
+		icon: <Users className="h-4 w-4" aria-hidden="true" />,
+		color: "text-accent",
 	},
 	circle: {
 		label: "サークル",
-		icon: <Disc className="size-4" aria-hidden="true" />,
+		icon: <Disc3 className="h-4 w-4" aria-hidden="true" />,
+		color: "text-primary",
 	},
 	track: {
 		label: "曲",
-		icon: <Music className="size-4" aria-hidden="true" />,
+		icon: <Music className="h-4 w-4" aria-hidden="true" />,
+		color: "text-secondary",
 	},
 };
 
@@ -162,7 +183,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
 	return (
 		<>
 			{text.slice(0, index)}
-			<mark className="bg-primary/30 text-inherit">
+			<mark className="rounded bg-primary/20 px-0.5 text-inherit">
 				{text.slice(index, index + query.length)}
 			</mark>
 			{text.slice(index + query.length)}
@@ -184,11 +205,22 @@ function getResultHref(result: SearchResult): string {
 function getResultIcon(type: SearchResult["type"]): React.ReactNode {
 	switch (type) {
 		case "artist":
-			return <Users className="size-5 text-accent" aria-hidden="true" />;
+			return <Users className="h-5 w-5" aria-hidden="true" />;
 		case "circle":
-			return <Disc className="size-5 text-primary" aria-hidden="true" />;
+			return <Disc3 className="h-5 w-5" aria-hidden="true" />;
 		case "track":
-			return <Music className="size-5 text-secondary" aria-hidden="true" />;
+			return <Music className="h-5 w-5" aria-hidden="true" />;
+	}
+}
+
+function getResultIconColor(type: SearchResult["type"]): string {
+	switch (type) {
+		case "artist":
+			return "bg-accent/10 text-accent";
+		case "circle":
+			return "bg-primary/10 text-primary";
+		case "track":
+			return "bg-secondary/10 text-secondary";
 	}
 }
 
@@ -206,7 +238,6 @@ function SearchPage() {
 		setInputValue(query);
 	}, [query]);
 
-	// 検索実行時に履歴を保存
 	useEffect(() => {
 		if (query) {
 			setSearchHistory((prev) => saveSearchHistory(query, prev));
@@ -245,7 +276,6 @@ function SearchPage() {
 		});
 	};
 
-	// 検索結果のフィルタリングとモック検索
 	const searchResults = useMemo(() => {
 		if (!query) return [];
 
@@ -263,7 +293,6 @@ function SearchPage() {
 		return results;
 	}, [query, category]);
 
-	// カテゴリ別の件数
 	const categoryCounts = useMemo(() => {
 		if (!query) return { all: 0, artist: 0, circle: 0, track: 0 };
 
@@ -284,117 +313,174 @@ function SearchPage() {
 
 	return (
 		<div className="space-y-6">
-			<PublicBreadcrumb items={[{ label: "検索結果" }]} />
+			<PublicBreadcrumb items={[{ label: "検索" }]} />
 
-			{/* 検索フォーム */}
-			<form onSubmit={handleSearch}>
+			{/* Hero search section */}
+			<div className="glass-card relative overflow-hidden rounded-2xl p-6 md:p-8">
+				<div className="gradient-mesh absolute inset-0" />
 				<div className="relative">
-					<div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-						<Search
-							className="size-5 text-base-content/50"
-							aria-hidden="true"
-						/>
+					<div className="mb-6 text-center">
+						<h1 className="mb-2 font-bold text-2xl md:text-3xl">楽曲を検索</h1>
+						<p className="text-base-content/60 text-sm">
+							アーティスト、曲名、サークル名で検索できます
+						</p>
 					</div>
-					<input
-						type="text"
-						value={inputValue}
-						onChange={(e) => setInputValue(e.target.value)}
-						placeholder="アーティスト、曲名、サークル名で検索..."
-						className="input input-bordered w-full pr-12 pl-12"
-						aria-label="検索キーワード"
-					/>
-					{inputValue && (
-						<button
-							type="button"
-							onClick={handleClearInput}
-							className="absolute inset-y-0 right-0 flex items-center pr-4"
-							aria-label="検索をクリア"
-						>
-							<X className="size-5 text-base-content/50 hover:text-base-content" />
-						</button>
+
+					{/* Search form */}
+					<form onSubmit={handleSearch} className="mx-auto max-w-2xl">
+						<div className="relative">
+							<div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5">
+								<Search
+									className="h-5 w-5 text-base-content/40"
+									aria-hidden="true"
+								/>
+							</div>
+							<input
+								type="text"
+								value={inputValue}
+								onChange={(e) => setInputValue(e.target.value)}
+								placeholder="検索キーワードを入力..."
+								className="glass-card-strong w-full rounded-xl py-4 pr-12 pl-14 text-base shadow-lg transition-all duration-300 placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/30"
+								aria-label="検索キーワード"
+							/>
+							{inputValue && (
+								<button
+									type="button"
+									onClick={handleClearInput}
+									className="absolute inset-y-0 right-0 flex items-center pr-5 text-base-content/40 transition-colors hover:text-base-content"
+									aria-label="検索をクリア"
+								>
+									<X className="h-5 w-5" />
+								</button>
+							)}
+						</div>
+					</form>
+
+					{/* Popular searches */}
+					{!query && (
+						<div className="mx-auto mt-6 max-w-2xl">
+							<div className="flex flex-wrap items-center justify-center gap-2">
+								<span className="flex items-center gap-1 text-base-content/50 text-xs">
+									<TrendingUp className="h-3 w-3" aria-hidden="true" />
+									人気:
+								</span>
+								{popularSearches.map((term) => (
+									<button
+										key={term}
+										type="button"
+										onClick={() => handleHistoryClick(term)}
+										className="rounded-full bg-base-content/5 px-3 py-1 text-base-content/70 text-xs transition-all hover:bg-primary/10 hover:text-primary"
+									>
+										{term}
+									</button>
+								))}
+							</div>
+						</div>
 					)}
 				</div>
-			</form>
+			</div>
 
-			{/* カテゴリタブ */}
+			{/* Category tabs */}
 			{query && (
-				<div role="tablist" className="tabs tabs-box" aria-label="検索カテゴリ">
-					{(Object.keys(categoryConfig) as SearchCategory[]).map((cat) => (
-						<button
-							key={cat}
-							type="button"
-							role="tab"
-							onClick={() => handleCategoryChange(cat)}
-							className={`tab gap-2 ${category === cat ? "tab-active" : ""}`}
-							aria-selected={category === cat}
-						>
-							{categoryConfig[cat].icon}
-							{categoryConfig[cat].label}
-							<span className="text-base-content/50">
-								({categoryCounts[cat]})
-							</span>
-						</button>
-					))}
+				<div className="flex flex-wrap gap-2">
+					{(Object.keys(categoryConfig) as SearchCategory[]).map((cat) => {
+						const config = categoryConfig[cat];
+						const isActive = category === cat;
+						return (
+							<button
+								key={cat}
+								type="button"
+								onClick={() => handleCategoryChange(cat)}
+								className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
+									isActive
+										? "bg-primary text-primary-content shadow-md"
+										: "glass-card hover:ring-2 hover:ring-primary/20"
+								}`}
+								aria-pressed={isActive}
+							>
+								{config.icon}
+								{config.label}
+								<span
+									className={`rounded-full px-1.5 py-0.5 text-xs ${
+										isActive
+											? "bg-primary-content/20 text-primary-content"
+											: "bg-base-content/10 text-base-content/60"
+									}`}
+								>
+									{categoryCounts[cat]}
+								</span>
+							</button>
+						);
+					})}
 				</div>
 			)}
 
-			{/* 検索結果 */}
+			{/* Search results */}
 			{query ? (
 				<div className="space-y-4">
-					<p className="text-base-content/70">
+					<p className="text-base-content/60 text-sm">
 						「<span className="font-medium text-base-content">{query}</span>
-						」の検索結果: {searchResults.length}件
+						」の検索結果
 					</p>
 
 					{searchResults.length > 0 ? (
-						<div className="space-y-2">
+						<div className="grid gap-3">
 							{searchResults.map((result) => (
 								<Link
 									key={`${result.type}-${result.id}`}
 									to={getResultHref(result)}
-									className="flex items-start gap-4 rounded-lg bg-base-100 p-4 shadow-sm transition-shadow hover:shadow-md"
+									className="glass-card group flex items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 								>
-									<div className="flex size-10 items-center justify-center rounded-full bg-base-200">
+									<div
+										className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${getResultIconColor(result.type)}`}
+									>
 										{getResultIcon(result.type)}
 									</div>
 									<div className="min-w-0 flex-1">
-										<div className="flex items-center gap-2">
-											<span className="badge badge-ghost badge-sm">
+										<div className="mb-1 flex items-center gap-2">
+											<span
+												className={`rounded-full bg-base-content/5 px-2 py-0.5 text-xs ${categoryConfig[result.type].color}`}
+											>
 												{categoryConfig[result.type].label}
 											</span>
 										</div>
-										<h3 className="mt-1 font-medium">
+										<h3 className="font-semibold transition-colors group-hover:text-primary">
 											{highlightMatch(result.title, query)}
 										</h3>
-										<p className="mt-0.5 text-base-content/70 text-sm">
+										<p className="mt-0.5 text-base-content/60 text-sm">
 											{highlightMatch(result.subtitle, query)}
 										</p>
+									</div>
+									<div className="hidden text-base-content/30 transition-all group-hover:translate-x-1 group-hover:text-primary sm:block">
+										→
 									</div>
 								</Link>
 							))}
 						</div>
 					) : (
-						<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
-							<Search
-								className="mx-auto size-12 text-base-content/30"
-								aria-hidden="true"
-							/>
-							<p className="mt-4 text-base-content/70">
-								「{query}」に一致する結果が見つかりませんでした。
+						<div className="glass-card rounded-2xl p-12 text-center">
+							<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-base-content/5">
+								<Search
+									className="h-8 w-8 text-base-content/30"
+									aria-hidden="true"
+								/>
+							</div>
+							<p className="font-medium text-base-content/70">
+								「{query}」に一致する結果が見つかりませんでした
 							</p>
 							<p className="mt-2 text-base-content/50 text-sm">
-								別のキーワードで検索してみてください。
+								別のキーワードで検索してみてください
 							</p>
 						</div>
 					)}
 				</div>
 			) : (
-				/* 検索履歴（クエリがない場合） */
-				<div className="space-y-4">
+				/* Search history */
+				<div className="space-y-6">
 					{searchHistory.length > 0 && (
-						<div>
-							<h2 className="mb-3 flex items-center gap-2 font-medium text-base-content/70">
-								<Clock className="size-4" aria-hidden="true" />
+						<div className="glass-card rounded-2xl p-6">
+							<h2 className="mb-4 flex items-center gap-2 font-semibold">
+								<Clock className="h-4 w-4 text-primary" aria-hidden="true" />
 								最近の検索
 							</h2>
 							<div className="flex flex-wrap gap-2">
@@ -403,8 +489,12 @@ function SearchPage() {
 										key={historyItem}
 										type="button"
 										onClick={() => handleHistoryClick(historyItem)}
-										className="btn btn-ghost btn-sm"
+										className="flex items-center gap-2 rounded-full bg-base-content/5 px-4 py-2 text-sm transition-all hover:bg-primary/10 hover:text-primary"
 									>
+										<Clock
+											className="h-3 w-3 text-base-content/40"
+											aria-hidden="true"
+										/>
 										{historyItem}
 									</button>
 								))}
@@ -412,14 +502,50 @@ function SearchPage() {
 						</div>
 					)}
 
-					<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
-						<Search
-							className="mx-auto size-12 text-base-content/30"
-							aria-hidden="true"
-						/>
-						<p className="mt-4 text-base-content/70">
-							アーティスト、曲名、サークル名で検索できます。
-						</p>
+					{/* Browse categories */}
+					<div className="glass-card rounded-2xl p-6">
+						<h2 className="mb-4 flex items-center gap-2 font-semibold">
+							<Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
+							カテゴリから探す
+						</h2>
+						<div className="grid gap-3 sm:grid-cols-3">
+							<Link
+								to="/circles"
+								className="group flex items-center gap-3 rounded-xl bg-primary/5 p-4 transition-all hover:bg-primary/10 hover:shadow-md"
+							>
+								<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+									<Disc3 className="h-5 w-5" aria-hidden="true" />
+								</div>
+								<div>
+									<div className="font-medium">サークル</div>
+									<div className="text-base-content/50 text-xs">456件</div>
+								</div>
+							</Link>
+							<Link
+								to="/artists"
+								className="group flex items-center gap-3 rounded-xl bg-accent/5 p-4 transition-all hover:bg-accent/10 hover:shadow-md"
+							>
+								<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+									<Users className="h-5 w-5" aria-hidden="true" />
+								</div>
+								<div>
+									<div className="font-medium">アーティスト</div>
+									<div className="text-base-content/50 text-xs">890件</div>
+								</div>
+							</Link>
+							<Link
+								to="/original-songs"
+								className="group flex items-center gap-3 rounded-xl bg-secondary/5 p-4 transition-all hover:bg-secondary/10 hover:shadow-md"
+							>
+								<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
+									<Music className="h-5 w-5" aria-hidden="true" />
+								</div>
+								<div>
+									<div className="font-medium">原曲</div>
+									<div className="text-base-content/50 text-xs">1,234件</div>
+								</div>
+							</Link>
+						</div>
 					</div>
 				</div>
 			)}

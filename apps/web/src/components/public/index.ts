@@ -8,7 +8,9 @@ export {
 export { EmptyState, type EmptyStateType } from "./empty-state";
 export { type Badge, EntityCard } from "./entity-card";
 export { ExternalLink } from "./external-link";
+export { FeaturesSection } from "./features-section";
 export { HeroSection } from "./hero-section";
+export { NavigationSection } from "./navigation-section";
 export {
 	calculateTotalPages,
 	DEFAULT_PAGE_SIZE,

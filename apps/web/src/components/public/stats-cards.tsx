@@ -1,18 +1,42 @@
 import { Link } from "@tanstack/react-router";
+import {
+	Calendar,
+	Disc3,
+	type LucideIcon,
+	Music,
+	TrendingUp,
+	Users,
+} from "lucide-react";
+import { formatNumber } from "../../lib/format";
 
 interface StatCardProps {
-	icon: React.ReactNode;
+	icon: LucideIcon;
 	count: number;
 	label: string;
 	href?: string;
+	trend?: number;
 }
 
-function StatCard({ icon, count, label, href }: StatCardProps) {
+function StatCard({ icon: Icon, count, label, href, trend }: StatCardProps) {
 	const content = (
-		<div className="flex flex-col items-center gap-2 rounded-box bg-base-100 p-4 shadow-sm transition-shadow hover:shadow-md">
-			<div className="text-2xl text-primary">{icon}</div>
-			<div className="font-bold text-2xl">{count.toLocaleString()}</div>
-			<div className="text-base-content/70 text-sm">{label}</div>
+		<div className="glass-card group flex flex-col gap-3 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+			<div className="flex items-center justify-between">
+				<div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
+					<Icon className="h-5 w-5" aria-hidden="true" />
+				</div>
+				{trend !== undefined && (
+					<div className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-success text-xs">
+						<TrendingUp className="h-3 w-3" aria-hidden="true" />
+						<span>+{trend}%</span>
+					</div>
+				)}
+			</div>
+			<div>
+				<div className="font-bold text-2xl tracking-tight md:text-3xl">
+					{formatNumber(count)}
+				</div>
+				<div className="mt-1 text-base-content/60 text-sm">{label}</div>
+			</div>
 		</div>
 	);
 
@@ -39,116 +63,49 @@ const mockStats = {
 export function StatsCards() {
 	return (
 		<section className="py-8">
+			<div className="mb-6 flex items-center justify-between">
+				<h2 className="font-bold text-xl">データ統計</h2>
+				<Link
+					to="/stats"
+					className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
+				>
+					詳細を見る
+					<span className="transition-transform group-hover:translate-x-0.5">
+						→
+					</span>
+				</Link>
+			</div>
 			<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
 				<StatCard
-					icon={
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-8 w-8"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							strokeWidth={2}
-							aria-hidden="true"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
-							/>
-						</svg>
-					}
+					icon={Music}
 					count={mockStats.originalSongs}
 					label="原曲"
 					href="/original-songs"
 				/>
 				<StatCard
-					icon={
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-8 w-8"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							strokeWidth={2}
-							aria-hidden="true"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-							/>
-						</svg>
-					}
+					icon={Calendar}
 					count={mockStats.events}
 					label="イベント"
 					href="/events"
 				/>
 				<StatCard
-					icon={
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-8 w-8"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							strokeWidth={2}
-							aria-hidden="true"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-							/>
-						</svg>
-					}
+					icon={Users}
 					count={mockStats.circles}
 					label="サークル"
 					href="/circles"
 				/>
 				<StatCard
-					icon={
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-8 w-8"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							strokeWidth={2}
-							aria-hidden="true"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-							/>
-						</svg>
-					}
+					icon={Users}
 					count={mockStats.artists}
 					label="アーティスト"
 					href="/artists"
 				/>
 				<StatCard
-					icon={
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-8 w-8"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							strokeWidth={2}
-							aria-hidden="true"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
-							/>
-						</svg>
-					}
+					icon={Disc3}
 					count={mockStats.tracks}
 					label="トラック"
 					href="/stats"
+					trend={12}
 				/>
 			</div>
 		</section>
