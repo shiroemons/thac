@@ -8,6 +8,7 @@ import {
 	Users,
 } from "lucide-react";
 import { PublicBreadcrumb } from "@/components/public";
+import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/_public/stats")({
@@ -101,7 +102,7 @@ function StatCard({ icon, count, label, href }: StatCardProps) {
 	const content = (
 		<div className="flex flex-col items-center gap-2 rounded-box bg-base-100 p-4 shadow-sm transition-shadow hover:shadow-md">
 			<div className="text-2xl text-primary">{icon}</div>
-			<div className="font-bold text-2xl">{count.toLocaleString()}</div>
+			<div className="font-bold text-2xl">{formatNumber(count)}</div>
 			<div className="text-base-content/70 text-sm">{label}</div>
 		</div>
 	);
@@ -136,7 +137,7 @@ function RankingItem({ rank, name, count, unit, href }: RankingItemProps) {
 			</span>
 			<span className="min-w-0 flex-1 truncate">{name}</span>
 			<span className="text-base-content/70 text-sm">
-				{count.toLocaleString()}
+				{formatNumber(count)}
 				{unit}
 			</span>
 		</Link>

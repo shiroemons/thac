@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight, Music } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { PublicBreadcrumb } from "@/components/public";
+import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
 import {
 	getArrangeCount,
@@ -75,18 +76,22 @@ function OriginalSongsPage() {
 		return getWorksByProductType(type);
 	}, [type]);
 
-	// 展開中の作品ID一覧（URL優先、なければlocalStorage）
-	const expandedWorkIds = useMemo(() => {
+	// 展開中の作品ID一覧（URLパラメータから取得）
+	const expandedWorkIdsFromUrl = useMemo(() => {
 		if (open) {
-			// URLパラメータから取得
 			const ids = open.split(",").filter((id) => id.trim() !== "");
 			const validIds = ids.filter((id) =>
 				filteredWorks.some((w) => w.id === id),
 			);
 			return new Set(validIds);
 		}
-		// localStorageから取得（フォールバック）
-		if (typeof window !== "undefined") {
+		return new Set<string>();
+	}, [open, filteredWorks]);
+
+	// 初回マウント時に localStorage から復元（URL パラメータがない場合のみ）
+	// biome-ignore lint/correctness/useExhaustiveDependencies: 意図的に初回マウント時のみ実行
+	useEffect(() => {
+		if (!open) {
 			const saved = localStorage.getItem(STORAGE_KEY);
 			if (saved) {
 				try {
@@ -94,14 +99,20 @@ function OriginalSongsPage() {
 					const validIds = parsed.filter((id) =>
 						filteredWorks.some((w) => w.id === id),
 					);
-					return new Set(validIds);
+					if (validIds.length > 0) {
+						navigate({
+							search: { type, open: validIds.join(",") },
+							replace: true,
+						});
+					}
 				} catch {
-					return new Set<string>();
+					// ignore
 				}
 			}
 		}
-		return new Set<string>();
-	}, [open, filteredWorks]);
+	}, []);
+
+	const expandedWorkIds = expandedWorkIdsFromUrl;
 
 	// 作品アコーディオンの展開/折りたたみ
 	const handleToggle = (workId: string) => {
@@ -281,7 +292,7 @@ function WorkAccordion({ work, isExpanded, onToggle }: WorkAccordionProps) {
 												{song.composer}
 											</td>
 											<td className="text-right text-primary">
-												{song.arrangeCount.toLocaleString()}
+												{formatNumber(song.arrangeCount)}
 											</td>
 										</tr>
 									))}

@@ -9,6 +9,7 @@ import {
 	TrendingUp,
 } from "lucide-react";
 import { PublicBreadcrumb } from "@/components/public";
+import { formatNumber } from "@/lib/format";
 import { createPublicOfficialWorkHead } from "@/lib/head";
 import {
 	getArrangeCount,
@@ -216,7 +217,7 @@ function OfficialWorkDetailPage() {
 						<div className="flex items-center justify-center gap-2 text-secondary">
 							<TrendingUp className="size-5" />
 							<span className="font-bold text-2xl">
-								{stats.arrangeCount.toLocaleString()}
+								{formatNumber(stats.arrangeCount)}
 							</span>
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">アレンジ総数</p>
@@ -266,7 +267,7 @@ function OfficialWorkDetailPage() {
 											</td>
 											<td className="text-right">
 												<span className="font-medium text-primary">
-													{song.arrangeCount.toLocaleString()}
+													{formatNumber(song.arrangeCount)}
 												</span>
 											</td>
 										</tr>

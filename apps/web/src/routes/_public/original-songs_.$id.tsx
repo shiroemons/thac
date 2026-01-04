@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import { PublicBreadcrumb } from "@/components/public";
+import { formatNumber } from "@/lib/format";
 import { createPublicOriginalSongHead } from "@/lib/head";
 import {
 	getArrangeCount,
@@ -203,7 +204,7 @@ function OriginalSongDetailPage() {
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<TrendingUp className="size-5" />
 							<span className="font-bold text-2xl">
-								{arrangeCount.toLocaleString()}
+								{formatNumber(arrangeCount)}
 							</span>
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">アレンジ数</p>
@@ -212,7 +213,7 @@ function OriginalSongDetailPage() {
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<Users className="size-5" />
 							<span className="font-bold text-2xl">
-								{circleCount.toLocaleString()}
+								{formatNumber(circleCount)}
 							</span>
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">サークル数</p>
@@ -221,7 +222,7 @@ function OriginalSongDetailPage() {
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<Mic className="size-5" />
 							<span className="font-bold text-2xl">
-								{artistCount.toLocaleString()}
+								{formatNumber(artistCount)}
 							</span>
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">アーティスト数</p>
