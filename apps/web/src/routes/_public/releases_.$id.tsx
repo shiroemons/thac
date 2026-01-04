@@ -26,9 +26,7 @@ export const Route = createFileRoute("/_public/releases_/$id")({
 
 function ReleaseDetailPage() {
 	const { id } = Route.useParams();
-
-	// リリース詳細を取得
-	const release = getReleaseWithDetails(id);
+	const { release } = Route.useLoaderData();
 
 	// 配信リンクを取得
 	const publications = getPublicationsForRelease(id);

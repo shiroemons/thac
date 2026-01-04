@@ -87,9 +87,7 @@ const roleNames: Record<string, string> = {
 
 function OriginalSongDetailPage() {
 	const { id } = Route.useParams();
-
-	// 共有モックデータから取得
-	const song = getSongById(id);
+	const { song } = Route.useLoaderData();
 	const work = song ? getWorkById(song.productId) : undefined;
 	const arrangeCount = song ? getArrangeCount(song.id) : 0;
 	const links = mockSongLinks[id] || [];

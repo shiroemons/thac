@@ -101,9 +101,7 @@ const platformNames: Record<string, string> = {
 
 function OfficialWorkDetailPage() {
 	const { id } = Route.useParams();
-
-	// 共有モックデータから取得
-	const work = getWorkById(id);
+	const { work } = Route.useLoaderData();
 	const songs = work ? getSongsByWorkId(work.id) : [];
 	const songsWithArrangeCount = songs.map((song) => ({
 		...song,

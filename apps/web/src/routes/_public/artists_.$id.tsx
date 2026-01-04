@@ -246,11 +246,9 @@ type RoleFilter = "all" | string;
 
 function ArtistDetailPage() {
 	const { id } = Route.useParams();
+	const { artist } = Route.useLoaderData();
 	const [aliasFilter, setAliasFilter] = useState<AliasFilter>("all");
 	const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
-
-	// モックデータから取得
-	const artist = mockArtists[id];
 	const aliases = mockAliases[id] || [];
 	const credits = mockCredits[id] || [];
 	const relatedArtists = mockRelatedArtists[id] || [];

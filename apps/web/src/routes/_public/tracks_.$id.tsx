@@ -35,9 +35,7 @@ function formatTime(seconds: number): string {
 
 function TrackDetailPage() {
 	const { id } = Route.useParams();
-
-	// トラック詳細を取得
-	const track = getTrackWithDetails(id);
+	const { track } = Route.useLoaderData();
 
 	// 配信リンクを取得
 	const publications = getPublicationsForTrack(id);

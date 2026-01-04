@@ -256,6 +256,7 @@ type TabType = "releases" | "tracks";
 
 function CircleDetailPage() {
 	const { id } = Route.useParams();
+	const { circle } = Route.useLoaderData();
 	const [activeTab, setActiveTab] = useState<TabType>("releases");
 	const [viewMode, setViewModeState] = useState<ViewMode>("list");
 
@@ -268,9 +269,6 @@ function CircleDetailPage() {
 		setViewModeState(view);
 		localStorage.setItem(STORAGE_KEY_VIEW, view);
 	};
-
-	// モックデータから取得
-	const circle = mockCircles[id];
 	const links = mockCircleLinks[id] || [];
 	const releases = mockReleases[id] || [];
 	const tracks = mockTracks[id] || [];

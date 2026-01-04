@@ -203,6 +203,7 @@ type TabType = "releases" | "tracks";
 
 function EventDetailPage() {
 	const { id } = Route.useParams();
+	const { event } = Route.useLoaderData();
 	const [activeTab, setActiveTab] = useState<TabType>("releases");
 	const [viewMode, setViewModeState] = useState<ViewMode>("list");
 
@@ -215,9 +216,6 @@ function EventDetailPage() {
 		setViewModeState(view);
 		localStorage.setItem(STORAGE_KEY_VIEW, view);
 	};
-
-	// モックデータから取得
-	const event = mockEvents[id];
 	const series = event ? mockEventSeries[event.eventSeriesId] : null;
 	const days = mockEventDays[id] || [];
 	const releases = mockReleases[id] || [];
