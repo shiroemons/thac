@@ -55,11 +55,37 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 	component: RootDocument,
 });
 
+// 公開ページのパス一覧（_publicレイアウトで独自のヘッダーを使用）
+const PUBLIC_PATHS = [
+	"/",
+	"/about",
+	"/search",
+	"/original-songs",
+	"/official-works",
+	"/circles",
+	"/artists",
+	"/events",
+	"/releases",
+	"/tracks",
+	"/roles",
+	"/stats",
+];
+
+function isPublicRoute(pathname: string): boolean {
+	return PUBLIC_PATHS.some(
+		(path) => pathname === path || pathname.startsWith(`${path}/`),
+	);
+}
+
 function RootDocument() {
 	const location = useLocation();
 	const isAdminRoute = location.pathname.startsWith("/admin");
+	const isPublic = isPublicRoute(location.pathname);
 	// ルーターコンテキストからqueryClientを取得
 	const { queryClient } = Route.useRouteContext();
+
+	// 公開ページと管理ページは独自のレイアウトを持つ
+	const showDefaultHeader = !isAdminRoute && !isPublic;
 
 	return (
 		<html lang="ja" suppressHydrationWarning>
@@ -73,8 +99,12 @@ function RootDocument() {
 			<body>
 				<QueryClientProvider client={queryClient}>
 					<ThemeProvider>
-						<div className="grid h-svh grid-rows-[auto_1fr]">
-							{!isAdminRoute && <Header />}
+						<div
+							className={
+								showDefaultHeader ? "grid h-svh grid-rows-[auto_1fr]" : ""
+							}
+						>
+							{showDefaultHeader && <Header />}
 							<Outlet />
 						</div>
 					</ThemeProvider>
