@@ -10,7 +10,9 @@ export function PublicFooter() {
 						About
 					</Link>
 					<span className="text-base-content/30">|</span>
-					<span className="text-base-content/50">Privacy</span>
+					<Link to="/privacy" className="link link-hover">
+						Privacy
+					</Link>
 					<span className="text-base-content/30">|</span>
 					<span className="text-base-content/50">Terms</span>
 				</nav>
