@@ -71,19 +71,19 @@ export function HeroSection() {
 					原曲、サークル、アーティスト情報を検索できます。
 				</p>
 
-				{/* Glass search bar */}
-				<div className="mx-auto max-w-xl">
+				{/* Search bar */}
+				<div className="mx-auto max-w-2xl">
 					<Link
 						to="/search"
-						className="glass-card-strong group flex w-full items-center gap-4 rounded-2xl px-6 py-4 shadow-lg transition-all duration-300 hover:shadow-xl hover:ring-2 hover:ring-primary/20"
+						className="group flex w-full items-center gap-4 rounded-2xl border-2 border-primary/30 bg-base-100 px-6 py-5 shadow-xl transition-all duration-300 hover:border-primary hover:shadow-2xl"
 					>
-						<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-content">
-							<Search className="h-5 w-5" aria-hidden="true" />
+						<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-content transition-transform group-hover:scale-110">
+							<Search className="h-6 w-6" aria-hidden="true" />
 						</div>
-						<span className="flex-1 text-left text-base-content/50 transition-colors group-hover:text-base-content/70">
+						<span className="flex-1 text-left text-base-content/70 text-lg transition-colors group-hover:text-base-content">
 							アーティスト、曲名、サークル名で検索...
 						</span>
-						<kbd className="hidden rounded-lg border border-base-content/10 bg-base-content/5 px-2.5 py-1.5 font-mono text-base-content/40 text-xs sm:inline-block">
+						<kbd className="hidden rounded-lg border border-base-content/20 bg-base-200 px-3 py-2 font-mono text-base-content/60 text-sm sm:inline-block">
 							⌘K
 						</kbd>
 					</Link>
