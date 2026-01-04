@@ -4,13 +4,22 @@ import {
 	Disc3,
 	Music,
 	Search,
+	SlidersHorizontal,
 	Sparkles,
 	TrendingUp,
 	Users,
 	X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PublicBreadcrumb } from "@/components/public";
+import {
+	type AdvancedSearchFilters,
+	AdvancedSearchModal,
+	type AdvancedSearchModalRef,
+	DEFAULT_FILTERS,
+	FilterChips,
+	useFilterChips,
+} from "@/components/search";
 import { createPageHead } from "@/lib/head";
 
 type SearchCategory = "all" | "artist" | "circle" | "track";
@@ -229,6 +238,50 @@ function SearchPage() {
 	const navigate = useNavigate();
 	const [inputValue, setInputValue] = useState(query);
 	const [searchHistory, setSearchHistory] = useState<string[]>([]);
+	const [filters, setFilters] =
+		useState<AdvancedSearchFilters>(DEFAULT_FILTERS);
+	const modalRef = useRef<AdvancedSearchModalRef>(null);
+
+	// フィルターチップのロジック
+	const { chips, handleRemoveChip, handleClearAll } = useFilterChips(
+		filters,
+		setFilters,
+	);
+
+	// 選択中のフィルター数
+	const activeFilterCount = useMemo(() => {
+		let count = 0;
+		// テキスト検索
+		count += Object.values(filters.textSearch).filter(Boolean).length;
+		// 原曲
+		count += filters.originalSongs.length;
+		// アーティスト
+		count += filters.artists.length;
+		// サークル
+		count += filters.circles.length;
+		// 役割者数
+		count += Object.values(filters.roleCounts).filter(
+			(v) => v !== "any",
+		).length;
+		// 原曲数
+		if (filters.songCount !== "any") count += 1;
+		// 日付範囲
+		if (filters.dateRange.from || filters.dateRange.to) count += 1;
+		// イベント
+		if (filters.event) count += 1;
+		return count;
+	}, [filters]);
+
+	// モーダルを開く
+	const openAdvancedSearch = () => {
+		modalRef.current?.showModal();
+	};
+
+	// 検索実行（モーダルから呼ばれる）
+	const handleAdvancedSearch = () => {
+		// TODO: フィルターを適用して検索を実行
+		// 現在はモックなので単純にモーダルを閉じるだけ
+	};
 
 	useEffect(() => {
 		setSearchHistory(getSearchHistory());
@@ -326,38 +379,69 @@ function SearchPage() {
 						</p>
 					</div>
 
-					{/* Search form */}
+					{/* Search form with enhanced visibility */}
 					<form onSubmit={handleSearch} className="mx-auto max-w-2xl">
-						<div className="relative">
-							<div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5">
-								<Search
-									className="h-5 w-5 text-base-content/40"
-									aria-hidden="true"
+						<div className="flex gap-2">
+							{/* Search input - enhanced visibility */}
+							<div className="relative flex-1">
+								<div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5">
+									<Search className="h-6 w-6 text-primary" aria-hidden="true" />
+								</div>
+								<input
+									type="text"
+									value={inputValue}
+									onChange={(e) => setInputValue(e.target.value)}
+									placeholder="検索キーワードを入力..."
+									className="w-full rounded-xl border-2 border-primary/30 bg-base-100 py-4 pr-12 pl-14 text-lg shadow-lg transition-all duration-300 placeholder:text-base-content/40 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20"
+									aria-label="検索キーワード"
 								/>
+								{inputValue && (
+									<button
+										type="button"
+										onClick={handleClearInput}
+										className="absolute inset-y-0 right-0 flex items-center pr-5 text-base-content/40 transition-colors hover:text-base-content"
+										aria-label="検索をクリア"
+									>
+										<X className="h-5 w-5" />
+									</button>
+								)}
 							</div>
-							<input
-								type="text"
-								value={inputValue}
-								onChange={(e) => setInputValue(e.target.value)}
-								placeholder="検索キーワードを入力..."
-								className="glass-card-strong w-full rounded-xl py-4 pr-12 pl-14 text-base shadow-lg transition-all duration-300 placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/30"
-								aria-label="検索キーワード"
-							/>
-							{inputValue && (
-								<button
-									type="button"
-									onClick={handleClearInput}
-									className="absolute inset-y-0 right-0 flex items-center pr-5 text-base-content/40 transition-colors hover:text-base-content"
-									aria-label="検索をクリア"
-								>
-									<X className="h-5 w-5" />
-								</button>
-							)}
+
+							{/* Advanced search button */}
+							<button
+								type="button"
+								onClick={openAdvancedSearch}
+								className={`flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-medium transition-all ${
+									activeFilterCount > 0
+										? "border-primary bg-primary text-primary-content"
+										: "border-base-300 bg-base-100 text-base-content hover:border-primary hover:bg-primary/10"
+								}`}
+								aria-label="詳細検索を開く"
+							>
+								<SlidersHorizontal className="h-5 w-5" />
+								<span className="hidden sm:inline">詳細検索</span>
+								{activeFilterCount > 0 && (
+									<span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-content text-primary text-xs">
+										{activeFilterCount}
+									</span>
+								)}
+							</button>
 						</div>
 					</form>
 
+					{/* 選択中のフィルターチップ */}
+					{chips.length > 0 && (
+						<div className="mx-auto mt-4 max-w-2xl">
+							<FilterChips
+								chips={chips}
+								onRemove={handleRemoveChip}
+								onClearAll={handleClearAll}
+							/>
+						</div>
+					)}
+
 					{/* Popular searches */}
-					{!query && (
+					{!query && chips.length === 0 && (
 						<div className="mx-auto mt-6 max-w-2xl">
 							<div className="flex flex-wrap items-center justify-center gap-2">
 								<span className="flex items-center gap-1 text-base-content/50 text-xs">
@@ -379,6 +463,14 @@ function SearchPage() {
 					)}
 				</div>
 			</div>
+
+			{/* Advanced search modal */}
+			<AdvancedSearchModal
+				ref={modalRef}
+				filters={filters}
+				onFiltersChange={setFilters}
+				onSearch={handleAdvancedSearch}
+			/>
 
 			{/* Category tabs */}
 			{query && (
