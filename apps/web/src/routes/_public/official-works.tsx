@@ -269,9 +269,7 @@ function WorksGridView({ works }: WorksViewProps) {
 					>
 						<div className="card-body p-4">
 							<div className="flex items-start justify-between gap-2">
-								<h3 className="card-title text-base">
-									{work.shortNameJa ?? work.nameJa}
-								</h3>
+								<h3 className="card-title text-base">{work.nameJa}</h3>
 								<span className={`badge badge-sm ${category.badgeClass}`}>
 									{category.label}
 								</span>
@@ -328,12 +326,7 @@ function WorksListView({ works }: WorksViewProps) {
 										params={{ id: work.id }}
 										className="hover:text-primary"
 									>
-										<div className="font-medium">
-											{work.shortNameJa ?? work.nameJa}
-										</div>
-										<div className="line-clamp-1 text-base-content/70 text-sm">
-											{work.name}
-										</div>
+										<div className="font-medium">{work.nameJa}</div>
 									</Link>
 								</td>
 								<td>
