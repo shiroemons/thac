@@ -8,7 +8,8 @@ import {
 	Music,
 } from "lucide-react";
 import { useMemo } from "react";
-import { PublicBreadcrumb } from "@/components/public";
+import { PublicationLinks, PublicBreadcrumb } from "@/components/public";
+import { getPublicationsForTrack } from "@/mocks/publication";
 import { getTrackWithDetails } from "@/mocks/release";
 import { roleNames, type TrackCredit } from "@/types/release";
 
@@ -30,6 +31,9 @@ function TrackDetailPage() {
 
 	// トラック詳細を取得
 	const track = getTrackWithDetails(id);
+
+	// 配信リンクを取得
+	const publications = getPublicationsForTrack(id);
 
 	// クレジットを役割別にグループ化
 	const creditsByRole = useMemo(() => {
@@ -121,6 +125,13 @@ function TrackDetailPage() {
 					</div>
 				</div>
 			</div>
+
+			{/* 配信リンク */}
+			{publications.length > 0 && (
+				<div className="rounded-lg bg-base-100 p-6 shadow-sm">
+					<PublicationLinks publications={publications} showEmbeds />
+				</div>
+			)}
 
 			{/* クレジット */}
 			{track.credits.length > 0 && (

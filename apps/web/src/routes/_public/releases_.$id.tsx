@@ -1,7 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calendar, Disc3, Music, Users } from "lucide-react";
 import { useMemo } from "react";
-import { EmptyState, PublicBreadcrumb } from "@/components/public";
+import {
+	EmptyState,
+	PublicationLinks,
+	PublicBreadcrumb,
+} from "@/components/public";
+import { getPublicationsForRelease } from "@/mocks/publication";
 import { getReleaseWithDetails } from "@/mocks/release";
 import {
 	participationTypeBadgeColors,
@@ -21,6 +26,9 @@ function ReleaseDetailPage() {
 
 	// リリース詳細を取得
 	const release = getReleaseWithDetails(id);
+
+	// 配信リンクを取得
+	const publications = getPublicationsForRelease(id);
 
 	// ディスクごとにトラックをグループ化
 	const tracksByDisc = useMemo(() => {
@@ -179,6 +187,13 @@ function ReleaseDetailPage() {
 					/>
 				)}
 			</div>
+
+			{/* 配信リンク */}
+			{publications.length > 0 && (
+				<div className="rounded-lg bg-base-100 p-6 shadow-sm">
+					<PublicationLinks publications={publications} showEmbeds />
+				</div>
+			)}
 
 			{/* メモ */}
 			{release.notes && (
