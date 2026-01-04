@@ -65,6 +65,8 @@ const PUBLIC_PATHS = [
 	"/circles",
 	"/artists",
 	"/events",
+	"/releases",
+	"/tracks",
 	"/roles",
 	"/stats",
 ];
