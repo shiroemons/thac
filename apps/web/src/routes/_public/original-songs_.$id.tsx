@@ -4,13 +4,13 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	Disc3,
-	ExternalLink,
+	ExternalLink as ExternalLinkIcon,
 	Mic,
 	Music,
 	TrendingUp,
 	Users,
 } from "lucide-react";
-import { PublicBreadcrumb } from "@/components/public";
+import { ExternalLink, PublicBreadcrumb } from "@/components/public";
 import { formatNumber } from "@/lib/format";
 import { createPublicOriginalSongHead } from "@/lib/head";
 import {
@@ -140,18 +140,16 @@ function OriginalSongDetailPage() {
 					{song.links.length > 0 && (
 						<div className="flex flex-wrap gap-2">
 							{song.links.map((link) => (
-								<a
+								<ExternalLink
 									key={`${link.platformCode}-${link.url}`}
 									href={link.url}
-									target="_blank"
-									rel="noopener noreferrer"
 									className="btn btn-outline btn-sm gap-1"
 								>
-									<ExternalLink className="size-3" />
+									<ExternalLinkIcon className="size-3" />
 									{link.platformName ||
 										platformNames[link.platformCode] ||
 										link.platformCode}
-								</a>
+								</ExternalLink>
 							))}
 						</div>
 					)}

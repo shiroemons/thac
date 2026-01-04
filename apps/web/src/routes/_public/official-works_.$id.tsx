@@ -2,13 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	BookOpen,
 	Disc3,
-	ExternalLink,
+	ExternalLink as ExternalLinkIcon,
 	Gamepad2,
 	Music,
 	Package,
 	TrendingUp,
 } from "lucide-react";
-import { PublicBreadcrumb } from "@/components/public";
+import { ExternalLink, PublicBreadcrumb } from "@/components/public";
 import { formatNumber } from "@/lib/format";
 import { createPublicOfficialWorkHead } from "@/lib/head";
 import { type PublicWorkDetail, publicApi } from "@/lib/public-api";
@@ -165,18 +165,16 @@ function OfficialWorkDetailPage() {
 					{/* 外部リンク + 原曲一覧リンク */}
 					<div className="flex flex-wrap gap-2">
 						{work.links.map((link) => (
-							<a
+							<ExternalLink
 								key={`${link.platformCode}-${link.url}`}
 								href={link.url}
-								target="_blank"
-								rel="noopener noreferrer"
 								className="btn btn-outline btn-sm gap-1"
 							>
-								<ExternalLink className="size-3" />
+								<ExternalLinkIcon className="size-3" />
 								{link.platformName ||
 									platformNames[link.platformCode] ||
 									link.platformCode}
-							</a>
+							</ExternalLink>
 						))}
 						<Link
 							to="/original-songs"
