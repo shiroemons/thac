@@ -251,7 +251,7 @@ function WorkAccordion({
 	isExpanded,
 	onToggle,
 }: WorkAccordionProps) {
-	const displayName = work.shortNameJa ?? work.nameJa;
+	const displayName = work.nameJa;
 
 	// トラック番号でソート
 	const sortedSongs = useMemo(() => {
