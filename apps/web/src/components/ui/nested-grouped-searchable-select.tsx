@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
-interface NestedOption {
+export interface NestedOption {
 	value: string;
 	label: string;
 	category?: string;
