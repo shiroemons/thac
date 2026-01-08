@@ -25,6 +25,9 @@ export const CACHE_TTL = {
 	CIRCLE_DETAIL: 5 * 60, // 5分
 	CIRCLE_RELEASES: 5 * 60, // 5分
 	CIRCLE_TRACKS: 5 * 60, // 5分
+	ARTISTS_LIST: 5 * 60, // 5分
+	ARTIST_DETAIL: 5 * 60, // 5分
+	ARTIST_TRACKS: 5 * 60, // 5分
 } as const;
 
 /**
@@ -176,4 +179,28 @@ export const cacheKeys = {
 
 	circleTracks: (params: { circleId: string; page: number; limit: number }) =>
 		`public:circles:${params.circleId}:tracks:page=${params.page}:limit=${params.limit}`,
+
+	artistsList: (params: {
+		page: number;
+		limit: number;
+		initialScript?: string;
+		initial?: string;
+		row?: string;
+		role?: string;
+		search?: string;
+		sortBy?: string;
+		sortOrder?: string;
+	}) =>
+		`public:artists:page=${params.page}:limit=${params.limit}:script=${params.initialScript || ""}:initial=${params.initial || ""}:row=${params.row || ""}:role=${params.role || ""}:search=${params.search || ""}:sortBy=${params.sortBy || ""}:sortOrder=${params.sortOrder || ""}`,
+
+	artistDetail: (artistId: string) => `public:artists:${artistId}`,
+
+	artistTracks: (params: {
+		artistId: string;
+		page: number;
+		limit: number;
+		aliasId?: string;
+		role?: string;
+	}) =>
+		`public:artists:${params.artistId}:tracks:page=${params.page}:limit=${params.limit}:aliasId=${params.aliasId || ""}:role=${params.role || ""}`,
 };

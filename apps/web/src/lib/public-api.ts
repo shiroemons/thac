@@ -220,6 +220,77 @@ export interface PublicCircleTrack {
 	originalSong: { id: string; name: string | null } | null;
 }
 
+/** アーティストの役割 */
+export interface PublicArtistRole {
+	roleCode: string;
+	label: string;
+}
+
+/** 名義一覧項目（アーティスト一覧は名義単位で表示） */
+export interface PublicArtistItem {
+	id: string; // 名義ID（{artistId}__main__ または aliasId）
+	name: string; // 表示名
+	artistId: string; // 親アーティストID
+	artistName: string; // アーティスト本名
+	isMainName: boolean; // メイン名義かどうか
+	aliasTypeCode: string | null; // 別名義の場合のタイプ
+	nameInitial: string | null;
+	initialScript: string;
+	roles: PublicArtistRole[];
+	trackCount: number;
+}
+
+/** 他名義情報 */
+export interface PublicOtherAlias {
+	id: string;
+	name: string;
+	isMainName: boolean;
+	aliasTypeCode: string | null;
+	trackCount: number;
+}
+
+/** 名義詳細（アーティスト詳細は名義単位で表示） */
+export interface PublicArtistDetail {
+	id: string; // 名義ID
+	name: string; // 表示名
+	artistId: string; // 親アーティストID
+	artistName: string; // アーティスト本名
+	isMainName: boolean;
+	aliasTypeCode: string | null;
+	roles: PublicArtistRole[];
+	stats: {
+		trackCount: number;
+		releaseCount: number;
+	};
+	otherAliases: PublicOtherAlias[]; // 同じアーティストの他名義
+}
+
+/** アーティストトラック（クレジット） */
+export interface PublicArtistTrack {
+	id: string;
+	creditName: string;
+	aliasId: string | null;
+	aliasTypeCode: string | null;
+	roles: Array<{
+		roleCode: string;
+		label: string;
+	}>;
+	track: {
+		id: string;
+		name: string;
+	};
+	release: {
+		id: string;
+		name: string;
+		releaseDate: string | null;
+	};
+	circles: Array<{
+		id: string;
+		name: string;
+	}>;
+	originalSong: { id: string; name: string | null } | null;
+}
+
 // =============================================================================
 // API関数
 // =============================================================================
@@ -360,6 +431,59 @@ export const publicApi = {
 			const query = sp.toString();
 			return publicFetch<PaginatedResponse<PublicCircleTrack>>(
 				`/api/public/circles/${id}/tracks${query ? `?${query}` : ""}`,
+			);
+		},
+	},
+
+	artists: {
+		/** アーティスト一覧を取得 */
+		list: (params?: {
+			page?: number;
+			limit?: number;
+			initialScript?: string;
+			initial?: string;
+			row?: string;
+			role?: string;
+			search?: string;
+			sortBy?: string;
+			sortOrder?: string;
+		}) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			if (params?.initialScript) sp.set("initialScript", params.initialScript);
+			if (params?.initial) sp.set("initial", params.initial);
+			if (params?.row) sp.set("row", params.row);
+			if (params?.role) sp.set("role", params.role);
+			if (params?.search) sp.set("search", params.search);
+			if (params?.sortBy) sp.set("sortBy", params.sortBy);
+			if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<PublicArtistItem>>(
+				`/api/public/artists${query ? `?${query}` : ""}`,
+			);
+		},
+
+		/** アーティスト詳細を取得 */
+		get: (id: string) =>
+			publicFetch<PublicArtistDetail>(`/api/public/artists/${id}`),
+
+		/** 名義のトラック一覧を取得（idは名義ID: {artistId}__main__ または aliasId） */
+		tracks: (
+			id: string,
+			params?: {
+				page?: number;
+				limit?: number;
+				role?: string;
+			},
+		) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			if (params?.role) sp.set("role", params.role);
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<PublicArtistTrack>>(
+				`/api/public/artists/${id}/tracks${query ? `?${query}` : ""}`,
 			);
 		},
 	},

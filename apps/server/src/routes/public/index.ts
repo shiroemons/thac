@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { artistsRouter } from "./artists";
 import { categoriesRouter } from "./categories";
 import { circlesRouter } from "./circles";
 import { officialWorksRouter } from "./official-works";
@@ -11,5 +12,6 @@ publicRouter.route("/official-work-categories", categoriesRouter);
 publicRouter.route("/official-works", officialWorksRouter);
 publicRouter.route("/original-songs", originalSongsRouter);
 publicRouter.route("/circles", circlesRouter);
+publicRouter.route("/artists", artistsRouter);
 
 export { publicRouter };
