@@ -156,6 +156,70 @@ export interface PaginatedResponse<T> {
 	limit: number;
 }
 
+/** サークル一覧項目 */
+export interface PublicCircleItem {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	sortName: string | null;
+	nameInitial: string | null;
+	initialScript: string;
+	releaseCount: number;
+	trackCount: number;
+}
+
+/** サークル詳細 */
+export interface PublicCircleDetail {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	sortName: string | null;
+	nameInitial: string | null;
+	initialScript: string;
+	notes: string | null;
+	links: Array<{
+		id: string;
+		platformCode: string;
+		platformName: string | null;
+		url: string;
+		isOfficial: boolean;
+		isPrimary: boolean;
+	}>;
+	stats: {
+		releaseCount: number;
+		trackCount: number;
+	};
+}
+
+/** サークルリリース */
+export interface PublicCircleRelease {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	releaseDate: string | null;
+	releaseType: string | null;
+	participationType: string;
+	event: { id: string; name: string | null } | null;
+	trackCount: number;
+}
+
+/** サークルトラック */
+export interface PublicCircleTrack {
+	id: string;
+	name: string;
+	releaseId: string;
+	releaseName: string | null;
+	trackNumber: number;
+	artists: Array<{
+		id: string;
+		creditName: string;
+		roles: string[];
+	}>;
+	originalSong: { id: string; name: string | null } | null;
+}
+
 // =============================================================================
 // API関数
 // =============================================================================
@@ -230,6 +294,72 @@ export const publicApi = {
 			const query = sp.toString();
 			return publicFetch<PaginatedResponse<PublicArrangeTrack>>(
 				`/api/public/original-songs/${id}/tracks${query ? `?${query}` : ""}`,
+			);
+		},
+	},
+
+	circles: {
+		/** サークル一覧を取得 */
+		list: (params?: {
+			page?: number;
+			limit?: number;
+			initialScript?: string;
+			initial?: string;
+			row?: string;
+			search?: string;
+			sortBy?: string;
+			sortOrder?: string;
+		}) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			if (params?.initialScript) sp.set("initialScript", params.initialScript);
+			if (params?.initial) sp.set("initial", params.initial);
+			if (params?.row) sp.set("row", params.row);
+			if (params?.search) sp.set("search", params.search);
+			if (params?.sortBy) sp.set("sortBy", params.sortBy);
+			if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<PublicCircleItem>>(
+				`/api/public/circles${query ? `?${query}` : ""}`,
+			);
+		},
+
+		/** サークル詳細を取得 */
+		get: (id: string) =>
+			publicFetch<PublicCircleDetail>(`/api/public/circles/${id}`),
+
+		/** サークルのリリース一覧を取得 */
+		releases: (
+			id: string,
+			params?: {
+				page?: number;
+				limit?: number;
+			},
+		) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<PublicCircleRelease>>(
+				`/api/public/circles/${id}/releases${query ? `?${query}` : ""}`,
+			);
+		},
+
+		/** サークルのトラック一覧を取得 */
+		tracks: (
+			id: string,
+			params?: {
+				page?: number;
+				limit?: number;
+			},
+		) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<PublicCircleTrack>>(
+				`/api/public/circles/${id}/tracks${query ? `?${query}` : ""}`,
 			);
 		},
 	},
