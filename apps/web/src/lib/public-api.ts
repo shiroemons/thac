@@ -291,6 +291,61 @@ export interface PublicArtistTrack {
 	originalSong: { id: string; name: string | null } | null;
 }
 
+/** イベント一覧項目 */
+export interface PublicEventItem {
+	id: string;
+	name: string;
+	eventSeriesId: string | null;
+	eventSeriesName: string | null;
+	edition: number | null;
+	startDate: string | null;
+	endDate: string | null;
+	totalDays: number | null;
+	venue: string | null;
+	releaseCount: number;
+}
+
+/** イベント日 */
+export interface PublicEventDay {
+	id: string;
+	dayNumber: number;
+	date: string;
+}
+
+/** イベント詳細 */
+export interface PublicEventDetail {
+	id: string;
+	name: string;
+	eventSeriesId: string | null;
+	eventSeriesName: string | null;
+	edition: number | null;
+	startDate: string | null;
+	endDate: string | null;
+	totalDays: number | null;
+	venue: string | null;
+	eventDays: PublicEventDay[];
+	stats: {
+		releaseCount: number;
+		circleCount: number;
+		trackCount: number;
+	};
+}
+
+/** イベントリリース */
+export interface PublicEventRelease {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	releaseDate: string | null;
+	releaseType: string | null;
+	trackCount: number;
+	circles: Array<{
+		id: string;
+		name: string;
+		participationType: string;
+	}>;
+}
+
 // =============================================================================
 // API関数
 // =============================================================================
@@ -484,6 +539,51 @@ export const publicApi = {
 			const query = sp.toString();
 			return publicFetch<PaginatedResponse<PublicArtistTrack>>(
 				`/api/public/artists/${id}/tracks${query ? `?${query}` : ""}`,
+			);
+		},
+	},
+
+	events: {
+		/** イベント一覧を取得 */
+		list: (params?: {
+			page?: number;
+			limit?: number;
+			seriesId?: string;
+			search?: string;
+			sortBy?: string;
+			sortOrder?: string;
+		}) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			if (params?.seriesId) sp.set("seriesId", params.seriesId);
+			if (params?.search) sp.set("search", params.search);
+			if (params?.sortBy) sp.set("sortBy", params.sortBy);
+			if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<PublicEventItem>>(
+				`/api/public/events${query ? `?${query}` : ""}`,
+			);
+		},
+
+		/** イベント詳細を取得 */
+		get: (id: string) =>
+			publicFetch<PublicEventDetail>(`/api/public/events/${id}`),
+
+		/** イベントのリリース一覧を取得 */
+		releases: (
+			id: string,
+			params?: {
+				page?: number;
+				limit?: number;
+			},
+		) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<PublicEventRelease>>(
+				`/api/public/events/${id}/releases${query ? `?${query}` : ""}`,
 			);
 		},
 	},
