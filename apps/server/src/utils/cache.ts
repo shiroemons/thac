@@ -21,6 +21,10 @@ export const CACHE_TTL = {
 	SONGS_LIST: 5 * 60, // 5分
 	SONG_DETAIL: 5 * 60, // 5分
 	TRACKS_LIST: 60, // 1分
+	CIRCLES_LIST: 5 * 60, // 5分
+	CIRCLE_DETAIL: 5 * 60, // 5分
+	CIRCLE_RELEASES: 5 * 60, // 5分
+	CIRCLE_TRACKS: 5 * 60, // 5分
 } as const;
 
 /**
@@ -152,4 +156,24 @@ export const cacheKeys = {
 
 	tracksList: (params: { songId: string; page: number; limit: number }) =>
 		`public:songs:${params.songId}:tracks:page=${params.page}:limit=${params.limit}`,
+
+	circlesList: (params: {
+		page: number;
+		limit: number;
+		initialScript?: string;
+		initial?: string;
+		row?: string;
+		search?: string;
+		sortBy?: string;
+		sortOrder?: string;
+	}) =>
+		`public:circles:page=${params.page}:limit=${params.limit}:script=${params.initialScript || ""}:initial=${params.initial || ""}:row=${params.row || ""}:search=${params.search || ""}:sortBy=${params.sortBy || ""}:sortOrder=${params.sortOrder || ""}`,
+
+	circleDetail: (circleId: string) => `public:circles:${circleId}`,
+
+	circleReleases: (params: { circleId: string; page: number; limit: number }) =>
+		`public:circles:${params.circleId}:releases:page=${params.page}:limit=${params.limit}`,
+
+	circleTracks: (params: { circleId: string; page: number; limit: number }) =>
+		`public:circles:${params.circleId}:tracks:page=${params.page}:limit=${params.limit}`,
 };
