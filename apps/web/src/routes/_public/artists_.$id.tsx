@@ -90,15 +90,15 @@ function ArtistDetailPage() {
 		return (
 			<div className="space-y-6">
 				<PublicBreadcrumb
-					items={[{ label: "名義", href: "/artists" }, { label: id }]}
+					items={[{ label: "アーティスト", href: "/artists" }, { label: id }]}
 				/>
 				<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
-					<h1 className="font-bold text-2xl">名義が見つかりません</h1>
+					<h1 className="font-bold text-2xl">アーティストが見つかりません</h1>
 					<p className="mt-2 text-base-content/70">
-						指定されたIDの名義は存在しません
+						指定されたIDのアーティストは存在しません
 					</p>
 					<Link to="/artists" className="btn btn-primary mt-4">
-						名義一覧に戻る
+						アーティスト一覧に戻る
 					</Link>
 				</div>
 			</div>
@@ -110,7 +110,10 @@ function ArtistDetailPage() {
 	return (
 		<div className="space-y-6">
 			<PublicBreadcrumb
-				items={[{ label: "名義", href: "/artists" }, { label: artist.name }]}
+				items={[
+					{ label: "アーティスト", href: "/artists" },
+					{ label: artist.name },
+				]}
 			/>
 
 			{/* ヘッダー */}
