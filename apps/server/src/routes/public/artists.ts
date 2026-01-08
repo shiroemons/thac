@@ -20,6 +20,7 @@ import {
 	trackOfficialSongs,
 	tracks,
 } from "@thac/db";
+import type { SQL } from "drizzle-orm";
 import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
 import { handleDbError } from "../../utils/api-error";
@@ -312,6 +313,7 @@ artistsRouter.get("/:id", async (c) => {
 		let artistId: string;
 		let name: string;
 		let aliasTypeCode: string | null = null;
+		let statsCondition: SQL<unknown>;
 
 		if (parsed.isMainName) {
 			// メイン名義の場合
@@ -332,8 +334,15 @@ artistsRouter.get("/:id", async (c) => {
 			}
 
 			name = artistRecord.name;
+			statsCondition = and(
+				eq(trackCredits.artistId, artistId),
+				isNull(trackCredits.artistAliasId),
+			) as SQL<unknown>;
 		} else {
 			// 別名義の場合
+			if (!parsed.aliasId) {
+				return c.json({ error: ERROR_MESSAGES.ARTIST_NOT_FOUND }, 404);
+			}
 			const aliasResult = await db
 				.select({
 					id: artistAliases.id,
@@ -342,7 +351,7 @@ artistsRouter.get("/:id", async (c) => {
 					aliasTypeCode: artistAliases.aliasTypeCode,
 				})
 				.from(artistAliases)
-				.where(eq(artistAliases.id, parsed.aliasId!))
+				.where(eq(artistAliases.id, parsed.aliasId))
 				.limit(1);
 
 			const aliasRecord = aliasResult[0];
@@ -353,6 +362,7 @@ artistsRouter.get("/:id", async (c) => {
 			artistId = aliasRecord.artistId;
 			name = aliasRecord.name;
 			aliasTypeCode = aliasRecord.aliasTypeCode;
+			statsCondition = eq(trackCredits.artistAliasId, parsed.aliasId);
 		}
 
 		// アーティスト名を取得
@@ -363,14 +373,6 @@ artistsRouter.get("/:id", async (c) => {
 			.limit(1);
 
 		const artistName = artistData[0]?.name ?? name;
-
-		// 統計情報を取得
-		const statsCondition = parsed.isMainName
-			? and(
-					eq(trackCredits.artistId, artistId),
-					isNull(trackCredits.artistAliasId),
-				)
-			: eq(trackCredits.artistAliasId, parsed.aliasId!);
 
 		const statsData = await db
 			.select({
@@ -517,6 +519,7 @@ artistsRouter.get("/:id/tracks", async (c) => {
 
 		const parsed = parseNameId(nameId);
 		let artistId: string;
+		let creditConditions: SQL<unknown>[];
 
 		if (parsed.isMainName) {
 			artistId = parsed.artistId;
@@ -531,12 +534,20 @@ artistsRouter.get("/:id/tracks", async (c) => {
 			if (artistExists.length === 0) {
 				return c.json({ error: ERROR_MESSAGES.ARTIST_NOT_FOUND }, 404);
 			}
+
+			creditConditions = [
+				eq(trackCredits.artistId, artistId),
+				isNull(trackCredits.artistAliasId),
+			];
 		} else {
 			// 別名義存在チェック
+			if (!parsed.aliasId) {
+				return c.json({ error: ERROR_MESSAGES.ARTIST_NOT_FOUND }, 404);
+			}
 			const aliasExists = await db
 				.select({ id: artistAliases.id, artistId: artistAliases.artistId })
 				.from(artistAliases)
-				.where(eq(artistAliases.id, parsed.aliasId!))
+				.where(eq(artistAliases.id, parsed.aliasId))
 				.limit(1);
 
 			const aliasExistsRecord = aliasExists[0];
@@ -545,17 +556,10 @@ artistsRouter.get("/:id/tracks", async (c) => {
 			}
 
 			artistId = aliasExistsRecord.artistId;
+			creditConditions = [eq(trackCredits.artistAliasId, parsed.aliasId)];
 		}
 
 		const offset = (page - 1) * limit;
-
-		// クレジット条件を構築
-		const creditConditions = parsed.isMainName
-			? [
-					eq(trackCredits.artistId, artistId),
-					isNull(trackCredits.artistAliasId),
-				]
-			: [eq(trackCredits.artistAliasId, parsed.aliasId!)];
 
 		// 役割フィルターがある場合、対象クレジットIDを先に取得
 		let creditIdsWithRole: string[] | null = null;
