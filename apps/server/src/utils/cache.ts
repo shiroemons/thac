@@ -28,6 +28,9 @@ export const CACHE_TTL = {
 	ARTISTS_LIST: 5 * 60, // 5分
 	ARTIST_DETAIL: 5 * 60, // 5分
 	ARTIST_TRACKS: 5 * 60, // 5分
+	EVENTS_LIST: 5 * 60, // 5分
+	EVENT_DETAIL: 5 * 60, // 5分
+	EVENT_RELEASES: 5 * 60, // 5分
 } as const;
 
 /**
@@ -203,4 +206,19 @@ export const cacheKeys = {
 		role?: string;
 	}) =>
 		`public:artists:${params.artistId}:tracks:page=${params.page}:limit=${params.limit}:aliasId=${params.aliasId || ""}:role=${params.role || ""}`,
+
+	eventsList: (params: {
+		page: number;
+		limit: number;
+		seriesId?: string;
+		search?: string;
+		sortBy?: string;
+		sortOrder?: string;
+	}) =>
+		`public:events:page=${params.page}:limit=${params.limit}:seriesId=${params.seriesId || ""}:search=${params.search || ""}:sortBy=${params.sortBy || ""}:sortOrder=${params.sortOrder || ""}`,
+
+	eventDetail: (eventId: string) => `public:events:${eventId}`,
+
+	eventReleases: (params: { eventId: string; page: number; limit: number }) =>
+		`public:events:${params.eventId}:releases:page=${params.page}:limit=${params.limit}`,
 };

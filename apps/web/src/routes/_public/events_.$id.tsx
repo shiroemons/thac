@@ -1,193 +1,32 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Calendar, Disc3, MapPin, Music, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Calendar, Disc3, Loader2, MapPin, Music, Users } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	EmptyState,
+	Pagination,
 	PublicBreadcrumb,
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { formatNumber } from "@/lib/format";
 import { createPublicEventHead } from "@/lib/head";
-
-// モックイベント取得関数（loader用）
-function getEvent(id: string) {
-	return mockEvents[id] ?? null;
-}
+import { type PublicEventRelease, publicApi } from "@/lib/public-api";
 
 export const Route = createFileRoute("/_public/events_/$id")({
-	loader: ({ params }) => ({ event: getEvent(params.id) }),
+	loader: async ({ params }) => {
+		try {
+			const event = await publicApi.events.get(params.id);
+			return { event };
+		} catch {
+			return { event: null };
+		}
+	},
 	head: ({ loaderData }) => createPublicEventHead(loaderData?.event?.name),
 	component: EventDetailPage,
 });
 
 const STORAGE_KEY_VIEW = "event-detail-view-mode";
-
-// イベントデータ型（スキーマ準拠）
-interface Event {
-	id: string;
-	eventSeriesId: string;
-	name: string;
-	edition: number | null;
-	totalDays: number | null;
-	venue: string | null;
-	startDate: string | null;
-	endDate: string | null;
-}
-
-// イベントシリーズデータ型
-interface EventSeries {
-	id: string;
-	name: string;
-	sortOrder: number;
-}
-
-// イベント日データ型
-interface EventDay {
-	id: string;
-	eventId: string;
-	dayNumber: number;
-	date: string;
-}
-
-// リリースデータ型
-interface Release {
-	id: string;
-	name: string;
-	releaseDate: string | null;
-	releaseType: string | null;
-	circles: Array<{
-		id: string;
-		name: string;
-		participationType: string;
-	}>;
-	trackCount: number;
-}
-
-// モックデータ - イベント
-const mockEvents: Record<string, Event> = {
-	c105: {
-		id: "c105",
-		eventSeriesId: "series-comiket",
-		name: "C105",
-		edition: 105,
-		totalDays: 3,
-		venue: "東京ビッグサイト",
-		startDate: "2024-12-28",
-		endDate: "2024-12-30",
-	},
-	c104: {
-		id: "c104",
-		eventSeriesId: "series-comiket",
-		name: "C104",
-		edition: 104,
-		totalDays: 2,
-		venue: "東京ビッグサイト",
-		startDate: "2024-08-11",
-		endDate: "2024-08-12",
-	},
-	reitaisai21: {
-		id: "reitaisai21",
-		eventSeriesId: "series-reitaisai",
-		name: "博麗神社例大祭21",
-		edition: 21,
-		totalDays: 1,
-		venue: "東京ビッグサイト",
-		startDate: "2024-05-19",
-		endDate: "2024-05-19",
-	},
-};
-
-// モックデータ - イベントシリーズ
-const mockEventSeries: Record<string, EventSeries> = {
-	"series-comiket": {
-		id: "series-comiket",
-		name: "コミックマーケット",
-		sortOrder: 1,
-	},
-	"series-reitaisai": {
-		id: "series-reitaisai",
-		name: "博麗神社例大祭",
-		sortOrder: 2,
-	},
-};
-
-// モックデータ - イベント日
-const mockEventDays: Record<string, EventDay[]> = {
-	c105: [
-		{ id: "day-1", eventId: "c105", dayNumber: 1, date: "2024-12-28" },
-		{ id: "day-2", eventId: "c105", dayNumber: 2, date: "2024-12-29" },
-		{ id: "day-3", eventId: "c105", dayNumber: 3, date: "2024-12-30" },
-	],
-	c104: [
-		{ id: "day-1", eventId: "c104", dayNumber: 1, date: "2024-08-11" },
-		{ id: "day-2", eventId: "c104", dayNumber: 2, date: "2024-08-12" },
-	],
-};
-
-// モックデータ - リリース（mocks/release.tsと統一されたID）
-const mockReleases: Record<string, Release[]> = {
-	c105: [
-		{
-			id: "rel-iosys-001",
-			name: "東方乙女囃子",
-			releaseDate: "2024-12-30",
-			releaseType: "album",
-			circles: [
-				{ id: "circle-iosys", name: "IOSYS", participationType: "host" },
-			],
-			trackCount: 12,
-		},
-		{
-			id: "rel-alst-001",
-			name: "幻想郷を照らす紅",
-			releaseDate: "2024-12-29",
-			releaseType: "album",
-			circles: [
-				{
-					id: "circle-alst",
-					name: "Alstroemeria Records",
-					participationType: "host",
-				},
-			],
-			trackCount: 10,
-		},
-		{
-			id: "rel-butai-001",
-			name: "舞台の裏方",
-			releaseDate: "2024-12-30",
-			releaseType: "album",
-			circles: [
-				{ id: "circle-cool", name: "COOL&CREATE", participationType: "host" },
-			],
-			trackCount: 8,
-		},
-		{
-			id: "rel-multi-disc",
-			name: "東方交響曲",
-			releaseDate: "2024-12-28",
-			releaseType: "album",
-			circles: [
-				{ id: "circle-iosys", name: "IOSYS", participationType: "host" },
-				{
-					id: "circle-alst",
-					name: "Alstroemeria Records",
-					participationType: "guest",
-				},
-			],
-			trackCount: 14,
-		},
-		{
-			id: "rel-single-001",
-			name: "チルノのパーフェクトさんすう教室",
-			releaseDate: "2024-12-30",
-			releaseType: "single",
-			circles: [
-				{ id: "circle-iosys", name: "IOSYS", participationType: "host" },
-			],
-			trackCount: 3,
-		},
-	],
-};
+const PAGE_SIZE = 20;
 
 // 参加種別名
 const participationTypeNames: Record<string, string> = {
@@ -198,15 +37,19 @@ const participationTypeNames: Record<string, string> = {
 	split_partner: "スプリット",
 };
 
-// タブ型
-type TabType = "releases" | "tracks";
-
 function EventDetailPage() {
 	const { id } = Route.useParams();
 	const { event } = Route.useLoaderData();
-	const [activeTab, setActiveTab] = useState<TabType>("releases");
 	const [viewMode, setViewModeState] = useState<ViewMode>("list");
 
+	// リリース一覧の状態
+	const [releases, setReleases] = useState<PublicEventRelease[]>([]);
+	const [releasesTotal, setReleasesTotal] = useState(0);
+	const [releasesPage, setReleasesPage] = useState(1);
+	const [releasesLoading, setReleasesLoading] = useState(false);
+	const [releasesLoaded, setReleasesLoaded] = useState(false);
+
+	// ビューモードの保存
 	useEffect(() => {
 		const saved = localStorage.getItem(STORAGE_KEY_VIEW) as ViewMode;
 		if (saved) setViewModeState(saved);
@@ -216,22 +59,39 @@ function EventDetailPage() {
 		setViewModeState(view);
 		localStorage.setItem(STORAGE_KEY_VIEW, view);
 	};
-	const series = event ? mockEventSeries[event.eventSeriesId] : null;
-	const days = mockEventDays[id] || [];
-	const releases = mockReleases[id] || [];
 
-	// 統計計算
-	const circleIds = new Set(
-		releases.flatMap((r) => r.circles.map((c) => c.id)),
+	// リリース一覧を取得
+	const fetchReleases = useCallback(
+		async (page: number) => {
+			if (!event) return;
+			setReleasesLoading(true);
+			try {
+				const res = await publicApi.events.releases(id, {
+					page,
+					limit: PAGE_SIZE,
+				});
+				setReleases(res.data);
+				setReleasesTotal(res.total);
+				setReleasesPage(page);
+				setReleasesLoaded(true);
+			} catch {
+				// エラー時は空配列
+			} finally {
+				setReleasesLoading(false);
+			}
+		},
+		[event, id],
 	);
-	const stats = {
-		releaseCount: releases.length,
-		circleCount: circleIds.size,
-		trackCount: releases.reduce((sum, r) => sum + r.trackCount, 0),
-	};
+
+	// 初回読み込み
+	useEffect(() => {
+		if (!releasesLoaded && event) {
+			fetchReleases(1);
+		}
+	}, [releasesLoaded, event, fetchReleases]);
 
 	// イベントが見つからない場合
-	if (!event || !series) {
+	if (!event) {
 		return (
 			<div className="space-y-6">
 				<PublicBreadcrumb
@@ -249,6 +109,8 @@ function EventDetailPage() {
 			</div>
 		);
 	}
+
+	const releasesTotalPages = Math.ceil(releasesTotal / PAGE_SIZE);
 
 	// 日程表示
 	const formatDateRange = () => {
@@ -269,7 +131,11 @@ function EventDetailPage() {
 			<div className="rounded-lg bg-base-100 p-6 shadow-sm">
 				<div className="space-y-3">
 					<div>
-						<p className="text-base-content/60 text-sm">{series.name}</p>
+						{event.eventSeriesName && (
+							<p className="text-base-content/60 text-sm">
+								{event.eventSeriesName}
+							</p>
+						)}
 						<h1 className="font-bold text-2xl sm:text-3xl">{event.name}</h1>
 					</div>
 					<div className="flex flex-wrap items-center gap-4 text-base-content/70">
@@ -291,9 +157,9 @@ function EventDetailPage() {
 					</div>
 
 					{/* イベント日 */}
-					{days.length > 0 && (
+					{event.eventDays.length > 0 && (
 						<div className="flex flex-wrap gap-2 pt-2">
-							{days.map((day) => (
+							{event.eventDays.map((day) => (
 								<span key={day.id} className="badge badge-ghost">
 									{day.dayNumber}日目: {day.date}
 								</span>
@@ -307,165 +173,151 @@ function EventDetailPage() {
 					<div className="rounded-lg bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<Disc3 className="size-5" />
-							<span className="font-bold text-2xl">{stats.releaseCount}</span>
+							<span className="font-bold text-2xl">
+								{formatNumber(event.stats.releaseCount)}
+							</span>
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">リリース</p>
 					</div>
 					<div className="rounded-lg bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-secondary">
 							<Users className="size-5" />
-							<span className="font-bold text-2xl">{stats.circleCount}</span>
+							<span className="font-bold text-2xl">
+								{formatNumber(event.stats.circleCount)}
+							</span>
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">サークル</p>
 					</div>
 					<div className="rounded-lg bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-accent">
 							<Music className="size-5" />
-							<span className="font-bold text-2xl">{stats.trackCount}</span>
+							<span className="font-bold text-2xl">
+								{formatNumber(event.stats.trackCount)}
+							</span>
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">トラック</p>
 					</div>
 				</div>
 			</div>
 
-			{/* タブ */}
+			{/* ビュー切替 */}
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div role="tablist" className="tabs tabs-boxed w-fit">
-					<button
-						type="button"
-						role="tab"
-						className={`tab ${activeTab === "releases" ? "tab-active" : ""}`}
-						onClick={() => setActiveTab("releases")}
-					>
-						リリース一覧
-					</button>
-					<button
-						type="button"
-						role="tab"
-						className={`tab ${activeTab === "tracks" ? "tab-active" : ""}`}
-						onClick={() => setActiveTab("tracks")}
-					>
-						曲一覧
-					</button>
-				</div>
-				{activeTab === "releases" && (
-					<ViewToggle value={viewMode} onChange={setViewMode} />
-				)}
+				<h2 className="font-bold text-xl">リリース一覧</h2>
+				<ViewToggle value={viewMode} onChange={setViewMode} />
 			</div>
 
 			{/* リリース一覧 */}
-			{activeTab === "releases" &&
-				(releases.length === 0 ? (
-					<EmptyState type="empty" title="頒布物がありません" />
-				) : viewMode === "grid" ? (
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-						{releases.map((release) => (
-							<div
-								key={release.id}
-								className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
-							>
-								<div className="card-body p-4">
-									<Link
-										to="/releases/$id"
-										params={{ id: release.id }}
-										className="card-title text-base hover:text-primary"
-									>
-										{release.name}
-									</Link>
-									<div className="flex flex-wrap gap-1">
-										{release.circles.map((circle) => (
-											<Link
-												key={circle.id}
-												to="/circles/$id"
-												params={{ id: circle.id }}
-												className="badge badge-outline badge-sm hover:badge-primary"
-											>
-												{circle.name}
-												{circle.participationType !== "host" && (
-													<span className="ml-1 text-xs opacity-70">
-														({participationTypeNames[circle.participationType]})
-													</span>
-												)}
-											</Link>
-										))}
-									</div>
-									<div className="mt-2 flex items-center gap-4 text-base-content/50 text-sm">
-										{release.releaseDate && (
-											<span className="flex items-center gap-1">
-												<Calendar className="size-3" />
-												{release.releaseDate}
-											</span>
-										)}
+			{releasesLoading ? (
+				<div className="flex items-center justify-center py-12">
+					<Loader2 className="size-8 animate-spin text-primary" />
+				</div>
+			) : releases.length === 0 ? (
+				<EmptyState type="empty" title="頒布物がありません" />
+			) : viewMode === "grid" ? (
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{releases.map((release) => (
+						<div
+							key={release.id}
+							className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+						>
+							<div className="card-body p-4">
+								<Link
+									to="/releases/$id"
+									params={{ id: release.id }}
+									className="card-title text-base hover:text-primary"
+								>
+									{release.name}
+								</Link>
+								<div className="flex flex-wrap gap-1">
+									{release.circles.map((circle) => (
+										<Link
+											key={circle.id}
+											to="/circles/$id"
+											params={{ id: circle.id }}
+											className="badge badge-outline badge-sm hover:badge-primary"
+										>
+											{circle.name}
+											{circle.participationType !== "host" && (
+												<span className="ml-1 text-xs opacity-70">
+													({participationTypeNames[circle.participationType]})
+												</span>
+											)}
+										</Link>
+									))}
+								</div>
+								<div className="mt-2 flex items-center gap-4 text-base-content/50 text-sm">
+									{release.releaseDate && (
 										<span className="flex items-center gap-1">
-											<Music className="size-3" />
-											{release.trackCount}曲
+											<Calendar className="size-3" />
+											{release.releaseDate}
 										</span>
-									</div>
+									)}
+									<span className="flex items-center gap-1">
+										<Music className="size-3" />
+										{release.trackCount}曲
+									</span>
 								</div>
 							</div>
-						))}
-					</div>
-				) : (
-					<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
-						<table className="table">
-							<thead>
-								<tr>
-									<th>タイトル</th>
-									<th>サークル</th>
-									<th className="hidden sm:table-cell">発売日</th>
-									<th>曲数</th>
-								</tr>
-							</thead>
-							<tbody>
-								{releases.map((release) => (
-									<tr key={release.id} className="hover:bg-base-200/50">
-										<td>
-											<Link
-												to="/releases/$id"
-												params={{ id: release.id }}
-												className="font-medium hover:text-primary"
-											>
-												{release.name}
-											</Link>
-										</td>
-										<td>
-											{release.circles.map((circle, idx) => (
-												<span key={circle.id}>
-													{idx > 0 && ", "}
-													<Link
-														to="/circles/$id"
-														params={{ id: circle.id }}
-														className="hover:text-primary"
-													>
-														{circle.name}
-													</Link>
-												</span>
-											))}
-										</td>
-										<td className="hidden text-base-content/70 sm:table-cell">
-											{release.releaseDate || "-"}
-										</td>
-										<td className="text-base-content/70">
-											{release.trackCount}曲
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-				))}
-
-			{/* トラック一覧（簡易表示） */}
-			{activeTab === "tracks" && (
-				<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
-					<Music className="mx-auto size-12 text-base-content/30" />
-					<p className="mt-4 text-base-content/70">
-						このイベントには{stats.trackCount}曲のトラックが登録されています
-					</p>
-					<p className="mt-2 text-base-content/50 text-sm">
-						詳細なトラック一覧は各リリースページからご確認ください
-					</p>
+						</div>
+					))}
 				</div>
+			) : (
+				<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
+					<table className="table">
+						<thead>
+							<tr>
+								<th>タイトル</th>
+								<th>サークル</th>
+								<th className="hidden sm:table-cell">発売日</th>
+								<th>曲数</th>
+							</tr>
+						</thead>
+						<tbody>
+							{releases.map((release) => (
+								<tr key={release.id} className="hover:bg-base-200/50">
+									<td>
+										<Link
+											to="/releases/$id"
+											params={{ id: release.id }}
+											className="font-medium hover:text-primary"
+										>
+											{release.name}
+										</Link>
+									</td>
+									<td>
+										{release.circles.map((circle, idx) => (
+											<span key={circle.id}>
+												{idx > 0 && ", "}
+												<Link
+													to="/circles/$id"
+													params={{ id: circle.id }}
+													className="hover:text-primary"
+												>
+													{circle.name}
+												</Link>
+											</span>
+										))}
+									</td>
+									<td className="hidden text-base-content/70 sm:table-cell">
+										{release.releaseDate || "-"}
+									</td>
+									<td className="text-base-content/70">
+										{release.trackCount}曲
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			)}
+
+			{/* ページネーション */}
+			{releasesTotalPages > 1 && (
+				<Pagination
+					currentPage={releasesPage}
+					totalPages={releasesTotalPages}
+					onPageChange={fetchReleases}
+				/>
 			)}
 		</div>
 	);

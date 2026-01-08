@@ -2,12 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calendar, ChevronDown, ChevronRight, Disc } from "lucide-react";
 import { useEffect, useState } from "react";
 import { EmptyState, PublicBreadcrumb } from "@/components/public";
+import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
-
-export const Route = createFileRoute("/_public/events")({
-	head: () => createPageHead("イベント"),
-	component: EventsPage,
-});
+import { type PublicEventItem, publicApi } from "@/lib/public-api";
 
 type EventsViewMode = "series" | "year";
 
@@ -15,176 +12,48 @@ const STORAGE_KEY_VIEW = "events-view-mode";
 const STORAGE_KEY_YEAR = "events-selected-year";
 const STORAGE_KEY_EXPANDED = "events-expanded-series";
 
-interface Event {
-	id: string;
-	name: string;
-	seriesId: string;
-	seriesName: string;
-	dateStart: string;
-	dateEnd?: string;
-	releaseCount: number;
-}
+export const Route = createFileRoute("/_public/events")({
+	head: () => createPageHead("イベント"),
+	loader: async () => {
+		try {
+			// 全イベントを取得（十分大きなlimitで）
+			const response = await publicApi.events.list({
+				page: 1,
+				limit: 1000,
+				sortBy: "startDate",
+				sortOrder: "desc",
+			});
+			return { events: response.data, total: response.total };
+		} catch {
+			return { events: [], total: 0 };
+		}
+	},
+	component: EventsPage,
+});
 
-interface EventSeries {
-	id: string;
-	name: string;
-	eventCount: number;
-}
+function formatDateRange(start: string | null, end: string | null): string {
+	if (!start) return "-";
 
-// モックデータ - イベントシリーズ
-const mockEventSeries: EventSeries[] = [
-	{ id: "comiket", name: "コミックマーケット", eventCount: 12 },
-	{ id: "reitaisai", name: "博麗神社例大祭", eventCount: 21 },
-	{ id: "kouroumu", name: "紅楼夢", eventCount: 20 },
-	{ id: "m3", name: "M3", eventCount: 24 },
-];
-
-// モックデータ - イベント
-const mockEvents: Event[] = [
-	// コミックマーケット
-	{
-		id: "c105",
-		name: "C105",
-		seriesId: "comiket",
-		seriesName: "コミックマーケット",
-		dateStart: "2024-12-28",
-		dateEnd: "2024-12-30",
-		releaseCount: 234,
-	},
-	{
-		id: "c104",
-		name: "C104",
-		seriesId: "comiket",
-		seriesName: "コミックマーケット",
-		dateStart: "2024-08-11",
-		dateEnd: "2024-08-12",
-		releaseCount: 198,
-	},
-	{
-		id: "c103",
-		name: "C103",
-		seriesId: "comiket",
-		seriesName: "コミックマーケット",
-		dateStart: "2023-12-30",
-		dateEnd: "2023-12-31",
-		releaseCount: 187,
-	},
-	{
-		id: "c102",
-		name: "C102",
-		seriesId: "comiket",
-		seriesName: "コミックマーケット",
-		dateStart: "2023-08-12",
-		dateEnd: "2023-08-13",
-		releaseCount: 176,
-	},
-	// 博麗神社例大祭
-	{
-		id: "reitaisai21",
-		name: "博麗神社例大祭21",
-		seriesId: "reitaisai",
-		seriesName: "博麗神社例大祭",
-		dateStart: "2024-05-19",
-		releaseCount: 312,
-	},
-	{
-		id: "reitaisai20",
-		name: "博麗神社例大祭20",
-		seriesId: "reitaisai",
-		seriesName: "博麗神社例大祭",
-		dateStart: "2023-05-07",
-		releaseCount: 289,
-	},
-	{
-		id: "reitaisai19",
-		name: "博麗神社例大祭19",
-		seriesId: "reitaisai",
-		seriesName: "博麗神社例大祭",
-		dateStart: "2022-05-08",
-		releaseCount: 245,
-	},
-	// 紅楼夢
-	{
-		id: "kouroumu20",
-		name: "紅楼夢20",
-		seriesId: "kouroumu",
-		seriesName: "紅楼夢",
-		dateStart: "2024-10-13",
-		releaseCount: 156,
-	},
-	{
-		id: "kouroumu19",
-		name: "紅楼夢19",
-		seriesId: "kouroumu",
-		seriesName: "紅楼夢",
-		dateStart: "2023-10-08",
-		releaseCount: 143,
-	},
-	{
-		id: "kouroumu18",
-		name: "紅楼夢18",
-		seriesId: "kouroumu",
-		seriesName: "紅楼夢",
-		dateStart: "2022-10-09",
-		releaseCount: 134,
-	},
-	// M3
-	{
-		id: "m3-2024-autumn",
-		name: "M3-2024秋",
-		seriesId: "m3",
-		seriesName: "M3",
-		dateStart: "2024-10-27",
-		releaseCount: 89,
-	},
-	{
-		id: "m3-2024-spring",
-		name: "M3-2024春",
-		seriesId: "m3",
-		seriesName: "M3",
-		dateStart: "2024-04-28",
-		releaseCount: 76,
-	},
-	{
-		id: "m3-2023-autumn",
-		name: "M3-2023秋",
-		seriesId: "m3",
-		seriesName: "M3",
-		dateStart: "2023-10-29",
-		releaseCount: 82,
-	},
-	{
-		id: "m3-2023-spring",
-		name: "M3-2023春",
-		seriesId: "m3",
-		seriesName: "M3",
-		dateStart: "2023-04-30",
-		releaseCount: 71,
-	},
-];
-
-function formatDateRange(start: string, end?: string): string {
-	const startDate = new Date(start);
-	const formatDate = (d: Date) =>
-		`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-
-	if (!end) {
-		return formatDate(startDate);
+	if (!end || start === end) {
+		return start;
 	}
 
-	const endDate = new Date(end);
-	return `${formatDate(startDate)}〜${formatDate(endDate).split("-").slice(1).join("-")}`;
+	// 同じ年月の場合は日だけ表示
+	const endParts = end.split("-");
+	return `${start}〜${endParts[2]}`;
 }
 
-function getYear(dateStr: string): number {
-	return new Date(dateStr).getFullYear();
+function getYear(dateStr: string | null): number | null {
+	if (!dateStr) return null;
+	return Number.parseInt(dateStr.split("-")[0], 10);
 }
 
 function EventsPage() {
+	const { events, total } = Route.useLoaderData();
 	const [viewMode, setViewModeState] = useState<EventsViewMode>("series");
-	const [selectedYear, setSelectedYearState] = useState<number>(2024);
+	const [selectedYear, setSelectedYearState] = useState<number | null>(null);
 	const [expandedSeries, setExpandedSeriesState] = useState<Set<string>>(
-		new Set(["comiket"]),
+		new Set(),
 	);
 
 	useEffect(() => {
@@ -201,6 +70,30 @@ function EventsPage() {
 			}
 		}
 	}, []);
+
+	// 初期選択年を設定
+	useEffect(() => {
+		if (selectedYear === null && events.length > 0) {
+			const years = [
+				...new Set(
+					events.map((e) => getYear(e.startDate)).filter((y) => y !== null),
+				),
+			].sort((a, b) => (b ?? 0) - (a ?? 0));
+			if (years.length > 0) {
+				setSelectedYearState(years[0]);
+			}
+		}
+	}, [events, selectedYear]);
+
+	// 初期展開シリーズを設定
+	useEffect(() => {
+		if (expandedSeries.size === 0 && events.length > 0) {
+			const firstSeriesId = events.find((e) => e.eventSeriesId)?.eventSeriesId;
+			if (firstSeriesId) {
+				setExpandedSeriesState(new Set([firstSeriesId]));
+			}
+		}
+	}, [events, expandedSeries.size]);
 
 	const setViewMode = (view: EventsViewMode) => {
 		setViewModeState(view);
@@ -226,30 +119,38 @@ function EventsPage() {
 	};
 
 	// 年リスト（イベントから抽出）
-	const years = [...new Set(mockEvents.map((e) => getYear(e.dateStart)))].sort(
-		(a, b) => b - a,
-	);
+	const years = [
+		...new Set(
+			events.map((e) => getYear(e.startDate)).filter((y) => y !== null),
+		),
+	].sort((a, b) => (b ?? 0) - (a ?? 0)) as number[];
 
 	// シリーズごとにイベントをグループ化
-	const eventsBySeries = mockEventSeries.map((series) => ({
-		...series,
-		events: mockEvents
-			.filter((e) => e.seriesId === series.id)
-			.sort(
-				(a, b) =>
-					new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime(),
-			),
-	}));
+	const seriesMap = new Map<
+		string,
+		{ id: string; name: string; events: PublicEventItem[] }
+	>();
+	for (const event of events) {
+		const seriesId = event.eventSeriesId || "other";
+		const seriesName = event.eventSeriesName || "その他";
+		if (!seriesMap.has(seriesId)) {
+			seriesMap.set(seriesId, { id: seriesId, name: seriesName, events: [] });
+		}
+		seriesMap.get(seriesId)?.events.push(event);
+	}
+	const eventsBySeries = [...seriesMap.values()].sort((a, b) =>
+		a.name.localeCompare(b.name, "ja"),
+	);
 
 	// 年ごとにイベントをグループ化
 	const eventsByYear = years.map((year) => ({
 		year,
-		events: mockEvents
-			.filter((e) => getYear(e.dateStart) === year)
-			.sort(
-				(a, b) =>
-					new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime(),
-			),
+		events: events
+			.filter((e) => getYear(e.startDate) === year)
+			.sort((a, b) => {
+				if (!a.startDate || !b.startDate) return 0;
+				return b.startDate.localeCompare(a.startDate);
+			}),
 	}));
 
 	return (
@@ -261,7 +162,7 @@ function EventsPage() {
 				<div>
 					<h1 className="font-bold text-3xl">イベント一覧</h1>
 					<p className="mt-1 text-base-content/70">
-						同人即売会 · {mockEvents.length}件
+						同人即売会 · {formatNumber(total)}件
 					</p>
 				</div>
 
@@ -313,7 +214,7 @@ function EventsPage() {
 										<span className="font-bold text-lg">{series.name}</span>
 									</div>
 									<span className="badge badge-ghost">
-										{series.eventCount}回
+										{series.events.length}回
 									</span>
 								</button>
 
@@ -331,12 +232,12 @@ function EventsPage() {
 													<span className="font-medium">{event.name}</span>
 													<span className="flex items-center gap-1 text-base-content/50 text-sm">
 														<Calendar className="size-4" aria-hidden="true" />
-														{formatDateRange(event.dateStart, event.dateEnd)}
+														{formatDateRange(event.startDate, event.endDate)}
 													</span>
 												</div>
 												<span className="flex items-center gap-1 text-base-content/70 text-sm">
 													<Disc className="size-4" aria-hidden="true" />
-													{event.releaseCount}リリース
+													{formatNumber(event.releaseCount)}リリース
 												</span>
 											</Link>
 										))}
@@ -394,12 +295,13 @@ function EventsPage() {
 											</thead>
 											<tbody>
 												{group.events.map((event) => {
-													const month =
-														new Date(event.dateStart).getMonth() + 1;
+													const month = event.startDate
+														? Number.parseInt(event.startDate.split("-")[1], 10)
+														: null;
 													return (
 														<tr key={event.id} className="hover:bg-base-200/50">
 															<td className="text-base-content/70">
-																{month}月
+																{month ? `${month}月` : "-"}
 															</td>
 															<td>
 																<Link
@@ -412,14 +314,14 @@ function EventsPage() {
 															</td>
 															<td className="text-base-content/70">
 																{formatDateRange(
-																	event.dateStart,
-																	event.dateEnd,
+																	event.startDate,
+																	event.endDate,
 																)}
 															</td>
 															<td className="text-base-content/70">
 																<span className="flex items-center gap-1">
 																	<Disc className="size-4" aria-hidden="true" />
-																	{event.releaseCount}
+																	{formatNumber(event.releaseCount)}
 																</span>
 															</td>
 														</tr>
