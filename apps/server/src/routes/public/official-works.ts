@@ -71,21 +71,28 @@ officialWorksRouter.get("/", async (c) => {
 		const whereCondition =
 			conditions.length > 0 ? and(...conditions) : undefined;
 
-		// songCountサブクエリ
-		const songCountSubquery = db
-			.select({ count: count() })
+		// カウントをサブクエリでJOIN（相関サブクエリを回避）
+		const songCountSq = db
+			.select({
+				workId: officialSongs.officialWorkId,
+				count: count().as("songCount"),
+			})
 			.from(officialSongs)
-			.where(eq(officialSongs.officialWorkId, officialWorks.id));
+			.groupBy(officialSongs.officialWorkId)
+			.as("songCountSq");
 
-		// totalArrangeCountサブクエリ
-		const totalArrangeCountSubquery = db
-			.select({ count: countDistinct(trackOfficialSongs.trackId) })
+		const arrangeCountSq = db
+			.select({
+				workId: officialSongs.officialWorkId,
+				count: countDistinct(trackOfficialSongs.trackId).as("arrangeCount"),
+			})
 			.from(officialSongs)
 			.innerJoin(
 				trackOfficialSongs,
 				eq(trackOfficialSongs.officialSongId, officialSongs.id),
 			)
-			.where(eq(officialSongs.officialWorkId, officialWorks.id));
+			.groupBy(officialSongs.officialWorkId)
+			.as("arrangeCountSq");
 
 		// データ取得
 		const [data, totalResult] = await Promise.all([
@@ -101,14 +108,16 @@ officialWorksRouter.get("/", async (c) => {
 					shortNameEn: officialWorks.shortNameEn,
 					numberInSeries: officialWorks.numberInSeries,
 					releaseDate: officialWorks.releaseDate,
-					songCount: sql<number>`(${songCountSubquery})`,
-					totalArrangeCount: sql<number>`(${totalArrangeCountSubquery})`,
+					songCount: sql<number>`COALESCE(${songCountSq.count}, 0)`,
+					totalArrangeCount: sql<number>`COALESCE(${arrangeCountSq.count}, 0)`,
 				})
 				.from(officialWorks)
 				.leftJoin(
 					officialWorkCategories,
 					eq(officialWorks.categoryCode, officialWorkCategories.code),
 				)
+				.leftJoin(songCountSq, eq(officialWorks.id, songCountSq.workId))
+				.leftJoin(arrangeCountSq, eq(officialWorks.id, arrangeCountSq.workId))
 				.where(whereCondition)
 				.orderBy(
 					asc(officialWorkCategories.sortOrder),

@@ -8,6 +8,7 @@ import {
 	eq,
 	eventDays,
 	events,
+	inArray,
 	insertReleaseSchema,
 	like,
 	releases,
@@ -515,36 +516,25 @@ releasesRouter.delete("/batch", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.MAXIMUM_BATCH_ITEMS }, 400);
 		}
 
-		const deleted: string[] = [];
-		const failed: Array<{ id: string; error: string }> = [];
+		// 一括で存在確認（N+1回避）
+		const existingRecords = await db
+			.select({ id: releases.id })
+			.from(releases)
+			.where(inArray(releases.id, ids));
 
-		for (const id of ids) {
-			try {
-				// 存在チェック
-				const existing = await db
-					.select()
-					.from(releases)
-					.where(eq(releases.id, id))
-					.limit(1);
+		const existingIdSet = new Set(existingRecords.map((r) => r.id));
 
-				if (existing.length === 0) {
-					failed.push({
-						id,
-						error: ERROR_MESSAGES.RELEASE_NOT_FOUND,
-					});
-					continue;
-				}
+		// 存在しないIDをfailedに追加
+		const failed: Array<{ id: string; error: string }> = ids
+			.filter((id) => !existingIdSet.has(id))
+			.map((id) => ({ id, error: ERROR_MESSAGES.RELEASE_NOT_FOUND }));
 
-				// 削除（ディスク・トラックはCASCADE削除）
-				await db.delete(releases).where(eq(releases.id, id));
-				deleted.push(id);
-			} catch (e) {
-				failed.push({
-					id,
-					error: e instanceof Error ? e.message : "Unknown error",
-				});
-			}
+		// 存在するIDを一括削除（ディスク・トラックはCASCADE削除）
+		const idsToDelete = Array.from(existingIdSet);
+		if (idsToDelete.length > 0) {
+			await db.delete(releases).where(inArray(releases.id, idsToDelete));
 		}
+		const deleted = idsToDelete;
 
 		return c.json({
 			success: failed.length === 0,

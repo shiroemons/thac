@@ -131,23 +131,30 @@ circlesRouter.get("/", async (c) => {
 		const whereCondition =
 			conditions.length > 0 ? and(...conditions) : undefined;
 
-		// releaseCountサブクエリ
-		const releaseCountSubquery = db
-			.select({ count: countDistinct(releaseCircles.releaseId) })
+		// カウントをサブクエリでJOIN（相関サブクエリを回避）
+		const releaseCountSq = db
+			.select({
+				circleId: releaseCircles.circleId,
+				count: countDistinct(releaseCircles.releaseId).as("releaseCount"),
+			})
 			.from(releaseCircles)
-			.where(eq(releaseCircles.circleId, circles.id));
+			.groupBy(releaseCircles.circleId)
+			.as("releaseCountSq");
 
-		// trackCountサブクエリ
-		const trackCountSubquery = db
-			.select({ count: countDistinct(tracks.id) })
+		const trackCountSq = db
+			.select({
+				circleId: releaseCircles.circleId,
+				count: countDistinct(tracks.id).as("trackCount"),
+			})
 			.from(releaseCircles)
 			.innerJoin(releases, eq(releaseCircles.releaseId, releases.id))
 			.innerJoin(tracks, eq(tracks.releaseId, releases.id))
-			.where(eq(releaseCircles.circleId, circles.id));
+			.groupBy(releaseCircles.circleId)
+			.as("trackCountSq");
 
 		// ソート条件を構築
-		const sortColumn =
-			sortBy === "name" ? circles.name : sql<number>`(${releaseCountSubquery})`;
+		const releaseCountCol = sql<number>`COALESCE(${releaseCountSq.count}, 0)`;
+		const sortColumn = sortBy === "name" ? circles.name : releaseCountCol;
 		const orderByClause =
 			sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
 
@@ -162,10 +169,12 @@ circlesRouter.get("/", async (c) => {
 					sortName: circles.sortName,
 					nameInitial: circles.nameInitial,
 					initialScript: circles.initialScript,
-					releaseCount: sql<number>`(${releaseCountSubquery})`,
-					trackCount: sql<number>`(${trackCountSubquery})`,
+					releaseCount: sql<number>`COALESCE(${releaseCountSq.count}, 0)`,
+					trackCount: sql<number>`COALESCE(${trackCountSq.count}, 0)`,
 				})
 				.from(circles)
+				.leftJoin(releaseCountSq, eq(circles.id, releaseCountSq.circleId))
+				.leftJoin(trackCountSq, eq(circles.id, trackCountSq.circleId))
 				.where(whereCondition)
 				.orderBy(orderByClause)
 				.limit(limit)
