@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Disc, Music, Users } from "lucide-react";
+import { useRef, useState } from "react";
 import {
 	EmptyState,
 	Pagination,
@@ -8,6 +9,7 @@ import {
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { SearchInput } from "@/components/ui/search-input";
 import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
 import type { KanaRow } from "@/lib/kana-utils";
@@ -31,6 +33,7 @@ interface CirclesSearchParams {
 	row?: string; // あ, か, さ...
 	page?: number;
 	view?: ViewMode;
+	search?: string;
 }
 
 const PAGE_SIZE = 20;
@@ -42,9 +45,10 @@ export const Route = createFileRoute("/_public/circles")({
 		initial: search.initial,
 		row: search.row,
 		page: search.page,
+		search: search.search,
 	}),
 	loader: async ({ deps }) => {
-		const { script, initial, row, page } = deps;
+		const { script, initial, row, page, search } = deps;
 
 		try {
 			const response = await publicApi.circles.list({
@@ -55,6 +59,7 @@ export const Route = createFileRoute("/_public/circles")({
 				row: script === "kana" ? row : undefined,
 				sortBy: "releaseCount",
 				sortOrder: "desc",
+				search: search || undefined,
 			});
 			return { circles: response.data, total: response.total };
 		} catch {
@@ -72,6 +77,7 @@ export const Route = createFileRoute("/_public/circles")({
 			page: parsePageParam(search.page),
 			view:
 				search.view === "grid" || search.view === "list" ? search.view : "list",
+			search: typeof search.search === "string" ? search.search : undefined,
 		};
 	},
 });
@@ -88,8 +94,13 @@ function CirclesPage() {
 		row,
 		page = 1,
 		view = "list",
+		search = "",
 	} = Route.useSearch();
 	const { circles, total } = Route.useLoaderData();
+
+	// 検索入力のローカルステート（IME対応）
+	const [searchInput, setSearchInput] = useState(search);
+	const isComposingRef = useRef(false);
 
 	// 型安全なパラメータ
 	const scriptCategory = script as ScriptCategory;
@@ -103,7 +114,7 @@ function CirclesPage() {
 	const handleScriptCategoryChange = (newScript: ScriptCategory) => {
 		navigate({
 			to: "/circles",
-			search: { script: newScript, page: 1, view },
+			search: { script: newScript, page: 1, view, search: search || undefined },
 		});
 	};
 
@@ -115,6 +126,7 @@ function CirclesPage() {
 				initial: newInitial ?? undefined,
 				page: 1,
 				view,
+				search: search || undefined,
 			},
 		});
 	};
@@ -127,6 +139,7 @@ function CirclesPage() {
 				row: newRow ?? undefined,
 				page: 1,
 				view,
+				search: search || undefined,
 			},
 		});
 	};
@@ -140,6 +153,7 @@ function CirclesPage() {
 				row: kanaRow,
 				page: newPage,
 				view,
+				search: search || undefined,
 			},
 		});
 	};
@@ -153,6 +167,47 @@ function CirclesPage() {
 				row: kanaRow,
 				page,
 				view: newView,
+				search: search || undefined,
+			},
+		});
+	};
+
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value;
+		setSearchInput(value);
+		// IME変換中は検索を実行しない
+		if (isComposingRef.current) return;
+		navigate({
+			to: "/circles",
+			search: {
+				script: scriptCategory,
+				initial: alphabetInitial,
+				row: kanaRow,
+				page: 1,
+				view,
+				search: value || undefined,
+			},
+		});
+	};
+
+	const handleCompositionStart = () => {
+		isComposingRef.current = true;
+	};
+
+	const handleCompositionEnd = (
+		e: React.CompositionEvent<HTMLInputElement>,
+	) => {
+		isComposingRef.current = false;
+		const value = e.currentTarget.value;
+		navigate({
+			to: "/circles",
+			search: {
+				script: scriptCategory,
+				initial: alphabetInitial,
+				row: kanaRow,
+				page: 1,
+				view,
+				search: value || undefined,
 			},
 		});
 	};
@@ -172,17 +227,36 @@ function CirclesPage() {
 				<ViewToggle value={view} onChange={handleViewChange} />
 			</div>
 
-			{/* 文字種フィルター（2段階） */}
-			<div>
-				<span className="mb-2 block font-medium text-sm">文字種:</span>
-				<TwoStageScriptFilter
-					scriptCategory={scriptCategory}
-					alphabetInitial={alphabetInitial ?? null}
-					kanaRow={kanaRow ?? null}
-					onScriptCategoryChange={handleScriptCategoryChange}
-					onAlphabetInitialChange={handleAlphabetInitialChange}
-					onKanaRowChange={handleKanaRowChange}
-				/>
+			{/* フィルター */}
+			<div className="space-y-4">
+				{/* キーワード検索 */}
+				<div>
+					<span className="mb-2 block font-medium text-sm">
+						キーワード検索:
+					</span>
+					<SearchInput
+						value={searchInput}
+						onChange={handleSearchChange}
+						onCompositionStart={handleCompositionStart}
+						onCompositionEnd={handleCompositionEnd}
+						placeholder="サークル名で検索..."
+						size="sm"
+						containerClassName="max-w-md"
+					/>
+				</div>
+
+				{/* 文字種フィルター（2段階） */}
+				<div>
+					<span className="mb-2 block font-medium text-sm">文字種:</span>
+					<TwoStageScriptFilter
+						scriptCategory={scriptCategory}
+						alphabetInitial={alphabetInitial ?? null}
+						kanaRow={kanaRow ?? null}
+						onScriptCategoryChange={handleScriptCategoryChange}
+						onAlphabetInitialChange={handleAlphabetInitialChange}
+						onKanaRowChange={handleKanaRowChange}
+					/>
+				</div>
 			</div>
 
 			{/* サークル一覧 */}
