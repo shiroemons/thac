@@ -107,11 +107,15 @@ originalSongsRouter.get("/", async (c) => {
 		const orderByClause =
 			sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
 
-		// arrangeCountサブクエリ
-		const arrangeCountSubquery = db
-			.select({ count: countDistinct(trackOfficialSongs.trackId) })
+		// カウントをサブクエリでJOIN（相関サブクエリを回避）
+		const arrangeCountSq = db
+			.select({
+				songId: trackOfficialSongs.officialSongId,
+				count: countDistinct(trackOfficialSongs.trackId).as("arrangeCount"),
+			})
 			.from(trackOfficialSongs)
-			.where(eq(trackOfficialSongs.officialSongId, officialSongs.id));
+			.groupBy(trackOfficialSongs.officialSongId)
+			.as("arrangeCountSq");
 
 		// データ取得
 		const [data, totalResult] = await Promise.all([
@@ -129,7 +133,7 @@ originalSongsRouter.get("/", async (c) => {
 					composerName: officialSongs.composerName,
 					arrangerName: officialSongs.arrangerName,
 					isOriginal: officialSongs.isOriginal,
-					arrangeCount: sql<number>`(${arrangeCountSubquery})`,
+					arrangeCount: sql<number>`COALESCE(${arrangeCountSq.count}, 0)`,
 				})
 				.from(officialSongs)
 				.leftJoin(
@@ -140,6 +144,7 @@ originalSongsRouter.get("/", async (c) => {
 					officialWorkCategories,
 					eq(officialWorks.categoryCode, officialWorkCategories.code),
 				)
+				.leftJoin(arrangeCountSq, eq(officialSongs.id, arrangeCountSq.songId))
 				.where(whereCondition)
 				.orderBy(orderByClause)
 				.limit(limit)
