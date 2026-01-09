@@ -67,12 +67,10 @@ releasesRouter.get("/:id", async (c) => {
 			.where(eq(releases.id, id))
 			.limit(1);
 
-		if (releaseResult.length === 0) {
+		const [release] = releaseResult;
+		if (!release) {
 			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
 		}
-
-		// Non-null assertion is safe here because we checked length above
-		const release = releaseResult[0]!;
 
 		// Step 2: 関連データを並列取得（N+1回避）
 		const [circlesData, discsData, tracksData, publicationsData] =

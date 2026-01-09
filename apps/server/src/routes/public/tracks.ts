@@ -74,12 +74,10 @@ tracksRouter.get("/:id", async (c) => {
 			.where(eq(tracks.id, id))
 			.limit(1);
 
-		if (trackResult.length === 0) {
+		const [track] = trackResult;
+		if (!track) {
 			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
-
-		// Non-null assertion is safe here because we checked length above
-		const track = trackResult[0]!;
 
 		// Step 2: 関連データを並列取得（N+1回避）
 		const [
@@ -155,52 +153,54 @@ tracksRouter.get("/:id", async (c) => {
 				.where(eq(trackPublications.trackId, id)),
 
 			// 前後トラック（同じリリース内）
-			track.releaseId
-				? Promise.all([
-						// 前のトラック
-						db
-							.select({
-								id: tracks.id,
-								name: tracks.name,
-								trackNumber: tracks.trackNumber,
-							})
-							.from(tracks)
-							.where(
-								track.discId
-									? and(
-											eq(tracks.discId, track.discId),
-											lt(tracks.trackNumber, track.trackNumber),
-										)
-									: and(
-											eq(tracks.releaseId, track.releaseId!),
-											lt(tracks.trackNumber, track.trackNumber),
-										),
-							)
-							.orderBy(asc(tracks.trackNumber))
-							.limit(1),
-						// 次のトラック
-						db
-							.select({
-								id: tracks.id,
-								name: tracks.name,
-								trackNumber: tracks.trackNumber,
-							})
-							.from(tracks)
-							.where(
-								track.discId
-									? and(
-											eq(tracks.discId, track.discId),
-											gt(tracks.trackNumber, track.trackNumber),
-										)
-									: and(
-											eq(tracks.releaseId, track.releaseId!),
-											gt(tracks.trackNumber, track.trackNumber),
-										),
-							)
-							.orderBy(asc(tracks.trackNumber))
-							.limit(1),
-					])
-				: Promise.resolve([[], []]),
+			(() => {
+				const releaseId = track.releaseId;
+				if (!releaseId) return Promise.resolve([[], []]);
+				return Promise.all([
+					// 前のトラック
+					db
+						.select({
+							id: tracks.id,
+							name: tracks.name,
+							trackNumber: tracks.trackNumber,
+						})
+						.from(tracks)
+						.where(
+							track.discId
+								? and(
+										eq(tracks.discId, track.discId),
+										lt(tracks.trackNumber, track.trackNumber),
+									)
+								: and(
+										eq(tracks.releaseId, releaseId),
+										lt(tracks.trackNumber, track.trackNumber),
+									),
+						)
+						.orderBy(asc(tracks.trackNumber))
+						.limit(1),
+					// 次のトラック
+					db
+						.select({
+							id: tracks.id,
+							name: tracks.name,
+							trackNumber: tracks.trackNumber,
+						})
+						.from(tracks)
+						.where(
+							track.discId
+								? and(
+										eq(tracks.discId, track.discId),
+										gt(tracks.trackNumber, track.trackNumber),
+									)
+								: and(
+										eq(tracks.releaseId, releaseId),
+										gt(tracks.trackNumber, track.trackNumber),
+									),
+						)
+						.orderBy(asc(tracks.trackNumber))
+						.limit(1),
+				]);
+			})(),
 		]);
 
 		// Step 3: クレジット役割をバッチ取得
