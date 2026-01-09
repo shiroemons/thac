@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Calendar, ChevronDown, ChevronRight, Disc } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EmptyState, PublicBreadcrumb } from "@/components/public";
+import { SearchInput } from "@/components/ui/search-input";
 import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
 import { type PublicEventItem, publicApi } from "@/lib/public-api";
@@ -12,9 +13,21 @@ const STORAGE_KEY_VIEW = "events-view-mode";
 const STORAGE_KEY_YEAR = "events-selected-year";
 const STORAGE_KEY_EXPANDED = "events-expanded-series";
 
+// =============================================================================
+// URL パラメータの定義と検証
+// =============================================================================
+
+interface EventsSearchParams {
+	search?: string;
+}
+
 export const Route = createFileRoute("/_public/events")({
 	head: () => createPageHead("イベント"),
-	loader: async () => {
+	loaderDeps: ({ search }) => ({
+		search: search.search,
+	}),
+	loader: async ({ deps }) => {
+		const { search } = deps;
 		try {
 			// 全イベントを取得（十分大きなlimitで）
 			const response = await publicApi.events.list({
@@ -22,6 +35,7 @@ export const Route = createFileRoute("/_public/events")({
 				limit: 1000,
 				sortBy: "startDate",
 				sortOrder: "desc",
+				search: search || undefined,
 			});
 			return { events: response.data, total: response.total };
 		} catch {
@@ -29,6 +43,11 @@ export const Route = createFileRoute("/_public/events")({
 		}
 	},
 	component: EventsPage,
+	validateSearch: (search: Record<string, unknown>): EventsSearchParams => {
+		return {
+			search: typeof search.search === "string" ? search.search : undefined,
+		};
+	},
 });
 
 function formatDateRange(start: string | null, end: string | null): string {
@@ -49,7 +68,14 @@ function getYear(dateStr: string | null): number | null {
 }
 
 function EventsPage() {
+	const navigate = useNavigate();
+	const { search = "" } = Route.useSearch();
 	const { events, total } = Route.useLoaderData();
+
+	// 検索入力のローカルステート（IME対応）
+	const [searchInput, setSearchInput] = useState(search);
+	const isComposingRef = useRef(false);
+
 	const [viewMode, setViewModeState] = useState<EventsViewMode>("series");
 	const [selectedYear, setSelectedYearState] = useState<number | null>(null);
 	const [expandedSeries, setExpandedSeriesState] = useState<Set<string>>(
@@ -115,6 +141,36 @@ function EventsPage() {
 			}
 			localStorage.setItem(STORAGE_KEY_EXPANDED, JSON.stringify([...next]));
 			return next;
+		});
+	};
+
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value;
+		setSearchInput(value);
+		// IME変換中は検索を実行しない
+		if (isComposingRef.current) return;
+		navigate({
+			to: "/events",
+			search: {
+				search: value || undefined,
+			},
+		});
+	};
+
+	const handleCompositionStart = () => {
+		isComposingRef.current = true;
+	};
+
+	const handleCompositionEnd = (
+		e: React.CompositionEvent<HTMLInputElement>,
+	) => {
+		isComposingRef.current = false;
+		const value = e.currentTarget.value;
+		navigate({
+			to: "/events",
+			search: {
+				search: value || undefined,
+			},
 		});
 	};
 
@@ -185,6 +241,20 @@ function EventsPage() {
 						年別
 					</button>
 				</div>
+			</div>
+
+			{/* キーワード検索 */}
+			<div>
+				<span className="mb-2 block font-medium text-sm">キーワード検索:</span>
+				<SearchInput
+					value={searchInput}
+					onChange={handleSearchChange}
+					onCompositionStart={handleCompositionStart}
+					onCompositionEnd={handleCompositionEnd}
+					placeholder="イベント名・会場で検索..."
+					size="sm"
+					containerClassName="max-w-md"
+				/>
 			</div>
 
 			{/* シリーズ別表示 */}
