@@ -10,12 +10,34 @@ import {
 import { useMemo } from "react";
 import { PublicationLinks, PublicBreadcrumb } from "@/components/public";
 import { createPublicTrackHead } from "@/lib/head";
-import { getPublicationsForTrack } from "@/mocks/publication";
-import { getTrackWithDetails } from "@/mocks/release";
-import { roleNames, type TrackCredit } from "@/types/release";
+import { type PublicTrackDetail, publicApi } from "@/lib/public-api";
+
+// 役割の表示名マッピング
+const roleNames: Record<string, string> = {
+	composer: "作曲",
+	arranger: "編曲",
+	lyricist: "作詞",
+	vocalist: "Vo",
+	remixer: "リミックス",
+	guitar: "Gt",
+	bass: "Ba",
+	drums: "Dr",
+	piano: "Pf",
+	keyboard: "Key",
+	strings: "Strings",
+	mix: "Mix",
+	mastering: "Mastering",
+};
 
 export const Route = createFileRoute("/_public/tracks_/$id")({
-	loader: ({ params }) => ({ track: getTrackWithDetails(params.id) }),
+	loader: async ({ params }) => {
+		try {
+			const track = await publicApi.tracks.get(params.id);
+			return { track };
+		} catch {
+			return { track: null };
+		}
+	},
 	head: ({ loaderData }) =>
 		createPublicTrackHead(
 			loaderData?.track?.name,
@@ -37,14 +59,11 @@ function TrackDetailPage() {
 	const { id } = Route.useParams();
 	const { track } = Route.useLoaderData();
 
-	// 配信リンクを取得
-	const publications = getPublicationsForTrack(id);
-
 	// クレジットを役割別にグループ化
 	const creditsByRole = useMemo(() => {
-		if (!track) return new Map<string, TrackCredit[]>();
+		if (!track) return new Map<string, PublicTrackDetail["credits"]>();
 
-		const grouped = new Map<string, TrackCredit[]>();
+		const grouped = new Map<string, PublicTrackDetail["credits"]>();
 		for (const credit of track.credits) {
 			for (const role of credit.roles) {
 				if (!grouped.has(role.roleCode)) {
@@ -82,10 +101,14 @@ function TrackDetailPage() {
 			<PublicBreadcrumb
 				items={[
 					{ label: "リリース", href: "/releases" },
-					{
-						label: track.release.name,
-						href: `/releases/${track.release.id}`,
-					},
+					...(track.release
+						? [
+								{
+									label: track.release.name,
+									href: `/releases/${track.release.id}`,
+								},
+							]
+						: []),
 					{ label: track.name },
 				]}
 			/>
@@ -103,14 +126,16 @@ function TrackDetailPage() {
 
 					{/* リリース情報 */}
 					<div className="flex flex-wrap items-center gap-4 text-base-content/60 text-sm">
-						<Link
-							to="/releases/$id"
-							params={{ id: track.release.id }}
-							className="flex items-center gap-1 hover:text-primary"
-						>
-							<Disc3 className="size-4" />
-							{track.release.name}
-						</Link>
+						{track.release && (
+							<Link
+								to="/releases/$id"
+								params={{ id: track.release.id }}
+								className="flex items-center gap-1 hover:text-primary"
+							>
+								<Disc3 className="size-4" />
+								{track.release.name}
+							</Link>
+						)}
 						{track.disc && (
 							<span className="flex items-center gap-1">
 								<Disc3 className="size-4" />
@@ -231,9 +256,9 @@ function TrackDetailPage() {
 			)}
 
 			{/* 配信リンク */}
-			{publications.length > 0 && (
+			{track.publications.length > 0 && (
 				<div className="rounded-lg bg-base-100 p-6 shadow-sm">
-					<PublicationLinks publications={publications} showEmbeds />
+					<PublicationLinks publications={track.publications} showEmbeds />
 				</div>
 			)}
 

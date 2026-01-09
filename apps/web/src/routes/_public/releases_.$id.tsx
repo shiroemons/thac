@@ -7,19 +7,53 @@ import {
 	PublicBreadcrumb,
 } from "@/components/public";
 import { createPublicReleaseHead } from "@/lib/head";
-import { getPublicationsForRelease } from "@/mocks/publication";
-import { getReleaseWithDetails } from "@/mocks/release";
-import {
-	participationTypeBadgeColors,
-	participationTypeNames,
-	type ReleaseCircle,
-	releaseTypeBadgeColors,
-	releaseTypeNames,
-	type TrackWithCredits,
-} from "@/types/release";
+import { type PublicReleaseDetail, publicApi } from "@/lib/public-api";
+
+// 参加形態の表示名マッピング
+const participationTypeNames: Record<string, string> = {
+	host: "主催",
+	"co-host": "共催",
+	participant: "参加",
+	guest: "ゲスト",
+	split_partner: "スプリット",
+};
+
+// 参加形態のバッジカラーマッピング
+const participationTypeBadgeColors: Record<string, string> = {
+	host: "badge-primary",
+	"co-host": "badge-secondary",
+	participant: "badge-ghost",
+	guest: "badge-outline",
+	split_partner: "badge-accent",
+};
+
+// リリースタイプの表示名マッピング
+const releaseTypeNames: Record<string, string> = {
+	album: "アルバム",
+	single: "シングル",
+	ep: "EP",
+	digital: "デジタル",
+	video: "映像作品",
+};
+
+// リリースタイプのバッジカラーマッピング
+const releaseTypeBadgeColors: Record<string, string> = {
+	album: "badge-primary",
+	single: "badge-secondary",
+	ep: "badge-accent",
+	digital: "badge-info",
+	video: "badge-warning",
+};
 
 export const Route = createFileRoute("/_public/releases_/$id")({
-	loader: ({ params }) => ({ release: getReleaseWithDetails(params.id) }),
+	loader: async ({ params }) => {
+		try {
+			const release = await publicApi.releases.get(params.id);
+			return { release };
+		} catch {
+			return { release: null };
+		}
+	},
 	head: ({ loaderData }) => createPublicReleaseHead(loaderData?.release?.name),
 	component: ReleaseDetailPage,
 });
@@ -28,14 +62,12 @@ function ReleaseDetailPage() {
 	const { id } = Route.useParams();
 	const { release } = Route.useLoaderData();
 
-	// 配信リンクを取得
-	const publications = getPublicationsForRelease(id);
-
 	// ディスクごとにトラックをグループ化
 	const tracksByDisc = useMemo(() => {
-		if (!release) return new Map<string | null, TrackWithCredits[]>();
+		if (!release)
+			return new Map<string | null, PublicReleaseDetail["tracks"]>();
 
-		const grouped = new Map<string | null, TrackWithCredits[]>();
+		const grouped = new Map<string | null, PublicReleaseDetail["tracks"]>();
 		for (const track of release.tracks) {
 			const key = track.discId;
 			if (!grouped.has(key)) {
@@ -83,9 +115,9 @@ function ReleaseDetailPage() {
 						<div className="flex flex-wrap items-center gap-2">
 							{release.releaseType && (
 								<span
-									className={`badge ${releaseTypeBadgeColors[release.releaseType]}`}
+									className={`badge ${releaseTypeBadgeColors[release.releaseType] ?? "badge-ghost"}`}
 								>
-									{releaseTypeNames[release.releaseType]}
+									{releaseTypeNames[release.releaseType] ?? release.releaseType}
 								</span>
 							)}
 							<h1 className="font-bold text-2xl sm:text-3xl">{release.name}</h1>
@@ -95,7 +127,7 @@ function ReleaseDetailPage() {
 						{release.circles.length > 0 && (
 							<div className="flex flex-wrap items-center gap-2">
 								{release.circles
-									.sort((a, b) => a.position - b.position)
+									.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
 									.map((circle, idx) => (
 										<CircleBadge
 											key={`${circle.circleId}-${idx}`}
@@ -190,9 +222,9 @@ function ReleaseDetailPage() {
 			</div>
 
 			{/* 配信リンク */}
-			{publications.length > 0 && (
+			{release.publications.length > 0 && (
 				<div className="rounded-lg bg-base-100 p-6 shadow-sm">
-					<PublicationLinks publications={publications} showEmbeds />
+					<PublicationLinks publications={release.publications} showEmbeds />
 				</div>
 			)}
 
@@ -214,7 +246,11 @@ function ReleaseDetailPage() {
 /**
  * サークルバッジコンポーネント
  */
-function CircleBadge({ circle }: { circle: ReleaseCircle }) {
+function CircleBadge({
+	circle,
+}: {
+	circle: PublicReleaseDetail["circles"][number];
+}) {
 	return (
 		<Link
 			to="/circles/$id"
@@ -225,9 +261,10 @@ function CircleBadge({ circle }: { circle: ReleaseCircle }) {
 				{circle.circleName}
 			</span>
 			<span
-				className={`badge badge-sm ${participationTypeBadgeColors[circle.participationType]}`}
+				className={`badge badge-sm ${participationTypeBadgeColors[circle.participationType] ?? "badge-ghost"}`}
 			>
-				{participationTypeNames[circle.participationType]}
+				{participationTypeNames[circle.participationType] ??
+					circle.participationType}
 			</span>
 		</Link>
 	);
@@ -236,7 +273,7 @@ function CircleBadge({ circle }: { circle: ReleaseCircle }) {
 /**
  * トラックテーブルコンポーネント
  */
-function TrackTable({ tracks }: { tracks: TrackWithCredits[] }) {
+function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 	return (
 		<table className="table">
 			<thead>
@@ -278,7 +315,11 @@ function TrackTable({ tracks }: { tracks: TrackWithCredits[] }) {
 											</Link>
 											{credit.roles.length > 0 && (
 												<span className="text-base-content/50 text-xs">
-													({credit.roles.map((r) => r.roleName).join("/")})
+													(
+													{credit.roles
+														.map((r) => r.roleName ?? r.roleCode)
+														.join("/")}
+													)
 												</span>
 											)}
 										</span>

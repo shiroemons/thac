@@ -235,11 +235,21 @@ function OriginalSongDetailPage() {
 								{tracks.map((track) => (
 									<tr key={track.trackId} className="hover:bg-base-200/50">
 										<td>
-											<div className="font-medium">{track.trackName}</div>
+											<Link
+												to="/tracks/$id"
+												params={{ id: track.trackId }}
+												className="font-medium hover:text-primary"
+											>
+												{track.trackName}
+											</Link>
 											{track.release && (
-												<div className="text-base-content/60 text-sm">
+												<Link
+													to="/releases/$id"
+													params={{ id: track.release.id }}
+													className="block text-base-content/60 text-sm hover:text-primary"
+												>
 													{track.release.name}
-												</div>
+												</Link>
 											)}
 										</td>
 										<td>
