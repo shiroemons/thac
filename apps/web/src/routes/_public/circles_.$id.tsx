@@ -450,10 +450,26 @@ function CircleDetailPage() {
 									{tracks.map((track) => (
 										<tr key={track.id} className="hover:bg-base-200/50">
 											<td>
-												<div className="font-medium">{track.name}</div>
+												<Link
+													to="/tracks/$id"
+													params={{ id: track.id }}
+													className="font-medium hover:text-primary"
+												>
+													{track.name}
+												</Link>
 											</td>
 											<td className="text-base-content/70">
-												{track.releaseName || "-"}
+												{track.releaseId ? (
+													<Link
+														to="/releases/$id"
+														params={{ id: track.releaseId }}
+														className="hover:text-primary"
+													>
+														{track.releaseName || "-"}
+													</Link>
+												) : (
+													track.releaseName || "-"
+												)}
 											</td>
 											<td className="hidden md:table-cell">
 												<div className="flex flex-wrap gap-1">

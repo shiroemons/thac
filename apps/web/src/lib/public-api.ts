@@ -346,6 +346,114 @@ export interface PublicEventRelease {
 	}>;
 }
 
+/** リリース詳細 */
+export interface PublicReleaseDetail {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	releaseDate: string | null;
+	releaseYear: number | null;
+	releaseMonth: number | null;
+	releaseDay: number | null;
+	releaseType: string | null;
+	notes: string | null;
+	event: { id: string; name: string | null } | null;
+	circles: Array<{
+		circleId: string;
+		circleName: string;
+		participationType: string;
+		position: number | null;
+	}>;
+	discs: Array<{
+		id: string;
+		discNumber: number;
+		discName: string | null;
+	}>;
+	tracks: Array<{
+		id: string;
+		discId: string | null;
+		trackNumber: number;
+		name: string;
+		nameJa: string | null;
+		nameEn: string | null;
+		credits: Array<{
+			artistId: string;
+			creditName: string;
+			roles: Array<{ roleCode: string; roleName: string | null }>;
+		}>;
+		officialSongs: Array<{
+			officialSongId: string | null;
+			songName: string;
+		}>;
+	}>;
+	trackCount: number;
+	artistCount: number;
+	publications: Array<{
+		id: string;
+		platformCode: string;
+		url: string;
+		platform: {
+			code: string;
+			name: string;
+			category: "streaming" | "video" | "download" | "shop" | "other";
+		};
+	}>;
+}
+
+/** トラック詳細 */
+export interface PublicTrackDetail {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	trackNumber: number;
+	credits: Array<{
+		artistId: string;
+		creditName: string;
+		roles: Array<{ roleCode: string; roleName: string | null }>;
+	}>;
+	officialSongs: Array<{
+		officialSongId: string | null;
+		songName: string;
+		workName: string;
+		partPosition: number | null;
+		startSecond: number | null;
+		endSecond: number | null;
+	}>;
+	release: {
+		id: string;
+		name: string;
+		releaseDate: string | null;
+		releaseType: string | null;
+	} | null;
+	disc: {
+		id: string;
+		discNumber: number;
+		discName: string | null;
+	} | null;
+	event: { id: string; name: string } | null;
+	parentTracks: Array<{
+		parentTrackId: string;
+		parentTrackName: string;
+		parentReleaseName: string;
+	}>;
+	siblingTracks: {
+		prev: { id: string; name: string; trackNumber: number } | null;
+		next: { id: string; name: string; trackNumber: number } | null;
+	};
+	publications: Array<{
+		id: string;
+		platformCode: string;
+		url: string;
+		platform: {
+			code: string;
+			name: string;
+			category: "streaming" | "video" | "download" | "shop" | "other";
+		};
+	}>;
+}
+
 // =============================================================================
 // API関数
 // =============================================================================
@@ -586,5 +694,17 @@ export const publicApi = {
 				`/api/public/events/${id}/releases${query ? `?${query}` : ""}`,
 			);
 		},
+	},
+
+	releases: {
+		/** リリース詳細を取得 */
+		get: (id: string) =>
+			publicFetch<PublicReleaseDetail>(`/api/public/releases/${id}`),
+	},
+
+	tracks: {
+		/** トラック詳細を取得 */
+		get: (id: string) =>
+			publicFetch<PublicTrackDetail>(`/api/public/tracks/${id}`),
 	},
 };

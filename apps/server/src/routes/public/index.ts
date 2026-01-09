@@ -5,6 +5,8 @@ import { circlesRouter } from "./circles";
 import { eventsRouter } from "./events";
 import { officialWorksRouter } from "./official-works";
 import { originalSongsRouter } from "./original-songs";
+import { releasesRouter } from "./releases";
+import { tracksRouter } from "./tracks";
 
 const publicRouter = new Hono();
 
@@ -15,5 +17,7 @@ publicRouter.route("/original-songs", originalSongsRouter);
 publicRouter.route("/circles", circlesRouter);
 publicRouter.route("/artists", artistsRouter);
 publicRouter.route("/events", eventsRouter);
+publicRouter.route("/releases", releasesRouter);
+publicRouter.route("/tracks", tracksRouter);
 
 export { publicRouter };

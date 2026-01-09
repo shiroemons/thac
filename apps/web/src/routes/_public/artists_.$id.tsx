@@ -256,7 +256,13 @@ function ArtistDetailPage() {
 								{tracks.map((credit) => (
 									<tr key={credit.id} className="hover:bg-base-200/50">
 										<td>
-											<div className="font-medium">{credit.track.name}</div>
+											<Link
+												to="/tracks/$id"
+												params={{ id: credit.track.id }}
+												className="font-medium hover:text-primary"
+											>
+												{credit.track.name}
+											</Link>
 										</td>
 										<td className="hidden md:table-cell">
 											<div className="flex flex-wrap gap-1">
@@ -271,9 +277,13 @@ function ArtistDetailPage() {
 											</div>
 										</td>
 										<td className="hidden sm:table-cell">
-											<div className="text-base-content/70 text-sm">
+											<Link
+												to="/releases/$id"
+												params={{ id: credit.release.id }}
+												className="text-base-content/70 text-sm hover:text-primary"
+											>
 												{credit.release.name}
-											</div>
+											</Link>
 											<div className="flex gap-1">
 												{credit.circles.map((circle) => (
 													<Link
