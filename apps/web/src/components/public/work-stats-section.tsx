@@ -787,10 +787,11 @@ export function WorkStatsSection({
 
 	return (
 		<div className="space-y-4">
-			{/* モード切替 or ドリルダウンタイトル + 向き切り替え */}
-			<div className="flex items-center justify-between">
+			{/* ヘッダー: タイトル + コントロール */}
+			<div className="space-y-3 rounded-lg border-2 border-base-content/20 bg-base-100 p-4 shadow-sm">
+				{/* タイトル行 */}
 				{selectedWorkId ? (
-					<div className="flex items-center gap-3 rounded-lg bg-primary/10 px-4 py-2">
+					<div className="flex items-center gap-3">
 						<button
 							type="button"
 							className="btn btn-ghost btn-sm gap-1"
@@ -807,190 +808,202 @@ export function WorkStatsSection({
 						</div>
 					</div>
 				) : (
-					<div className="flex items-center gap-2">
-						<span className="text-base-content/60 text-sm">表示モード:</span>
-						<div className="join">
-							<button
-								type="button"
-								className={`btn join-item btn-sm gap-1 ${isStacked ? "btn-primary" : "btn-ghost"}`}
-								onClick={() => !isStacked && handleModeToggle()}
-								disabled={isUpdating}
-							>
-								<Layers className="size-4" />
-								積み上げ
-							</button>
-							<button
-								type="button"
-								className={`btn join-item btn-sm gap-1 ${!isStacked ? "btn-primary" : "btn-ghost"}`}
-								onClick={() => isStacked && handleModeToggle()}
-								disabled={isUpdating}
-							>
-								<BarChart3 className="size-4" />
-								単純
-							</button>
-						</div>
-						{isUpdating && (
-							<Loader2 className="size-4 animate-spin text-primary" />
-						)}
-					</div>
+					<h3 className="font-bold text-base-content text-lg">原作/原曲</h3>
 				)}
 
-				{/* 向き切り替えボタン - デスクトップのみ */}
-				<div className="join hidden md:flex">
+				{/* コントロール行: 左=並び替え、中央=表示モード、右=向き */}
+				<div className="flex items-center justify-between">
+					{/* 左: 並び替えボタン */}
 					<button
 						type="button"
-						className={`btn btn-sm btn-square join-item ${
-							effectiveOrientation === "vertical" ? "btn-primary" : "btn-ghost"
-						}`}
-						onClick={() => handleOrientationChange("vertical")}
-						title="縦グラフ"
+						className={`btn btn-sm gap-1 ${sortOrder === "id" ? "btn-outline" : "btn-secondary"}`}
+						onClick={cycleSortOrder}
 					>
-						<BarChart3 className="size-4" />
-					</button>
-					<button
-						type="button"
-						className={`btn btn-sm btn-square join-item ${
-							effectiveOrientation === "horizontal"
-								? "btn-primary"
-								: "btn-ghost"
-						}`}
-						onClick={() => handleOrientationChange("horizontal")}
-						title="横グラフ"
-					>
-						<BarChartHorizontal className="size-4" />
-					</button>
-				</div>
-			</div>
-
-			{/* ソート切替（単一サイクルボタン） */}
-			<div className="flex items-center gap-2">
-				<button
-					type="button"
-					className={`btn btn-sm gap-1 ${sortOrder === "id" ? "btn-ghost" : "btn-secondary"}`}
-					onClick={cycleSortOrder}
-				>
-					{sortOrder === "id" && (
-						<>
-							<ArrowUpDown className="size-4" />
-							並び替え
-						</>
-					)}
-					{sortOrder === "count-desc" && (
-						<>
-							<SortDesc className="size-4" />
-							トラック数 ↓
-						</>
-					)}
-					{sortOrder === "count-asc" && (
-						<>
-							<SortAsc className="size-4" />
-							トラック数 ↑
-						</>
-					)}
-				</button>
-			</div>
-
-			{/* チャート */}
-			<div
-				className="rounded-lg bg-base-100 p-4 shadow-sm"
-				style={{ height: chartHeight }}
-			>
-				<Suspense
-					fallback={
-						<div className="flex h-full items-center justify-center">
-							<Loader2 className="size-8 animate-spin text-primary" />
-						</div>
-					}
-				>
-					<ResponsiveBar
-						data={chartData.data}
-						keys={chartData.keys}
-						indexBy={chartData.indexBy}
-						layout={effectiveOrientation}
-						groupMode={chartData.isStacked ? "stacked" : "grouped"}
-						colors={chartData.colors}
-						margin={
-							effectiveOrientation === "horizontal"
-								? { top: 10, right: 80, bottom: 30, left: 150 }
-								: { top: 10, right: 20, bottom: 80, left: 60 }
-						}
-						padding={0.3}
-						valueScale={{ type: "linear" }}
-						indexScale={{ type: "band", round: true }}
-						borderRadius={chartData.isStacked ? 0 : 4}
-						layers={
-							chartData.isStacked
-								? [
-										"grid",
-										"axes",
-										"bars",
-										"markers",
-										"legends",
-										(props) => (
-											<TotalsLayer
-												{...props}
-												labelTextColor={isDarkMode ? "#e5e7eb" : "#374151"}
-												orientation={effectiveOrientation}
-											/>
-										),
-									]
-								: ["grid", "axes", "bars", "markers", "legends"]
-						}
-						enableLabel
-						label={(d) => (d.value && d.value > 0 ? `${d.value}` : "")}
-						labelSkipWidth={effectiveOrientation === "horizontal" ? 20 : 0}
-						labelSkipHeight={effectiveOrientation === "vertical" ? 12 : 0}
-						labelTextColor="#ffffff"
-						axisTop={null}
-						axisRight={null}
-						axisBottom={
-							effectiveOrientation === "horizontal"
-								? {
-										tickSize: 5,
-										tickPadding: 5,
-										tickRotation: 0,
-									}
-								: {
-										tickSize: 5,
-										tickPadding: 5,
-										tickRotation: -45,
-										truncateTickAt: 8,
-									}
-						}
-						axisLeft={{
-							tickSize: 5,
-							tickPadding: 5,
-							tickRotation: 0,
-							truncateTickAt: effectiveOrientation === "horizontal" ? 12 : 0,
-						}}
-						theme={nivoTheme}
-						onClick={(bar) => {
-							if (!selectedWorkId) {
-								handleBarClick(bar.data);
-							}
-						}}
-						tooltip={({ id, value, indexValue, data }) => (
-							<div
-								className="rounded bg-base-100 px-3 py-2 shadow-lg"
-								style={{
-									whiteSpace: "nowrap",
-									writingMode: "horizontal-tb",
-								}}
-							>
-								<strong>{indexValue}</strong>
-								{chartData.isStacked && (
-									<span className="ml-2 text-sm">({id})</span>
-								)}
-								<span className="ml-2">{value}曲</span>
-								{chartData.isStacked && data.totalTrackCount && (
-									<span className="ml-2 text-xs opacity-70">
-										/ 計{data.totalTrackCount}曲
-									</span>
-								)}
-							</div>
+						{sortOrder === "id" && (
+							<>
+								<ArrowUpDown className="size-4" />
+								並び替え
+							</>
 						)}
-					/>
-				</Suspense>
+						{sortOrder === "count-desc" && (
+							<>
+								<SortDesc className="size-4" />
+								トラック数 ↓
+							</>
+						)}
+						{sortOrder === "count-asc" && (
+							<>
+								<SortAsc className="size-4" />
+								トラック数 ↑
+							</>
+						)}
+					</button>
+
+					{/* 中央: 表示モード切替 - ドリルダウン時は非表示 */}
+					{!selectedWorkId ? (
+						<div className="flex items-center gap-2">
+							<div className="join">
+								<button
+									type="button"
+									className={`btn join-item btn-sm gap-1 ${isStacked ? "btn-primary" : "btn-ghost"}`}
+									onClick={() => !isStacked && handleModeToggle()}
+									disabled={isUpdating}
+								>
+									<Layers className="size-4" />
+									積み上げ
+								</button>
+								<button
+									type="button"
+									className={`btn join-item btn-sm gap-1 ${!isStacked ? "btn-primary" : "btn-ghost"}`}
+									onClick={() => isStacked && handleModeToggle()}
+									disabled={isUpdating}
+								>
+									{effectiveOrientation === "horizontal" ? (
+										<BarChartHorizontal className="size-4" />
+									) : (
+										<BarChart3 className="size-4" />
+									)}
+									単純
+								</button>
+							</div>
+							{isUpdating && (
+								<Loader2 className="size-4 animate-spin text-primary" />
+							)}
+						</div>
+					) : (
+						<div />
+					)}
+
+					{/* 右: 向き切り替えボタン - デスクトップのみ */}
+					<div className="join hidden md:flex">
+						<button
+							type="button"
+							className={`btn btn-sm btn-square join-item ${
+								effectiveOrientation === "vertical"
+									? "btn-primary"
+									: "btn-ghost"
+							}`}
+							onClick={() => handleOrientationChange("vertical")}
+							title="縦グラフ"
+						>
+							<BarChart3 className="size-4" />
+						</button>
+						<button
+							type="button"
+							className={`btn btn-sm btn-square join-item ${
+								effectiveOrientation === "horizontal"
+									? "btn-primary"
+									: "btn-ghost"
+							}`}
+							onClick={() => handleOrientationChange("horizontal")}
+							title="横グラフ"
+						>
+							<BarChartHorizontal className="size-4" />
+						</button>
+					</div>
+					{/* モバイル用のスペーサー */}
+					<div className="md:hidden" />
+				</div>
+
+				{/* チャート */}
+				<div style={{ height: chartHeight }}>
+					<Suspense
+						fallback={
+							<div className="flex h-full items-center justify-center">
+								<Loader2 className="size-8 animate-spin text-primary" />
+							</div>
+						}
+					>
+						<ResponsiveBar
+							data={chartData.data}
+							keys={chartData.keys}
+							indexBy={chartData.indexBy}
+							layout={effectiveOrientation}
+							groupMode={chartData.isStacked ? "stacked" : "grouped"}
+							colors={chartData.colors}
+							margin={
+								effectiveOrientation === "horizontal"
+									? { top: 10, right: 80, bottom: 30, left: 150 }
+									: { top: 10, right: 20, bottom: 80, left: 60 }
+							}
+							padding={0.3}
+							valueScale={{ type: "linear" }}
+							indexScale={{ type: "band", round: true }}
+							borderRadius={chartData.isStacked ? 0 : 4}
+							layers={
+								chartData.isStacked
+									? [
+											"grid",
+											"axes",
+											"bars",
+											"markers",
+											"legends",
+											(props) => (
+												<TotalsLayer
+													{...props}
+													labelTextColor={isDarkMode ? "#e5e7eb" : "#374151"}
+													orientation={effectiveOrientation}
+												/>
+											),
+										]
+									: ["grid", "axes", "bars", "markers", "legends"]
+							}
+							enableLabel
+							label={(d) => (d.value && d.value > 0 ? `${d.value}` : "")}
+							labelSkipWidth={effectiveOrientation === "horizontal" ? 20 : 0}
+							labelSkipHeight={effectiveOrientation === "vertical" ? 12 : 0}
+							labelTextColor="#ffffff"
+							axisTop={null}
+							axisRight={null}
+							axisBottom={
+								effectiveOrientation === "horizontal"
+									? {
+											tickSize: 5,
+											tickPadding: 5,
+											tickRotation: 0,
+										}
+									: {
+											tickSize: 5,
+											tickPadding: 5,
+											tickRotation: -45,
+											truncateTickAt: 8,
+										}
+							}
+							axisLeft={{
+								tickSize: 5,
+								tickPadding: 5,
+								tickRotation: 0,
+								truncateTickAt: effectiveOrientation === "horizontal" ? 12 : 0,
+							}}
+							theme={nivoTheme}
+							onClick={(bar) => {
+								if (!selectedWorkId) {
+									handleBarClick(bar.data);
+								}
+							}}
+							tooltip={({ id, value, indexValue, data }) => (
+								<div
+									className="rounded bg-base-100 px-3 py-2 shadow-lg"
+									style={{
+										whiteSpace: "nowrap",
+										writingMode: "horizontal-tb",
+									}}
+								>
+									<strong>{indexValue}</strong>
+									{chartData.isStacked && (
+										<span className="ml-2 text-sm">({id})</span>
+									)}
+									<span className="ml-2">{value}曲</span>
+									{chartData.isStacked && data.totalTrackCount && (
+										<span className="ml-2 text-xs opacity-70">
+											/ 計{data.totalTrackCount}曲
+										</span>
+									)}
+								</div>
+							)}
+						/>
+					</Suspense>
+				</div>
 			</div>
 		</div>
 	);
