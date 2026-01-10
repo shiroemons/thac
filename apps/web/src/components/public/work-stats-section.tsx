@@ -27,6 +27,7 @@ import {
 	type WorkStat,
 	type WorkStatsResponse,
 } from "@/lib/public-api";
+import { WorkStatsSkeleton } from "./work-stats-skeleton";
 
 // SSR対応: @nivo/barを動的インポート
 const ResponsiveBar = lazy(() =>
@@ -748,11 +749,7 @@ export function WorkStatsSection({
 
 	// 初回ローディング
 	if (isInitialLoading) {
-		return (
-			<div className="flex min-h-[400px] items-center justify-center rounded-lg bg-base-100 shadow-sm">
-				<Loader2 className="size-8 animate-spin text-primary" />
-			</div>
-		);
+		return <WorkStatsSkeleton />;
 	}
 
 	// エラー表示
