@@ -30,7 +30,7 @@ export function DetailTabs<T extends string>({
 	onTabChange,
 }: DetailTabsProps<T>) {
 	return (
-		<div role="tablist" className="tabs tabs-boxed w-fit">
+		<div role="tablist" className="tabs tabs-border w-fit">
 			{tabs.map((tab) => (
 				<button
 					key={tab.key}
