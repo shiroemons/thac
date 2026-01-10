@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Calendar, Disc3, Loader2, MapPin, Music, Users } from "lucide-react";
-import { useCallback, useDeferredValue, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
@@ -69,10 +69,22 @@ function EventDetailPage() {
 	const { id } = Route.useParams();
 	const { event } = Route.useLoaderData();
 	const { tab: activeTab = "releases" } = Route.useSearch();
-	const deferredTab = useDeferredValue(activeTab);
-	const isTabTransitioning = activeTab !== deferredTab;
 	const navigate = useNavigate();
 	const [viewMode, setViewModeState] = useState<ViewMode>("list");
+
+	// コンテンツ表示用のタブ状態（アニメーション完了後に更新）
+	const [contentTab, setContentTab] = useState(activeTab);
+	const isTabTransitioning = activeTab !== contentTab;
+
+	// タブ変更時、1フレーム遅延してコンテンツを更新
+	useEffect(() => {
+		if (activeTab !== contentTab) {
+			const id = requestAnimationFrame(() => {
+				setContentTab(activeTab);
+			});
+			return () => cancelAnimationFrame(id);
+		}
+	}, [activeTab, contentTab]);
 
 	// リリース一覧の状態
 	const [releases, setReleases] = useState<PublicEventRelease[]>([]);
@@ -126,10 +138,10 @@ function EventDetailPage() {
 
 	// タブ切替時に遅延読み込み
 	useEffect(() => {
-		if (deferredTab === "releases" && !releasesLoaded && event) {
+		if (activeTab === "releases" && !releasesLoaded && event) {
 			fetchReleases(1);
 		}
-	}, [deferredTab, releasesLoaded, event, fetchReleases]);
+	}, [activeTab, releasesLoaded, event, fetchReleases]);
 
 	// イベントが見つからない場合
 	if (!event) {
@@ -248,13 +260,13 @@ function EventDetailPage() {
 					activeTab={activeTab}
 					onTabChange={handleTabChange}
 				/>
-				{deferredTab === "releases" && (
+				{contentTab === "releases" && (
 					<ViewToggle value={viewMode} onChange={setViewMode} />
 				)}
 			</div>
 
 			{/* リリース一覧 */}
-			{deferredTab === "releases" && (
+			{contentTab === "releases" && (
 				<>
 					{releasesLoading ? (
 						<div className="flex items-center justify-center py-12">
@@ -374,7 +386,7 @@ function EventDetailPage() {
 			)}
 
 			{/* 統計 */}
-			{deferredTab === "stats" &&
+			{contentTab === "stats" &&
 				(isTabTransitioning ? (
 					<WorkStatsSkeleton />
 				) : (

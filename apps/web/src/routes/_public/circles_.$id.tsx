@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Calendar, Disc3, Loader2, Music, Users } from "lucide-react";
-import { useCallback, useDeferredValue, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
@@ -92,10 +92,22 @@ function CircleDetailPage() {
 	const { id } = Route.useParams();
 	const { circle } = Route.useLoaderData();
 	const { tab: activeTab = "releases" } = Route.useSearch();
-	const deferredTab = useDeferredValue(activeTab);
-	const isTabTransitioning = activeTab !== deferredTab;
 	const navigate = useNavigate();
 	const [viewMode, setViewModeState] = useState<ViewMode>("list");
+
+	// コンテンツ表示用のタブ状態（アニメーション完了後に更新）
+	const [contentTab, setContentTab] = useState(activeTab);
+	const isTabTransitioning = activeTab !== contentTab;
+
+	// タブ変更時、1フレーム遅延してコンテンツを更新
+	useEffect(() => {
+		if (activeTab !== contentTab) {
+			const id = requestAnimationFrame(() => {
+				setContentTab(activeTab);
+			});
+			return () => cancelAnimationFrame(id);
+		}
+	}, [activeTab, contentTab]);
 
 	// リリース一覧の状態
 	const [releases, setReleases] = useState<PublicCircleRelease[]>([]);
@@ -179,13 +191,13 @@ function CircleDetailPage() {
 
 	// タブ切替時に遅延読み込み
 	useEffect(() => {
-		if (deferredTab === "releases" && !releasesLoaded && circle) {
+		if (activeTab === "releases" && !releasesLoaded && circle) {
 			fetchReleases(1);
-		} else if (deferredTab === "tracks" && !tracksLoaded && circle) {
+		} else if (activeTab === "tracks" && !tracksLoaded && circle) {
 			fetchTracks(1);
 		}
 	}, [
-		deferredTab,
+		activeTab,
 		releasesLoaded,
 		tracksLoaded,
 		circle,
@@ -296,13 +308,13 @@ function CircleDetailPage() {
 					activeTab={activeTab}
 					onTabChange={handleTabChange}
 				/>
-				{deferredTab === "releases" && (
+				{contentTab === "releases" && (
 					<ViewToggle value={viewMode} onChange={setViewMode} />
 				)}
 			</div>
 
 			{/* リリース一覧 */}
-			{deferredTab === "releases" && (
+			{contentTab === "releases" && (
 				<>
 					{releasesLoading ? (
 						<div className="flex items-center justify-center py-12">
@@ -452,7 +464,7 @@ function CircleDetailPage() {
 			)}
 
 			{/* トラック一覧 */}
-			{deferredTab === "tracks" && (
+			{contentTab === "tracks" && (
 				<>
 					{tracksLoading ? (
 						<div className="flex items-center justify-center py-12">
@@ -566,7 +578,7 @@ function CircleDetailPage() {
 			)}
 
 			{/* 統計 */}
-			{deferredTab === "stats" &&
+			{contentTab === "stats" &&
 				(isTabTransitioning ? (
 					<WorkStatsSkeleton />
 				) : (

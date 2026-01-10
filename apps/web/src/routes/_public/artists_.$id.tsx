@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Disc3, Loader2, Music } from "lucide-react";
-import { useCallback, useDeferredValue, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
@@ -64,9 +64,21 @@ function ArtistDetailPage() {
 	const { id } = Route.useParams();
 	const { artist } = Route.useLoaderData();
 	const { tab: activeTab = "tracks" } = Route.useSearch();
-	const deferredTab = useDeferredValue(activeTab);
-	const isTabTransitioning = activeTab !== deferredTab;
 	const navigate = useNavigate();
+
+	// コンテンツ表示用のタブ状態（アニメーション完了後に更新）
+	const [contentTab, setContentTab] = useState(activeTab);
+	const isTabTransitioning = activeTab !== contentTab;
+
+	// タブ変更時、1フレーム遅延してコンテンツを更新
+	useEffect(() => {
+		if (activeTab !== contentTab) {
+			const id = requestAnimationFrame(() => {
+				setContentTab(activeTab);
+			});
+			return () => cancelAnimationFrame(id);
+		}
+	}, [activeTab, contentTab]);
 
 	// トラック一覧の状態
 	const [tracks, setTracks] = useState<PublicArtistTrack[]>([]);
@@ -114,10 +126,10 @@ function ArtistDetailPage() {
 
 	// タブ切替時に遅延読み込み
 	useEffect(() => {
-		if (deferredTab === "tracks" && !tracksLoaded && artist) {
+		if (activeTab === "tracks" && !tracksLoaded && artist) {
 			fetchTracks(1, roleFilter);
 		}
-	}, [deferredTab, tracksLoaded, artist, fetchTracks, roleFilter]);
+	}, [activeTab, tracksLoaded, artist, fetchTracks, roleFilter]);
 
 	// フィルター変更時
 	const handleRoleFilterChange = (value: string) => {
@@ -259,7 +271,7 @@ function ArtistDetailPage() {
 					activeTab={activeTab}
 					onTabChange={handleTabChange}
 				/>
-				{deferredTab === "tracks" && (
+				{contentTab === "tracks" && (
 					<div className="flex flex-wrap gap-2">
 						{/* 役割フィルター */}
 						<select
@@ -279,7 +291,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 参加トラック */}
-			{deferredTab === "tracks" && (
+			{contentTab === "tracks" && (
 				<div className="space-y-4">
 					{/* トラック一覧 */}
 					{tracksLoading ? (
@@ -380,7 +392,7 @@ function ArtistDetailPage() {
 			)}
 
 			{/* 統計 */}
-			{deferredTab === "stats" &&
+			{contentTab === "stats" &&
 				(isTabTransitioning ? (
 					<WorkStatsSkeleton />
 				) : (
