@@ -3,6 +3,7 @@
 import type { BarCustomLayerProps, BarDatum } from "@nivo/bar";
 import {
 	ArrowLeft,
+	ArrowUpDown,
 	BarChart3,
 	Layers,
 	Loader2,
@@ -148,6 +149,8 @@ function useIsDarkMode(): boolean {
 
 type SortOrder = "count-desc" | "count-asc" | "id";
 
+const SORT_ORDER_STORAGE_KEY = "work-stats-sort-order";
+
 // Nivo用データ形式に変換（積み上げモード）
 function transformStackedDataForNivo(
 	stackedData: StackedWorkStat[],
@@ -266,6 +269,31 @@ export function WorkStatsSection({
 
 	// 表示順: "count-desc" = トラック数順(降順), "count-asc" = トラック数順(昇順), "id" = ID順
 	const [sortOrder, setSortOrder] = useState<SortOrder>("id");
+
+	// クライアントサイドでlocalStorageから読み込み
+	useEffect(() => {
+		const saved = localStorage.getItem(SORT_ORDER_STORAGE_KEY);
+		if (saved === "count-desc" || saved === "count-asc" || saved === "id") {
+			setSortOrder(saved);
+		}
+	}, []);
+
+	// sortOrder変更を処理する関数（localStorageへの保存を含む）
+	const handleSortOrderChange = useCallback((newOrder: SortOrder) => {
+		setSortOrder(newOrder);
+		localStorage.setItem(SORT_ORDER_STORAGE_KEY, newOrder);
+	}, []);
+
+	// サイクルボタン: id → count-desc → count-asc → id
+	const cycleSortOrder = useCallback(() => {
+		const nextOrder: SortOrder =
+			sortOrder === "id"
+				? "count-desc"
+				: sortOrder === "count-desc"
+					? "count-asc"
+					: "id";
+		handleSortOrderChange(nextOrder);
+	}, [sortOrder, handleSortOrderChange]);
 
 	// 通信中フラグ（重複リクエスト防止用）
 	const [isFetchingStacked, setIsFetchingStacked] = useState(false);
@@ -641,40 +669,32 @@ export function WorkStatsSection({
 				</div>
 			)}
 
-			{/* ソート切替 */}
+			{/* ソート切替（単一サイクルボタン） */}
 			<div className="flex items-center gap-2">
-				<span className="text-base-content/60 text-sm">並び替え:</span>
-				<div className="join">
-					<button
-						type="button"
-						className={`btn join-item btn-sm gap-1 ${sortOrder === "id" ? "btn-secondary" : "btn-ghost"}`}
-						onClick={() => setSortOrder("id")}
-					>
-						<SortAsc className="size-4" />
-						ID順
-					</button>
-					<button
-						type="button"
-						className={`btn join-item btn-sm gap-1 ${sortOrder.startsWith("count") ? "btn-secondary" : "btn-ghost"}`}
-						onClick={() =>
-							setSortOrder(
-								sortOrder === "count-desc" ? "count-asc" : "count-desc",
-							)
-						}
-					>
-						{sortOrder === "count-desc" ? (
+				<button
+					type="button"
+					className={`btn btn-sm gap-1 ${sortOrder === "id" ? "btn-ghost" : "btn-secondary"}`}
+					onClick={cycleSortOrder}
+				>
+					{sortOrder === "id" && (
+						<>
+							<ArrowUpDown className="size-4" />
+							並び替え
+						</>
+					)}
+					{sortOrder === "count-desc" && (
+						<>
 							<SortDesc className="size-4" />
-						) : (
+							トラック数 ↓
+						</>
+					)}
+					{sortOrder === "count-asc" && (
+						<>
 							<SortAsc className="size-4" />
-						)}
-						トラック数順
-						{sortOrder.startsWith("count") && (
-							<span className="text-xs opacity-70">
-								({sortOrder === "count-desc" ? "降順" : "昇順"})
-							</span>
-						)}
-					</button>
-				</div>
+							トラック数 ↑
+						</>
+					)}
+				</button>
 			</div>
 
 			{/* チャート */}
