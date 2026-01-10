@@ -1,12 +1,33 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Disc3, Loader2, Music } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, Pagination, PublicBreadcrumb } from "@/components/public";
+import {
+	DetailTabs,
+	EmptyState,
+	Pagination,
+	PublicBreadcrumb,
+	StatsPlaceholder,
+	TabIcons,
+} from "@/components/public";
+import {
+	type ArtistDetailTab,
+	parseArtistDetailTab,
+	TAB_LABELS,
+} from "@/lib/detail-tab-utils";
 import { formatNumber } from "@/lib/format";
 import { createPublicArtistHead } from "@/lib/head";
 import { type PublicArtistTrack, publicApi } from "@/lib/public-api";
 
+interface ArtistDetailSearchParams {
+	tab?: ArtistDetailTab;
+}
+
 export const Route = createFileRoute("/_public/artists_/$id")({
+	validateSearch: (
+		search: Record<string, unknown>,
+	): ArtistDetailSearchParams => ({
+		tab: parseArtistDetailTab(search.tab),
+	}),
 	loader: async ({ params }) => {
 		try {
 			const artist = await publicApi.artists.get(params.id);
@@ -28,9 +49,21 @@ const aliasTypeNames: Record<string, string> = {
 	nickname: "愛称",
 };
 
+// タブ設定
+const ARTIST_TAB_CONFIGS: {
+	key: ArtistDetailTab;
+	label: string;
+	icon: React.ReactNode;
+}[] = [
+	{ key: "tracks", label: TAB_LABELS.tracks, icon: TabIcons.tracks },
+	{ key: "stats", label: TAB_LABELS.stats, icon: TabIcons.stats },
+];
+
 function ArtistDetailPage() {
 	const { id } = Route.useParams();
 	const { artist } = Route.useLoaderData();
+	const { tab: activeTab = "tracks" } = Route.useSearch();
+	const navigate = useNavigate();
 
 	// トラック一覧の状態
 	const [tracks, setTracks] = useState<PublicArtistTrack[]>([]);
@@ -41,6 +74,15 @@ function ArtistDetailPage() {
 
 	// フィルター（名義単位なので役割フィルターのみ）
 	const [roleFilter, setRoleFilter] = useState<string>("all");
+
+	// タブ切り替え
+	const handleTabChange = (tab: ArtistDetailTab) => {
+		navigate({
+			to: "/artists/$id",
+			params: { id },
+			search: { tab },
+		});
+	};
 
 	// トラック一覧を取得
 	const fetchTracks = useCallback(
@@ -67,12 +109,12 @@ function ArtistDetailPage() {
 		[artist, id],
 	);
 
-	// 初回ロード
+	// タブ切替時に遅延読み込み
 	useEffect(() => {
-		if (!tracksLoaded && artist) {
+		if (activeTab === "tracks" && !tracksLoaded && artist) {
 			fetchTracks(1, roleFilter);
 		}
-	}, [tracksLoaded, artist, fetchTracks, roleFilter]);
+	}, [activeTab, tracksLoaded, artist, fetchTracks, roleFilter]);
 
 	// フィルター変更時
 	const handleRoleFilterChange = (value: string) => {
@@ -207,12 +249,14 @@ function ArtistDetailPage() {
 				</div>
 			</div>
 
-			{/* 参加トラック */}
-			<div className="space-y-4">
-				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<h2 className="font-bold text-xl">参加トラック</h2>
-
-					{/* フィルター */}
+			{/* タブ */}
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<DetailTabs
+					tabs={ARTIST_TAB_CONFIGS}
+					activeTab={activeTab}
+					onTabChange={handleTabChange}
+				/>
+				{activeTab === "tracks" && (
 					<div className="flex flex-wrap gap-2">
 						{/* 役割フィルター */}
 						<select
@@ -228,104 +272,114 @@ function ArtistDetailPage() {
 							))}
 						</select>
 					</div>
-				</div>
-
-				{/* トラック一覧 */}
-				{tracksLoading ? (
-					<div className="flex items-center justify-center py-12">
-						<Loader2 className="size-8 animate-spin text-primary" />
-					</div>
-				) : tracks.length === 0 ? (
-					<EmptyState
-						type="filter"
-						title="該当するトラックがありません"
-						description="フィルター条件を変更してお試しください"
-					/>
-				) : (
-					<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
-						<table className="table">
-							<thead>
-								<tr>
-									<th>曲名</th>
-									<th className="hidden md:table-cell">役割</th>
-									<th className="hidden sm:table-cell">リリース</th>
-									<th className="hidden lg:table-cell">原曲</th>
-								</tr>
-							</thead>
-							<tbody>
-								{tracks.map((credit) => (
-									<tr key={credit.id} className="hover:bg-base-200/50">
-										<td>
-											<Link
-												to="/tracks/$id"
-												params={{ id: credit.track.id }}
-												className="font-medium hover:text-primary"
-											>
-												{credit.track.name}
-											</Link>
-										</td>
-										<td className="hidden md:table-cell">
-											<div className="flex flex-wrap gap-1">
-												{credit.roles.map((role) => (
-													<span
-														key={role.roleCode}
-														className="badge badge-outline badge-xs"
-													>
-														{role.label}
-													</span>
-												))}
-											</div>
-										</td>
-										<td className="hidden sm:table-cell">
-											<Link
-												to="/releases/$id"
-												params={{ id: credit.release.id }}
-												className="text-base-content/70 text-sm hover:text-primary"
-											>
-												{credit.release.name}
-											</Link>
-											<div className="flex gap-1">
-												{credit.circles.map((circle) => (
-													<Link
-														key={circle.id}
-														to="/circles/$id"
-														params={{ id: circle.id }}
-														className="text-base-content/50 text-xs hover:text-primary"
-													>
-														{circle.name}
-													</Link>
-												))}
-											</div>
-										</td>
-										<td className="hidden lg:table-cell">
-											{credit.originalSong ? (
-												<Link
-													to="/original-songs/$id"
-													params={{ id: credit.originalSong.id }}
-													className="text-base-content/70 text-sm hover:text-primary"
-												>
-													{credit.originalSong.name}
-												</Link>
-											) : (
-												"-"
-											)}
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-				)}
-
-				{/* ページネーション */}
-				{tracksTotalPages > 1 && (
-					<Pagination
-						currentPage={tracksPage}
-						totalPages={tracksTotalPages}
-						onPageChange={handlePageChange}
-					/>
 				)}
 			</div>
+
+			{/* 参加トラック */}
+			{activeTab === "tracks" && (
+				<div className="space-y-4">
+					{/* トラック一覧 */}
+					{tracksLoading ? (
+						<div className="flex items-center justify-center py-12">
+							<Loader2 className="size-8 animate-spin text-primary" />
+						</div>
+					) : tracks.length === 0 ? (
+						<EmptyState
+							type="filter"
+							title="該当するトラックがありません"
+							description="フィルター条件を変更してお試しください"
+						/>
+					) : (
+						<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
+							<table className="table">
+								<thead>
+									<tr>
+										<th>曲名</th>
+										<th className="hidden md:table-cell">役割</th>
+										<th className="hidden sm:table-cell">リリース</th>
+										<th className="hidden lg:table-cell">原曲</th>
+									</tr>
+								</thead>
+								<tbody>
+									{tracks.map((credit) => (
+										<tr key={credit.id} className="hover:bg-base-200/50">
+											<td>
+												<Link
+													to="/tracks/$id"
+													params={{ id: credit.track.id }}
+													className="font-medium hover:text-primary"
+												>
+													{credit.track.name}
+												</Link>
+											</td>
+											<td className="hidden md:table-cell">
+												<div className="flex flex-wrap gap-1">
+													{credit.roles.map((role) => (
+														<span
+															key={role.roleCode}
+															className="badge badge-outline badge-xs"
+														>
+															{role.label}
+														</span>
+													))}
+												</div>
+											</td>
+											<td className="hidden sm:table-cell">
+												<Link
+													to="/releases/$id"
+													params={{ id: credit.release.id }}
+													className="text-base-content/70 text-sm hover:text-primary"
+												>
+													{credit.release.name}
+												</Link>
+												<div className="flex gap-1">
+													{credit.circles.map((circle) => (
+														<Link
+															key={circle.id}
+															to="/circles/$id"
+															params={{ id: circle.id }}
+															className="text-base-content/50 text-xs hover:text-primary"
+														>
+															{circle.name}
+														</Link>
+													))}
+												</div>
+											</td>
+											<td className="hidden lg:table-cell">
+												{credit.originalSong ? (
+													<Link
+														to="/original-songs/$id"
+														params={{ id: credit.originalSong.id }}
+														className="text-base-content/70 text-sm hover:text-primary"
+													>
+														{credit.originalSong.name}
+													</Link>
+												) : (
+													"-"
+												)}
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+
+					{/* ページネーション */}
+					{tracksTotalPages > 1 && (
+						<Pagination
+							currentPage={tracksPage}
+							totalPages={tracksTotalPages}
+							onPageChange={handlePageChange}
+						/>
+					)}
+				</div>
+			)}
+
+			{/* 統計 */}
+			{activeTab === "stats" && (
+				<StatsPlaceholder entityType="artist" entityName={artist.name} />
+			)}
 		</div>
 	);
 }

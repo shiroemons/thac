@@ -1,18 +1,35 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Calendar, Disc3, Loader2, MapPin, Music, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
+	DetailTabs,
 	EmptyState,
 	Pagination,
 	PublicBreadcrumb,
+	StatsPlaceholder,
+	TabIcons,
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import {
+	type EventDetailTab,
+	parseEventDetailTab,
+	TAB_LABELS,
+} from "@/lib/detail-tab-utils";
 import { formatNumber } from "@/lib/format";
 import { createPublicEventHead } from "@/lib/head";
 import { type PublicEventRelease, publicApi } from "@/lib/public-api";
 
+interface EventDetailSearchParams {
+	tab?: EventDetailTab;
+}
+
 export const Route = createFileRoute("/_public/events_/$id")({
+	validateSearch: (
+		search: Record<string, unknown>,
+	): EventDetailSearchParams => ({
+		tab: parseEventDetailTab(search.tab),
+	}),
 	loader: async ({ params }) => {
 		try {
 			const event = await publicApi.events.get(params.id);
@@ -37,9 +54,21 @@ const participationTypeNames: Record<string, string> = {
 	split_partner: "スプリット",
 };
 
+// タブ設定
+const EVENT_TAB_CONFIGS: {
+	key: EventDetailTab;
+	label: string;
+	icon: React.ReactNode;
+}[] = [
+	{ key: "releases", label: TAB_LABELS.releases, icon: TabIcons.releases },
+	{ key: "stats", label: TAB_LABELS.stats, icon: TabIcons.stats },
+];
+
 function EventDetailPage() {
 	const { id } = Route.useParams();
 	const { event } = Route.useLoaderData();
+	const { tab: activeTab = "releases" } = Route.useSearch();
+	const navigate = useNavigate();
 	const [viewMode, setViewModeState] = useState<ViewMode>("list");
 
 	// リリース一覧の状態
@@ -58,6 +87,15 @@ function EventDetailPage() {
 	const setViewMode = (view: ViewMode) => {
 		setViewModeState(view);
 		localStorage.setItem(STORAGE_KEY_VIEW, view);
+	};
+
+	// タブ切り替え
+	const handleTabChange = (tab: EventDetailTab) => {
+		navigate({
+			to: "/events/$id",
+			params: { id },
+			search: { tab },
+		});
 	};
 
 	// リリース一覧を取得
@@ -83,12 +121,12 @@ function EventDetailPage() {
 		[event, id],
 	);
 
-	// 初回読み込み
+	// タブ切替時に遅延読み込み
 	useEffect(() => {
-		if (!releasesLoaded && event) {
+		if (activeTab === "releases" && !releasesLoaded && event) {
 			fetchReleases(1);
 		}
-	}, [releasesLoaded, event, fetchReleases]);
+	}, [activeTab, releasesLoaded, event, fetchReleases]);
 
 	// イベントが見つからない場合
 	if (!event) {
@@ -200,124 +238,141 @@ function EventDetailPage() {
 				</div>
 			</div>
 
-			{/* ビュー切替 */}
+			{/* タブ */}
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<h2 className="font-bold text-xl">リリース一覧</h2>
-				<ViewToggle value={viewMode} onChange={setViewMode} />
+				<DetailTabs
+					tabs={EVENT_TAB_CONFIGS}
+					activeTab={activeTab}
+					onTabChange={handleTabChange}
+				/>
+				{activeTab === "releases" && (
+					<ViewToggle value={viewMode} onChange={setViewMode} />
+				)}
 			</div>
 
 			{/* リリース一覧 */}
-			{releasesLoading ? (
-				<div className="flex items-center justify-center py-12">
-					<Loader2 className="size-8 animate-spin text-primary" />
-				</div>
-			) : releases.length === 0 ? (
-				<EmptyState type="empty" title="頒布物がありません" />
-			) : viewMode === "grid" ? (
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{releases.map((release) => (
-						<div
-							key={release.id}
-							className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
-						>
-							<div className="card-body p-4">
-								<Link
-									to="/releases/$id"
-									params={{ id: release.id }}
-									className="card-title text-base hover:text-primary"
-								>
-									{release.name}
-								</Link>
-								<div className="flex flex-wrap gap-1">
-									{release.circles.map((circle) => (
-										<Link
-											key={circle.id}
-											to="/circles/$id"
-											params={{ id: circle.id }}
-											className="badge badge-outline badge-sm hover:badge-primary"
-										>
-											{circle.name}
-											{circle.participationType !== "host" && (
-												<span className="ml-1 text-xs opacity-70">
-													({participationTypeNames[circle.participationType]})
-												</span>
-											)}
-										</Link>
-									))}
-								</div>
-								<div className="mt-2 flex items-center gap-4 text-base-content/50 text-sm">
-									{release.releaseDate && (
-										<span className="flex items-center gap-1">
-											<Calendar className="size-3" />
-											{release.releaseDate}
-										</span>
-									)}
-									<span className="flex items-center gap-1">
-										<Music className="size-3" />
-										{release.trackCount}曲
-									</span>
-								</div>
-							</div>
+			{activeTab === "releases" && (
+				<>
+					{releasesLoading ? (
+						<div className="flex items-center justify-center py-12">
+							<Loader2 className="size-8 animate-spin text-primary" />
 						</div>
-					))}
-				</div>
-			) : (
-				<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
-					<table className="table">
-						<thead>
-							<tr>
-								<th>タイトル</th>
-								<th>サークル</th>
-								<th className="hidden sm:table-cell">発売日</th>
-								<th>曲数</th>
-							</tr>
-						</thead>
-						<tbody>
+					) : releases.length === 0 ? (
+						<EmptyState type="empty" title="頒布物がありません" />
+					) : viewMode === "grid" ? (
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 							{releases.map((release) => (
-								<tr key={release.id} className="hover:bg-base-200/50">
-									<td>
+								<div
+									key={release.id}
+									className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+								>
+									<div className="card-body p-4">
 										<Link
 											to="/releases/$id"
 											params={{ id: release.id }}
-											className="font-medium hover:text-primary"
+											className="card-title text-base hover:text-primary"
 										>
 											{release.name}
 										</Link>
-									</td>
-									<td>
-										{release.circles.map((circle, idx) => (
-											<span key={circle.id}>
-												{idx > 0 && ", "}
+										<div className="flex flex-wrap gap-1">
+											{release.circles.map((circle) => (
 												<Link
+													key={circle.id}
 													to="/circles/$id"
 													params={{ id: circle.id }}
-													className="hover:text-primary"
+													className="badge badge-outline badge-sm hover:badge-primary"
 												>
 													{circle.name}
+													{circle.participationType !== "host" && (
+														<span className="ml-1 text-xs opacity-70">
+															(
+															{participationTypeNames[circle.participationType]}
+															)
+														</span>
+													)}
 												</Link>
+											))}
+										</div>
+										<div className="mt-2 flex items-center gap-4 text-base-content/50 text-sm">
+											{release.releaseDate && (
+												<span className="flex items-center gap-1">
+													<Calendar className="size-3" />
+													{release.releaseDate}
+												</span>
+											)}
+											<span className="flex items-center gap-1">
+												<Music className="size-3" />
+												{release.trackCount}曲
 											</span>
-										))}
-									</td>
-									<td className="hidden text-base-content/70 sm:table-cell">
-										{release.releaseDate || "-"}
-									</td>
-									<td className="text-base-content/70">
-										{release.trackCount}曲
-									</td>
-								</tr>
+										</div>
+									</div>
+								</div>
 							))}
-						</tbody>
-					</table>
-				</div>
+						</div>
+					) : (
+						<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
+							<table className="table">
+								<thead>
+									<tr>
+										<th>タイトル</th>
+										<th>サークル</th>
+										<th className="hidden sm:table-cell">発売日</th>
+										<th>曲数</th>
+									</tr>
+								</thead>
+								<tbody>
+									{releases.map((release) => (
+										<tr key={release.id} className="hover:bg-base-200/50">
+											<td>
+												<Link
+													to="/releases/$id"
+													params={{ id: release.id }}
+													className="font-medium hover:text-primary"
+												>
+													{release.name}
+												</Link>
+											</td>
+											<td>
+												{release.circles.map((circle, idx) => (
+													<span key={circle.id}>
+														{idx > 0 && ", "}
+														<Link
+															to="/circles/$id"
+															params={{ id: circle.id }}
+															className="hover:text-primary"
+														>
+															{circle.name}
+														</Link>
+													</span>
+												))}
+											</td>
+											<td className="hidden text-base-content/70 sm:table-cell">
+												{release.releaseDate || "-"}
+											</td>
+											<td className="text-base-content/70">
+												{release.trackCount}曲
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+
+					{/* ページネーション */}
+					{releasesTotalPages > 1 && (
+						<Pagination
+							currentPage={releasesPage}
+							totalPages={releasesTotalPages}
+							onPageChange={fetchReleases}
+						/>
+					)}
+				</>
 			)}
 
-			{/* ページネーション */}
-			{releasesTotalPages > 1 && (
-				<Pagination
-					currentPage={releasesPage}
-					totalPages={releasesTotalPages}
-					onPageChange={fetchReleases}
-				/>
+			{/* 統計 */}
+			{activeTab === "stats" && (
+				<StatsPlaceholder entityType="event" entityName={event.name} />
 			)}
 		</div>
 	);

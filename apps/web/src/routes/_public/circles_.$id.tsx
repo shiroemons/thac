@@ -1,13 +1,21 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Calendar, Disc3, Loader2, Music, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
+	DetailTabs,
 	EmptyState,
 	ExternalLink,
 	PublicBreadcrumb,
+	StatsPlaceholder,
+	TabIcons,
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import {
+	type CircleDetailTab,
+	parseCircleDetailTab,
+	TAB_LABELS,
+} from "@/lib/detail-tab-utils";
 import { formatNumber } from "@/lib/format";
 import { createPublicCircleHead } from "@/lib/head";
 import {
@@ -16,7 +24,16 @@ import {
 	publicApi,
 } from "@/lib/public-api";
 
+interface CircleDetailSearchParams {
+	tab?: CircleDetailTab;
+}
+
 export const Route = createFileRoute("/_public/circles_/$id")({
+	validateSearch: (
+		search: Record<string, unknown>,
+	): CircleDetailSearchParams => ({
+		tab: parseCircleDetailTab(search.tab),
+	}),
 	loader: async ({ params }) => {
 		try {
 			const circle = await publicApi.circles.get(params.id);
@@ -59,13 +76,22 @@ const participationTypeNames: Record<string, string> = {
 	split_partner: "スプリット",
 };
 
-// タブ型
-type TabType = "releases" | "tracks";
+// タブ設定
+const CIRCLE_TAB_CONFIGS: {
+	key: CircleDetailTab;
+	label: string;
+	icon: React.ReactNode;
+}[] = [
+	{ key: "releases", label: TAB_LABELS.releases, icon: TabIcons.releases },
+	{ key: "tracks", label: TAB_LABELS.tracks, icon: TabIcons.tracks },
+	{ key: "stats", label: TAB_LABELS.stats, icon: TabIcons.stats },
+];
 
 function CircleDetailPage() {
 	const { id } = Route.useParams();
 	const { circle } = Route.useLoaderData();
-	const [activeTab, setActiveTab] = useState<TabType>("releases");
+	const { tab: activeTab = "releases" } = Route.useSearch();
+	const navigate = useNavigate();
 	const [viewMode, setViewModeState] = useState<ViewMode>("list");
 
 	// リリース一覧の状態
@@ -91,6 +117,15 @@ function CircleDetailPage() {
 	const setViewMode = (view: ViewMode) => {
 		setViewModeState(view);
 		localStorage.setItem(STORAGE_KEY_VIEW, view);
+	};
+
+	// タブ切り替え
+	const handleTabChange = (tab: CircleDetailTab) => {
+		navigate({
+			to: "/circles/$id",
+			params: { id },
+			search: { tab },
+		});
 	};
 
 	// リリース一覧を取得
@@ -253,24 +288,11 @@ function CircleDetailPage() {
 
 			{/* タブ */}
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div role="tablist" className="tabs tabs-boxed w-fit">
-					<button
-						type="button"
-						role="tab"
-						className={`tab ${activeTab === "releases" ? "tab-active" : ""}`}
-						onClick={() => setActiveTab("releases")}
-					>
-						リリース一覧
-					</button>
-					<button
-						type="button"
-						role="tab"
-						className={`tab ${activeTab === "tracks" ? "tab-active" : ""}`}
-						onClick={() => setActiveTab("tracks")}
-					>
-						曲一覧
-					</button>
-				</div>
+				<DetailTabs
+					tabs={CIRCLE_TAB_CONFIGS}
+					activeTab={activeTab}
+					onTabChange={handleTabChange}
+				/>
 				{activeTab === "releases" && (
 					<ViewToggle value={viewMode} onChange={setViewMode} />
 				)}
@@ -538,6 +560,11 @@ function CircleDetailPage() {
 						</div>
 					)}
 				</>
+			)}
+
+			{/* 統計 */}
+			{activeTab === "stats" && (
+				<StatsPlaceholder entityType="circle" entityName={circle.name} />
 			)}
 		</div>
 	);
