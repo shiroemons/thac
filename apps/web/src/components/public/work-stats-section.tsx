@@ -533,74 +533,8 @@ export function WorkStatsSection({
 
 	return (
 		<div className="space-y-4">
-			{/* コントロール */}
-			<div className="flex flex-wrap items-center gap-2">
-				{selectedWorkId ? (
-					<button
-						type="button"
-						className="btn btn-ghost btn-sm gap-1"
-						onClick={handleBack}
-					>
-						<ArrowLeft className="size-4" />
-						戻る
-					</button>
-				) : (
-					<>
-						<button
-							type="button"
-							className={`btn btn-sm gap-1 ${isStacked ? "btn-primary" : "btn-ghost"}`}
-							onClick={handleModeToggle}
-							disabled={isUpdating}
-						>
-							<Layers className="size-4" />
-							積み上げ
-						</button>
-						<button
-							type="button"
-							className={`btn btn-sm gap-1 ${!isStacked ? "btn-primary" : "btn-ghost"}`}
-							onClick={handleModeToggle}
-							disabled={isUpdating}
-						>
-							<BarChart3 className="size-4" />
-							単純
-						</button>
-					</>
-				)}
-				<div className="divider divider-horizontal mx-0" />
-				<button
-					type="button"
-					className={`btn btn-sm gap-1 ${sortOrder.startsWith("count") ? "btn-secondary" : "btn-ghost"}`}
-					onClick={() =>
-						setSortOrder(
-							sortOrder === "count-desc" ? "count-asc" : "count-desc",
-						)
-					}
-				>
-					{sortOrder === "count-desc" ? (
-						<SortDesc className="size-4" />
-					) : (
-						<SortAsc className="size-4" />
-					)}
-					トラック数順
-					{sortOrder.startsWith("count") && (
-						<span className="text-xs opacity-70">
-							({sortOrder === "count-desc" ? "降順" : "昇順"})
-						</span>
-					)}
-				</button>
-				<button
-					type="button"
-					className={`btn btn-sm gap-1 ${sortOrder === "id" ? "btn-secondary" : "btn-ghost"}`}
-					onClick={() => setSortOrder("id")}
-				>
-					<SortAsc className="size-4" />
-					ID順
-				</button>
-				{isUpdating && <Loader2 className="size-4 animate-spin text-primary" />}
-			</div>
-
-			{/* ドリルダウン時のタイトル（戻るボタン付き） */}
-			{selectedWorkId && (
+			{/* モード切替 or ドリルダウンタイトル */}
+			{selectedWorkId ? (
 				<div className="flex items-center gap-3 rounded-lg bg-primary/10 px-4 py-2">
 					<button
 						type="button"
@@ -615,7 +549,70 @@ export function WorkStatsSection({
 						<span className="text-base-content/70">の原曲別トラック数</span>
 					</div>
 				</div>
+			) : (
+				<div className="flex items-center gap-2">
+					<span className="text-base-content/60 text-sm">表示モード:</span>
+					<div className="join">
+						<button
+							type="button"
+							className={`btn join-item btn-sm gap-1 ${isStacked ? "btn-primary" : "btn-ghost"}`}
+							onClick={() => !isStacked && handleModeToggle()}
+							disabled={isUpdating}
+						>
+							<Layers className="size-4" />
+							積み上げ
+						</button>
+						<button
+							type="button"
+							className={`btn join-item btn-sm gap-1 ${!isStacked ? "btn-primary" : "btn-ghost"}`}
+							onClick={() => isStacked && handleModeToggle()}
+							disabled={isUpdating}
+						>
+							<BarChart3 className="size-4" />
+							単純
+						</button>
+					</div>
+					{isUpdating && (
+						<Loader2 className="size-4 animate-spin text-primary" />
+					)}
+				</div>
 			)}
+
+			{/* ソート切替 */}
+			<div className="flex items-center gap-2">
+				<span className="text-base-content/60 text-sm">並び替え:</span>
+				<div className="join">
+					<button
+						type="button"
+						className={`btn join-item btn-sm gap-1 ${sortOrder === "id" ? "btn-secondary" : "btn-ghost"}`}
+						onClick={() => setSortOrder("id")}
+					>
+						<SortAsc className="size-4" />
+						ID順
+					</button>
+					<button
+						type="button"
+						className={`btn join-item btn-sm gap-1 ${sortOrder.startsWith("count") ? "btn-secondary" : "btn-ghost"}`}
+						onClick={() =>
+							setSortOrder(
+								sortOrder === "count-desc" ? "count-asc" : "count-desc",
+							)
+						}
+					>
+						{sortOrder === "count-desc" ? (
+							<SortDesc className="size-4" />
+						) : (
+							<SortAsc className="size-4" />
+						)}
+						トラック数順
+						{sortOrder.startsWith("count") && (
+							<span className="text-xs opacity-70">
+								({sortOrder === "count-desc" ? "降順" : "昇順"})
+							</span>
+						)}
+					</button>
+				</div>
+			</div>
 
 			{/* チャート */}
 			<div
