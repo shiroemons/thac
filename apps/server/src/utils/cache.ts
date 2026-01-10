@@ -25,12 +25,15 @@ export const CACHE_TTL = {
 	CIRCLE_DETAIL: 5 * 60, // 5分
 	CIRCLE_RELEASES: 5 * 60, // 5分
 	CIRCLE_TRACKS: 5 * 60, // 5分
+	CIRCLE_STATS: 5 * 60, // 5分
 	ARTISTS_LIST: 5 * 60, // 5分
 	ARTIST_DETAIL: 5 * 60, // 5分
 	ARTIST_TRACKS: 5 * 60, // 5分
+	ARTIST_STATS: 5 * 60, // 5分
 	EVENTS_LIST: 5 * 60, // 5分
 	EVENT_DETAIL: 5 * 60, // 5分
 	EVENT_RELEASES: 5 * 60, // 5分
+	EVENT_STATS: 5 * 60, // 5分
 	RELEASE_DETAIL: 5 * 60, // 5分
 	TRACK_DETAIL: 5 * 60, // 5分
 } as const;
@@ -185,6 +188,13 @@ export const cacheKeys = {
 	circleTracks: (params: { circleId: string; page: number; limit: number }) =>
 		`public:circles:${params.circleId}:tracks:page=${params.page}:limit=${params.limit}`,
 
+	circleStats: (params: {
+		circleId: string;
+		stacked?: boolean;
+		workId?: string;
+	}) =>
+		`public:circles:${params.circleId}:stats:stacked=${params.stacked || ""}:workId=${params.workId || ""}`,
+
 	artistsList: (params: {
 		page: number;
 		limit: number;
@@ -209,6 +219,13 @@ export const cacheKeys = {
 	}) =>
 		`public:artists:${params.artistId}:tracks:page=${params.page}:limit=${params.limit}:aliasId=${params.aliasId || ""}:role=${params.role || ""}`,
 
+	artistStats: (params: {
+		artistId: string;
+		stacked?: boolean;
+		workId?: string;
+	}) =>
+		`public:artists:${params.artistId}:stats:stacked=${params.stacked || ""}:workId=${params.workId || ""}`,
+
 	eventsList: (params: {
 		page: number;
 		limit: number;
@@ -223,6 +240,13 @@ export const cacheKeys = {
 
 	eventReleases: (params: { eventId: string; page: number; limit: number }) =>
 		`public:events:${params.eventId}:releases:page=${params.page}:limit=${params.limit}`,
+
+	eventStats: (params: {
+		eventId: string;
+		stacked?: boolean;
+		workId?: string;
+	}) =>
+		`public:events:${params.eventId}:stats:stacked=${params.stacked || ""}:workId=${params.workId || ""}`,
 
 	releaseDetail: (releaseId: string) => `public:releases:${releaseId}`,
 

@@ -6,8 +6,8 @@ import {
 	EmptyState,
 	Pagination,
 	PublicBreadcrumb,
-	StatsPlaceholder,
 	TabIcons,
+	WorkStatsSection,
 } from "@/components/public";
 import {
 	type ArtistDetailTab,
@@ -378,7 +378,7 @@ function ArtistDetailPage() {
 
 			{/* 統計 */}
 			{activeTab === "stats" && (
-				<StatsPlaceholder entityType="artist" entityName={artist.name} />
+				<WorkStatsSection entityType="artist" entityId={id} />
 			)}
 		</div>
 	);
