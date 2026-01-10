@@ -349,6 +349,7 @@ export function WorkStatsSection({
 	);
 
 	// エンティティ変更時にデータをリセット
+	// biome-ignore lint/correctness/useExhaustiveDependencies: entityId変更時にステートリセットが必要
 	useEffect(() => {
 		setStackedData([]);
 		setStackedDataLoaded(false);
