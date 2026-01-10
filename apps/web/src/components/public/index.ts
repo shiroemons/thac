@@ -1,3 +1,4 @@
+export { DetailTabs, TabIcons } from "./detail-tabs";
 export {
 	MediaEmbed,
 	MediaEmbedList,
@@ -33,4 +34,5 @@ export {
 	TwoStageScriptFilter,
 } from "./script-filter";
 export { StatsCards } from "./stats-cards";
+export { StatsPlaceholder } from "./stats-placeholder";
 export { type ViewMode, ViewToggle } from "./view-toggle";
