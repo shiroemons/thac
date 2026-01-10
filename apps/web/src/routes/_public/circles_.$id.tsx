@@ -6,10 +6,10 @@ import {
 	EmptyState,
 	ExternalLink,
 	PublicBreadcrumb,
-	StatsPlaceholder,
 	TabIcons,
 	type ViewMode,
 	ViewToggle,
+	WorkStatsSection,
 } from "@/components/public";
 import {
 	type CircleDetailTab,
@@ -564,7 +564,7 @@ function CircleDetailPage() {
 
 			{/* 統計 */}
 			{activeTab === "stats" && (
-				<StatsPlaceholder entityType="circle" entityName={circle.name} />
+				<WorkStatsSection entityType="circle" entityId={id} />
 			)}
 		</div>
 	);

@@ -6,10 +6,10 @@ import {
 	EmptyState,
 	Pagination,
 	PublicBreadcrumb,
-	StatsPlaceholder,
 	TabIcons,
 	type ViewMode,
 	ViewToggle,
+	WorkStatsSection,
 } from "@/components/public";
 import {
 	type EventDetailTab,
@@ -372,7 +372,7 @@ function EventDetailPage() {
 
 			{/* 統計 */}
 			{activeTab === "stats" && (
-				<StatsPlaceholder entityType="event" entityName={event.name} />
+				<WorkStatsSection entityType="event" entityId={id} />
 			)}
 		</div>
 	);

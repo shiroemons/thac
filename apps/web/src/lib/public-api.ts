@@ -404,6 +404,49 @@ export interface PublicReleaseDetail {
 	}>;
 }
 
+// =============================================================================
+// 統計API型定義
+// =============================================================================
+
+/** 原曲統計 */
+export interface SongStat {
+	id: string;
+	name: string | null;
+	trackCount: number;
+}
+
+/** 原作統計（単純モード） */
+export interface WorkStat {
+	id: string;
+	name: string | null;
+	shortName: string | null;
+	trackCount: number;
+}
+
+/** 原作統計（積み上げモード） */
+export interface StackedWorkStat {
+	id: string;
+	name: string | null;
+	shortName: string | null;
+	songs: SongStat[];
+	totalTrackCount: number;
+}
+
+/** 単純モードレスポンス */
+export interface WorkStatsResponse {
+	works: WorkStat[];
+}
+
+/** 積み上げモードレスポンス */
+export interface StackedWorkStatsResponse {
+	works: StackedWorkStat[];
+}
+
+/** 原曲詳細レスポンス（ドリルダウン用） */
+export interface SongStatsResponse {
+	songs: SongStat[];
+}
+
 /** トラック詳細 */
 export interface PublicTrackDetail {
 	id: string;
@@ -599,6 +642,23 @@ export const publicApi = {
 				`/api/public/circles/${id}/tracks${query ? `?${query}` : ""}`,
 			);
 		},
+
+		/** サークルの原作/原曲統計を取得 */
+		stats: (
+			id: string,
+			workId?: string,
+			stacked?: boolean,
+		): Promise<
+			WorkStatsResponse | StackedWorkStatsResponse | SongStatsResponse
+		> => {
+			const sp = new URLSearchParams();
+			if (workId) sp.set("workId", workId);
+			if (stacked) sp.set("stacked", "true");
+			const query = sp.toString();
+			return publicFetch(
+				`/api/public/circles/${id}/stats/works${query ? `?${query}` : ""}`,
+			);
+		},
 	},
 
 	artists: {
@@ -652,6 +712,23 @@ export const publicApi = {
 				`/api/public/artists/${id}/tracks${query ? `?${query}` : ""}`,
 			);
 		},
+
+		/** 名義の原作/原曲統計を取得 */
+		stats: (
+			id: string,
+			workId?: string,
+			stacked?: boolean,
+		): Promise<
+			WorkStatsResponse | StackedWorkStatsResponse | SongStatsResponse
+		> => {
+			const sp = new URLSearchParams();
+			if (workId) sp.set("workId", workId);
+			if (stacked) sp.set("stacked", "true");
+			const query = sp.toString();
+			return publicFetch(
+				`/api/public/artists/${id}/stats/works${query ? `?${query}` : ""}`,
+			);
+		},
 	},
 
 	events: {
@@ -695,6 +772,23 @@ export const publicApi = {
 			const query = sp.toString();
 			return publicFetch<PaginatedResponse<PublicEventRelease>>(
 				`/api/public/events/${id}/releases${query ? `?${query}` : ""}`,
+			);
+		},
+
+		/** イベントの原作/原曲統計を取得 */
+		stats: (
+			id: string,
+			workId?: string,
+			stacked?: boolean,
+		): Promise<
+			WorkStatsResponse | StackedWorkStatsResponse | SongStatsResponse
+		> => {
+			const sp = new URLSearchParams();
+			if (workId) sp.set("workId", workId);
+			if (stacked) sp.set("stacked", "true");
+			const query = sp.toString();
+			return publicFetch(
+				`/api/public/events/${id}/stats/works${query ? `?${query}` : ""}`,
 			);
 		},
 	},

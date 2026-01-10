@@ -1,4 +1,5 @@
 import {
+	and,
 	asc,
 	circles,
 	count,
@@ -11,10 +12,13 @@ import {
 	events,
 	inArray,
 	like,
+	officialSongs,
+	officialWorks,
 	or,
 	releaseCircles,
 	releases,
 	sql,
+	trackOfficialSongs,
 	tracks,
 } from "@thac/db";
 import { Hono } from "hono";
@@ -357,6 +361,195 @@ eventsRouter.get("/:id/releases", async (c) => {
 		return c.json(response);
 	} catch (error) {
 		return handleDbError(c, error, "GET /api/public/events/:id/releases");
+	}
+});
+
+/**
+ * GET /api/public/events/:id/stats/works
+ * イベントの原作/原曲統計を取得
+ */
+eventsRouter.get("/:id/stats/works", async (c) => {
+	try {
+		const eventId = c.req.param("id");
+		const stacked = c.req.query("stacked") === "true";
+		const workId = c.req.query("workId");
+
+		const cacheKey = cacheKeys.eventStats({ eventId, stacked, workId });
+
+		// キャッシュチェック
+		const cached = getCache<unknown>(cacheKey);
+		if (cached) {
+			setCacheHeaders(c, { maxAge: CACHE_TTL.EVENT_STATS });
+			return c.json(cached);
+		}
+
+		// イベント存在チェック
+		const eventExists = await db
+			.select({ id: events.id })
+			.from(events)
+			.where(eq(events.id, eventId))
+			.limit(1);
+
+		if (eventExists.length === 0) {
+			return c.json({ error: ERROR_MESSAGES.EVENT_NOT_FOUND }, 404);
+		}
+
+		// ドリルダウンモード: 特定の原作の原曲詳細
+		if (workId) {
+			const songsStats = await db
+				.select({
+					songId: officialSongs.id,
+					songName: officialSongs.nameJa,
+					trackCount: count(tracks.id),
+				})
+				.from(releases)
+				.innerJoin(tracks, eq(tracks.releaseId, releases.id))
+				.innerJoin(
+					trackOfficialSongs,
+					eq(trackOfficialSongs.trackId, tracks.id),
+				)
+				.innerJoin(
+					officialSongs,
+					eq(trackOfficialSongs.officialSongId, officialSongs.id),
+				)
+				.where(
+					and(
+						eq(releases.eventId, eventId),
+						eq(officialSongs.officialWorkId, workId),
+					),
+				)
+				.groupBy(officialSongs.id)
+				.orderBy(desc(count(tracks.id)));
+
+			const response = {
+				songs: songsStats.map((s) => ({
+					id: s.songId,
+					name: s.songName,
+					trackCount: s.trackCount,
+				})),
+			};
+
+			setCache(cacheKey, response, CACHE_TTL.EVENT_STATS);
+			setCacheHeaders(c, { maxAge: CACHE_TTL.EVENT_STATS });
+			return c.json(response);
+		}
+
+		// 積み上げモード: 原作ごとに原曲の内訳を含む
+		if (stacked) {
+			const stackedStats = await db
+				.select({
+					workId: officialWorks.id,
+					workName: officialWorks.nameJa,
+					shortName: officialWorks.shortNameJa,
+					songId: officialSongs.id,
+					songName: officialSongs.nameJa,
+					trackCount: count(tracks.id),
+				})
+				.from(releases)
+				.innerJoin(tracks, eq(tracks.releaseId, releases.id))
+				.innerJoin(
+					trackOfficialSongs,
+					eq(trackOfficialSongs.trackId, tracks.id),
+				)
+				.innerJoin(
+					officialSongs,
+					eq(trackOfficialSongs.officialSongId, officialSongs.id),
+				)
+				.innerJoin(
+					officialWorks,
+					eq(officialSongs.officialWorkId, officialWorks.id),
+				)
+				.where(eq(releases.eventId, eventId))
+				.groupBy(officialWorks.id, officialSongs.id)
+				.orderBy(desc(count(tracks.id)));
+
+			// 原作ごとにグルーピング
+			const worksMap = new Map<
+				string,
+				{
+					id: string;
+					name: string | null;
+					shortName: string | null;
+					songs: Array<{ id: string; name: string | null; trackCount: number }>;
+					totalTrackCount: number;
+				}
+			>();
+
+			for (const row of stackedStats) {
+				const existing = worksMap.get(row.workId);
+				if (existing) {
+					existing.songs.push({
+						id: row.songId,
+						name: row.songName,
+						trackCount: row.trackCount,
+					});
+					existing.totalTrackCount += row.trackCount;
+				} else {
+					worksMap.set(row.workId, {
+						id: row.workId,
+						name: row.workName,
+						shortName: row.shortName,
+						songs: [
+							{
+								id: row.songId,
+								name: row.songName,
+								trackCount: row.trackCount,
+							},
+						],
+						totalTrackCount: row.trackCount,
+					});
+				}
+			}
+
+			// トラック数順にソート
+			const works = Array.from(worksMap.values()).sort(
+				(a, b) => b.totalTrackCount - a.totalTrackCount,
+			);
+
+			const response = { works };
+
+			setCache(cacheKey, response, CACHE_TTL.EVENT_STATS);
+			setCacheHeaders(c, { maxAge: CACHE_TTL.EVENT_STATS });
+			return c.json(response);
+		}
+
+		// 単純モード: 原作ごとの合計トラック数
+		const worksStats = await db
+			.select({
+				workId: officialWorks.id,
+				workName: officialWorks.nameJa,
+				shortName: officialWorks.shortNameJa,
+				trackCount: count(tracks.id),
+			})
+			.from(releases)
+			.innerJoin(tracks, eq(tracks.releaseId, releases.id))
+			.innerJoin(trackOfficialSongs, eq(trackOfficialSongs.trackId, tracks.id))
+			.innerJoin(
+				officialSongs,
+				eq(trackOfficialSongs.officialSongId, officialSongs.id),
+			)
+			.innerJoin(
+				officialWorks,
+				eq(officialSongs.officialWorkId, officialWorks.id),
+			)
+			.where(eq(releases.eventId, eventId))
+			.groupBy(officialWorks.id)
+			.orderBy(desc(count(tracks.id)));
+
+		const response = {
+			works: worksStats.map((w) => ({
+				id: w.workId,
+				name: w.workName,
+				shortName: w.shortName,
+				trackCount: w.trackCount,
+			})),
+		};
+
+		setCache(cacheKey, response, CACHE_TTL.EVENT_STATS);
+		setCacheHeaders(c, { maxAge: CACHE_TTL.EVENT_STATS });
+		return c.json(response);
+	} catch (error) {
+		return handleDbError(c, error, "GET /api/public/events/:id/stats/works");
 	}
 });
 
