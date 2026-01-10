@@ -7,6 +7,9 @@ import {
 	Sparkles,
 } from "lucide-react";
 import { useRef, useState } from "react";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { Card } from "../ui/card";
 
 interface Release {
 	id: string;
@@ -62,7 +65,7 @@ const mockReleases: Release[] = [
 function ReleaseCard({ release }: { release: Release }) {
 	return (
 		<div className="min-w-[180px] flex-shrink-0 snap-start sm:min-w-[200px]">
-			<div className="glass-card group h-full overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+			<Card className="group h-full overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
 				{/* Album art placeholder */}
 				<div className="relative aspect-square overflow-hidden bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20">
 					<div className="flex h-full items-center justify-center">
@@ -73,10 +76,13 @@ function ReleaseCard({ release }: { release: Release }) {
 					</div>
 					{release.isNew && (
 						<div className="absolute top-2 right-2">
-							<div className="flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-primary-content text-xs shadow-lg">
+							<Badge
+								variant="primary"
+								className="flex items-center gap-1 bg-primary px-2 py-0.5 text-primary-content shadow-lg"
+							>
 								<Sparkles className="h-3 w-3" aria-hidden="true" />
 								NEW
-							</div>
+							</Badge>
 						</div>
 					)}
 					{/* Overlay on hover */}
@@ -98,7 +104,7 @@ function ReleaseCard({ release }: { release: Release }) {
 						<span>{release.eventName}</span>
 					</div>
 				</div>
-			</div>
+			</Card>
 		</div>
 	);
 }
@@ -129,31 +135,33 @@ export function RecentReleases() {
 			<div className="mb-6 flex items-center justify-between">
 				<div className="flex items-center gap-3">
 					<h2 className="font-bold text-xl">最近のリリース</h2>
-					<div className="rounded-full bg-primary/10 px-2.5 py-0.5 text-primary text-xs">
+					<Badge variant="primary" className="bg-primary/10 text-primary">
 						{mockReleases.length}件
-					</div>
+					</Badge>
 				</div>
 				<div className="flex items-center gap-2">
 					{/* Desktop scroll buttons */}
 					<div className="hidden items-center gap-1 md:flex">
-						<button
-							type="button"
+						<Button
+							variant="ghost"
+							size="icon"
 							onClick={() => scroll("left")}
 							disabled={!canScrollLeft}
-							className="flex h-8 w-8 items-center justify-center rounded-full bg-base-200 text-base-content/60 transition-all hover:bg-base-300 hover:text-base-content disabled:cursor-not-allowed disabled:opacity-30"
 							aria-label="前へ"
+							className="h-8 w-8 rounded-full"
 						>
 							<ChevronLeft className="h-4 w-4" />
-						</button>
-						<button
-							type="button"
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
 							onClick={() => scroll("right")}
 							disabled={!canScrollRight}
-							className="flex h-8 w-8 items-center justify-center rounded-full bg-base-200 text-base-content/60 transition-all hover:bg-base-300 hover:text-base-content disabled:cursor-not-allowed disabled:opacity-30"
 							aria-label="次へ"
+							className="h-8 w-8 rounded-full"
 						>
 							<ChevronRight className="h-4 w-4" />
-						</button>
+						</Button>
 					</div>
 					<Link
 						to="/stats"

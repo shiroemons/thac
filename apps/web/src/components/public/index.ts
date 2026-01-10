@@ -7,7 +7,7 @@ export {
 	YouTubeEmbed,
 } from "./embeds";
 export { EmptyState, type EmptyStateType } from "./empty-state";
-export { type Badge, EntityCard } from "./entity-card";
+export { type BadgeInfo, EntityCard } from "./entity-card";
 export { ExternalLink } from "./external-link";
 export { FeaturesSection } from "./features-section";
 export { HeroSection } from "./hero-section";

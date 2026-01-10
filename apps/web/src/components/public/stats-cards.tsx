@@ -8,6 +8,8 @@ import {
 	Users,
 } from "lucide-react";
 import { formatNumber } from "../../lib/format";
+import { Badge } from "../ui/badge";
+import { Card } from "../ui/card";
 
 interface StatCardProps {
 	icon: LucideIcon;
@@ -19,16 +21,19 @@ interface StatCardProps {
 
 function StatCard({ icon: Icon, count, label, href, trend }: StatCardProps) {
 	const content = (
-		<div className="glass-card group flex flex-col gap-3 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+		<Card className="group flex flex-col gap-3 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
 			<div className="flex items-center justify-between">
 				<div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
 					<Icon className="h-5 w-5" aria-hidden="true" />
 				</div>
 				{trend !== undefined && (
-					<div className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-success text-xs">
+					<Badge
+						variant="success"
+						className="flex items-center gap-1 bg-success/10 text-success"
+					>
 						<TrendingUp className="h-3 w-3" aria-hidden="true" />
 						<span>+{trend}%</span>
-					</div>
+					</Badge>
 				)}
 			</div>
 			<div>
@@ -37,7 +42,7 @@ function StatCard({ icon: Icon, count, label, href, trend }: StatCardProps) {
 				</div>
 				<div className="mt-1 text-base-content/60 text-sm">{label}</div>
 			</div>
-		</div>
+		</Card>
 	);
 
 	if (href) {

@@ -27,6 +27,8 @@ import {
 	type WorkStat,
 	type WorkStatsResponse,
 } from "@/lib/public-api";
+import { Button } from "../ui/button";
+import { Card } from "../ui/card";
 import { WorkStatsSkeleton } from "./work-stats-skeleton";
 
 // SSR対応: @nivo/barを動的インポート
@@ -764,24 +766,24 @@ export function WorkStatsSection({
 	// エラー表示
 	if (error) {
 		return (
-			<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
+			<Card className="p-8 text-center">
 				<div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-error/10">
 					<BarChart3 className="size-8 text-error" />
 				</div>
 				<p className="text-error">{error}</p>
-			</div>
+			</Card>
 		);
 	}
 
 	// データなし
 	if (!chartData || chartData.data.length === 0) {
 		return (
-			<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
+			<Card className="p-8 text-center">
 				<div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-base-200">
 					<BarChart3 className="size-8 text-base-content/50" />
 				</div>
 				<p className="text-base-content/70">統計データがありません</p>
-			</div>
+			</Card>
 		);
 	}
 
@@ -794,18 +796,14 @@ export function WorkStatsSection({
 	return (
 		<div className="space-y-4">
 			{/* ヘッダー: タイトル + コントロール */}
-			<div className="space-y-6 rounded-lg border-2 border-base-content/20 bg-base-100 p-6 shadow-sm">
+			<Card className="space-y-6 border-2 border-base-content/20 p-6">
 				{/* タイトル行 */}
 				{selectedWorkId ? (
 					<div className="flex items-center gap-3">
-						<button
-							type="button"
-							className="btn btn-ghost btn-sm gap-1"
-							onClick={handleBack}
-						>
+						<Button variant="ghost" size="sm" onClick={handleBack}>
 							<ArrowLeft className="size-4" />
 							戻る
-						</button>
+						</Button>
 						<div>
 							<span className="font-medium text-primary">
 								{selectedWorkName}
@@ -817,10 +815,11 @@ export function WorkStatsSection({
 					<div className="mb-10 flex items-center justify-between">
 						<h3 className="font-bold text-base-content text-lg">原作/原曲</h3>
 						{/* モバイル: 並び替えボタンをタイトル行に配置 */}
-						<button
-							type="button"
-							className={`btn btn-sm gap-1 md:hidden ${sortOrder === "id" ? "btn-outline" : "btn-secondary"}`}
+						<Button
+							variant={sortOrder === "id" ? "outline" : "secondary"}
+							size="sm"
 							onClick={cycleSortOrder}
+							className="md:hidden"
 						>
 							{sortOrder === "id" && (
 								<>
@@ -840,16 +839,16 @@ export function WorkStatsSection({
 									トラック数 ↑
 								</>
 							)}
-						</button>
+						</Button>
 					</div>
 				)}
 
 				{/* コントロール行: 左=並び替え、中央=表示モード、右=向き - デスクトップのみ */}
 				<div className="hidden items-center justify-between md:flex">
 					{/* 左: 並び替えボタン */}
-					<button
-						type="button"
-						className={`btn btn-sm gap-1 ${sortOrder === "id" ? "btn-outline" : "btn-secondary"}`}
+					<Button
+						variant={sortOrder === "id" ? "outline" : "secondary"}
+						size="sm"
 						onClick={cycleSortOrder}
 					>
 						{sortOrder === "id" && (
@@ -870,26 +869,28 @@ export function WorkStatsSection({
 								トラック数 ↑
 							</>
 						)}
-					</button>
+					</Button>
 
 					{/* 中央: 表示モード切替 - デスクトップのみ、ドリルダウン時は非表示 */}
 					{!selectedWorkId ? (
 						<div className="hidden items-center gap-2 md:flex">
 							<div className="join">
-								<button
-									type="button"
-									className={`btn join-item btn-sm gap-1 ${isStacked ? "btn-primary" : "btn-ghost"}`}
+								<Button
+									variant={isStacked ? "primary" : "ghost"}
+									size="sm"
 									onClick={() => !isStacked && handleModeToggle()}
 									disabled={isUpdating}
+									className="join-item"
 								>
 									<Layers className="size-4" />
 									積み上げ
-								</button>
-								<button
-									type="button"
-									className={`btn join-item btn-sm gap-1 ${!isStacked ? "btn-primary" : "btn-ghost"}`}
+								</Button>
+								<Button
+									variant={!isStacked ? "primary" : "ghost"}
+									size="sm"
 									onClick={() => isStacked && handleModeToggle()}
 									disabled={isUpdating}
+									className="join-item"
 								>
 									{effectiveOrientation === "horizontal" ? (
 										<BarChartHorizontal className="size-4" />
@@ -897,7 +898,7 @@ export function WorkStatsSection({
 										<BarChart3 className="size-4" />
 									)}
 									単純
-								</button>
+								</Button>
 							</div>
 							{isUpdating && (
 								<Loader2 className="size-4 animate-spin text-primary" />
@@ -909,30 +910,28 @@ export function WorkStatsSection({
 
 					{/* 右: 向き切り替えボタン - デスクトップのみ */}
 					<div className="join hidden md:flex">
-						<button
-							type="button"
-							className={`btn btn-sm btn-square join-item ${
-								effectiveOrientation === "vertical"
-									? "btn-primary"
-									: "btn-ghost"
-							}`}
+						<Button
+							variant={
+								effectiveOrientation === "vertical" ? "primary" : "ghost"
+							}
+							size="icon"
 							onClick={() => handleOrientationChange("vertical")}
 							title="縦グラフ"
+							className="join-item"
 						>
 							<BarChart3 className="size-4" />
-						</button>
-						<button
-							type="button"
-							className={`btn btn-sm btn-square join-item ${
-								effectiveOrientation === "horizontal"
-									? "btn-primary"
-									: "btn-ghost"
-							}`}
+						</Button>
+						<Button
+							variant={
+								effectiveOrientation === "horizontal" ? "primary" : "ghost"
+							}
+							size="icon"
 							onClick={() => handleOrientationChange("horizontal")}
 							title="横グラフ"
+							className="join-item"
 						>
 							<BarChartHorizontal className="size-4" />
-						</button>
+						</Button>
 					</div>
 				</div>
 
@@ -1035,7 +1034,7 @@ export function WorkStatsSection({
 						/>
 					</Suspense>
 				</div>
-			</div>
+			</Card>
 		</div>
 	);
 }

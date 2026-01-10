@@ -1,5 +1,7 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface FilterSectionProps {
@@ -62,21 +64,22 @@ export function FilterSection({
 
 					{/* 選択数バッジ */}
 					{selectedCount > 0 && (
-						<span className="badge badge-primary badge-sm">
+						<Badge variant="primary" className="badge-sm">
 							{selectedCount}
-						</span>
+						</Badge>
 					)}
 				</div>
 
 				{/* クリアボタン */}
 				{selectedCount > 0 && onClear && (
-					<button
-						type="button"
+					<Button
+						variant="ghost"
+						size="xs"
 						onClick={handleClear}
-						className="rounded px-2 py-1 text-base-content/60 text-xs transition-colors hover:bg-base-300 hover:text-base-content"
+						className="text-base-content/60"
 					>
 						クリア
-					</button>
+					</Button>
 				)}
 			</button>
 

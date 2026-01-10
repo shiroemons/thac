@@ -1,4 +1,5 @@
 import { Database, Music, Search, Users } from "lucide-react";
+import { Card } from "../ui/card";
 
 const features = [
 	{
@@ -52,16 +53,16 @@ export function FeaturesSection() {
 
 				<div className="grid gap-8 md:grid-cols-2">
 					{features.map((feature) => (
-						<div
+						<Card
 							key={feature.title}
-							className="glass-card group rounded-2xl p-8 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+							className="group rounded-2xl p-8 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 						>
 							<div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
 								<feature.icon className="h-7 w-7" aria-hidden="true" />
 							</div>
 							<h3 className="mb-2 font-bold text-xl">{feature.title}</h3>
 							<p className="text-base-content/60">{feature.description}</p>
-						</div>
+						</Card>
 					))}
 				</div>
 			</div>
