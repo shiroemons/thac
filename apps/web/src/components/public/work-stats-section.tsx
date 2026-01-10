@@ -788,7 +788,7 @@ export function WorkStatsSection({
 	return (
 		<div className="space-y-4">
 			{/* ヘッダー: タイトル + コントロール */}
-			<div className="space-y-3 rounded-lg border-2 border-base-content/20 bg-base-100 p-4 shadow-sm">
+			<div className="space-y-6 rounded-lg border-2 border-base-content/20 bg-base-100 p-6 shadow-sm">
 				{/* タイトル行 */}
 				{selectedWorkId ? (
 					<div className="flex items-center gap-3">
@@ -808,7 +808,7 @@ export function WorkStatsSection({
 						</div>
 					</div>
 				) : (
-					<h3 className="font-bold text-base-content text-lg">原作/原曲</h3>
+					<h3 className="mb-10 font-bold text-base-content text-lg">原作/原曲</h3>
 				)}
 
 				{/* コントロール行: 左=並び替え、中央=表示モード、右=向き */}
