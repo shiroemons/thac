@@ -404,6 +404,8 @@ export function WorkStatsSection({
 
 	// 実際に使う向き（モバイルは常に横）
 	const effectiveOrientation = isMobile ? "horizontal" : orientation;
+	// 実際に使う表示モード（モバイルは常に単純）
+	const effectiveIsStacked = isMobile ? false : isStacked;
 
 	// sortOrder変更を処理する関数（localStorageへの保存を含む）
 	const handleSortOrderChange = useCallback((newOrder: SortOrder) => {
@@ -603,6 +605,13 @@ export function WorkStatsSection({
 		fetchWorksData,
 	]);
 
+	// モバイルになったら単純モードのデータを読み込む
+	useEffect(() => {
+		if (isMobile && !worksDataLoaded) {
+			fetchWorksData();
+		}
+	}, [isMobile, worksDataLoaded, fetchWorksData]);
+
 	// モード切替
 	const handleModeToggle = useCallback(() => {
 		setSelectedWorkId(null);
@@ -704,7 +713,7 @@ export function WorkStatsSection({
 		}
 
 		// 積み上げモード
-		if (isStacked && stackedData.length > 0) {
+		if (effectiveIsStacked && stackedData.length > 0) {
 			const { data, keys, colors } = transformStackedDataForNivo(
 				stackedData,
 				sortOrder,
@@ -721,7 +730,7 @@ export function WorkStatsSection({
 		}
 
 		// 単純モード
-		if (!isStacked && worksData.length > 0) {
+		if (!effectiveIsStacked && worksData.length > 0) {
 			const { data, keys } = transformSimpleDataForNivo(
 				worksData,
 				sortOrder,
@@ -738,7 +747,7 @@ export function WorkStatsSection({
 
 		return null;
 	}, [
-		isStacked,
+		effectiveIsStacked,
 		stackedData,
 		worksData,
 		songsData,
@@ -805,13 +814,38 @@ export function WorkStatsSection({
 						</div>
 					</div>
 				) : (
-					<h3 className="mb-10 font-bold text-base-content text-lg">
-						原作/原曲
-					</h3>
+					<div className="mb-10 flex items-center justify-between">
+						<h3 className="font-bold text-base-content text-lg">原作/原曲</h3>
+						{/* モバイル: 並び替えボタンをタイトル行に配置 */}
+						<button
+							type="button"
+							className={`btn btn-sm gap-1 md:hidden ${sortOrder === "id" ? "btn-outline" : "btn-secondary"}`}
+							onClick={cycleSortOrder}
+						>
+							{sortOrder === "id" && (
+								<>
+									<ArrowUpDown className="size-4" />
+									並び替え
+								</>
+							)}
+							{sortOrder === "count-desc" && (
+								<>
+									<SortDesc className="size-4" />
+									トラック数 ↓
+								</>
+							)}
+							{sortOrder === "count-asc" && (
+								<>
+									<SortAsc className="size-4" />
+									トラック数 ↑
+								</>
+							)}
+						</button>
+					</div>
 				)}
 
-				{/* コントロール行: 左=並び替え、中央=表示モード、右=向き */}
-				<div className="flex items-center justify-between">
+				{/* コントロール行: 左=並び替え、中央=表示モード、右=向き - デスクトップのみ */}
+				<div className="hidden items-center justify-between md:flex">
 					{/* 左: 並び替えボタン */}
 					<button
 						type="button"
@@ -838,9 +872,9 @@ export function WorkStatsSection({
 						)}
 					</button>
 
-					{/* 中央: 表示モード切替 - ドリルダウン時は非表示 */}
+					{/* 中央: 表示モード切替 - デスクトップのみ、ドリルダウン時は非表示 */}
 					{!selectedWorkId ? (
-						<div className="flex items-center gap-2">
+						<div className="hidden items-center gap-2 md:flex">
 							<div className="join">
 								<button
 									type="button"
@@ -870,7 +904,7 @@ export function WorkStatsSection({
 							)}
 						</div>
 					) : (
-						<div />
+						<div className="hidden md:block" />
 					)}
 
 					{/* 右: 向き切り替えボタン - デスクトップのみ */}
@@ -900,8 +934,6 @@ export function WorkStatsSection({
 							<BarChartHorizontal className="size-4" />
 						</button>
 					</div>
-					{/* モバイル用のスペーサー */}
-					<div className="md:hidden" />
 				</div>
 
 				{/* チャート */}
@@ -922,7 +954,7 @@ export function WorkStatsSection({
 							colors={chartData.colors}
 							margin={
 								effectiveOrientation === "horizontal"
-									? { top: 10, right: 80, bottom: 30, left: 150 }
+									? { top: 10, right: 10, bottom: 30, left: 90 }
 									: { top: 10, right: 20, bottom: 80, left: 60 }
 							}
 							padding={0.3}
@@ -972,7 +1004,7 @@ export function WorkStatsSection({
 								tickSize: 5,
 								tickPadding: 5,
 								tickRotation: 0,
-								truncateTickAt: effectiveOrientation === "horizontal" ? 12 : 0,
+								truncateTickAt: effectiveOrientation === "horizontal" ? 7 : 0,
 							}}
 							theme={nivoTheme}
 							onClick={(bar) => {
