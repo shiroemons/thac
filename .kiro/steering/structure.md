@@ -38,18 +38,21 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 **Pattern**:
 - レイアウト: `public-header.tsx`, `public-footer.tsx`, `public-breadcrumb.tsx`
 - 共通UI: `entity-card.tsx`, `empty-state.tsx`, `pagination.tsx`, `view-toggle.tsx`
-- 埋め込み: `embeds/youtube-embed.tsx`, `embeds/niconico-embed.tsx`
-- リンク: `external-link.tsx`, `external-link-modal.tsx`, `publication-links.tsx`
+- 詳細ページUI: `detail-tabs.tsx`（タブナビゲーション）, `stats-placeholder.tsx`（統計プレースホルダー）
+- 埋め込み: `embeds/youtube-embed.tsx`, `embeds/niconico-embed.tsx`, `embeds/soundcloud-embed.tsx`, `embeds/media-embed.tsx`
+- リンク: `external-link.tsx`, `external-link-modal.tsx`, `publication-links.tsx`, `related-links.tsx`
 **Example**: `hero-section.tsx`, `stats-cards.tsx`, `script-filter.tsx`
 
 ### Public Routes (`apps/web/src/routes/_public/`)
 **Location**: `/apps/web/src/routes/_public/`
 **Purpose**: 公開向けページ（認証不要）
 **Pattern**:
-- 一覧: `{entity}.tsx`（例: `artists.tsx`, `circles.tsx`）
-- 詳細: `{entity}_.$id.tsx`（例: `artists_.$id.tsx`, `releases_.$id.tsx`）
+- 一覧: `{entity}.tsx`（例: `artists.tsx`, `circles.tsx`, `events.tsx`）
+- 詳細: `{entity}_.$id.tsx`（例: `artists_.$id.tsx`, `releases_.$id.tsx`, `tracks_.$id.tsx`）
+- 公式データ: `official-works.tsx`, `official-works_.$id.tsx`, `original-songs.tsx`, `original-songs_.$id.tsx`
 - 静的: `about.tsx`, `privacy.tsx`, `search.tsx`, `stats.tsx`
 **Layout**: `_public.tsx`（PublicHeader + PublicFooter + ExternalLinkProvider）
+**DetailPagePattern**: 詳細ページはタブナビゲーション（`DetailTabs`）を使用し、URLパラメータ（`?tab=`）でタブ状態を管理
 
 ### Database Schema (`packages/db/src/schema/`)
 **Location**: `/packages/db/src/schema/`
@@ -101,7 +104,11 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 **Location**: `/apps/server/src/routes/`
 **Purpose**: Honoルート定義
 **Pattern**: 機能別にディレクトリを分割、`index.ts`でルートをエクスポート
-**Example**: `routes/admin/`（管理API）、`routes/admin/export/`（データエクスポートAPI）
+**Structure**:
+- `routes/admin/`: 管理API（認証必須）
+- `routes/admin/export/`: データエクスポートAPI
+- `routes/public/`: 公開API（認証不要）
+**Example**: `routes/public/artists.ts`, `routes/public/circles.ts`, `routes/public/events.ts`, `routes/public/releases.ts`
 
 ### Server Constants (`apps/server/src/constants/`)
 **Location**: `/apps/server/src/constants/`
