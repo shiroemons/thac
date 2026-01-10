@@ -88,10 +88,12 @@ export {
 	eq,
 	gt,
 	inArray,
+	isNotNull,
 	isNull,
 	like,
 	lt,
 	max,
+	ne,
 	or,
 	sql,
 } from "drizzle-orm";

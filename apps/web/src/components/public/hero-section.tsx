@@ -1,15 +1,19 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, Disc3, Music, Search, Sparkles, Users } from "lucide-react";
+import { Calendar, Disc3, Search, Sparkles, Users } from "lucide-react";
+import type { PublicStats } from "@/lib/public-api";
 import { Badge } from "../ui/badge";
 
-// Mock data for demonstration
-const mockStats = {
-	originalSongs: 1234,
-	events: 567,
-	circles: 456,
-	artists: 890,
-	tracks: 12345,
+// フォールバック用のデフォルト値
+const defaultStats: PublicStats = {
+	events: 0,
+	circles: 0,
+	artists: 0,
+	tracks: 0,
 };
+
+interface HeroSectionProps {
+	stats: PublicStats | null;
+}
 
 interface StatLinkProps {
 	href: string;
@@ -35,7 +39,9 @@ function StatLink({ href, count, label, icon }: StatLinkProps) {
 	);
 }
 
-export function HeroSection() {
+export function HeroSection({ stats }: HeroSectionProps) {
+	const displayStats = stats ?? defaultStats;
+
 	return (
 		<section className="relative flex h-[calc(100vh-4rem)] flex-col justify-center overflow-hidden px-4 py-12">
 			{/* Gradient mesh background */}
@@ -96,20 +102,8 @@ export function HeroSection() {
 				{/* Stats with links */}
 				<div className="mt-12 flex flex-wrap items-center justify-center gap-4 text-base-content/50 text-sm md:gap-6">
 					<StatLink
-						href="/original-songs"
-						count={mockStats.originalSongs}
-						label="原曲"
-						icon={
-							<Music
-								className="h-4 w-4 text-primary group-hover:text-primary"
-								aria-hidden="true"
-							/>
-						}
-					/>
-					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
-					<StatLink
 						href="/events"
-						count={mockStats.events}
+						count={displayStats.events}
 						label="イベント"
 						icon={
 							<Calendar
@@ -121,7 +115,7 @@ export function HeroSection() {
 					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
 					<StatLink
 						href="/circles"
-						count={mockStats.circles}
+						count={displayStats.circles}
 						label="サークル"
 						icon={
 							<Users
@@ -133,7 +127,7 @@ export function HeroSection() {
 					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
 					<StatLink
 						href="/artists"
-						count={mockStats.artists}
+						count={displayStats.artists}
 						label="アーティスト"
 						icon={
 							<Users
@@ -145,7 +139,7 @@ export function HeroSection() {
 					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
 					<StatLink
 						href="/stats"
-						count={mockStats.tracks}
+						count={displayStats.tracks}
 						label="トラック"
 						icon={
 							<Disc3

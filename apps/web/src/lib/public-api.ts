@@ -33,6 +33,14 @@ async function publicFetch<T>(endpoint: string): Promise<T> {
 // 型定義
 // =============================================================================
 
+/** 公開統計情報 */
+export interface PublicStats {
+	events: number;
+	circles: number;
+	artists: number;
+	tracks: number;
+}
+
 /** カテゴリ */
 export interface PublicCategory {
 	code: string;
@@ -505,6 +513,9 @@ export interface PublicTrackDetail {
 // =============================================================================
 
 export const publicApi = {
+	/** サイト全体の統計情報を取得 */
+	stats: () => publicFetch<PublicStats>("/api/public/stats"),
+
 	/** カテゴリマスタ一覧を取得 */
 	categories: () =>
 		publicFetch<{ data: PublicCategory[] }>(
