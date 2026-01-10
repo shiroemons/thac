@@ -20,6 +20,9 @@ import {
 	FilterChips,
 	useFilterChips,
 } from "@/components/search";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { createPageHead } from "@/lib/head";
 
 type SearchCategory = "all" | "artist" | "circle" | "track";
@@ -369,7 +372,7 @@ function SearchPage() {
 			<PublicBreadcrumb items={[{ label: "検索" }]} />
 
 			{/* Hero search section */}
-			<div className="glass-card relative overflow-hidden rounded-2xl p-6 md:p-8">
+			<Card className="relative overflow-hidden rounded-2xl p-6 md:p-8">
 				<div className="gradient-mesh absolute inset-0" />
 				<div className="relative">
 					<div className="mb-6 text-center">
@@ -408,24 +411,21 @@ function SearchPage() {
 							</div>
 
 							{/* Advanced search button */}
-							<button
+							<Button
 								type="button"
+								variant={activeFilterCount > 0 ? "primary" : "outline"}
 								onClick={openAdvancedSearch}
-								className={`flex items-center gap-2 rounded-xl border-2 px-4 py-2 font-medium transition-all ${
-									activeFilterCount > 0
-										? "border-primary bg-primary text-primary-content"
-										: "border-base-300 bg-base-100 text-base-content hover:border-primary hover:bg-primary/10"
-								}`}
+								className="gap-2 rounded-xl px-4 py-2"
 								aria-label="詳細検索を開く"
 							>
 								<SlidersHorizontal className="h-5 w-5" />
 								<span className="hidden sm:inline">詳細検索</span>
 								{activeFilterCount > 0 && (
-									<span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-content text-primary text-xs">
+									<Badge className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-content text-primary">
 										{activeFilterCount}
-									</span>
+									</Badge>
 								)}
-							</button>
+							</Button>
 						</div>
 					</form>
 
@@ -462,7 +462,7 @@ function SearchPage() {
 						</div>
 					)}
 				</div>
-			</div>
+			</Card>
 
 			{/* Advanced search modal */}
 			<AdvancedSearchModal
@@ -486,7 +486,7 @@ function SearchPage() {
 								className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
 									isActive
 										? "bg-primary text-primary-content shadow-md"
-										: "glass-card hover:ring-2 hover:ring-primary/20"
+										: "bg-base-100 shadow-sm hover:ring-2 hover:ring-primary/20"
 								}`}
 								aria-pressed={isActive}
 							>
@@ -521,36 +521,37 @@ function SearchPage() {
 								<Link
 									key={`${result.type}-${result.id}`}
 									to={getResultHref(result)}
-									className="glass-card group flex items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 								>
-									<div
-										className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${getResultIconColor(result.type)}`}
-									>
-										{getResultIcon(result.type)}
-									</div>
-									<div className="min-w-0 flex-1">
-										<div className="mb-1 flex items-center gap-2">
-											<span
-												className={`rounded-full bg-base-content/5 px-2 py-0.5 text-xs ${categoryConfig[result.type].color}`}
-											>
-												{categoryConfig[result.type].label}
-											</span>
+									<Card className="group flex items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+										<div
+											className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${getResultIconColor(result.type)}`}
+										>
+											{getResultIcon(result.type)}
 										</div>
-										<h3 className="font-semibold transition-colors group-hover:text-primary">
-											{highlightMatch(result.title, query)}
-										</h3>
-										<p className="mt-0.5 text-base-content/60 text-sm">
-											{highlightMatch(result.subtitle, query)}
-										</p>
-									</div>
-									<div className="hidden text-base-content/30 transition-all group-hover:translate-x-1 group-hover:text-primary sm:block">
-										→
-									</div>
+										<div className="min-w-0 flex-1">
+											<div className="mb-1 flex items-center gap-2">
+												<span
+													className={`rounded-full bg-base-content/5 px-2 py-0.5 text-xs ${categoryConfig[result.type].color}`}
+												>
+													{categoryConfig[result.type].label}
+												</span>
+											</div>
+											<h3 className="font-semibold transition-colors group-hover:text-primary">
+												{highlightMatch(result.title, query)}
+											</h3>
+											<p className="mt-0.5 text-base-content/60 text-sm">
+												{highlightMatch(result.subtitle, query)}
+											</p>
+										</div>
+										<div className="hidden text-base-content/30 transition-all group-hover:translate-x-1 group-hover:text-primary sm:block">
+											→
+										</div>
+									</Card>
 								</Link>
 							))}
 						</div>
 					) : (
-						<div className="glass-card rounded-2xl p-12 text-center">
+						<Card className="rounded-2xl p-12 text-center">
 							<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-base-content/5">
 								<Search
 									className="h-8 w-8 text-base-content/30"
@@ -563,14 +564,14 @@ function SearchPage() {
 							<p className="mt-2 text-base-content/50 text-sm">
 								別のキーワードで検索してみてください
 							</p>
-						</div>
+						</Card>
 					)}
 				</div>
 			) : (
 				/* Search history */
 				<div className="space-y-6">
 					{searchHistory.length > 0 && (
-						<div className="glass-card rounded-2xl p-6">
+						<Card className="rounded-2xl p-6">
 							<h2 className="mb-4 flex items-center gap-2 font-semibold">
 								<Clock className="h-4 w-4 text-primary" aria-hidden="true" />
 								最近の検索
@@ -591,11 +592,11 @@ function SearchPage() {
 									</button>
 								))}
 							</div>
-						</div>
+						</Card>
 					)}
 
 					{/* Browse categories */}
-					<div className="glass-card rounded-2xl p-6">
+					<Card className="rounded-2xl p-6">
 						<h2 className="mb-4 flex items-center gap-2 font-semibold">
 							<Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
 							カテゴリから探す
@@ -638,7 +639,7 @@ function SearchPage() {
 								</div>
 							</Link>
 						</div>
-					</div>
+					</Card>
 				</div>
 			)}
 		</div>

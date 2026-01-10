@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Calendar, Disc3, Music, Search, Sparkles, Users } from "lucide-react";
+import { Badge } from "../ui/badge";
 
 // Mock data for demonstration
 const mockStats = {
@@ -49,10 +50,13 @@ export function HeroSection() {
 
 			<div className="relative mx-auto max-w-4xl text-center">
 				{/* Badge */}
-				<div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-primary text-sm">
+				<Badge
+					variant="primary"
+					className="mb-6 inline-flex items-center gap-2 bg-primary/10 px-4 py-2 text-primary"
+				>
 					<Sparkles className="h-4 w-4" aria-hidden="true" />
 					<span>東方アレンジ楽曲データベース</span>
-				</div>
+				</Badge>
 
 				{/* Main title with gradient */}
 				<h1 className="mb-4 font-bold text-5xl tracking-tight md:text-6xl lg:text-7xl">

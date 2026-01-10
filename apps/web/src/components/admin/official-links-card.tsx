@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
 	Table,
 	TableBody,
@@ -169,7 +170,7 @@ export function OfficialLinksCard({
 
 	if (isLoading) {
 		return (
-			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<Card className="card-bordered">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h3 className="flex items-center gap-2 font-semibold text-lg">
 						<ExternalLink className="h-5 w-5" />
@@ -182,13 +183,13 @@ export function OfficialLinksCard({
 						<div className="h-8 rounded bg-base-300" />
 					</div>
 				</div>
-			</div>
+			</Card>
 		);
 	}
 
 	return (
 		<>
-			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<Card className="card-bordered">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h3 className="flex items-center gap-2 font-semibold text-lg">
 						<ExternalLink className="h-5 w-5" />
@@ -220,18 +221,18 @@ export function OfficialLinksCard({
 									<TableRow key={link.id}>
 										<TableCell>
 											<div className="flex gap-1">
-												<button
-													type="button"
-													className="btn btn-xs btn-ghost"
+												<Button
+													variant="ghost"
+													size="xs"
 													disabled={index === 0 || reorderMutation.isPending}
 													onClick={() => handleMoveUp(index)}
 													title="上へ移動"
 												>
 													<ArrowUp className="h-3 w-3" />
-												</button>
-												<button
-													type="button"
-													className="btn btn-xs btn-ghost"
+												</Button>
+												<Button
+													variant="ghost"
+													size="xs"
 													disabled={
 														index === sortedLinks.length - 1 ||
 														reorderMutation.isPending
@@ -240,7 +241,7 @@ export function OfficialLinksCard({
 													title="下へ移動"
 												>
 													<ArrowDown className="h-3 w-3" />
-												</button>
+												</Button>
 											</div>
 										</TableCell>
 										<TableCell className="font-medium">
@@ -261,23 +262,24 @@ export function OfficialLinksCard({
 										</TableCell>
 										<TableCell>
 											<div className="flex gap-1">
-												<button
-													type="button"
-													className="btn btn-xs btn-ghost"
+												<Button
+													variant="ghost"
+													size="xs"
 													onClick={() => openEditDialog(link)}
 													title="編集"
 												>
 													<Pencil className="h-3 w-3" />
-												</button>
-												<button
-													type="button"
-													className="btn btn-xs btn-ghost text-error"
+												</Button>
+												<Button
+													variant="ghost"
+													size="xs"
 													onClick={() => handleDelete(link.id)}
 													disabled={isDeleting === link.id}
 													title="削除"
+													className="text-error"
 												>
 													<Trash2 className="h-3 w-3" />
-												</button>
+												</Button>
 											</div>
 										</TableCell>
 									</TableRow>
@@ -286,7 +288,7 @@ export function OfficialLinksCard({
 						</Table>
 					</div>
 				)}
-			</div>
+			</Card>
 
 			<OfficialLinkDialog
 				open={dialogOpen}

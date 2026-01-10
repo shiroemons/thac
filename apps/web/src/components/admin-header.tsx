@@ -36,16 +36,16 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
 	};
 
 	return (
-		<div className="bg-slate-800">
+		<div className="bg-neutral text-neutral-content">
 			<div className="flex flex-row items-center justify-between px-4 py-2">
 				<div className="flex items-center gap-6">
-					<span className="font-bold text-lg text-white">管理者</span>
+					<span className="font-bold text-lg">管理者</span>
 					<nav className="flex gap-4">
 						{navLinks.map(({ to, label }) => (
 							<Link
 								key={to}
 								to={to}
-								className="text-slate-300 hover:text-white [&.active]:font-semibold [&.active]:text-white"
+								className="text-neutral-content/70 hover:text-neutral-content [&.active]:font-semibold [&.active]:text-neutral-content"
 							>
 								{label}
 							</Link>
@@ -53,7 +53,9 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
 					</nav>
 				</div>
 				<div className="flex items-center gap-4">
-					<span className="text-slate-300">{user?.name || user?.email}</span>
+					<span className="text-neutral-content/70">
+						{user?.name || user?.email}
+					</span>
 					<Button variant="outline" size="sm" onClick={handleLogout}>
 						ログアウト
 					</Button>

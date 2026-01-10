@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { AlertCircle, Inbox, Search, SearchX } from "lucide-react";
+import { Card } from "../ui/card";
 
 export type EmptyStateType = "filter" | "empty" | "error" | "search";
 
@@ -50,13 +51,13 @@ export function EmptyState({
 	const displayDescription = description ?? config.description;
 
 	return (
-		<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
+		<Card className="p-8 text-center">
 			<Icon className="mx-auto size-12 text-base-content/30" />
 			<h3 className="mt-4 font-medium text-base-content/70 text-lg">
 				{displayTitle}
 			</h3>
 			<p className="mt-2 text-base-content/50 text-sm">{displayDescription}</p>
 			{action && <div className="mt-4">{action}</div>}
-		</div>
+		</Card>
 	);
 }
