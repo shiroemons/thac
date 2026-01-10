@@ -8,6 +8,7 @@ import {
 	PublicBreadcrumb,
 	TabIcons,
 	WorkStatsSection,
+	WorkStatsSkeleton,
 } from "@/components/public";
 import {
 	type ArtistDetailTab,
@@ -64,6 +65,20 @@ function ArtistDetailPage() {
 	const { artist } = Route.useLoaderData();
 	const { tab: activeTab = "tracks" } = Route.useSearch();
 	const navigate = useNavigate();
+
+	// コンテンツ表示用のタブ状態（アニメーション完了後に更新）
+	const [contentTab, setContentTab] = useState(activeTab);
+	const isTabTransitioning = activeTab !== contentTab;
+
+	// タブ変更時、1フレーム遅延してコンテンツを更新
+	useEffect(() => {
+		if (activeTab !== contentTab) {
+			const id = requestAnimationFrame(() => {
+				setContentTab(activeTab);
+			});
+			return () => cancelAnimationFrame(id);
+		}
+	}, [activeTab, contentTab]);
 
 	// トラック一覧の状態
 	const [tracks, setTracks] = useState<PublicArtistTrack[]>([]);
@@ -256,7 +271,7 @@ function ArtistDetailPage() {
 					activeTab={activeTab}
 					onTabChange={handleTabChange}
 				/>
-				{activeTab === "tracks" && (
+				{contentTab === "tracks" && (
 					<div className="flex flex-wrap gap-2">
 						{/* 役割フィルター */}
 						<select
@@ -276,7 +291,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 参加トラック */}
-			{activeTab === "tracks" && (
+			{contentTab === "tracks" && (
 				<div className="space-y-4">
 					{/* トラック一覧 */}
 					{tracksLoading ? (
@@ -377,9 +392,12 @@ function ArtistDetailPage() {
 			)}
 
 			{/* 統計 */}
-			{activeTab === "stats" && (
-				<WorkStatsSection entityType="artist" entityId={id} />
-			)}
+			{contentTab === "stats" &&
+				(isTabTransitioning ? (
+					<WorkStatsSkeleton />
+				) : (
+					<WorkStatsSection entityType="artist" entityId={id} />
+				))}
 		</div>
 	);
 }

@@ -10,6 +10,7 @@ import {
 	type ViewMode,
 	ViewToggle,
 	WorkStatsSection,
+	WorkStatsSkeleton,
 } from "@/components/public";
 import {
 	type CircleDetailTab,
@@ -93,6 +94,20 @@ function CircleDetailPage() {
 	const { tab: activeTab = "releases" } = Route.useSearch();
 	const navigate = useNavigate();
 	const [viewMode, setViewModeState] = useState<ViewMode>("list");
+
+	// コンテンツ表示用のタブ状態（アニメーション完了後に更新）
+	const [contentTab, setContentTab] = useState(activeTab);
+	const isTabTransitioning = activeTab !== contentTab;
+
+	// タブ変更時、1フレーム遅延してコンテンツを更新
+	useEffect(() => {
+		if (activeTab !== contentTab) {
+			const id = requestAnimationFrame(() => {
+				setContentTab(activeTab);
+			});
+			return () => cancelAnimationFrame(id);
+		}
+	}, [activeTab, contentTab]);
 
 	// リリース一覧の状態
 	const [releases, setReleases] = useState<PublicCircleRelease[]>([]);
@@ -293,13 +308,13 @@ function CircleDetailPage() {
 					activeTab={activeTab}
 					onTabChange={handleTabChange}
 				/>
-				{activeTab === "releases" && (
+				{contentTab === "releases" && (
 					<ViewToggle value={viewMode} onChange={setViewMode} />
 				)}
 			</div>
 
 			{/* リリース一覧 */}
-			{activeTab === "releases" && (
+			{contentTab === "releases" && (
 				<>
 					{releasesLoading ? (
 						<div className="flex items-center justify-center py-12">
@@ -449,7 +464,7 @@ function CircleDetailPage() {
 			)}
 
 			{/* トラック一覧 */}
-			{activeTab === "tracks" && (
+			{contentTab === "tracks" && (
 				<>
 					{tracksLoading ? (
 						<div className="flex items-center justify-center py-12">
@@ -563,9 +578,12 @@ function CircleDetailPage() {
 			)}
 
 			{/* 統計 */}
-			{activeTab === "stats" && (
-				<WorkStatsSection entityType="circle" entityId={id} />
-			)}
+			{contentTab === "stats" &&
+				(isTabTransitioning ? (
+					<WorkStatsSkeleton />
+				) : (
+					<WorkStatsSection entityType="circle" entityId={id} />
+				))}
 		</div>
 	);
 }

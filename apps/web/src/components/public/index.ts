@@ -37,3 +37,4 @@ export { StatsCards } from "./stats-cards";
 export { StatsPlaceholder } from "./stats-placeholder";
 export { type ViewMode, ViewToggle } from "./view-toggle";
 export { type StatsEntityType, WorkStatsSection } from "./work-stats-section";
+export { WorkStatsSkeleton } from "./work-stats-skeleton";
