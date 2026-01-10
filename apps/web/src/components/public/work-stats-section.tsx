@@ -5,6 +5,7 @@ import {
 	ArrowLeft,
 	ArrowUpDown,
 	BarChart3,
+	BarChartHorizontal,
 	Layers,
 	Loader2,
 	SortAsc,
@@ -66,56 +67,113 @@ function getColorForItem(id: string): string {
 function TotalsLayer({
 	bars,
 	xScale,
+	yScale,
 	innerWidth,
 	labelTextColor,
-}: BarCustomLayerProps<BarDatum> & { labelTextColor?: string }) {
+	orientation = "horizontal",
+}: BarCustomLayerProps<BarDatum> & {
+	labelTextColor?: string;
+	orientation?: ChartOrientation;
+}) {
 	// indexValue（workName）ごとにバーをグループ化
 	const barsByIndex = new Map<
 		string | number,
-		{ maxX: number; y: number; height: number; total: number }
+		{
+			maxX: number;
+			maxY: number;
+			minY: number;
+			x: number;
+			y: number;
+			width: number;
+			height: number;
+			total: number;
+		}
 	>();
 
 	for (const bar of bars) {
 		const indexValue = bar.data.indexValue;
 		const rightEdge = bar.x + bar.width;
+		const topEdge = bar.y;
 		const total = (bar.data.data.totalTrackCount as number) || 0;
 
 		const existing = barsByIndex.get(indexValue);
-		if (!existing || rightEdge > existing.maxX) {
-			barsByIndex.set(indexValue, {
-				maxX: rightEdge,
-				y: bar.y,
-				height: bar.height,
-				total,
-			});
+		if (orientation === "horizontal") {
+			if (!existing || rightEdge > existing.maxX) {
+				barsByIndex.set(indexValue, {
+					maxX: rightEdge,
+					maxY: 0,
+					minY: bar.y,
+					x: bar.x,
+					y: bar.y,
+					width: bar.width,
+					height: bar.height,
+					total,
+				});
+			}
+		} else {
+			// 縦グラフの場合、最も上（Y座標が小さい）のバーを追跡
+			if (!existing || topEdge < existing.minY) {
+				barsByIndex.set(indexValue, {
+					maxX: rightEdge,
+					maxY: bar.y + bar.height,
+					minY: topEdge,
+					x: bar.x,
+					y: bar.y,
+					width: bar.width,
+					height: bar.height,
+					total,
+				});
+			}
 		}
 	}
 
 	return (
 		<g>
 			{Array.from(barsByIndex.entries()).map(
-				([indexValue, { maxX, y, height, total }]) => {
-					// 右端がチャート領域外に出ないよう調整
-					const textX = Math.min(maxX + 8, innerWidth - 40);
-					// xScaleから0の位置を取得（バーの開始位置）
-					const zeroX = xScale(0);
-					// バーの長さが0の場合は0の位置から表示
-					const displayX = maxX <= zeroX ? zeroX + 8 : textX;
+				([indexValue, { maxX, minY, x, y, width, height, total }]) => {
+					if (orientation === "horizontal") {
+						// 右端がチャート領域外に出ないよう調整
+						const textX = Math.min(maxX + 8, innerWidth - 40);
+						// xScaleから0の位置を取得（バーの開始位置）
+						const zeroX = xScale(0);
+						// バーの長さが0の場合は0の位置から表示
+						const displayX = maxX <= zeroX ? zeroX + 8 : textX;
+
+						return (
+							<text
+								key={String(indexValue)}
+								x={displayX}
+								y={y + height / 2}
+								textAnchor="start"
+								dominantBaseline="central"
+								style={{
+									fontSize: 12,
+									fontWeight: 500,
+									fill: labelTextColor || "#374151",
+								}}
+							>
+								計 {total}
+							</text>
+						);
+					}
+					// 縦グラフの場合、バーの上に表示
+					const zeroY = yScale(0);
+					const displayY = minY >= zeroY ? zeroY - 8 : minY - 8;
 
 					return (
 						<text
 							key={String(indexValue)}
-							x={displayX}
-							y={y + height / 2}
-							textAnchor="start"
-							dominantBaseline="central"
+							x={x + width / 2}
+							y={displayY}
+							textAnchor="middle"
+							dominantBaseline="auto"
 							style={{
-								fontSize: 12,
+								fontSize: 10,
 								fontWeight: 500,
 								fill: labelTextColor || "#374151",
 							}}
 						>
-							計 {total}
+							{total}
 						</text>
 					);
 				},
@@ -147,33 +205,65 @@ function useIsDarkMode(): boolean {
 	return isDark;
 }
 
+// モバイル検出フック
+function useIsMobile(): boolean {
+	const [isMobile, setIsMobile] = useState(false);
+
+	useEffect(() => {
+		const checkMobile = () => setIsMobile(window.innerWidth < 768);
+		checkMobile();
+		window.addEventListener("resize", checkMobile);
+		return () => window.removeEventListener("resize", checkMobile);
+	}, []);
+
+	return isMobile;
+}
+
 type SortOrder = "count-desc" | "count-asc" | "id";
+type ChartOrientation = "horizontal" | "vertical";
 
 const SORT_ORDER_STORAGE_KEY = "work-stats-sort-order";
+const ORIENTATION_STORAGE_KEY = "work-stats-chart-orientation";
 
 // Nivo用データ形式に変換（積み上げモード）
 function transformStackedDataForNivo(
 	stackedData: StackedWorkStat[],
 	sortOrder: SortOrder,
+	orientation: ChartOrientation,
 ): { data: BarDatum[]; keys: string[]; colors: Record<string, string> } {
 	if (stackedData.length === 0) {
 		return { data: [], keys: [], colors: {} };
 	}
 
-	// ソート（横棒グラフは配列の最初が下に表示されるため、視覚的な順序を逆にする）
+	// ソート
+	// 横グラフ: 配列の最初が下に表示されるため、視覚的な順序を逆にする
+	// 縦グラフ: 配列の最初が左に表示されるため、通常の順序
 	let sorted: StackedWorkStat[];
-	if (sortOrder === "id") {
-		sorted = [...stackedData].sort((a, b) => b.id.localeCompare(a.id));
-	} else if (sortOrder === "count-asc") {
-		// 視覚的な昇順（小さい値が上）→ 配列は降順
-		sorted = [...stackedData].sort(
-			(a, b) => b.totalTrackCount - a.totalTrackCount,
-		);
+	if (orientation === "horizontal") {
+		if (sortOrder === "id") {
+			sorted = [...stackedData].sort((a, b) => b.id.localeCompare(a.id));
+		} else if (sortOrder === "count-asc") {
+			sorted = [...stackedData].sort(
+				(a, b) => b.totalTrackCount - a.totalTrackCount,
+			);
+		} else {
+			sorted = [...stackedData].sort(
+				(a, b) => a.totalTrackCount - b.totalTrackCount,
+			);
+		}
 	} else {
-		// count-desc（デフォルト）視覚的な降順（大きい値が上）→ 配列は昇順
-		sorted = [...stackedData].sort(
-			(a, b) => a.totalTrackCount - b.totalTrackCount,
-		);
+		// 縦グラフ: 通常の順序
+		if (sortOrder === "id") {
+			sorted = [...stackedData].sort((a, b) => a.id.localeCompare(b.id));
+		} else if (sortOrder === "count-asc") {
+			sorted = [...stackedData].sort(
+				(a, b) => a.totalTrackCount - b.totalTrackCount,
+			);
+		} else {
+			sorted = [...stackedData].sort(
+				(a, b) => b.totalTrackCount - a.totalTrackCount,
+			);
+		}
 	}
 
 	// 各ワーク内の曲をID順にソート
@@ -221,21 +311,33 @@ function transformStackedDataForNivo(
 function transformSimpleDataForNivo(
 	data: WorkStat[],
 	sortOrder: SortOrder,
+	orientation: ChartOrientation,
 ): { data: BarDatum[]; keys: string[] } {
 	if (data.length === 0) {
 		return { data: [], keys: [] };
 	}
 
-	// 横棒グラフは配列の最初が下に表示されるため、視覚的な順序を逆にする
+	// ソート
+	// 横グラフ: 配列の最初が下に表示されるため、視覚的な順序を逆にする
+	// 縦グラフ: 配列の最初が左に表示されるため、通常の順序
 	let sorted: WorkStat[];
-	if (sortOrder === "id") {
-		sorted = [...data].sort((a, b) => b.id.localeCompare(a.id));
-	} else if (sortOrder === "count-asc") {
-		// 視覚的な昇順（小さい値が上）→ 配列は降順
-		sorted = [...data].sort((a, b) => b.trackCount - a.trackCount);
+	if (orientation === "horizontal") {
+		if (sortOrder === "id") {
+			sorted = [...data].sort((a, b) => b.id.localeCompare(a.id));
+		} else if (sortOrder === "count-asc") {
+			sorted = [...data].sort((a, b) => b.trackCount - a.trackCount);
+		} else {
+			sorted = [...data].sort((a, b) => a.trackCount - b.trackCount);
+		}
 	} else {
-		// count-desc（デフォルト）視覚的な降順（大きい値が上）→ 配列は昇順
-		sorted = [...data].sort((a, b) => a.trackCount - b.trackCount);
+		// 縦グラフ: 通常の順序
+		if (sortOrder === "id") {
+			sorted = [...data].sort((a, b) => a.id.localeCompare(b.id));
+		} else if (sortOrder === "count-asc") {
+			sorted = [...data].sort((a, b) => a.trackCount - b.trackCount);
+		} else {
+			sorted = [...data].sort((a, b) => b.trackCount - a.trackCount);
+		}
 	}
 
 	const nivoData: BarDatum[] = sorted.map((w) => ({
@@ -257,6 +359,7 @@ export function WorkStatsSection({
 	entityId,
 }: WorkStatsSectionProps) {
 	const isDarkMode = useIsDarkMode();
+	const isMobile = useIsMobile();
 
 	// 初回読み込み用（フルスクリーンローディング）
 	const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -264,6 +367,8 @@ export function WorkStatsSection({
 	const [isUpdating, setIsUpdating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [isStacked, setIsStacked] = useState(true);
+	const [orientation, setOrientation] =
+		useState<ChartOrientation>("horizontal");
 
 	// 両モードのデータをキャッシュ（切替時に再取得しない）
 	const [stackedData, setStackedData] = useState<StackedWorkStat[]>([]);
@@ -288,6 +393,17 @@ export function WorkStatsSection({
 		}
 	}, []);
 
+	// 向き設定をlocalStorageから読み込み
+	useEffect(() => {
+		const saved = localStorage.getItem(ORIENTATION_STORAGE_KEY);
+		if (saved === "horizontal" || saved === "vertical") {
+			setOrientation(saved);
+		}
+	}, []);
+
+	// 実際に使う向き（モバイルは常に横）
+	const effectiveOrientation = isMobile ? "horizontal" : orientation;
+
 	// sortOrder変更を処理する関数（localStorageへの保存を含む）
 	const handleSortOrderChange = useCallback((newOrder: SortOrder) => {
 		setSortOrder(newOrder);
@@ -304,6 +420,15 @@ export function WorkStatsSection({
 					: "id";
 		handleSortOrderChange(nextOrder);
 	}, [sortOrder, handleSortOrderChange]);
+
+	// 向き変更
+	const handleOrientationChange = useCallback(
+		(newOrientation: ChartOrientation) => {
+			setOrientation(newOrientation);
+			localStorage.setItem(ORIENTATION_STORAGE_KEY, newOrientation);
+		},
+		[],
+	);
 
 	// 通信中フラグ（重複リクエスト防止用）
 	const [isFetchingStacked, setIsFetchingStacked] = useState(false);
@@ -542,16 +667,27 @@ export function WorkStatsSection({
 	const chartData = useMemo(() => {
 		// ドリルダウン表示中
 		if (selectedWorkId && songsData.length > 0) {
-			// 横棒グラフは配列の最初が下に表示されるため、視覚的な順序を逆にする
+			// ソート
+			// 横グラフ: 配列の最初が下に表示されるため、視覚的な順序を逆にする
+			// 縦グラフ: 配列の最初が左に表示されるため、通常の順序
 			let sorted: typeof songsData;
-			if (sortOrder === "id") {
-				sorted = [...songsData].sort((a, b) => b.id.localeCompare(a.id));
-			} else if (sortOrder === "count-asc") {
-				// 視覚的な昇順（小さい値が上）→ 配列は降順
-				sorted = [...songsData].sort((a, b) => b.trackCount - a.trackCount);
+			if (effectiveOrientation === "horizontal") {
+				if (sortOrder === "id") {
+					sorted = [...songsData].sort((a, b) => b.id.localeCompare(a.id));
+				} else if (sortOrder === "count-asc") {
+					sorted = [...songsData].sort((a, b) => b.trackCount - a.trackCount);
+				} else {
+					sorted = [...songsData].sort((a, b) => a.trackCount - b.trackCount);
+				}
 			} else {
-				// count-desc（デフォルト）視覚的な降順（大きい値が上）→ 配列は昇順
-				sorted = [...songsData].sort((a, b) => a.trackCount - b.trackCount);
+				// 縦グラフ: 通常の順序
+				if (sortOrder === "id") {
+					sorted = [...songsData].sort((a, b) => a.id.localeCompare(b.id));
+				} else if (sortOrder === "count-asc") {
+					sorted = [...songsData].sort((a, b) => a.trackCount - b.trackCount);
+				} else {
+					sorted = [...songsData].sort((a, b) => b.trackCount - a.trackCount);
+				}
 			}
 			return {
 				data: sorted.map((s) => ({
@@ -571,6 +707,7 @@ export function WorkStatsSection({
 			const { data, keys, colors } = transformStackedDataForNivo(
 				stackedData,
 				sortOrder,
+				effectiveOrientation,
 			);
 			return {
 				data,
@@ -584,7 +721,11 @@ export function WorkStatsSection({
 
 		// 単純モード
 		if (!isStacked && worksData.length > 0) {
-			const { data, keys } = transformSimpleDataForNivo(worksData, sortOrder);
+			const { data, keys } = transformSimpleDataForNivo(
+				worksData,
+				sortOrder,
+				effectiveOrientation,
+			);
 			return {
 				data,
 				keys,
@@ -595,7 +736,15 @@ export function WorkStatsSection({
 		}
 
 		return null;
-	}, [isStacked, stackedData, worksData, songsData, selectedWorkId, sortOrder]);
+	}, [
+		isStacked,
+		stackedData,
+		worksData,
+		songsData,
+		selectedWorkId,
+		sortOrder,
+		effectiveOrientation,
+	]);
 
 	// 初回ローディング
 	if (isInitialLoading) {
@@ -630,54 +779,88 @@ export function WorkStatsSection({
 		);
 	}
 
-	const chartHeight = Math.max(300, chartData.data.length * 40);
+	// 横グラフは行数に応じた高さ、縦グラフは固定高さ
+	const chartHeight =
+		effectiveOrientation === "horizontal"
+			? Math.max(300, chartData.data.length * 40)
+			: 600;
 
 	return (
 		<div className="space-y-4">
-			{/* モード切替 or ドリルダウンタイトル */}
-			{selectedWorkId ? (
-				<div className="flex items-center gap-3 rounded-lg bg-primary/10 px-4 py-2">
+			{/* モード切替 or ドリルダウンタイトル + 向き切り替え */}
+			<div className="flex items-center justify-between">
+				{selectedWorkId ? (
+					<div className="flex items-center gap-3 rounded-lg bg-primary/10 px-4 py-2">
+						<button
+							type="button"
+							className="btn btn-ghost btn-sm gap-1"
+							onClick={handleBack}
+						>
+							<ArrowLeft className="size-4" />
+							戻る
+						</button>
+						<div>
+							<span className="font-medium text-primary">
+								{selectedWorkName}
+							</span>
+							<span className="text-base-content/70">の原曲別トラック数</span>
+						</div>
+					</div>
+				) : (
+					<div className="flex items-center gap-2">
+						<span className="text-base-content/60 text-sm">表示モード:</span>
+						<div className="join">
+							<button
+								type="button"
+								className={`btn join-item btn-sm gap-1 ${isStacked ? "btn-primary" : "btn-ghost"}`}
+								onClick={() => !isStacked && handleModeToggle()}
+								disabled={isUpdating}
+							>
+								<Layers className="size-4" />
+								積み上げ
+							</button>
+							<button
+								type="button"
+								className={`btn join-item btn-sm gap-1 ${!isStacked ? "btn-primary" : "btn-ghost"}`}
+								onClick={() => isStacked && handleModeToggle()}
+								disabled={isUpdating}
+							>
+								<BarChart3 className="size-4" />
+								単純
+							</button>
+						</div>
+						{isUpdating && (
+							<Loader2 className="size-4 animate-spin text-primary" />
+						)}
+					</div>
+				)}
+
+				{/* 向き切り替えボタン - デスクトップのみ */}
+				<div className="join hidden md:flex">
 					<button
 						type="button"
-						className="btn btn-ghost btn-sm gap-1"
-						onClick={handleBack}
+						className={`btn btn-sm btn-square join-item ${
+							effectiveOrientation === "vertical" ? "btn-primary" : "btn-ghost"
+						}`}
+						onClick={() => handleOrientationChange("vertical")}
+						title="縦グラフ"
 					>
-						<ArrowLeft className="size-4" />
-						戻る
+						<BarChart3 className="size-4" />
 					</button>
-					<div>
-						<span className="font-medium text-primary">{selectedWorkName}</span>
-						<span className="text-base-content/70">の原曲別トラック数</span>
-					</div>
+					<button
+						type="button"
+						className={`btn btn-sm btn-square join-item ${
+							effectiveOrientation === "horizontal"
+								? "btn-primary"
+								: "btn-ghost"
+						}`}
+						onClick={() => handleOrientationChange("horizontal")}
+						title="横グラフ"
+					>
+						<BarChartHorizontal className="size-4" />
+					</button>
 				</div>
-			) : (
-				<div className="flex items-center gap-2">
-					<span className="text-base-content/60 text-sm">表示モード:</span>
-					<div className="join">
-						<button
-							type="button"
-							className={`btn join-item btn-sm gap-1 ${isStacked ? "btn-primary" : "btn-ghost"}`}
-							onClick={() => !isStacked && handleModeToggle()}
-							disabled={isUpdating}
-						>
-							<Layers className="size-4" />
-							積み上げ
-						</button>
-						<button
-							type="button"
-							className={`btn join-item btn-sm gap-1 ${!isStacked ? "btn-primary" : "btn-ghost"}`}
-							onClick={() => isStacked && handleModeToggle()}
-							disabled={isUpdating}
-						>
-							<BarChart3 className="size-4" />
-							単純
-						</button>
-					</div>
-					{isUpdating && (
-						<Loader2 className="size-4 animate-spin text-primary" />
-					)}
-				</div>
-			)}
+			</div>
 
 			{/* ソート切替（単一サイクルボタン） */}
 			<div className="flex items-center gap-2">
@@ -723,10 +906,14 @@ export function WorkStatsSection({
 						data={chartData.data}
 						keys={chartData.keys}
 						indexBy={chartData.indexBy}
-						layout="horizontal"
+						layout={effectiveOrientation}
 						groupMode={chartData.isStacked ? "stacked" : "grouped"}
 						colors={chartData.colors}
-						margin={{ top: 10, right: 80, bottom: 30, left: 150 }}
+						margin={
+							effectiveOrientation === "horizontal"
+								? { top: 10, right: 80, bottom: 30, left: 150 }
+								: { top: 10, right: 20, bottom: 80, left: 60 }
+						}
 						padding={0.3}
 						valueScale={{ type: "linear" }}
 						indexScale={{ type: "band", round: true }}
@@ -743,6 +930,7 @@ export function WorkStatsSection({
 											<TotalsLayer
 												{...props}
 												labelTextColor={isDarkMode ? "#e5e7eb" : "#374151"}
+												orientation={effectiveOrientation}
 											/>
 										),
 									]
@@ -750,20 +938,30 @@ export function WorkStatsSection({
 						}
 						enableLabel
 						label={(d) => (d.value && d.value > 0 ? `${d.value}` : "")}
-						labelSkipWidth={20}
+						labelSkipWidth={effectiveOrientation === "horizontal" ? 20 : 0}
+						labelSkipHeight={effectiveOrientation === "vertical" ? 12 : 0}
 						labelTextColor="#ffffff"
 						axisTop={null}
 						axisRight={null}
-						axisBottom={{
-							tickSize: 5,
-							tickPadding: 5,
-							tickRotation: 0,
-						}}
+						axisBottom={
+							effectiveOrientation === "horizontal"
+								? {
+										tickSize: 5,
+										tickPadding: 5,
+										tickRotation: 0,
+									}
+								: {
+										tickSize: 5,
+										tickPadding: 5,
+										tickRotation: -45,
+										truncateTickAt: 8,
+									}
+						}
 						axisLeft={{
 							tickSize: 5,
 							tickPadding: 5,
 							tickRotation: 0,
-							truncateTickAt: 12,
+							truncateTickAt: effectiveOrientation === "horizontal" ? 12 : 0,
 						}}
 						theme={nivoTheme}
 						onClick={(bar) => {
