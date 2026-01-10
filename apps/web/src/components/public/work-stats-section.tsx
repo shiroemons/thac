@@ -808,7 +808,9 @@ export function WorkStatsSection({
 						</div>
 					</div>
 				) : (
-					<h3 className="mb-10 font-bold text-base-content text-lg">原作/原曲</h3>
+					<h3 className="mb-10 font-bold text-base-content text-lg">
+						原作/原曲
+					</h3>
 				)}
 
 				{/* コントロール行: 左=並び替え、中央=表示モード、右=向き */}
