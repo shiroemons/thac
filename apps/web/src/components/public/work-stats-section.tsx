@@ -176,19 +176,29 @@ function transformStackedDataForNivo(
 		);
 	}
 
-	// 全曲のユニークキーを収集
-	const songKeysSet = new Set<string>();
+	// 各ワーク内の曲をID順にソート
+	for (const work of sorted) {
+		work.songs.sort((a, b) => a.id.localeCompare(b.id));
+	}
+
+	// 全曲のユニークキーを収集（ID順でソート済み）
+	const songKeysMap = new Map<string, { id: string; name: string }>();
 	const colors: Record<string, string> = {};
 	for (const work of sorted) {
 		for (const song of work.songs) {
 			const key = song.name ?? "不明";
-			songKeysSet.add(key);
+			if (!songKeysMap.has(key)) {
+				songKeysMap.set(key, { id: song.id, name: key });
+			}
 			if (!colors[key]) {
 				colors[key] = getColorForItem(song.id);
 			}
 		}
 	}
-	const keys = Array.from(songKeysSet);
+	// ID順でキーをソート
+	const keys = Array.from(songKeysMap.values())
+		.sort((a, b) => a.id.localeCompare(b.id))
+		.map((item) => item.name);
 
 	// Nivo BarDatum形式に変換（totalTrackCountを含める）
 	const data: BarDatum[] = sorted.map((work) => {
