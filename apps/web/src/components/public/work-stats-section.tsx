@@ -1,6 +1,6 @@
 "use client";
 
-import type { BarDatum } from "@nivo/bar";
+import type { BarCustomLayerProps, BarDatum } from "@nivo/bar";
 import {
 	ArrowLeft,
 	BarChart3,
@@ -59,6 +59,68 @@ function hashString(str: string): number {
 function getColorForItem(id: string): string {
 	const index = hashString(id) % CHART_COLORS.length;
 	return CHART_COLORS[index];
+}
+
+// 積み上げバーの総計を表示するカスタムレイヤー
+function TotalsLayer({
+	bars,
+	xScale,
+	innerWidth,
+	labelTextColor,
+}: BarCustomLayerProps<BarDatum> & { labelTextColor?: string }) {
+	// indexValue（workName）ごとにバーをグループ化
+	const barsByIndex = new Map<
+		string | number,
+		{ maxX: number; y: number; height: number; total: number }
+	>();
+
+	for (const bar of bars) {
+		const indexValue = bar.data.indexValue;
+		const rightEdge = bar.x + bar.width;
+		const total = (bar.data.data.totalTrackCount as number) || 0;
+
+		const existing = barsByIndex.get(indexValue);
+		if (!existing || rightEdge > existing.maxX) {
+			barsByIndex.set(indexValue, {
+				maxX: rightEdge,
+				y: bar.y,
+				height: bar.height,
+				total,
+			});
+		}
+	}
+
+	return (
+		<g>
+			{Array.from(barsByIndex.entries()).map(
+				([indexValue, { maxX, y, height, total }]) => {
+					// 右端がチャート領域外に出ないよう調整
+					const textX = Math.min(maxX + 8, innerWidth - 40);
+					// xScaleから0の位置を取得（バーの開始位置）
+					const zeroX = xScale(0);
+					// バーの長さが0の場合は0の位置から表示
+					const displayX = maxX <= zeroX ? zeroX + 8 : textX;
+
+					return (
+						<text
+							key={String(indexValue)}
+							x={displayX}
+							y={y + height / 2}
+							textAnchor="start"
+							dominantBaseline="central"
+							style={{
+								fontSize: 12,
+								fontWeight: 500,
+								fill: labelTextColor || "#374151",
+							}}
+						>
+							計 {total}
+						</text>
+					);
+				},
+			)}
+		</g>
+	);
 }
 
 // ダークモード検出フック
@@ -634,11 +696,28 @@ export function WorkStatsSection({
 						layout="horizontal"
 						groupMode={chartData.isStacked ? "stacked" : "grouped"}
 						colors={chartData.colors}
-						margin={{ top: 10, right: 60, bottom: 30, left: 150 }}
+						margin={{ top: 10, right: 80, bottom: 30, left: 150 }}
 						padding={0.3}
 						valueScale={{ type: "linear" }}
 						indexScale={{ type: "band", round: true }}
-						borderRadius={4}
+						borderRadius={chartData.isStacked ? 0 : 4}
+						layers={
+							chartData.isStacked
+								? [
+										"grid",
+										"axes",
+										"bars",
+										"markers",
+										"legends",
+										(props) => (
+											<TotalsLayer
+												{...props}
+												labelTextColor={isDarkMode ? "#e5e7eb" : "#374151"}
+											/>
+										),
+									]
+								: ["grid", "axes", "bars", "markers", "legends"]
+						}
 						enableLabel
 						label={(d) => (d.value && d.value > 0 ? `${d.value}` : "")}
 						labelSkipWidth={20}
