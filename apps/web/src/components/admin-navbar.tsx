@@ -1,5 +1,5 @@
-import { useNavigate } from "@tanstack/react-router";
-import { LogOut, Menu, PanelLeft } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ExternalLink, LogOut, Menu, PanelLeft } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { ThemeSwitcher } from "./theme-switcher";
 
@@ -49,6 +49,14 @@ export function AdminNavbar({ user, onToggleSidebar }: AdminNavbarProps) {
 				>
 					<PanelLeft className="size-5" />
 				</button>
+				{/* Link to public site */}
+				<Link
+					to="/"
+					className="btn btn-ghost btn-circle"
+					aria-label="サイトを見る"
+				>
+					<ExternalLink className="size-5" />
+				</Link>
 			</div>
 
 			<div className="navbar-end gap-2">
