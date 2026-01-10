@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Disc3, Loader2, Music } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
@@ -8,6 +8,7 @@ import {
 	PublicBreadcrumb,
 	TabIcons,
 	WorkStatsSection,
+	WorkStatsSkeleton,
 } from "@/components/public";
 import {
 	type ArtistDetailTab,
@@ -63,6 +64,8 @@ function ArtistDetailPage() {
 	const { id } = Route.useParams();
 	const { artist } = Route.useLoaderData();
 	const { tab: activeTab = "tracks" } = Route.useSearch();
+	const deferredTab = useDeferredValue(activeTab);
+	const isTabTransitioning = activeTab !== deferredTab;
 	const navigate = useNavigate();
 
 	// トラック一覧の状態
@@ -111,10 +114,10 @@ function ArtistDetailPage() {
 
 	// タブ切替時に遅延読み込み
 	useEffect(() => {
-		if (activeTab === "tracks" && !tracksLoaded && artist) {
+		if (deferredTab === "tracks" && !tracksLoaded && artist) {
 			fetchTracks(1, roleFilter);
 		}
-	}, [activeTab, tracksLoaded, artist, fetchTracks, roleFilter]);
+	}, [deferredTab, tracksLoaded, artist, fetchTracks, roleFilter]);
 
 	// フィルター変更時
 	const handleRoleFilterChange = (value: string) => {
@@ -256,7 +259,7 @@ function ArtistDetailPage() {
 					activeTab={activeTab}
 					onTabChange={handleTabChange}
 				/>
-				{activeTab === "tracks" && (
+				{deferredTab === "tracks" && (
 					<div className="flex flex-wrap gap-2">
 						{/* 役割フィルター */}
 						<select
@@ -276,7 +279,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 参加トラック */}
-			{activeTab === "tracks" && (
+			{deferredTab === "tracks" && (
 				<div className="space-y-4">
 					{/* トラック一覧 */}
 					{tracksLoading ? (
@@ -377,9 +380,12 @@ function ArtistDetailPage() {
 			)}
 
 			{/* 統計 */}
-			{activeTab === "stats" && (
-				<WorkStatsSection entityType="artist" entityId={id} />
-			)}
+			{deferredTab === "stats" &&
+				(isTabTransitioning ? (
+					<WorkStatsSkeleton />
+				) : (
+					<WorkStatsSection entityType="artist" entityId={id} />
+				))}
 		</div>
 	);
 }

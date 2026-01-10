@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Calendar, Disc3, Loader2, MapPin, Music, Users } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
@@ -10,6 +10,7 @@ import {
 	type ViewMode,
 	ViewToggle,
 	WorkStatsSection,
+	WorkStatsSkeleton,
 } from "@/components/public";
 import {
 	type EventDetailTab,
@@ -68,6 +69,8 @@ function EventDetailPage() {
 	const { id } = Route.useParams();
 	const { event } = Route.useLoaderData();
 	const { tab: activeTab = "releases" } = Route.useSearch();
+	const deferredTab = useDeferredValue(activeTab);
+	const isTabTransitioning = activeTab !== deferredTab;
 	const navigate = useNavigate();
 	const [viewMode, setViewModeState] = useState<ViewMode>("list");
 
@@ -123,10 +126,10 @@ function EventDetailPage() {
 
 	// タブ切替時に遅延読み込み
 	useEffect(() => {
-		if (activeTab === "releases" && !releasesLoaded && event) {
+		if (deferredTab === "releases" && !releasesLoaded && event) {
 			fetchReleases(1);
 		}
-	}, [activeTab, releasesLoaded, event, fetchReleases]);
+	}, [deferredTab, releasesLoaded, event, fetchReleases]);
 
 	// イベントが見つからない場合
 	if (!event) {
@@ -245,13 +248,13 @@ function EventDetailPage() {
 					activeTab={activeTab}
 					onTabChange={handleTabChange}
 				/>
-				{activeTab === "releases" && (
+				{deferredTab === "releases" && (
 					<ViewToggle value={viewMode} onChange={setViewMode} />
 				)}
 			</div>
 
 			{/* リリース一覧 */}
-			{activeTab === "releases" && (
+			{deferredTab === "releases" && (
 				<>
 					{releasesLoading ? (
 						<div className="flex items-center justify-center py-12">
@@ -371,9 +374,12 @@ function EventDetailPage() {
 			)}
 
 			{/* 統計 */}
-			{activeTab === "stats" && (
-				<WorkStatsSection entityType="event" entityId={id} />
-			)}
+			{deferredTab === "stats" &&
+				(isTabTransitioning ? (
+					<WorkStatsSkeleton />
+				) : (
+					<WorkStatsSection entityType="event" entityId={id} />
+				))}
 		</div>
 	);
 }

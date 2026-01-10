@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Calendar, Disc3, Loader2, Music, Users } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
@@ -10,6 +10,7 @@ import {
 	type ViewMode,
 	ViewToggle,
 	WorkStatsSection,
+	WorkStatsSkeleton,
 } from "@/components/public";
 import {
 	type CircleDetailTab,
@@ -91,6 +92,8 @@ function CircleDetailPage() {
 	const { id } = Route.useParams();
 	const { circle } = Route.useLoaderData();
 	const { tab: activeTab = "releases" } = Route.useSearch();
+	const deferredTab = useDeferredValue(activeTab);
+	const isTabTransitioning = activeTab !== deferredTab;
 	const navigate = useNavigate();
 	const [viewMode, setViewModeState] = useState<ViewMode>("list");
 
@@ -176,13 +179,13 @@ function CircleDetailPage() {
 
 	// タブ切替時に遅延読み込み
 	useEffect(() => {
-		if (activeTab === "releases" && !releasesLoaded && circle) {
+		if (deferredTab === "releases" && !releasesLoaded && circle) {
 			fetchReleases(1);
-		} else if (activeTab === "tracks" && !tracksLoaded && circle) {
+		} else if (deferredTab === "tracks" && !tracksLoaded && circle) {
 			fetchTracks(1);
 		}
 	}, [
-		activeTab,
+		deferredTab,
 		releasesLoaded,
 		tracksLoaded,
 		circle,
@@ -293,13 +296,13 @@ function CircleDetailPage() {
 					activeTab={activeTab}
 					onTabChange={handleTabChange}
 				/>
-				{activeTab === "releases" && (
+				{deferredTab === "releases" && (
 					<ViewToggle value={viewMode} onChange={setViewMode} />
 				)}
 			</div>
 
 			{/* リリース一覧 */}
-			{activeTab === "releases" && (
+			{deferredTab === "releases" && (
 				<>
 					{releasesLoading ? (
 						<div className="flex items-center justify-center py-12">
@@ -449,7 +452,7 @@ function CircleDetailPage() {
 			)}
 
 			{/* トラック一覧 */}
-			{activeTab === "tracks" && (
+			{deferredTab === "tracks" && (
 				<>
 					{tracksLoading ? (
 						<div className="flex items-center justify-center py-12">
@@ -563,9 +566,12 @@ function CircleDetailPage() {
 			)}
 
 			{/* 統計 */}
-			{activeTab === "stats" && (
-				<WorkStatsSection entityType="circle" entityId={id} />
-			)}
+			{deferredTab === "stats" &&
+				(isTabTransitioning ? (
+					<WorkStatsSkeleton />
+				) : (
+					<WorkStatsSection entityType="circle" entityId={id} />
+				))}
 		</div>
 	);
 }
