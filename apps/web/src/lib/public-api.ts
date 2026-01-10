@@ -379,7 +379,10 @@ export interface PublicReleaseDetail {
 		nameEn: string | null;
 		credits: Array<{
 			artistId: string;
+			artistAliasId: string | null;
 			creditName: string;
+			aliasName: string | null;
+			artistName: string | null;
 			roles: Array<{ roleCode: string; roleName: string | null }>;
 		}>;
 		officialSongs: Array<{

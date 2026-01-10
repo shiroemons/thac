@@ -303,27 +303,38 @@ function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 							</td>
 							<td className="hidden md:table-cell">
 								<div className="flex flex-wrap gap-1">
-									{track.credits.slice(0, 3).map((credit, idx) => (
-										<span key={credit.artistId}>
-											{idx > 0 && ", "}
-											<Link
-												to="/artists/$id"
-												params={{ id: credit.artistId }}
-												className="hover:text-primary"
-											>
-												{credit.creditName}
-											</Link>
-											{credit.roles.length > 0 && (
-												<span className="text-base-content/50 text-xs">
-													(
-													{credit.roles
-														.map((r) => r.roleName ?? r.roleCode)
-														.join("/")}
-													)
-												</span>
-											)}
-										</span>
-									))}
+									{track.credits.slice(0, 3).map((credit, idx) => {
+										// 表示名: creditName → aliasName → artistName の優先順
+										const displayName =
+											credit.creditName ||
+											credit.aliasName ||
+											credit.artistName ||
+											"Unknown";
+										// リンク先ID: artistAliasId があればそれを使用、なければ artistId__main__
+										const linkId =
+											credit.artistAliasId ?? `${credit.artistId}__main__`;
+										return (
+											<span key={credit.artistAliasId ?? credit.artistId}>
+												{idx > 0 && ", "}
+												<Link
+													to="/artists/$id"
+													params={{ id: linkId }}
+													className="hover:text-primary"
+												>
+													{displayName}
+												</Link>
+												{credit.roles.length > 0 && (
+													<span className="text-base-content/50 text-xs">
+														(
+														{credit.roles
+															.map((r) => r.roleName ?? r.roleCode)
+															.join("/")}
+														)
+													</span>
+												)}
+											</span>
+										);
+									})}
 									{track.credits.length > 3 && (
 										<span className="text-base-content/50 text-xs">
 											他{track.credits.length - 3}名

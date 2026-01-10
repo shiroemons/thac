@@ -1,4 +1,6 @@
 import {
+	artistAliases,
+	artists,
 	asc,
 	circles,
 	creditRoles,
@@ -177,16 +179,24 @@ releasesRouter.get("/:id", async (c) => {
 		// Step 4: クレジットと原曲をバッチ取得
 		const [creditsData, creditsRolesData, officialSongsData] =
 			await Promise.all([
-				// クレジット
+				// クレジット（artistAliases, artists を LEFT JOIN して別名義名・アーティスト名を取得）
 				db
 					.select({
 						trackId: trackCredits.trackId,
 						creditId: trackCredits.id,
 						artistId: trackCredits.artistId,
+						artistAliasId: trackCredits.artistAliasId,
 						creditName: trackCredits.creditName,
+						aliasName: artistAliases.name,
+						artistName: artists.name,
 						creditPosition: trackCredits.creditPosition,
 					})
 					.from(trackCredits)
+					.leftJoin(
+						artistAliases,
+						eq(trackCredits.artistAliasId, artistAliases.id),
+					)
+					.leftJoin(artists, eq(trackCredits.artistId, artists.id))
 					.where(inArray(trackCredits.trackId, trackIds))
 					.orderBy(asc(trackCredits.creditPosition)),
 
@@ -248,7 +258,10 @@ releasesRouter.get("/:id", async (c) => {
 			string,
 			Array<{
 				artistId: string;
+				artistAliasId: string | null;
 				creditName: string;
+				aliasName: string | null;
+				artistName: string | null;
 				roles: Array<{ roleCode: string; roleName: string | null }>;
 			}>
 		>();
@@ -261,7 +274,10 @@ releasesRouter.get("/:id", async (c) => {
 			}
 			existing.push({
 				artistId: credit.artistId,
+				artistAliasId: credit.artistAliasId,
 				creditName: credit.creditName,
+				aliasName: credit.aliasName,
+				artistName: credit.artistName,
 				roles: rolesByCredit.get(credit.creditId) ?? [],
 			});
 		}
