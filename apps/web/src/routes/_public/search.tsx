@@ -294,18 +294,15 @@ function SearchPage() {
 		setInputValue(query);
 	}, [query]);
 
-	useEffect(() => {
-		if (query) {
-			setSearchHistory((prev) => saveSearchHistory(query, prev));
-		}
-	}, [query]);
-
 	const handleSearch = (e: React.FormEvent) => {
 		e.preventDefault();
-		if (inputValue.trim()) {
+		const trimmedValue = inputValue.trim();
+		if (trimmedValue) {
+			// 検索履歴に保存（イベントハンドラ内で処理）
+			setSearchHistory((prev) => saveSearchHistory(trimmedValue, prev));
 			navigate({
 				to: "/search",
-				search: { q: inputValue.trim(), category },
+				search: { q: trimmedValue, category },
 			});
 		}
 	};
