@@ -17,7 +17,7 @@ import {
 	Trash2,
 	Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { ReleaseEditDialog } from "@/components/admin/release-edit-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -278,24 +278,15 @@ function ReleaseDetailPage() {
 		staleTime: 300_000,
 	});
 
-	// イベント日一覧（選択中のイベント用）
-	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-
-	// リリースのeventIdが設定されている場合、selectedEventIdを初期化
-	useEffect(() => {
-		if (release?.eventId && !selectedEventId) {
-			setSelectedEventId(release.eventId);
-		}
-	}, [release?.eventId, selectedEventId]);
-
+	// イベント日一覧（リリースのeventIdを直接使用）
 	const { data: eventDaysData } = useQuery({
-		queryKey: ["events", selectedEventId, "days"],
+		queryKey: ["events", release?.eventId, "days"],
 		queryFn: () =>
-			selectedEventId
-				? eventDaysApi.list(selectedEventId)
+			release?.eventId
+				? eventDaysApi.list(release.eventId)
 				: Promise.resolve([]),
 		staleTime: 300_000,
-		enabled: !!selectedEventId,
+		enabled: !!release?.eventId,
 	});
 
 	// イベントオプション
