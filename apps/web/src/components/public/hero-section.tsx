@@ -26,6 +26,7 @@ function StatLink({ href, count, label, icon }: StatLinkProps) {
 	return (
 		<Link
 			to={href}
+			preload="render"
 			className="group flex items-center gap-2 transition-colors hover:text-primary"
 		>
 			{icon}
@@ -85,6 +86,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
 				<div className="mx-auto max-w-2xl">
 					<Link
 						to="/search"
+						preload="render"
 						className="group flex w-full items-center gap-4 rounded-2xl border-2 border-primary/30 bg-base-100 px-6 py-5 shadow-xl transition-all duration-300 hover:border-primary hover:shadow-2xl"
 					>
 						<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-content transition-transform group-hover:scale-110">

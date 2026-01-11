@@ -38,7 +38,8 @@ export const getRouter = () => {
 	const router = createTanStackRouter({
 		routeTree,
 		scrollRestoration: true,
-		defaultPreload: false, // プリフェッチを無効化
+		defaultPreload: "intent", // ホバー・タッチ時にプリフェッチ
+		defaultPreloadStaleTime: 30_000, // 30秒間はキャッシュを使用
 		context: {
 			queryClient,
 		},

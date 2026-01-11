@@ -42,6 +42,7 @@ export function PublicHeader() {
 						<li key={to}>
 							<Link
 								to={to}
+								preload="render"
 								className={
 									isActive(to) ? "bg-base-200 font-semibold" : undefined
 								}
@@ -57,6 +58,7 @@ export function PublicHeader() {
 			<div className="navbar-end gap-1">
 				<Link
 					to="/search"
+					preload="render"
 					className="btn btn-ghost btn-circle"
 					aria-label="検索"
 				>
