@@ -1,6 +1,7 @@
 "use client";
 
 import type { BarCustomLayerProps, BarDatum } from "@nivo/bar";
+import { useQuery } from "@tanstack/react-query";
 import {
 	ArrowLeft,
 	ArrowUpDown,
@@ -19,14 +20,13 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import type { StackedWorkStat, WorkStat } from "@/lib/public-api";
 import {
-	publicApi,
-	type SongStatsResponse,
-	type StackedWorkStat,
-	type StackedWorkStatsResponse,
-	type WorkStat,
-	type WorkStatsResponse,
-} from "@/lib/public-api";
+	publicSongStatsQueryOptions,
+	publicWorkStatsSimpleQueryOptions,
+	publicWorkStatsStackedQueryOptions,
+	type StatsEntityType,
+} from "@/lib/public-query-options";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { WorkStatsSkeleton } from "./work-stats-skeleton";
@@ -36,7 +36,8 @@ const ResponsiveBar = lazy(() =>
 	import("@nivo/bar").then((m) => ({ default: m.ResponsiveBar })),
 );
 
-export type StatsEntityType = "circle" | "artist" | "event";
+// StatsEntityTypeはpublic-query-options.tsから再エクスポート
+export type { StatsEntityType } from "@/lib/public-query-options";
 
 // チャート用の色パレット（区別しやすい8色）
 const CHART_COLORS = [
@@ -364,29 +365,15 @@ export function WorkStatsSection({
 	const isDarkMode = useIsDarkMode();
 	const isMobile = useIsMobile();
 
-	// 初回読み込み用（フルスクリーンローディング）
-	const [isInitialLoading, setIsInitialLoading] = useState(true);
-	// 追加データ取得中（チャート表示したまま）
-	const [isUpdating, setIsUpdating] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+	// UI状態
 	const [isStacked, setIsStacked] = useState(true);
 	const [orientation, setOrientation] =
 		useState<ChartOrientation>("horizontal");
+	const [sortOrder, setSortOrder] = useState<SortOrder>("id");
 
-	// 両モードのデータをキャッシュ（切替時に再取得しない）
-	const [stackedData, setStackedData] = useState<StackedWorkStat[]>([]);
-	const [stackedDataLoaded, setStackedDataLoaded] = useState(false);
-	const [worksData, setWorksData] = useState<WorkStat[]>([]);
-	const [worksDataLoaded, setWorksDataLoaded] = useState(false);
-
+	// ドリルダウン用状態
 	const [selectedWorkId, setSelectedWorkId] = useState<string | null>(null);
 	const [selectedWorkName, setSelectedWorkName] = useState<string>("");
-	const [songsData, setSongsData] = useState<
-		Array<{ id: string; name: string | null; trackCount: number }>
-	>([]);
-
-	// 表示順: "count-desc" = トラック数順(降順), "count-asc" = トラック数順(昇順), "id" = ID順
-	const [sortOrder, setSortOrder] = useState<SortOrder>("id");
 
 	// クライアントサイドでlocalStorageから読み込み
 	useEffect(() => {
@@ -408,6 +395,53 @@ export function WorkStatsSection({
 	const effectiveOrientation = isMobile ? "horizontal" : orientation;
 	// 実際に使う表示モード（モバイルは常に単純）
 	const effectiveIsStacked = isMobile ? false : isStacked;
+
+	// TanStack Query: 積み上げデータ（デスクトップ用）
+	const {
+		data: stackedResponse,
+		isPending: isStackedPending,
+		error: stackedError,
+	} = useQuery({
+		...publicWorkStatsStackedQueryOptions(entityType, entityId),
+		enabled: !isMobile, // モバイルでは取得しない
+	});
+
+	// TanStack Query: シンプルデータ（モバイル or シンプルモード用）
+	const {
+		data: simpleResponse,
+		isPending: isSimplePending,
+		error: simpleError,
+	} = useQuery({
+		...publicWorkStatsSimpleQueryOptions(entityType, entityId),
+		enabled: isMobile || !isStacked, // モバイル or シンプルモード選択時
+	});
+
+	// TanStack Query: ドリルダウン用原曲データ
+	const { data: songsResponse, isFetching: isSongsFetching } = useQuery({
+		...publicSongStatsQueryOptions(entityType, entityId, selectedWorkId ?? ""),
+		enabled: !!selectedWorkId, // workId選択時のみ取得
+	});
+
+	// データの派生
+	const stackedData: StackedWorkStat[] = stackedResponse?.works ?? [];
+	const worksData: WorkStat[] = simpleResponse?.works ?? [];
+	const songsData = songsResponse?.songs ?? [];
+
+	// ローディング・エラー状態の判定
+	const isInitialLoading = effectiveIsStacked
+		? isStackedPending && stackedData.length === 0
+		: isSimplePending && worksData.length === 0;
+	const isUpdating = isSongsFetching;
+	const error =
+		stackedError || simpleError ? "統計データの取得に失敗しました" : null;
+
+	// エンティティ変更時にドリルダウン状態をリセット
+	// biome-ignore lint/correctness/useExhaustiveDependencies: entityId変更時にステートリセットが必要
+	useEffect(() => {
+		setSelectedWorkId(null);
+		setSelectedWorkName("");
+		setIsStacked(true);
+	}, [entityId]);
 
 	// sortOrder変更を処理する関数（localStorageへの保存を含む）
 	const handleSortOrderChange = useCallback((newOrder: SortOrder) => {
@@ -435,217 +469,28 @@ export function WorkStatsSection({
 		[],
 	);
 
-	// 通信中フラグ（重複リクエスト防止用）
-	const [isFetchingStacked, setIsFetchingStacked] = useState(false);
-	const [isFetchingWorks, setIsFetchingWorks] = useState(false);
-	const [isFetchingSongs, setIsFetchingSongs] = useState(false);
-
-	// 積み上げデータを取得
-	const fetchStackedData = useCallback(
-		async (isInitial = false, force = false) => {
-			if (isFetchingStacked) return;
-			if (!force && stackedDataLoaded) return;
-
-			setIsFetchingStacked(true);
-			if (isInitial) {
-				setIsInitialLoading(true);
-			} else {
-				setIsUpdating(true);
-			}
-			setError(null);
-			try {
-				let response: StackedWorkStatsResponse;
-				switch (entityType) {
-					case "circle":
-						response = (await publicApi.circles.stats(
-							entityId,
-							undefined,
-							true,
-						)) as StackedWorkStatsResponse;
-						break;
-					case "artist":
-						response = (await publicApi.artists.stats(
-							entityId,
-							undefined,
-							true,
-						)) as StackedWorkStatsResponse;
-						break;
-					case "event":
-						response = (await publicApi.events.stats(
-							entityId,
-							undefined,
-							true,
-						)) as StackedWorkStatsResponse;
-						break;
-				}
-				setStackedData(response.works);
-				setStackedDataLoaded(true);
-			} catch {
-				setError("統計データの取得に失敗しました");
-			} finally {
-				setIsFetchingStacked(false);
-				setIsInitialLoading(false);
-				setIsUpdating(false);
-			}
-		},
-		[entityType, entityId, isFetchingStacked, stackedDataLoaded],
-	);
-
-	// 単純データを取得
-	const fetchWorksData = useCallback(async () => {
-		if (isFetchingWorks || worksDataLoaded) return;
-
-		setIsFetchingWorks(true);
-		setIsUpdating(true);
-		setError(null);
-		try {
-			let response: WorkStatsResponse;
-			switch (entityType) {
-				case "circle":
-					response = (await publicApi.circles.stats(
-						entityId,
-						undefined,
-						false,
-					)) as WorkStatsResponse;
-					break;
-				case "artist":
-					response = (await publicApi.artists.stats(
-						entityId,
-						undefined,
-						false,
-					)) as WorkStatsResponse;
-					break;
-				case "event":
-					response = (await publicApi.events.stats(
-						entityId,
-						undefined,
-						false,
-					)) as WorkStatsResponse;
-					break;
-			}
-			setWorksData(response.works);
-			setWorksDataLoaded(true);
-		} catch {
-			setError("統計データの取得に失敗しました");
-		} finally {
-			setIsFetchingWorks(false);
-			setIsUpdating(false);
-		}
-	}, [entityType, entityId, isFetchingWorks, worksDataLoaded]);
-
-	// 原曲詳細を取得（ドリルダウン用）
-	const fetchSongsData = useCallback(
-		async (workId: string, workName: string) => {
-			if (isFetchingSongs) return;
-
-			setIsFetchingSongs(true);
-			setIsUpdating(true);
-			try {
-				let response: SongStatsResponse;
-				switch (entityType) {
-					case "circle":
-						response = (await publicApi.circles.stats(
-							entityId,
-							workId,
-							false,
-						)) as SongStatsResponse;
-						break;
-					case "artist":
-						response = (await publicApi.artists.stats(
-							entityId,
-							workId,
-							false,
-						)) as SongStatsResponse;
-						break;
-					case "event":
-						response = (await publicApi.events.stats(
-							entityId,
-							workId,
-							false,
-						)) as SongStatsResponse;
-						break;
-				}
-				setSongsData(response.songs);
-				setSelectedWorkId(workId);
-				setSelectedWorkName(workName);
-			} catch {
-				setError("原曲データの取得に失敗しました");
-			} finally {
-				setIsFetchingSongs(false);
-				setIsUpdating(false);
-			}
-		},
-		[entityType, entityId, isFetchingSongs],
-	);
-
-	// エンティティ変更時にデータをリセット
-	// biome-ignore lint/correctness/useExhaustiveDependencies: entityId変更時にステートリセットが必要
-	useEffect(() => {
-		setStackedData([]);
-		setStackedDataLoaded(false);
-		setWorksData([]);
-		setWorksDataLoaded(false);
-		setSongsData([]);
-		setSelectedWorkId(null);
-		setSelectedWorkName("");
-		setIsStacked(true);
-		setIsInitialLoading(true);
-	}, [entityId]);
-
-	// 初回読み込み
-	useEffect(() => {
-		if (isStacked && !stackedDataLoaded) {
-			fetchStackedData(true);
-		} else if (!isStacked && !worksDataLoaded) {
-			fetchWorksData();
-		}
-	}, [
-		isStacked,
-		stackedDataLoaded,
-		worksDataLoaded,
-		fetchStackedData,
-		fetchWorksData,
-	]);
-
-	// モバイルになったら単純モードのデータを読み込む
-	useEffect(() => {
-		if (isMobile && !worksDataLoaded) {
-			fetchWorksData();
-		}
-	}, [isMobile, worksDataLoaded, fetchWorksData]);
-
 	// モード切替
 	const handleModeToggle = useCallback(() => {
 		setSelectedWorkId(null);
-		setSongsData([]);
-		setIsStacked((prev) => {
-			const nextIsStacked = !prev;
-			if (nextIsStacked && !stackedDataLoaded) {
-				fetchStackedData();
-			} else if (!nextIsStacked && !worksDataLoaded) {
-				fetchWorksData();
-			}
-			return nextIsStacked;
-		});
-	}, [stackedDataLoaded, worksDataLoaded, fetchStackedData, fetchWorksData]);
+		setSelectedWorkName("");
+		setIsStacked((prev) => !prev);
+	}, []);
 
 	// ドリルダウン戻る
 	const handleBack = useCallback(() => {
 		setSelectedWorkId(null);
-		setSongsData([]);
+		setSelectedWorkName("");
 	}, []);
 
-	// バークリックハンドラ
-	const handleBarClick = useCallback(
-		(bar: BarDatum) => {
-			const workId = bar.workId as string;
-			const workName = bar.workName as string;
-			if (workId) {
-				fetchSongsData(workId, workName);
-			}
-		},
-		[fetchSongsData],
-	);
+	// バークリックハンドラ（ドリルダウン）
+	const handleBarClick = useCallback((bar: BarDatum) => {
+		const workId = bar.workId as string;
+		const workName = bar.workName as string;
+		if (workId) {
+			setSelectedWorkId(workId);
+			setSelectedWorkName(workName);
+		}
+	}, []);
 
 	// Nivoテーマ
 	const nivoTheme = useMemo(
