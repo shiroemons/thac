@@ -113,7 +113,11 @@ function OfficialWorkDetailPage() {
 					<p className="mt-2 text-base-content/70">
 						指定されたIDの作品は存在しません
 					</p>
-					<Link to="/official-works" className="btn btn-primary mt-4">
+					<Link
+						to="/official-works"
+						preload="intent"
+						className="btn btn-primary mt-4"
+					>
 						作品一覧に戻る
 					</Link>
 				</div>
@@ -179,6 +183,7 @@ function OfficialWorkDetailPage() {
 						<Link
 							to="/original-songs"
 							search={{ type: work.categoryCode }}
+							preload="intent"
 							className="btn btn-outline btn-sm gap-1"
 						>
 							<Music className="size-4" />
@@ -242,6 +247,7 @@ function OfficialWorkDetailPage() {
 												<Link
 													to="/original-songs/$id"
 													params={{ id: song.id }}
+													preload="intent"
 													className="hover:text-primary"
 												>
 													<div className="font-medium">{song.nameJa}</div>

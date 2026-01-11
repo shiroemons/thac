@@ -129,7 +129,7 @@ function PrivacyPage() {
 				<div className="space-y-4 text-base-content/80">
 					<p>
 						本プライバシーポリシーに関するお問い合わせは、
-						<Link to="/about" className="link link-primary">
+						<Link to="/about" preload="render" className="link link-primary">
 							Aboutページ
 						</Link>
 						に記載の連絡先までお願いいたします。
@@ -146,7 +146,7 @@ function PrivacyPage() {
 
 			{/* フッターリンク */}
 			<div className="text-center">
-				<Link to="/" className="btn btn-primary">
+				<Link to="/" preload="render" className="btn btn-primary">
 					トップページへ戻る
 				</Link>
 			</div>

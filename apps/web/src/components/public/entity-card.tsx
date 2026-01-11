@@ -25,7 +25,7 @@ export function EntityCard({
 	image,
 }: EntityCardProps) {
 	return (
-		<Link to={href} className="block">
+		<Link to={href} preload="intent" className="block">
 			<Card className="transition-shadow hover:shadow-md">
 				{image && (
 					<figure className="aspect-square bg-base-200">

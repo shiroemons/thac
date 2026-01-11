@@ -363,6 +363,7 @@ function ArtistsPage() {
 							key={artist.id}
 							to="/artists/$id"
 							params={{ id: artist.id }}
+							preload="intent"
 							className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
 						>
 							<div className="card-body p-4">
@@ -419,6 +420,7 @@ function ArtistsPage() {
 										<Link
 											to="/artists/$id"
 											params={{ id: artist.id }}
+											preload="intent"
 											className="flex items-center gap-3 hover:text-primary"
 										>
 											<div className="flex size-8 items-center justify-center rounded-full bg-accent/10">

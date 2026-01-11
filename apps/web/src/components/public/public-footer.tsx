@@ -6,11 +6,11 @@ export function PublicFooter() {
 			<div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between sm:gap-8">
 				<div className="font-semibold">東方編曲録</div>
 				<nav className="flex gap-4">
-					<Link to="/about" className="link link-hover">
+					<Link to="/about" preload="render" className="link link-hover">
 						About
 					</Link>
 					<span className="text-base-content/30">|</span>
-					<Link to="/privacy" className="link link-hover">
+					<Link to="/privacy" preload="render" className="link link-hover">
 						Privacy
 					</Link>
 					<span className="text-base-content/30">|</span>

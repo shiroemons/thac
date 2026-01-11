@@ -143,6 +143,7 @@ function ReleaseDetailPage() {
 								<Link
 									to="/events/$id"
 									params={{ id: release.event.id }}
+									preload="intent"
 									className="flex items-center gap-1 hover:text-primary"
 								>
 									<Calendar className="size-4" />
@@ -255,6 +256,7 @@ function CircleBadge({
 		<Link
 			to="/circles/$id"
 			params={{ id: circle.circleId }}
+			preload="intent"
 			className="inline-flex items-center gap-1 hover:opacity-80"
 		>
 			<span className="font-medium hover:text-primary">
@@ -296,6 +298,7 @@ function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 								<Link
 									to="/tracks/$id"
 									params={{ id: track.id }}
+									preload="intent"
 									className="font-medium hover:text-primary"
 								>
 									{track.name}
@@ -319,6 +322,7 @@ function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 												<Link
 													to="/artists/$id"
 													params={{ id: linkId }}
+													preload="intent"
 													className="hover:text-primary"
 												>
 													{displayName}
@@ -352,6 +356,7 @@ function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 													<Link
 														to="/original-songs/$id"
 														params={{ id: os.officialSongId }}
+														preload="intent"
 														className="hover:text-primary"
 													>
 														{os.songName}

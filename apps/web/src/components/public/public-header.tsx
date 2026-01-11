@@ -30,7 +30,11 @@ export function PublicHeader() {
 				>
 					<Menu className="size-5" />
 				</button>
-				<Link to="/" className="btn btn-ghost font-bold text-lg">
+				<Link
+					to="/"
+					preload="render"
+					className="btn btn-ghost font-bold text-lg"
+				>
 					東方編曲録
 				</Link>
 			</div>
@@ -95,7 +99,11 @@ export function PublicHeader() {
 						</div>
 						<ul className="menu p-4">
 							<li>
-								<Link to="/" onClick={() => setIsDrawerOpen(false)}>
+								<Link
+									to="/"
+									preload="render"
+									onClick={() => setIsDrawerOpen(false)}
+								>
 									ホーム
 								</Link>
 							</li>
@@ -103,6 +111,7 @@ export function PublicHeader() {
 								<li key={to}>
 									<Link
 										to={to}
+										preload="render"
 										className={isActive(to) ? "active" : undefined}
 										onClick={() => setIsDrawerOpen(false)}
 									>
@@ -111,7 +120,11 @@ export function PublicHeader() {
 								</li>
 							))}
 							<li className="mt-4 border-base-300 border-t pt-4">
-								<Link to="/about" onClick={() => setIsDrawerOpen(false)}>
+								<Link
+									to="/about"
+									preload="render"
+									onClick={() => setIsDrawerOpen(false)}
+								>
 									About
 								</Link>
 							</li>

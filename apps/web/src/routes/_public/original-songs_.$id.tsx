@@ -76,7 +76,11 @@ function OriginalSongDetailPage() {
 					<p className="mt-2 text-base-content/70">
 						指定されたIDの曲は存在しません
 					</p>
-					<Link to="/original-songs" className="btn btn-primary mt-4">
+					<Link
+						to="/original-songs"
+						preload="intent"
+						className="btn btn-primary mt-4"
+					>
 						原曲一覧に戻る
 					</Link>
 				</div>
@@ -121,6 +125,7 @@ function OriginalSongDetailPage() {
 								<Link
 									to="/official-works/$id"
 									params={{ id: work.id }}
+									preload="intent"
 									className="flex items-center gap-1 hover:text-primary"
 								>
 									<Disc3 className="size-4" />
@@ -193,6 +198,7 @@ function OriginalSongDetailPage() {
 					<Link
 						to="/original-songs/$id"
 						params={{ id: song.prevSong.id }}
+						preload="intent"
 						className="btn btn-ghost btn-sm gap-1"
 					>
 						<ChevronLeft className="size-4" />
@@ -206,6 +212,7 @@ function OriginalSongDetailPage() {
 					<Link
 						to="/original-songs/$id"
 						params={{ id: song.nextSong.id }}
+						preload="intent"
 						className="btn btn-ghost btn-sm gap-1"
 					>
 						<span className="hidden sm:inline">{song.nextSong.name}</span>
@@ -238,6 +245,7 @@ function OriginalSongDetailPage() {
 											<Link
 												to="/tracks/$id"
 												params={{ id: track.trackId }}
+												preload="intent"
 												className="font-medium hover:text-primary"
 											>
 												{track.trackName}
@@ -246,6 +254,7 @@ function OriginalSongDetailPage() {
 												<Link
 													to="/releases/$id"
 													params={{ id: track.release.id }}
+													preload="intent"
 													className="block text-base-content/60 text-sm hover:text-primary"
 												>
 													{track.release.name}
@@ -259,6 +268,7 @@ function OriginalSongDetailPage() {
 													<Link
 														to="/circles/$id"
 														params={{ id: circle.id }}
+														preload="intent"
 														className="hover:text-primary"
 													>
 														{circle.name}
@@ -273,6 +283,7 @@ function OriginalSongDetailPage() {
 														key={artist.id}
 														to="/artists/$id"
 														params={{ id: artist.id }}
+														preload="intent"
 														className="inline-flex items-center gap-1 hover:text-primary"
 													>
 														<Users className="size-3" />

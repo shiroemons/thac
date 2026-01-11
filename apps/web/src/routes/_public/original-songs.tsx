@@ -210,7 +210,11 @@ function OriginalSongsPage() {
 						東方Project公式楽曲 · {works.length}作品 · {totalSongCount}曲
 					</p>
 				</div>
-				<Link to="/official-works" className="btn btn-outline btn-sm gap-1">
+				<Link
+					to="/official-works"
+					preload="intent"
+					className="btn btn-outline btn-sm gap-1"
+				>
 					<Music className="size-4" />
 					公式作品一覧
 					<ChevronRight className="size-4" />
@@ -357,6 +361,7 @@ function WorkAccordion({
 									<Link
 										to="/original-songs/$id"
 										params={{ id: song.id }}
+										preload="intent"
 										className="hover:text-primary"
 									>
 										<div className="font-medium">{song.nameJa}</div>

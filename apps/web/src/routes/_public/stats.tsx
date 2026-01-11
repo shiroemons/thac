@@ -141,7 +141,7 @@ function StatCard({
 
 	if (href) {
 		return (
-			<Link to={href} className="block">
+			<Link to={href} preload="intent" className="block">
 				{content}
 			</Link>
 		);
@@ -175,6 +175,7 @@ function RankingItem({ rank, name, count, unit, href }: RankingItemProps) {
 	return (
 		<Link
 			to={href}
+			preload="intent"
 			className="group flex items-center gap-3 rounded-xl p-3 transition-all duration-300 hover:bg-base-content/5"
 		>
 			<span
@@ -267,6 +268,7 @@ function StatsPage() {
 						</div>
 						<Link
 							to="/original-songs"
+							preload="intent"
 							className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
 						>
 							すべて見る
@@ -298,6 +300,7 @@ function StatsPage() {
 						</div>
 						<Link
 							to="/circles"
+							preload="intent"
 							className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
 						>
 							すべて見る
@@ -329,6 +332,7 @@ function StatsPage() {
 						</div>
 						<Link
 							to="/artists"
+							preload="intent"
 							className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
 						>
 							すべて見る
