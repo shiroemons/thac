@@ -80,6 +80,7 @@ export function NavigationSection() {
 						<Link
 							key={item.href}
 							to={item.href}
+							preload="render"
 							className="glass-card group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:ring-2 hover:ring-primary/20"
 						>
 							{/* Gradient accent */}
