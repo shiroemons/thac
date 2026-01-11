@@ -24,6 +24,10 @@ import {
 	type PublicCircleTrack,
 	publicApi,
 } from "@/lib/public-api";
+import {
+	publicWorkStatsSimpleQueryOptions,
+	publicWorkStatsStackedQueryOptions,
+} from "@/lib/public-query-options";
 
 interface CircleDetailSearchParams {
 	tab?: CircleDetailTab;
@@ -35,9 +39,18 @@ export const Route = createFileRoute("/_public/circles_/$id")({
 	): CircleDetailSearchParams => ({
 		tab: parseCircleDetailTab(search.tab),
 	}),
-	loader: async ({ params }) => {
+	loader: async ({ params, context }) => {
 		try {
 			const circle = await publicApi.circles.get(params.id);
+
+			// バックグラウンドで統計データをプリフェッチ（非ブロッキング）
+			context.queryClient.prefetchQuery(
+				publicWorkStatsStackedQueryOptions("circle", params.id),
+			);
+			context.queryClient.prefetchQuery(
+				publicWorkStatsSimpleQueryOptions("circle", params.id),
+			);
+
 			return { circle };
 		} catch {
 			return { circle: null };

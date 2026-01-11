@@ -20,6 +20,10 @@ import {
 import { formatNumber } from "@/lib/format";
 import { createPublicEventHead } from "@/lib/head";
 import { type PublicEventRelease, publicApi } from "@/lib/public-api";
+import {
+	publicWorkStatsSimpleQueryOptions,
+	publicWorkStatsStackedQueryOptions,
+} from "@/lib/public-query-options";
 
 interface EventDetailSearchParams {
 	tab?: EventDetailTab;
@@ -31,9 +35,18 @@ export const Route = createFileRoute("/_public/events_/$id")({
 	): EventDetailSearchParams => ({
 		tab: parseEventDetailTab(search.tab),
 	}),
-	loader: async ({ params }) => {
+	loader: async ({ params, context }) => {
 		try {
 			const event = await publicApi.events.get(params.id);
+
+			// バックグラウンドで統計データをプリフェッチ（非ブロッキング）
+			context.queryClient.prefetchQuery(
+				publicWorkStatsStackedQueryOptions("event", params.id),
+			);
+			context.queryClient.prefetchQuery(
+				publicWorkStatsSimpleQueryOptions("event", params.id),
+			);
+
 			return { event };
 		} catch {
 			return { event: null };

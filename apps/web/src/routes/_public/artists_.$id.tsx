@@ -18,6 +18,10 @@ import {
 import { formatNumber } from "@/lib/format";
 import { createPublicArtistHead } from "@/lib/head";
 import { type PublicArtistTrack, publicApi } from "@/lib/public-api";
+import {
+	publicWorkStatsSimpleQueryOptions,
+	publicWorkStatsStackedQueryOptions,
+} from "@/lib/public-query-options";
 
 interface ArtistDetailSearchParams {
 	tab?: ArtistDetailTab;
@@ -29,9 +33,18 @@ export const Route = createFileRoute("/_public/artists_/$id")({
 	): ArtistDetailSearchParams => ({
 		tab: parseArtistDetailTab(search.tab),
 	}),
-	loader: async ({ params }) => {
+	loader: async ({ params, context }) => {
 		try {
 			const artist = await publicApi.artists.get(params.id);
+
+			// バックグラウンドで統計データをプリフェッチ（非ブロッキング）
+			context.queryClient.prefetchQuery(
+				publicWorkStatsStackedQueryOptions("artist", params.id),
+			);
+			context.queryClient.prefetchQuery(
+				publicWorkStatsSimpleQueryOptions("artist", params.id),
+			);
+
 			return { artist };
 		} catch {
 			return { artist: null };
