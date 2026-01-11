@@ -168,7 +168,7 @@ function EventDetailPage() {
 					<p className="mt-2 text-base-content/70">
 						指定されたIDのイベントは存在しません
 					</p>
-					<Link to="/events" className="btn btn-primary mt-4">
+					<Link to="/events" preload="intent" className="btn btn-primary mt-4">
 						イベント一覧に戻る
 					</Link>
 				</div>
@@ -298,6 +298,7 @@ function EventDetailPage() {
 										<Link
 											to="/releases/$id"
 											params={{ id: release.id }}
+											preload="intent"
 											className="card-title text-base hover:text-primary"
 										>
 											{release.name}
@@ -308,6 +309,7 @@ function EventDetailPage() {
 													key={circle.id}
 													to="/circles/$id"
 													params={{ id: circle.id }}
+													preload="intent"
 													className="badge badge-outline badge-sm hover:badge-primary"
 												>
 													{circle.name}
@@ -355,6 +357,7 @@ function EventDetailPage() {
 												<Link
 													to="/releases/$id"
 													params={{ id: release.id }}
+													preload="intent"
 													className="font-medium hover:text-primary"
 												>
 													{release.name}
@@ -367,6 +370,7 @@ function EventDetailPage() {
 														<Link
 															to="/circles/$id"
 															params={{ id: circle.id }}
+															preload="intent"
 															className="hover:text-primary"
 														>
 															{circle.name}

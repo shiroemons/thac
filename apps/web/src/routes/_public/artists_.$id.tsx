@@ -167,7 +167,7 @@ function ArtistDetailPage() {
 					<p className="mt-2 text-base-content/70">
 						指定されたIDのアーティストは存在しません
 					</p>
-					<Link to="/artists" className="btn btn-primary mt-4">
+					<Link to="/artists" preload="intent" className="btn btn-primary mt-4">
 						アーティスト一覧に戻る
 					</Link>
 				</div>
@@ -234,6 +234,7 @@ function ArtistDetailPage() {
 									key={alias.id}
 									to="/artists/$id"
 									params={{ id: alias.id }}
+									preload="intent"
 									className="badge badge-ghost hover:badge-primary transition-colors"
 								>
 									{alias.name}
@@ -335,6 +336,7 @@ function ArtistDetailPage() {
 												<Link
 													to="/tracks/$id"
 													params={{ id: credit.track.id }}
+													preload="intent"
 													className="font-medium hover:text-primary"
 												>
 													{credit.track.name}
@@ -356,6 +358,7 @@ function ArtistDetailPage() {
 												<Link
 													to="/releases/$id"
 													params={{ id: credit.release.id }}
+													preload="intent"
 													className="text-base-content/70 text-sm hover:text-primary"
 												>
 													{credit.release.name}
@@ -366,6 +369,7 @@ function ArtistDetailPage() {
 															key={circle.id}
 															to="/circles/$id"
 															params={{ id: circle.id }}
+															preload="intent"
 															className="text-base-content/50 text-xs hover:text-primary"
 														>
 															{circle.name}
@@ -378,6 +382,7 @@ function ArtistDetailPage() {
 													<Link
 														to="/original-songs/$id"
 														params={{ id: credit.originalSong.id }}
+														preload="intent"
 														className="text-base-content/70 text-sm hover:text-primary"
 													>
 														{credit.originalSong.name}

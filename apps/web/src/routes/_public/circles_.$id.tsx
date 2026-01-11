@@ -230,7 +230,7 @@ function CircleDetailPage() {
 					<p className="mt-2 text-base-content/70">
 						指定されたIDのサークルは存在しません
 					</p>
-					<Link to="/circles" className="btn btn-primary mt-4">
+					<Link to="/circles" preload="intent" className="btn btn-primary mt-4">
 						サークル一覧に戻る
 					</Link>
 				</div>
@@ -346,6 +346,7 @@ function CircleDetailPage() {
 										<Link
 											to="/releases/$id"
 											params={{ id: release.id }}
+											preload="intent"
 											className="card-title text-base hover:text-primary"
 										>
 											{release.name}
@@ -355,6 +356,7 @@ function CircleDetailPage() {
 												<Link
 													to="/events/$id"
 													params={{ id: release.event.id }}
+													preload="intent"
 													className="badge badge-outline badge-sm hover:badge-primary"
 												>
 													{release.event.name}
@@ -406,6 +408,7 @@ function CircleDetailPage() {
 												<Link
 													to="/releases/$id"
 													params={{ id: release.id }}
+													preload="intent"
 													className="font-medium hover:text-primary"
 												>
 													{release.name}
@@ -416,6 +419,7 @@ function CircleDetailPage() {
 													<Link
 														to="/events/$id"
 														params={{ id: release.event.id }}
+														preload="intent"
 														className="hover:text-primary"
 													>
 														{release.event.name}
@@ -503,6 +507,7 @@ function CircleDetailPage() {
 												<Link
 													to="/tracks/$id"
 													params={{ id: track.id }}
+													preload="intent"
 													className="font-medium hover:text-primary"
 												>
 													{track.name}
@@ -513,6 +518,7 @@ function CircleDetailPage() {
 													<Link
 														to="/releases/$id"
 														params={{ id: track.releaseId }}
+														preload="intent"
 														className="hover:text-primary"
 													>
 														{track.releaseName || "-"}
@@ -528,6 +534,7 @@ function CircleDetailPage() {
 															key={artist.id}
 															to="/artists/$id"
 															params={{ id: artist.id }}
+															preload="intent"
 															className="inline-flex items-center gap-1 hover:text-primary"
 														>
 															<Users className="size-3" />
@@ -548,6 +555,7 @@ function CircleDetailPage() {
 													<Link
 														to="/original-songs/$id"
 														params={{ id: track.originalSong.id }}
+														preload="intent"
 														className="text-base-content/70 hover:text-primary"
 													>
 														{track.originalSong.name}

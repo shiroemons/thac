@@ -47,7 +47,7 @@ function StatCard({ icon: Icon, count, label, href, trend }: StatCardProps) {
 
 	if (href) {
 		return (
-			<Link to={href} className="block">
+			<Link to={href} preload="render" className="block">
 				{content}
 			</Link>
 		);
@@ -72,6 +72,7 @@ export function StatsCards() {
 				<h2 className="font-bold text-xl">データ統計</h2>
 				<Link
 					to="/stats"
+					preload="render"
 					className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
 				>
 					詳細を見る

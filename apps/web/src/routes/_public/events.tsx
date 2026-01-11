@@ -296,6 +296,7 @@ function EventsPage() {
 												key={event.id}
 												to="/events/$id"
 												params={{ id: event.id }}
+												preload="intent"
 												className="flex items-center justify-between border-base-200 border-b px-4 py-3 pl-12 last:border-b-0 hover:bg-base-200/30"
 											>
 												<div className="flex items-center gap-4">
@@ -377,6 +378,7 @@ function EventsPage() {
 																<Link
 																	to="/events/$id"
 																	params={{ id: event.id }}
+																	preload="intent"
 																	className="font-medium hover:text-primary"
 																>
 																	{event.name}

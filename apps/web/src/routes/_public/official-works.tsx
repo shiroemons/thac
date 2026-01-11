@@ -265,6 +265,7 @@ function WorksGridView({ works }: WorksViewProps) {
 						key={work.id}
 						to="/official-works/$id"
 						params={{ id: work.id }}
+						preload="intent"
 						className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
 					>
 						<div className="card-body p-4">
@@ -324,6 +325,7 @@ function WorksListView({ works }: WorksViewProps) {
 									<Link
 										to="/official-works/$id"
 										params={{ id: work.id }}
+										preload="intent"
 										className="hover:text-primary"
 									>
 										<div className="font-medium">{work.nameJa}</div>

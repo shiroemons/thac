@@ -518,6 +518,7 @@ function SearchPage() {
 								<Link
 									key={`${result.type}-${result.id}`}
 									to={getResultHref(result)}
+									preload="intent"
 								>
 									<Card className="group flex items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
 										<div
@@ -601,6 +602,7 @@ function SearchPage() {
 						<div className="grid gap-3 sm:grid-cols-3">
 							<Link
 								to="/circles"
+								preload="intent"
 								className="group flex items-center gap-3 rounded-xl bg-primary/5 p-4 transition-all hover:bg-primary/10 hover:shadow-md"
 							>
 								<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -613,6 +615,7 @@ function SearchPage() {
 							</Link>
 							<Link
 								to="/artists"
+								preload="intent"
 								className="group flex items-center gap-3 rounded-xl bg-accent/5 p-4 transition-all hover:bg-accent/10 hover:shadow-md"
 							>
 								<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
@@ -625,6 +628,7 @@ function SearchPage() {
 							</Link>
 							<Link
 								to="/original-songs"
+								preload="intent"
 								className="group flex items-center gap-3 rounded-xl bg-secondary/5 p-4 transition-all hover:bg-secondary/10 hover:shadow-md"
 							>
 								<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10 text-secondary">

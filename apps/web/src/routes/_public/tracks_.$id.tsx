@@ -130,6 +130,7 @@ function TrackDetailPage() {
 							<Link
 								to="/releases/$id"
 								params={{ id: track.release.id }}
+								preload="intent"
 								className="flex items-center gap-1 hover:text-primary"
 							>
 								<Disc3 className="size-4" />
@@ -147,6 +148,7 @@ function TrackDetailPage() {
 							<Link
 								to="/events/$id"
 								params={{ id: track.event.id }}
+								preload="intent"
 								className="flex items-center gap-1 hover:text-primary"
 							>
 								{track.event.name}
@@ -177,6 +179,7 @@ function TrackDetailPage() {
 													<Link
 														to="/artists/$id"
 														params={{ id: credit.artistId }}
+														preload="intent"
 														className="hover:text-primary"
 													>
 														{credit.creditName}
@@ -220,6 +223,7 @@ function TrackDetailPage() {
 												<Link
 													to="/original-songs/$id"
 													params={{ id: os.officialSongId }}
+													preload="intent"
 													className="font-medium hover:text-primary"
 												>
 													{os.songName}
@@ -279,6 +283,7 @@ function TrackDetailPage() {
 									<Link
 										to="/tracks/$id"
 										params={{ id: derivation.parentTrackId }}
+										preload="intent"
 										className="font-medium hover:text-primary"
 									>
 										{derivation.parentTrackName}
@@ -299,6 +304,7 @@ function TrackDetailPage() {
 					<Link
 						to="/tracks/$id"
 						params={{ id: track.siblingTracks.prev.id }}
+						preload="intent"
 						className="btn btn-ghost btn-sm gap-1"
 					>
 						<ChevronLeft className="size-4" />
@@ -314,6 +320,7 @@ function TrackDetailPage() {
 					<Link
 						to="/tracks/$id"
 						params={{ id: track.siblingTracks.next.id }}
+						preload="intent"
 						className="btn btn-ghost btn-sm gap-1"
 					>
 						<span className="hidden sm:inline">

@@ -165,6 +165,7 @@ export function RecentReleases() {
 					</div>
 					<Link
 						to="/stats"
+						preload="render"
 						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
 					>
 						すべて見る

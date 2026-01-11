@@ -112,7 +112,7 @@ function AboutPage() {
 
 			{/* フッターリンク */}
 			<div className="text-center">
-				<Link to="/" className="btn btn-primary">
+				<Link to="/" preload="render" className="btn btn-primary">
 					トップページへ戻る
 				</Link>
 			</div>
