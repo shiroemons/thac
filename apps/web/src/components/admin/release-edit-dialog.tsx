@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,8 +21,8 @@ import {
 	RELEASE_TYPE_LABELS,
 	type Release,
 	type ReleaseType,
-	releasesApi,
 } from "@/lib/api-client";
+import { releaseMutations } from "@/lib/mutation-options";
 import { ConflictDialog } from "./conflict-dialog";
 
 // 作品タイプのオプション
@@ -43,9 +43,8 @@ export function ReleaseEditDialog({
 	release,
 	onSuccess,
 }: ReleaseEditDialogProps) {
+	const queryClient = useQueryClient();
 	const [editForm, setEditForm] = useState<Partial<Release>>({});
-	const [mutationError, setMutationError] = useState<string | null>(null);
-	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 	// 楽観的ロック用: 編集開始時のupdatedAtを記録
 	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
@@ -53,6 +52,13 @@ export function ReleaseEditDialog({
 	);
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<Release>();
+
+	// useMutation hook
+	const updateMutation = useMutation(releaseMutations.update(queryClient));
+
+	// ローディング状態とエラー状態
+	const isSubmitting = updateMutation.isPending;
+	const mutationError = updateMutation.error;
 
 	// ダイアログが開いたらフォームを初期化
 	useEffect(() => {
@@ -69,10 +75,10 @@ export function ReleaseEditDialog({
 			});
 			setSelectedEventId(release.eventId);
 			setOriginalUpdatedAt(release.updatedAt);
-			setMutationError(null);
+			updateMutation.reset();
 			clearConflict();
 		}
-	}, [open, release, clearConflict]);
+	}, [open, release, clearConflict, updateMutation.reset]);
 
 	// イベント一覧取得
 	const { data: eventsData } = useQuery({
@@ -135,36 +141,36 @@ export function ReleaseEditDialog({
 	}, [eventDaysData]);
 
 	// 保存
-	const handleSave = async (overrideUpdatedAt?: string) => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await releasesApi.update(release.id, {
-				name: editForm.name,
-				nameJa: editForm.nameJa || null,
-				nameEn: editForm.nameEn || null,
-				releaseDate: editForm.releaseDate || null,
-				releaseType: (editForm.releaseType as ReleaseType) || null,
-				eventId: editForm.eventId || null,
-				eventDayId: editForm.eventDayId || null,
-				notes: editForm.notes || null,
-				// 楽観的ロック: updatedAtを送信
-				updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
-			});
-			onSuccess?.();
-			onOpenChange(false);
-		} catch (err) {
-			// 楽観的ロック競合エラーの場合
-			if (isConflictError<Release>(err)) {
-				setConflict(err.current);
-				return;
-			}
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
+	const handleSave = (overrideUpdatedAt?: string) => {
+		updateMutation.mutate(
+			{
+				id: release.id,
+				data: {
+					name: editForm.name,
+					nameJa: editForm.nameJa || null,
+					nameEn: editForm.nameEn || null,
+					releaseDate: editForm.releaseDate || null,
+					releaseType: (editForm.releaseType as ReleaseType) || null,
+					eventId: editForm.eventId || null,
+					eventDayId: editForm.eventDayId || null,
+					notes: editForm.notes || null,
+					// 楽観的ロック: updatedAtを送信
+					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
+				},
+			},
+			{
+				onSuccess: () => {
+					onOpenChange(false);
+					onSuccess?.();
+				},
+				onError: (err) => {
+					// 楽観的ロック競合エラーの場合
+					if (isConflictError<Release>(err)) {
+						setConflict(err.current);
+					}
+				},
+			},
+		);
 	};
 
 	// 競合ダイアログで「編集を続ける」を選択した場合
@@ -201,9 +207,9 @@ export function ReleaseEditDialog({
 						<DialogTitle>リリースの編集</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && (
+						{mutationError && !isConflictError(mutationError) && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{mutationError.message}
 							</div>
 						)}
 						<div className="grid gap-4">
