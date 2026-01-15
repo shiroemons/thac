@@ -50,7 +50,7 @@ export const Route = createFileRoute("/_public/artists_/$id")({
 			return { artist: null };
 		}
 	},
-	head: ({ loaderData }) => createPublicArtistHead(loaderData?.artist?.name),
+	head: ({ loaderData }) => createPublicArtistHead(loaderData?.artist),
 	component: ArtistDetailPage,
 });
 

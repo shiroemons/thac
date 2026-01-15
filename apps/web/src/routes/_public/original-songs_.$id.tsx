@@ -31,8 +31,7 @@ export const Route = createFileRoute("/_public/original-songs_/$id")({
 			return { song: null, tracks: [], totalTracks: 0 };
 		}
 	},
-	head: ({ loaderData }) =>
-		createPublicOriginalSongHead(loaderData?.song?.nameJa),
+	head: ({ loaderData }) => createPublicOriginalSongHead(loaderData?.song),
 	component: OriginalSongDetailPage,
 });
 

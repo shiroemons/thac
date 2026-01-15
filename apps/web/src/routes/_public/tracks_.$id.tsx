@@ -38,11 +38,7 @@ export const Route = createFileRoute("/_public/tracks_/$id")({
 			return { track: null };
 		}
 	},
-	head: ({ loaderData }) =>
-		createPublicTrackHead(
-			loaderData?.track?.name,
-			loaderData?.track?.release?.name,
-		),
+	head: ({ loaderData }) => createPublicTrackHead(loaderData?.track),
 	component: TrackDetailPage,
 });
 

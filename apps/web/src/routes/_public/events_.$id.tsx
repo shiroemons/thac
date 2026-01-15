@@ -52,7 +52,7 @@ export const Route = createFileRoute("/_public/events_/$id")({
 			return { event: null };
 		}
 	},
-	head: ({ loaderData }) => createPublicEventHead(loaderData?.event?.name),
+	head: ({ loaderData }) => createPublicEventHead(loaderData?.event),
 	component: EventDetailPage,
 });
 
