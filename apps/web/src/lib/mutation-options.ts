@@ -43,11 +43,28 @@ import {
 	officialSongsApi,
 	officialWorkCategoriesApi,
 	officialWorksApi,
+	type ParticipationType,
 	type Platform,
 	platformsApi,
 	type Release,
+	type ReleaseCircle,
+	type ReleaseJanCode,
+	type ReleasePublication,
+	releaseCirclesApi,
+	releaseJanCodesApi,
+	releasePublicationsApi,
 	releasesApi,
 	type Track,
+	type TrackCredit,
+	type TrackDerivation,
+	type TrackIsrc,
+	type TrackOfficialSong,
+	type TrackPublication,
+	trackCreditsApi,
+	trackDerivationsApi,
+	trackIsrcsApi,
+	trackOfficialSongsApi,
+	trackPublicationsApi,
 	tracksApi,
 } from "./api-client";
 
@@ -583,6 +600,29 @@ export const trackMutations = {
 			queryClient.invalidateQueries({ queryKey: ["release"] });
 		},
 	}),
+	reorder: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			trackId,
+			direction,
+		}: {
+			releaseId: string;
+			trackId: string;
+			direction: "up" | "down";
+		}) => tracksApi.reorder(releaseId, trackId, direction),
+		onSuccess: (_data: Track[], variables: { releaseId: string }) => {
+			queryClient.invalidateQueries({ queryKey: ["tracks"] });
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "tracks"],
+			});
+		},
+	}),
 };
 
 // ===== 公式作品 =====
@@ -808,6 +848,581 @@ export const officialWorkCategoryMutations = {
 		mutationFn: (code: string) => officialWorkCategoriesApi.delete(code),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["officialWorkCategories"] });
+		},
+	}),
+};
+
+// ===== リリースサークル（作品とサークルの関連付け） =====
+
+type AddReleaseCircleData = {
+	circleId: string;
+	participationType?: ParticipationType;
+	position?: number;
+};
+type UpdateReleaseCircleData = {
+	participationType?: ParticipationType;
+	position?: number;
+};
+
+export const releaseCircleMutations = {
+	add: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			data,
+		}: {
+			releaseId: string;
+			data: AddReleaseCircleData;
+		}) => releaseCirclesApi.add(releaseId, data),
+		onSuccess: (_data: ReleaseCircle, variables: { releaseId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+	update: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			circleId,
+			participationType,
+			data,
+		}: {
+			releaseId: string;
+			circleId: string;
+			participationType: ParticipationType;
+			data: UpdateReleaseCircleData;
+		}) =>
+			releaseCirclesApi.update(releaseId, circleId, participationType, data),
+		onSuccess: (_data: ReleaseCircle, variables: { releaseId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+	remove: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			circleId,
+			participationType,
+		}: {
+			releaseId: string;
+			circleId: string;
+			participationType: ParticipationType;
+		}) => releaseCirclesApi.remove(releaseId, circleId, participationType),
+		onSuccess: (
+			_data: { success: boolean },
+			variables: { releaseId: string },
+		) => {
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+};
+
+// ===== リリース公開リンク =====
+
+type CreateReleasePublicationData = {
+	id: string;
+	platformCode: string;
+	url: string;
+};
+type UpdateReleasePublicationData = {
+	url?: string;
+};
+
+export const releasePublicationMutations = {
+	create: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			data,
+		}: {
+			releaseId: string;
+			data: CreateReleasePublicationData;
+		}) => releasePublicationsApi.create(releaseId, data),
+		onSuccess: (
+			_data: ReleasePublication,
+			variables: { releaseId: string },
+		) => {
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+	update: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			publicationId,
+			data,
+		}: {
+			releaseId: string;
+			publicationId: string;
+			data: UpdateReleasePublicationData;
+		}) => releasePublicationsApi.update(releaseId, publicationId, data),
+		onSuccess: (
+			_data: ReleasePublication,
+			variables: { releaseId: string },
+		) => {
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+	delete: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			publicationId,
+		}: {
+			releaseId: string;
+			publicationId: string;
+		}) => releasePublicationsApi.delete(releaseId, publicationId),
+		onSuccess: (
+			_data: { success: boolean },
+			variables: { releaseId: string },
+		) => {
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+};
+
+// ===== リリースJANコード =====
+
+type CreateReleaseJanCodeData = {
+	id: string;
+	janCode: string;
+	label?: string | null;
+	isPrimary?: boolean;
+	countryCode?: string | null;
+};
+type UpdateReleaseJanCodeData = {
+	label?: string | null;
+	isPrimary?: boolean;
+	countryCode?: string | null;
+};
+
+export const releaseJanCodeMutations = {
+	create: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			data,
+		}: {
+			releaseId: string;
+			data: CreateReleaseJanCodeData;
+		}) => releaseJanCodesApi.create(releaseId, data),
+		onSuccess: (_data: ReleaseJanCode, variables: { releaseId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+	update: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			janCodeId,
+			data,
+		}: {
+			releaseId: string;
+			janCodeId: string;
+			data: UpdateReleaseJanCodeData;
+		}) => releaseJanCodesApi.update(releaseId, janCodeId, data),
+		onSuccess: (_data: ReleaseJanCode, variables: { releaseId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+	delete: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			janCodeId,
+		}: {
+			releaseId: string;
+			janCodeId: string;
+		}) => releaseJanCodesApi.delete(releaseId, janCodeId),
+		onSuccess: (
+			_data: { success: boolean },
+			variables: { releaseId: string },
+		) => {
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+};
+
+// ===== トラッククレジット =====
+
+type CreateTrackCreditData = {
+	id: string;
+	artistId: string;
+	creditName: string;
+	aliasTypeCode?: string | null;
+	creditPosition?: number | null;
+	artistAliasId?: string | null;
+	rolesCodes?: string[];
+};
+type UpdateTrackCreditData = {
+	artistId?: string;
+	creditName?: string;
+	aliasTypeCode?: string | null;
+	creditPosition?: number | null;
+	artistAliasId?: string | null;
+	rolesCodes?: string[];
+};
+
+export const trackCreditMutations = {
+	create: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			trackId,
+			data,
+		}: {
+			releaseId: string;
+			trackId: string;
+			data: CreateTrackCreditData;
+		}) => trackCreditsApi.create(releaseId, trackId, data),
+		onSuccess: (
+			_data: TrackCredit,
+			variables: { releaseId: string; trackId: string },
+		) => {
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+	update: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			trackId,
+			creditId,
+			data,
+		}: {
+			releaseId: string;
+			trackId: string;
+			creditId: string;
+			data: UpdateTrackCreditData;
+		}) => trackCreditsApi.update(releaseId, trackId, creditId, data),
+		onSuccess: (
+			_data: TrackCredit,
+			variables: { releaseId: string; trackId: string },
+		) => {
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+	delete: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			releaseId,
+			trackId,
+			creditId,
+		}: {
+			releaseId: string;
+			trackId: string;
+			creditId: string;
+		}) => trackCreditsApi.delete(releaseId, trackId, creditId),
+		onSuccess: (
+			_data: { success: boolean },
+			variables: { releaseId: string; trackId: string },
+		) => {
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["release", variables.releaseId, "full"],
+			});
+		},
+	}),
+};
+
+// ===== トラック公式楽曲 =====
+
+type CreateTrackOfficialSongData = {
+	id: string;
+	officialSongId?: string | null;
+	customSongName?: string | null;
+	partPosition?: number | null;
+	startSecond?: number | null;
+	endSecond?: number | null;
+	notes?: string | null;
+};
+type UpdateTrackOfficialSongData = {
+	partPosition?: number | null;
+	startSecond?: number | null;
+	endSecond?: number | null;
+	notes?: string | null;
+};
+
+export const trackOfficialSongMutations = {
+	create: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			trackId,
+			data,
+		}: {
+			trackId: string;
+			data: CreateTrackOfficialSongData;
+		}) => trackOfficialSongsApi.create(trackId, data),
+		onSuccess: (_data: TrackOfficialSong, variables: { trackId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-official-songs", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+	update: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			trackId,
+			officialSongId,
+			data,
+		}: {
+			trackId: string;
+			officialSongId: string;
+			data: UpdateTrackOfficialSongData;
+		}) => trackOfficialSongsApi.update(trackId, officialSongId, data),
+		onSuccess: (_data: TrackOfficialSong, variables: { trackId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-official-songs", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+	delete: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			trackId,
+			officialSongId,
+		}: {
+			trackId: string;
+			officialSongId: string;
+		}) => trackOfficialSongsApi.delete(trackId, officialSongId),
+		onSuccess: (
+			_data: { success: boolean },
+			variables: { trackId: string },
+		) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-official-songs", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+	reorder: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			trackId,
+			officialSongId,
+			direction,
+		}: {
+			trackId: string;
+			officialSongId: string;
+			direction: "up" | "down";
+		}) => trackOfficialSongsApi.reorder(trackId, officialSongId, direction),
+		onSuccess: (_data: TrackOfficialSong[], variables: { trackId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-official-songs", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+};
+
+// ===== トラック派生関係 =====
+
+type CreateTrackDerivationData = {
+	id: string;
+	parentTrackId: string;
+	notes?: string | null;
+};
+
+export const trackDerivationMutations = {
+	create: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			trackId,
+			data,
+		}: {
+			trackId: string;
+			data: CreateTrackDerivationData;
+		}) => trackDerivationsApi.create(trackId, data),
+		onSuccess: (_data: TrackDerivation, variables: { trackId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-derivations", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+	delete: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			trackId,
+			derivationId,
+		}: {
+			trackId: string;
+			derivationId: string;
+		}) => trackDerivationsApi.delete(trackId, derivationId),
+		onSuccess: (
+			_data: { success: boolean },
+			variables: { trackId: string },
+		) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-derivations", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+};
+
+// ===== トラック公開リンク =====
+
+type CreateTrackPublicationData = {
+	id: string;
+	platformCode: string;
+	url: string;
+};
+type UpdateTrackPublicationData = {
+	url?: string;
+};
+
+export const trackPublicationMutations = {
+	create: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			trackId,
+			data,
+		}: {
+			trackId: string;
+			data: CreateTrackPublicationData;
+		}) => trackPublicationsApi.create(trackId, data),
+		onSuccess: (_data: TrackPublication, variables: { trackId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-publications", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+	update: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			trackId,
+			publicationId,
+			data,
+		}: {
+			trackId: string;
+			publicationId: string;
+			data: UpdateTrackPublicationData;
+		}) => trackPublicationsApi.update(trackId, publicationId, data),
+		onSuccess: (_data: TrackPublication, variables: { trackId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-publications", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+	delete: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			trackId,
+			publicationId,
+		}: {
+			trackId: string;
+			publicationId: string;
+		}) => trackPublicationsApi.delete(trackId, publicationId),
+		onSuccess: (
+			_data: { success: boolean },
+			variables: { trackId: string },
+		) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-publications", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+};
+
+// ===== トラックISRC =====
+
+type CreateTrackIsrcData = {
+	id: string;
+	isrc: string;
+	isPrimary?: boolean;
+};
+type UpdateTrackIsrcData = {
+	isPrimary?: boolean;
+};
+
+export const trackIsrcMutations = {
+	create: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			trackId,
+			data,
+		}: {
+			trackId: string;
+			data: CreateTrackIsrcData;
+		}) => trackIsrcsApi.create(trackId, data),
+		onSuccess: (_data: TrackIsrc, variables: { trackId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-isrcs", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+	update: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			trackId,
+			isrcId,
+			data,
+		}: {
+			trackId: string;
+			isrcId: string;
+			data: UpdateTrackIsrcData;
+		}) => trackIsrcsApi.update(trackId, isrcId, data),
+		onSuccess: (_data: TrackIsrc, variables: { trackId: string }) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-isrcs", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+	delete: (queryClient: QueryClient) => ({
+		mutationFn: ({ trackId, isrcId }: { trackId: string; isrcId: string }) =>
+			trackIsrcsApi.delete(trackId, isrcId),
+		onSuccess: (
+			_data: { success: boolean },
+			variables: { trackId: string },
+		) => {
+			queryClient.invalidateQueries({
+				queryKey: ["track-isrcs", variables.trackId],
+			});
+			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
 		},
 	}),
 };

@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
@@ -53,7 +53,6 @@ import {
 	type TrackIsrc,
 	type TrackOfficialSong,
 	type TrackPublication,
-	trackCreditsApi,
 	trackDerivationsApi,
 	trackIsrcsApi,
 	trackOfficialSongsApi,
@@ -65,6 +64,13 @@ import {
 	PLATFORM_CATEGORY_ORDER,
 } from "@/lib/constants";
 import { createTrackDetailHead } from "@/lib/head";
+import {
+	trackCreditMutations,
+	trackDerivationMutations,
+	trackIsrcMutations,
+	trackOfficialSongMutations,
+	trackPublicationMutations,
+} from "@/lib/mutation-options";
 import { trackDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/tracks_/$id")({
@@ -111,9 +117,61 @@ function TrackDetailPage() {
 	// 編集ダイアログ
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-	// 各種ダイアログ用（既存のダイアログで使用）
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [mutationError, setMutationError] = useState<string | null>(null);
+	// === Mutation Hooks ===
+	// クレジット
+	const creditCreateMutation = useMutation(
+		trackCreditMutations.create(queryClient),
+	);
+	const creditUpdateMutation = useMutation(
+		trackCreditMutations.update(queryClient),
+	);
+	const creditDeleteMutation = useMutation(
+		trackCreditMutations.delete(queryClient),
+	);
+
+	// 公式楽曲
+	const officialSongCreateMutation = useMutation(
+		trackOfficialSongMutations.create(queryClient),
+	);
+	const officialSongUpdateMutation = useMutation(
+		trackOfficialSongMutations.update(queryClient),
+	);
+	const officialSongDeleteMutation = useMutation(
+		trackOfficialSongMutations.delete(queryClient),
+	);
+	const officialSongReorderMutation = useMutation(
+		trackOfficialSongMutations.reorder(queryClient),
+	);
+
+	// 派生関係
+	const derivationCreateMutation = useMutation(
+		trackDerivationMutations.create(queryClient),
+	);
+	const derivationDeleteMutation = useMutation(
+		trackDerivationMutations.delete(queryClient),
+	);
+
+	// 公開リンク
+	const publicationCreateMutation = useMutation(
+		trackPublicationMutations.create(queryClient),
+	);
+	const publicationUpdateMutation = useMutation(
+		trackPublicationMutations.update(queryClient),
+	);
+	const publicationDeleteMutation = useMutation(
+		trackPublicationMutations.delete(queryClient),
+	);
+
+	// ISRC
+	const isrcCreateMutation = useMutation(
+		trackIsrcMutations.create(queryClient),
+	);
+	const isrcUpdateMutation = useMutation(
+		trackIsrcMutations.update(queryClient),
+	);
+	const isrcDeleteMutation = useMutation(
+		trackIsrcMutations.delete(queryClient),
+	);
 
 	// クレジット追加ダイアログ
 	const [isCreditDialogOpen, setIsCreditDialogOpen] = useState(false);
@@ -175,20 +233,15 @@ function TrackDetailPage() {
 	// 削除ダイアログ状態
 	const [deleteCreditTarget, setDeleteCreditTarget] =
 		useState<TrackCredit | null>(null);
-	const [isDeletingCredit, setIsDeletingCredit] = useState(false);
 	const [deleteOfficialSongTarget, setDeleteOfficialSongTarget] =
 		useState<TrackOfficialSong | null>(null);
-	const [isDeletingOfficialSong, setIsDeletingOfficialSong] = useState(false);
 	const [deleteDerivationTarget, setDeleteDerivationTarget] =
 		useState<TrackDerivation | null>(null);
-	const [isDeletingDerivation, setIsDeletingDerivation] = useState(false);
 	const [deletePublicationTarget, setDeletePublicationTarget] =
 		useState<TrackPublication | null>(null);
-	const [isDeletingPublication, setIsDeletingPublication] = useState(false);
 	const [deleteIsrcTarget, setDeleteIsrcTarget] = useState<TrackIsrc | null>(
 		null,
 	);
-	const [isDeletingIsrc, setIsDeletingIsrc] = useState(false);
 
 	// アーティスト・別名義・役割データ取得
 	const { data: artistsData } = useQuery({
@@ -380,12 +433,12 @@ function TrackDetailPage() {
 			selectedRoles: [],
 		});
 		setIsCreditDialogOpen(true);
-		setMutationError(null);
 	};
 
 	// クレジット追加ダイアログを閉じる
 	const closeCreditDialog = () => {
 		setIsCreditDialogOpen(false);
+		creditCreateMutation.reset();
 		setCreditForm({
 			id: "",
 			artistId: "",
@@ -408,13 +461,13 @@ function TrackDetailPage() {
 			selectedRoles: credit.roles?.map((r) => r.roleCode) ?? [],
 		});
 		setIsCreditEditDialogOpen(true);
-		setMutationError(null);
 	};
 
 	// クレジット編集ダイアログを閉じる
 	const closeCreditEditDialog = () => {
 		setIsCreditEditDialogOpen(false);
 		setEditingCredit(null);
+		creditUpdateMutation.reset();
 		setCreditForm({
 			id: "",
 			artistId: "",
@@ -462,60 +515,58 @@ function TrackDetailPage() {
 	};
 
 	// クレジット追加・更新
-	const handleCreditSubmit = async () => {
+	const handleCreditSubmit = () => {
 		if (!track?.releaseId) return;
 		const releaseId = track.releaseId;
-		setIsSubmitting(true);
-		setMutationError(null);
 
-		try {
-			if (editingCredit) {
-				await trackCreditsApi.update(releaseId, track.id, editingCredit.id, {
-					artistId: creditForm.artistId,
-					artistAliasId: creditForm.artistAliasId || null,
-					creditName: creditForm.creditName,
-					creditPosition: creditForm.creditPosition,
-					rolesCodes: creditForm.selectedRoles,
-				});
-				closeCreditEditDialog();
-			} else {
-				await trackCreditsApi.create(releaseId, track.id, {
-					id: creditForm.id,
-					artistId: creditForm.artistId,
-					artistAliasId: creditForm.artistAliasId || null,
-					creditName: creditForm.creditName,
-					creditPosition: creditForm.creditPosition,
-					rolesCodes: creditForm.selectedRoles,
-				});
-				closeCreditDialog();
-			}
-			await queryClient.invalidateQueries({ queryKey: ["track", trackId] });
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "クレジットの保存に失敗しました",
+		if (editingCredit) {
+			creditUpdateMutation.mutate(
+				{
+					releaseId,
+					trackId: track.id,
+					creditId: editingCredit.id,
+					data: {
+						artistId: creditForm.artistId,
+						artistAliasId: creditForm.artistAliasId || null,
+						creditName: creditForm.creditName,
+						creditPosition: creditForm.creditPosition,
+						rolesCodes: creditForm.selectedRoles,
+					},
+				},
+				{ onSuccess: () => closeCreditEditDialog() },
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			creditCreateMutation.mutate(
+				{
+					releaseId,
+					trackId: track.id,
+					data: {
+						id: creditForm.id,
+						artistId: creditForm.artistId,
+						artistAliasId: creditForm.artistAliasId || null,
+						creditName: creditForm.creditName,
+						creditPosition: creditForm.creditPosition,
+						rolesCodes: creditForm.selectedRoles,
+					},
+				},
+				{ onSuccess: () => closeCreditDialog() },
+			);
 		}
 	};
 
 	// クレジット削除
-	const handleCreditDelete = async () => {
+	const handleCreditDelete = () => {
 		if (!deleteCreditTarget || !track?.releaseId) return;
 		const releaseId = track.releaseId;
-		setIsDeletingCredit(true);
 
-		try {
-			await trackCreditsApi.delete(releaseId, track.id, deleteCreditTarget.id);
-			setDeleteCreditTarget(null);
-			await queryClient.invalidateQueries({ queryKey: ["track", trackId] });
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "クレジットの削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingCredit(false);
-		}
+		creditDeleteMutation.mutate(
+			{
+				releaseId,
+				trackId: track.id,
+				creditId: deleteCreditTarget.id,
+			},
+			{ onSuccess: () => setDeleteCreditTarget(null) },
+		);
 	};
 
 	// クレジット順序変更（上へ）
@@ -527,21 +578,20 @@ function TrackDetailPage() {
 		);
 		const prevCredit = sortedCredits[index - 1];
 
-		try {
-			await Promise.all([
-				trackCreditsApi.update(releaseId, track.id, credit.id, {
-					creditPosition: prevCredit.creditPosition,
-				}),
-				trackCreditsApi.update(releaseId, track.id, prevCredit.id, {
-					creditPosition: credit.creditPosition,
-				}),
-			]);
-			await queryClient.invalidateQueries({ queryKey: ["track", trackId] });
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "順序変更に失敗しました",
-			);
-		}
+		await Promise.all([
+			creditUpdateMutation.mutateAsync({
+				releaseId,
+				trackId: track.id,
+				creditId: credit.id,
+				data: { creditPosition: prevCredit.creditPosition },
+			}),
+			creditUpdateMutation.mutateAsync({
+				releaseId,
+				trackId: track.id,
+				creditId: prevCredit.id,
+				data: { creditPosition: credit.creditPosition },
+			}),
+		]);
 	};
 
 	// クレジット順序変更（下へ）
@@ -554,21 +604,20 @@ function TrackDetailPage() {
 		if (index === sortedCredits.length - 1) return;
 		const nextCredit = sortedCredits[index + 1];
 
-		try {
-			await Promise.all([
-				trackCreditsApi.update(releaseId, track.id, credit.id, {
-					creditPosition: nextCredit.creditPosition,
-				}),
-				trackCreditsApi.update(releaseId, track.id, nextCredit.id, {
-					creditPosition: credit.creditPosition,
-				}),
-			]);
-			await queryClient.invalidateQueries({ queryKey: ["track", trackId] });
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "順序変更に失敗しました",
-			);
-		}
+		await Promise.all([
+			creditUpdateMutation.mutateAsync({
+				releaseId,
+				trackId: track.id,
+				creditId: credit.id,
+				data: { creditPosition: nextCredit.creditPosition },
+			}),
+			creditUpdateMutation.mutateAsync({
+				releaseId,
+				trackId: track.id,
+				creditId: nextCredit.id,
+				data: { creditPosition: credit.creditPosition },
+			}),
+		]);
 	};
 
 	// === 原曲紐付け関連ハンドラー ===
@@ -584,7 +633,6 @@ function TrackDetailPage() {
 		});
 		setEditingOfficialSong(null);
 		setIsOfficialSongDialogOpen(true);
-		setMutationError(null);
 	};
 
 	const openOfficialSongEditDialog = (relation: TrackOfficialSong) => {
@@ -599,86 +647,73 @@ function TrackDetailPage() {
 		});
 		setEditingOfficialSong(relation);
 		setIsOfficialSongDialogOpen(true);
-		setMutationError(null);
 	};
 
 	const closeOfficialSongDialog = () => {
 		setIsOfficialSongDialogOpen(false);
 		setEditingOfficialSong(null);
+		officialSongCreateMutation.reset();
+		officialSongUpdateMutation.reset();
 	};
 
-	const handleOfficialSongSubmit = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
+	const handleOfficialSongSubmit = () => {
+		// 「その他」が選択されている場合はcustomSongNameを使用
+		const isCustom = officialSongForm.officialSongId === "07999999";
 
-		try {
-			// 「その他」が選択されている場合はcustomSongNameを使用
-			const isCustom = officialSongForm.officialSongId === "07999999";
-
-			if (editingOfficialSong) {
-				await trackOfficialSongsApi.update(trackId, editingOfficialSong.id, {
-					partPosition: officialSongForm.partPosition,
-					startSecond: officialSongForm.startSecond,
-					endSecond: officialSongForm.endSecond,
-					notes: officialSongForm.notes || null,
-				});
-			} else {
-				await trackOfficialSongsApi.create(trackId, {
-					id: officialSongForm.id,
-					officialSongId: isCustom ? null : officialSongForm.officialSongId,
-					customSongName: isCustom
-						? officialSongForm.customSongName || null
-						: null,
-					partPosition: officialSongForm.partPosition,
-					notes: officialSongForm.notes || null,
-				});
-			}
-			await queryClient.invalidateQueries({
-				queryKey: ["track-official-songs", trackId],
-			});
-			closeOfficialSongDialog();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "原曲紐付けの保存に失敗しました",
+		if (editingOfficialSong) {
+			officialSongUpdateMutation.mutate(
+				{
+					trackId,
+					officialSongId: editingOfficialSong.id,
+					data: {
+						partPosition: officialSongForm.partPosition,
+						startSecond: officialSongForm.startSecond,
+						endSecond: officialSongForm.endSecond,
+						notes: officialSongForm.notes || null,
+					},
+				},
+				{ onSuccess: () => closeOfficialSongDialog() },
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			officialSongCreateMutation.mutate(
+				{
+					trackId,
+					data: {
+						id: officialSongForm.id,
+						officialSongId: isCustom ? null : officialSongForm.officialSongId,
+						customSongName: isCustom
+							? officialSongForm.customSongName || null
+							: null,
+						partPosition: officialSongForm.partPosition,
+						notes: officialSongForm.notes || null,
+					},
+				},
+				{ onSuccess: () => closeOfficialSongDialog() },
+			);
 		}
 	};
 
-	const handleOfficialSongDelete = async () => {
+	const handleOfficialSongDelete = () => {
 		if (!deleteOfficialSongTarget) return;
-		setIsDeletingOfficialSong(true);
 
-		try {
-			await trackOfficialSongsApi.delete(trackId, deleteOfficialSongTarget.id);
-			setDeleteOfficialSongTarget(null);
-			await queryClient.invalidateQueries({
-				queryKey: ["track-official-songs", trackId],
-			});
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "原曲紐付けの削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingOfficialSong(false);
-		}
+		officialSongDeleteMutation.mutate(
+			{
+				trackId,
+				officialSongId: deleteOfficialSongTarget.id,
+			},
+			{ onSuccess: () => setDeleteOfficialSongTarget(null) },
+		);
 	};
 
-	const handleOfficialSongReorder = async (
+	const handleOfficialSongReorder = (
 		relationId: string,
 		direction: "up" | "down",
 	) => {
-		try {
-			await trackOfficialSongsApi.reorder(trackId, relationId, direction);
-			await queryClient.invalidateQueries({
-				queryKey: ["track-official-songs", trackId],
-			});
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "並べ替えに失敗しました",
-			);
-		}
+		officialSongReorderMutation.mutate({
+			trackId,
+			officialSongId: relationId,
+			direction,
+		});
 	};
 
 	// === 派生関係ハンドラー ===
@@ -689,53 +724,37 @@ function TrackDetailPage() {
 			notes: "",
 		});
 		setIsDerivationDialogOpen(true);
-		setMutationError(null);
 	};
 
 	const closeDerivationDialog = () => {
 		setIsDerivationDialogOpen(false);
+		derivationCreateMutation.reset();
 	};
 
-	const handleDerivationSubmit = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-
-		try {
-			await trackDerivationsApi.create(trackId, {
-				id: derivationForm.id,
-				parentTrackId: derivationForm.parentTrackId,
-				notes: derivationForm.notes || null,
-			});
-			await queryClient.invalidateQueries({
-				queryKey: ["track-derivations", trackId],
-			});
-			closeDerivationDialog();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "派生関係の追加に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
+	const handleDerivationSubmit = () => {
+		derivationCreateMutation.mutate(
+			{
+				trackId,
+				data: {
+					id: derivationForm.id,
+					parentTrackId: derivationForm.parentTrackId,
+					notes: derivationForm.notes || null,
+				},
+			},
+			{ onSuccess: () => closeDerivationDialog() },
+		);
 	};
 
-	const handleDerivationDelete = async () => {
+	const handleDerivationDelete = () => {
 		if (!deleteDerivationTarget) return;
-		setIsDeletingDerivation(true);
 
-		try {
-			await trackDerivationsApi.delete(trackId, deleteDerivationTarget.id);
-			setDeleteDerivationTarget(null);
-			await queryClient.invalidateQueries({
-				queryKey: ["track-derivations", trackId],
-			});
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "派生関係の削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingDerivation(false);
-		}
+		derivationDeleteMutation.mutate(
+			{
+				trackId,
+				derivationId: deleteDerivationTarget.id,
+			},
+			{ onSuccess: () => setDeleteDerivationTarget(null) },
+		);
 	};
 
 	// === 公開リンクハンドラー ===
@@ -747,7 +766,6 @@ function TrackDetailPage() {
 		});
 		setEditingPublication(null);
 		setIsPublicationDialogOpen(true);
-		setMutationError(null);
 	};
 
 	const openPublicationEditDialog = (publication: TrackPublication) => {
@@ -758,60 +776,50 @@ function TrackDetailPage() {
 		});
 		setEditingPublication(publication);
 		setIsPublicationDialogOpen(true);
-		setMutationError(null);
 	};
 
 	const closePublicationDialog = () => {
 		setIsPublicationDialogOpen(false);
 		setEditingPublication(null);
+		publicationCreateMutation.reset();
+		publicationUpdateMutation.reset();
 	};
 
-	const handlePublicationSubmit = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-
-		try {
-			if (editingPublication) {
-				await trackPublicationsApi.update(trackId, editingPublication.id, {
-					url: publicationForm.url,
-				});
-			} else {
-				await trackPublicationsApi.create(trackId, {
-					id: publicationForm.id,
-					platformCode: publicationForm.platformCode,
-					url: publicationForm.url,
-				});
-			}
-			await queryClient.invalidateQueries({
-				queryKey: ["track-publications", trackId],
-			});
-			closePublicationDialog();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "公開リンクの保存に失敗しました",
+	const handlePublicationSubmit = () => {
+		if (editingPublication) {
+			publicationUpdateMutation.mutate(
+				{
+					trackId,
+					publicationId: editingPublication.id,
+					data: { url: publicationForm.url },
+				},
+				{ onSuccess: () => closePublicationDialog() },
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			publicationCreateMutation.mutate(
+				{
+					trackId,
+					data: {
+						id: publicationForm.id,
+						platformCode: publicationForm.platformCode,
+						url: publicationForm.url,
+					},
+				},
+				{ onSuccess: () => closePublicationDialog() },
+			);
 		}
 	};
 
-	const handlePublicationDelete = async () => {
+	const handlePublicationDelete = () => {
 		if (!deletePublicationTarget) return;
-		setIsDeletingPublication(true);
 
-		try {
-			await trackPublicationsApi.delete(trackId, deletePublicationTarget.id);
-			setDeletePublicationTarget(null);
-			await queryClient.invalidateQueries({
-				queryKey: ["track-publications", trackId],
-			});
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "公開リンクの削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingPublication(false);
-		}
+		publicationDeleteMutation.mutate(
+			{
+				trackId,
+				publicationId: deletePublicationTarget.id,
+			},
+			{ onSuccess: () => setDeletePublicationTarget(null) },
+		);
 	};
 
 	// === ISRCハンドラー ===
@@ -823,7 +831,6 @@ function TrackDetailPage() {
 		});
 		setEditingIsrc(null);
 		setIsIsrcDialogOpen(true);
-		setMutationError(null);
 	};
 
 	const openIsrcEditDialog = (isrc: TrackIsrc) => {
@@ -834,60 +841,50 @@ function TrackDetailPage() {
 		});
 		setEditingIsrc(isrc);
 		setIsIsrcDialogOpen(true);
-		setMutationError(null);
 	};
 
 	const closeIsrcDialog = () => {
 		setIsIsrcDialogOpen(false);
 		setEditingIsrc(null);
+		isrcCreateMutation.reset();
+		isrcUpdateMutation.reset();
 	};
 
-	const handleIsrcSubmit = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-
-		try {
-			if (editingIsrc) {
-				await trackIsrcsApi.update(trackId, editingIsrc.id, {
-					isPrimary: isrcForm.isPrimary,
-				});
-			} else {
-				await trackIsrcsApi.create(trackId, {
-					id: isrcForm.id,
-					isrc: isrcForm.isrc,
-					isPrimary: isrcForm.isPrimary,
-				});
-			}
-			await queryClient.invalidateQueries({
-				queryKey: ["track-isrcs", trackId],
-			});
-			closeIsrcDialog();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "ISRCの保存に失敗しました",
+	const handleIsrcSubmit = () => {
+		if (editingIsrc) {
+			isrcUpdateMutation.mutate(
+				{
+					trackId,
+					isrcId: editingIsrc.id,
+					data: { isPrimary: isrcForm.isPrimary },
+				},
+				{ onSuccess: () => closeIsrcDialog() },
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			isrcCreateMutation.mutate(
+				{
+					trackId,
+					data: {
+						id: isrcForm.id,
+						isrc: isrcForm.isrc,
+						isPrimary: isrcForm.isPrimary,
+					},
+				},
+				{ onSuccess: () => closeIsrcDialog() },
+			);
 		}
 	};
 
-	const handleIsrcDelete = async () => {
+	const handleIsrcDelete = () => {
 		if (!deleteIsrcTarget) return;
-		setIsDeletingIsrc(true);
 
-		try {
-			await trackIsrcsApi.delete(trackId, deleteIsrcTarget.id);
-			setDeleteIsrcTarget(null);
-			await queryClient.invalidateQueries({
-				queryKey: ["track-isrcs", trackId],
-			});
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "ISRCの削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingIsrc(false);
-		}
+		isrcDeleteMutation.mutate(
+			{
+				trackId,
+				isrcId: deleteIsrcTarget.id,
+			},
+			{ onSuccess: () => setDeleteIsrcTarget(null) },
+		);
 	};
 
 	// ローディング（キャッシュがない場合のみスケルトンを表示）
@@ -940,9 +937,7 @@ function TrackDetailPage() {
 				<h1 className="font-bold text-2xl">{track.name}</h1>
 			</div>
 
-			{mutationError && (
-				<div className="alert alert-error mb-4">{mutationError}</div>
-			)}
+			{/* mutation エラーは各ダイアログ内で表示 */}
 
 			{/* トラック情報カード */}
 			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
@@ -1624,6 +1619,11 @@ function TrackDetailPage() {
 							</div>
 						</div>
 					</div>
+					{creditCreateMutation.error && (
+						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							{creditCreateMutation.error.message}
+						</div>
+					)}
 					<DialogFooter>
 						<Button variant="ghost" onClick={closeCreditDialog}>
 							キャンセル
@@ -1632,10 +1632,12 @@ function TrackDetailPage() {
 							variant="primary"
 							onClick={handleCreditSubmit}
 							disabled={
-								isSubmitting || !creditForm.artistId || !creditForm.creditName
+								creditCreateMutation.isPending ||
+								!creditForm.artistId ||
+								!creditForm.creditName
 							}
 						>
-							{isSubmitting ? "追加中..." : "追加"}
+							{creditCreateMutation.isPending ? "追加中..." : "追加"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -1726,6 +1728,11 @@ function TrackDetailPage() {
 							</div>
 						</div>
 					</div>
+					{creditUpdateMutation.error && (
+						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							{creditUpdateMutation.error.message}
+						</div>
+					)}
 					<DialogFooter>
 						<Button variant="ghost" onClick={closeCreditEditDialog}>
 							キャンセル
@@ -1734,10 +1741,12 @@ function TrackDetailPage() {
 							variant="primary"
 							onClick={handleCreditSubmit}
 							disabled={
-								isSubmitting || !creditForm.artistId || !creditForm.creditName
+								creditUpdateMutation.isPending ||
+								!creditForm.artistId ||
+								!creditForm.creditName
 							}
 						>
-							{isSubmitting ? "更新中..." : "更新"}
+							{creditUpdateMutation.isPending ? "更新中..." : "更新"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -1855,6 +1864,18 @@ function TrackDetailPage() {
 							/>
 						</div>
 					</div>
+					{(editingOfficialSong
+						? officialSongUpdateMutation.error
+						: officialSongCreateMutation.error) && (
+						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							{
+								(editingOfficialSong
+									? officialSongUpdateMutation.error
+									: officialSongCreateMutation.error
+								)?.message
+							}
+						</div>
+					)}
 					<DialogFooter>
 						<Button variant="ghost" onClick={closeOfficialSongDialog}>
 							キャンセル
@@ -1863,11 +1884,17 @@ function TrackDetailPage() {
 							variant="primary"
 							onClick={handleOfficialSongSubmit}
 							disabled={
-								isSubmitting ||
+								(editingOfficialSong
+									? officialSongUpdateMutation.isPending
+									: officialSongCreateMutation.isPending) ||
 								(!editingOfficialSong && !officialSongForm.officialSongId)
 							}
 						>
-							{isSubmitting
+							{(
+								editingOfficialSong
+									? officialSongUpdateMutation.isPending
+									: officialSongCreateMutation.isPending
+							)
 								? editingOfficialSong
 									? "更新中..."
 									: "追加中..."
@@ -1921,6 +1948,11 @@ function TrackDetailPage() {
 							/>
 						</div>
 					</div>
+					{derivationCreateMutation.error && (
+						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							{derivationCreateMutation.error.message}
+						</div>
+					)}
 					<DialogFooter>
 						<Button variant="ghost" onClick={closeDerivationDialog}>
 							キャンセル
@@ -1928,9 +1960,12 @@ function TrackDetailPage() {
 						<Button
 							variant="primary"
 							onClick={handleDerivationSubmit}
-							disabled={isSubmitting || !derivationForm.parentTrackId}
+							disabled={
+								derivationCreateMutation.isPending ||
+								!derivationForm.parentTrackId
+							}
 						>
-							{isSubmitting ? "追加中..." : "追加"}
+							{derivationCreateMutation.isPending ? "追加中..." : "追加"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -1948,12 +1983,6 @@ function TrackDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
-							</div>
-						)}
-
 						<div className="grid gap-2">
 							<Label>
 								プラットフォーム <span className="text-error">*</span>
@@ -1992,11 +2021,27 @@ function TrackDetailPage() {
 							/>
 						</div>
 					</div>
+					{(editingPublication
+						? publicationUpdateMutation.error
+						: publicationCreateMutation.error) && (
+						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							{
+								(editingPublication
+									? publicationUpdateMutation.error
+									: publicationCreateMutation.error
+								)?.message
+							}
+						</div>
+					)}
 					<DialogFooter>
 						<Button
 							variant="ghost"
 							onClick={closePublicationDialog}
-							disabled={isSubmitting}
+							disabled={
+								editingPublication
+									? publicationUpdateMutation.isPending
+									: publicationCreateMutation.isPending
+							}
 						>
 							キャンセル
 						</Button>
@@ -2004,12 +2049,18 @@ function TrackDetailPage() {
 							variant="primary"
 							onClick={handlePublicationSubmit}
 							disabled={
-								isSubmitting ||
+								(editingPublication
+									? publicationUpdateMutation.isPending
+									: publicationCreateMutation.isPending) ||
 								!publicationForm.platformCode ||
 								!publicationForm.url
 							}
 						>
-							{isSubmitting
+							{(
+								editingPublication
+									? publicationUpdateMutation.isPending
+									: publicationCreateMutation.isPending
+							)
 								? editingPublication
 									? "更新中..."
 									: "追加中..."
@@ -2030,12 +2081,6 @@ function TrackDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
-							</div>
-						)}
-
 						{!editingIsrc && (
 							<div className="grid gap-2">
 								<Label>
@@ -2070,20 +2115,45 @@ function TrackDetailPage() {
 							<span>主要ISRCとして設定</span>
 						</label>
 					</div>
+					{(editingIsrc
+						? isrcUpdateMutation.error
+						: isrcCreateMutation.error) && (
+						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							{
+								(editingIsrc
+									? isrcUpdateMutation.error
+									: isrcCreateMutation.error
+								)?.message
+							}
+						</div>
+					)}
 					<DialogFooter>
 						<Button
 							variant="ghost"
 							onClick={closeIsrcDialog}
-							disabled={isSubmitting}
+							disabled={
+								editingIsrc
+									? isrcUpdateMutation.isPending
+									: isrcCreateMutation.isPending
+							}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={handleIsrcSubmit}
-							disabled={isSubmitting || (!editingIsrc && !isrcForm.isrc)}
+							disabled={
+								(editingIsrc
+									? isrcUpdateMutation.isPending
+									: isrcCreateMutation.isPending) ||
+								(!editingIsrc && !isrcForm.isrc)
+							}
 						>
-							{isSubmitting
+							{(
+								editingIsrc
+									? isrcUpdateMutation.isPending
+									: isrcCreateMutation.isPending
+							)
 								? editingIsrc
 									? "更新中..."
 									: "追加中..."
@@ -2106,61 +2176,86 @@ function TrackDetailPage() {
 			{/* クレジット削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteCreditTarget}
-				onOpenChange={(open) => !open && setDeleteCreditTarget(null)}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeleteCreditTarget(null);
+						creditDeleteMutation.reset();
+					}
+				}}
 				title="クレジットの削除"
-				description={`クレジット「${deleteCreditTarget?.creditName}」を削除しますか？この操作は取り消せません。`}
+				description={`クレジット「${deleteCreditTarget?.creditName}」を削除しますか？この操作は取り消せません。${creditDeleteMutation.error ? `\n\nエラー: ${creditDeleteMutation.error.message}` : ""}`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleCreditDelete}
-				isLoading={isDeletingCredit}
+				isLoading={creditDeleteMutation.isPending}
 			/>
 
 			{/* 原曲紐付け削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteOfficialSongTarget}
-				onOpenChange={(open) => !open && setDeleteOfficialSongTarget(null)}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeleteOfficialSongTarget(null);
+						officialSongDeleteMutation.reset();
+					}
+				}}
 				title="原曲紐付けの削除"
-				description={`原曲紐付け「${deleteOfficialSongTarget?.officialSong?.name ?? deleteOfficialSongTarget?.customSongName ?? "不明"}」を削除しますか？この操作は取り消せません。`}
+				description={`原曲紐付け「${deleteOfficialSongTarget?.officialSong?.name ?? deleteOfficialSongTarget?.customSongName ?? "不明"}」を削除しますか？この操作は取り消せません。${officialSongDeleteMutation.error ? `\n\nエラー: ${officialSongDeleteMutation.error.message}` : ""}`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleOfficialSongDelete}
-				isLoading={isDeletingOfficialSong}
+				isLoading={officialSongDeleteMutation.isPending}
 			/>
 
 			{/* 派生関係削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteDerivationTarget}
-				onOpenChange={(open) => !open && setDeleteDerivationTarget(null)}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeleteDerivationTarget(null);
+						derivationDeleteMutation.reset();
+					}
+				}}
 				title="派生関係の削除"
-				description={`派生関係「${deleteDerivationTarget?.parentTrack?.name ?? deleteDerivationTarget?.parentTrackId}」を削除しますか？この操作は取り消せません。`}
+				description={`派生関係「${deleteDerivationTarget?.parentTrack?.name ?? deleteDerivationTarget?.parentTrackId}」を削除しますか？この操作は取り消せません。${derivationDeleteMutation.error ? `\n\nエラー: ${derivationDeleteMutation.error.message}` : ""}`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDerivationDelete}
-				isLoading={isDeletingDerivation}
+				isLoading={derivationDeleteMutation.isPending}
 			/>
 
 			{/* 公開リンク削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deletePublicationTarget}
-				onOpenChange={(open) => !open && setDeletePublicationTarget(null)}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeletePublicationTarget(null);
+						publicationDeleteMutation.reset();
+					}
+				}}
 				title="公開リンクの削除"
-				description={`公開リンク「${deletePublicationTarget?.url}」を削除しますか？この操作は取り消せません。`}
+				description={`公開リンク「${deletePublicationTarget?.url}」を削除しますか？この操作は取り消せません。${publicationDeleteMutation.error ? `\n\nエラー: ${publicationDeleteMutation.error.message}` : ""}`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handlePublicationDelete}
-				isLoading={isDeletingPublication}
+				isLoading={publicationDeleteMutation.isPending}
 			/>
 
 			{/* ISRC削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteIsrcTarget}
-				onOpenChange={(open) => !open && setDeleteIsrcTarget(null)}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeleteIsrcTarget(null);
+						isrcDeleteMutation.reset();
+					}
+				}}
 				title="ISRCの削除"
-				description={`ISRC「${deleteIsrcTarget?.isrc}」を削除しますか？この操作は取り消せません。`}
+				description={`ISRC「${deleteIsrcTarget?.isrc}」を削除しますか？この操作は取り消せません。${isrcDeleteMutation.error ? `\n\nエラー: ${isrcDeleteMutation.error.message}` : ""}`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleIsrcDelete}
-				isLoading={isDeletingIsrc}
+				isLoading={isrcDeleteMutation.isPending}
 			/>
 		</div>
 	);
