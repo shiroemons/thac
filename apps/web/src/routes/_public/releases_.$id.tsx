@@ -54,7 +54,7 @@ export const Route = createFileRoute("/_public/releases_/$id")({
 			return { release: null };
 		}
 	},
-	head: ({ loaderData }) => createPublicReleaseHead(loaderData?.release?.name),
+	head: ({ loaderData }) => createPublicReleaseHead(loaderData?.release),
 	component: ReleaseDetailPage,
 });
 

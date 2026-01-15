@@ -22,8 +22,7 @@ export const Route = createFileRoute("/_public/official-works_/$id")({
 			return { work: null };
 		}
 	},
-	head: ({ loaderData }) =>
-		createPublicOfficialWorkHead(loaderData?.work?.nameJa),
+	head: ({ loaderData }) => createPublicOfficialWorkHead(loaderData?.work),
 	component: OfficialWorkDetailPage,
 });
 

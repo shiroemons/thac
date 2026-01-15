@@ -56,7 +56,7 @@ export const Route = createFileRoute("/_public/circles_/$id")({
 			return { circle: null };
 		}
 	},
-	head: ({ loaderData }) => createPublicCircleHead(loaderData?.circle?.name),
+	head: ({ loaderData }) => createPublicCircleHead(loaderData?.circle),
 	component: CircleDetailPage,
 });
 
