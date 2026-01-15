@@ -20,6 +20,8 @@ import {
 	type AliasType,
 	type Artist,
 	type ArtistAlias,
+	type ArtistFullResponse,
+	type ArtistWithAliases,
 	aliasTypesApi,
 	artistAliasesApi,
 	artistsApi,
@@ -37,12 +39,14 @@ import {
 	eventDaysApi,
 	eventSeriesApi,
 	eventsApi,
+	isConflictError,
 	type OfficialSong,
 	type OfficialWork,
 	type OfficialWorkCategory,
 	officialSongsApi,
 	officialWorkCategoriesApi,
 	officialWorksApi,
+	type PaginatedResponse,
 	type ParticipationType,
 	type Platform,
 	platformsApi,
@@ -96,7 +100,109 @@ export const artistMutations = {
 	update: (queryClient: QueryClient) => ({
 		mutationFn: ({ id, data }: { id: string; data: UpdateArtistData }) =>
 			artistsApi.update(id, data),
-		onSuccess: (_data: Artist, variables: { id: string }) => {
+
+		onMutate: async (variables: { id: string; data: UpdateArtistData }) => {
+			// 1. 進行中のクエリをキャンセル
+			await queryClient.cancelQueries({ queryKey: ["artists"] });
+			await queryClient.cancelQueries({ queryKey: ["artist", variables.id] });
+
+			// 2. 現在のキャッシュを保存（ロールバック用）
+			const previousArtists = queryClient.getQueriesData<
+				PaginatedResponse<Artist>
+			>({ queryKey: ["artists"] });
+			const previousDetail = queryClient.getQueryData<ArtistWithAliases>([
+				"artist",
+				variables.id,
+			]);
+			const previousFull = queryClient.getQueryData<ArtistFullResponse>([
+				"artist",
+				variables.id,
+				"full",
+			]);
+
+			// 3. 楽観的更新
+			// 詳細データ
+			if (previousDetail) {
+				queryClient.setQueryData<ArtistWithAliases>(
+					["artist", variables.id],
+					(old) => (old ? { ...old, ...variables.data } : old),
+				);
+			}
+
+			// 統合データ
+			if (previousFull) {
+				queryClient.setQueryData<ArtistFullResponse>(
+					["artist", variables.id, "full"],
+					(old) =>
+						old
+							? { ...old, artist: { ...old.artist, ...variables.data } }
+							: old,
+				);
+			}
+
+			// リストデータ
+			for (const [key, data] of previousArtists) {
+				if (
+					data &&
+					typeof data === "object" &&
+					"data" in data &&
+					Array.isArray(data.data)
+				) {
+					queryClient.setQueryData(key, {
+						...data,
+						data: data.data.map((a: Artist) =>
+							a.id === variables.id ? { ...a, ...variables.data } : a,
+						),
+					});
+				}
+			}
+
+			return { previousArtists, previousDetail, previousFull };
+		},
+
+		onError: (
+			err: unknown,
+			variables: { id: string },
+			context:
+				| {
+						previousArtists: [
+							readonly unknown[],
+							PaginatedResponse<Artist> | undefined,
+						][];
+						previousDetail: ArtistWithAliases | undefined;
+						previousFull: ArtistFullResponse | undefined;
+				  }
+				| undefined,
+		) => {
+			// ConflictErrorの場合はロールバックしない（ConflictDialogで処理するため）
+			if (isConflictError(err)) return;
+
+			// ロールバック処理
+			if (context?.previousArtists) {
+				for (const [key, data] of context.previousArtists) {
+					queryClient.setQueryData(key, data);
+				}
+			}
+			if (context?.previousDetail) {
+				queryClient.setQueryData(
+					["artist", variables.id],
+					context.previousDetail,
+				);
+			}
+			if (context?.previousFull) {
+				queryClient.setQueryData(
+					["artist", variables.id, "full"],
+					context.previousFull,
+				);
+			}
+		},
+
+		onSettled: (
+			_data: Artist | undefined,
+			_error: unknown,
+			variables: { id: string },
+		) => {
+			// 成功・失敗に関わらずサーバーと同期
 			queryClient.invalidateQueries({ queryKey: ["artists"] });
 			queryClient.invalidateQueries({ queryKey: ["artist", variables.id] });
 		},

@@ -5,6 +5,7 @@
  * onSuccess/onSettled で適切な queryKey を invalidate することを検証する。
  */
 import { describe, expect, mock, test } from "bun:test";
+import { ConflictError } from "./api-client";
 import {
 	aliasTypeMutations,
 	artistAliasMutations,
@@ -36,6 +37,30 @@ import {
 function createMockQueryClient() {
 	return {
 		invalidateQueries: mock(() => Promise.resolve()),
+	};
+}
+
+// Optimistic updates テスト用の拡張モック QueryClient を作成するヘルパー
+function createExtendedMockQueryClient() {
+	const queryCache = new Map<string, unknown>();
+
+	return {
+		invalidateQueries: mock(() => Promise.resolve()),
+		cancelQueries: mock(() => Promise.resolve()),
+		getQueriesData: mock(
+			<T>(_filters: { queryKey: unknown[] }): [readonly unknown[], T][] => [],
+		),
+		getQueryData: mock(<T>(_queryKey: unknown[]): T | undefined => undefined),
+		setQueryData: mock(
+			<T>(_queryKey: unknown[], _data: T | ((old: T | undefined) => T)): T => {
+				return undefined as T;
+			},
+		),
+		// キャッシュを設定するヘルパー
+		_setCache: (key: string, value: unknown) => {
+			queryCache.set(key, value);
+		},
+		_getCache: (key: string) => queryCache.get(key),
 	};
 }
 
@@ -79,11 +104,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates artists and specific artist queries", () => {
+		test("update.onSettled invalidates artists and specific artist queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = artistMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { id: "test-id" });
+			callCallback(config, "onSettled", { id: "test-id" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledTimes(2);
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
@@ -113,6 +138,166 @@ describe("mutation-options", () => {
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["artists"],
+			});
+		});
+	});
+
+	describe("artistMutations.update with optimistic updates", () => {
+		test("onMutate should return rollback context", async () => {
+			const queryClient = createExtendedMockQueryClient();
+
+			// getQueriesDataが空配列を返すようにモック
+			queryClient.getQueriesData.mockReturnValue([]);
+			// getQueryDataがundefinedを返すようにモック（詳細データなし）
+			queryClient.getQueryData.mockReturnValue(undefined);
+
+			const config = artistMutations.update(queryClient as never);
+
+			const variables = { id: "test-id", data: { name: "New Name" } };
+			const context = await config.onMutate(variables);
+
+			// contextが返されることを確認
+			expect(context).toBeDefined();
+			expect(context).toHaveProperty("previousArtists");
+			expect(context).toHaveProperty("previousDetail");
+			expect(context).toHaveProperty("previousFull");
+		});
+
+		test("onMutate should update cache optimistically", async () => {
+			const queryClient = createExtendedMockQueryClient();
+
+			// 既存のアーティスト詳細データ
+			const existingDetail = {
+				id: "test-id",
+				name: "Old Name",
+				aliases: [],
+			};
+
+			// getQueriesDataがリストデータを返すようにモック
+			const listData = {
+				data: [{ id: "test-id", name: "Old Name" }],
+				pagination: { page: 1, limit: 10, total: 1 },
+			};
+			queryClient.getQueriesData.mockReturnValue([
+				[["artists"], listData],
+			] as never);
+
+			// getQueryDataが詳細データを返すようにモック
+			queryClient.getQueryData.mockImplementation((queryKey: unknown[]) => {
+				if (
+					Array.isArray(queryKey) &&
+					queryKey[0] === "artist" &&
+					queryKey[1] === "test-id"
+				) {
+					if (queryKey.length === 2) return existingDetail;
+					if (queryKey[2] === "full")
+						return { artist: existingDetail, aliases: [] };
+				}
+				return undefined;
+			});
+
+			const config = artistMutations.update(queryClient as never);
+
+			const variables = { id: "test-id", data: { name: "New Name" } };
+			await config.onMutate(variables);
+
+			// cancelQueriesが呼ばれることを確認
+			expect(queryClient.cancelQueries).toHaveBeenCalledWith({
+				queryKey: ["artists"],
+			});
+			expect(queryClient.cancelQueries).toHaveBeenCalledWith({
+				queryKey: ["artist", "test-id"],
+			});
+
+			// setQueryDataが呼ばれることを確認（楽観的更新）
+			expect(queryClient.setQueryData).toHaveBeenCalled();
+		});
+
+		test("onError should rollback on non-conflict errors", () => {
+			const queryClient = createExtendedMockQueryClient();
+			const config = artistMutations.update(queryClient as never);
+
+			const previousArtists: [readonly unknown[], unknown][] = [
+				[["artists"], { data: [{ id: "test-id", name: "Old Name" }] }],
+			];
+			const previousDetail = { id: "test-id", name: "Old Name", aliases: [] };
+			const previousFull = {
+				artist: { id: "test-id", name: "Old Name" },
+				aliases: [],
+			};
+
+			const context = { previousArtists, previousDetail, previousFull };
+			const variables = { id: "test-id", data: { name: "New Name" } };
+			const nonConflictError = new Error("Network error");
+
+			// onErrorを呼び出す
+			config.onError(nonConflictError, variables, context as never);
+
+			// ロールバックが実行されることを確認（setQueryDataが呼ばれる）
+			expect(queryClient.setQueryData).toHaveBeenCalledTimes(3);
+			// リストデータのロールバック
+			expect(queryClient.setQueryData).toHaveBeenCalledWith(
+				["artists"],
+				previousArtists[0][1],
+			);
+			// 詳細データのロールバック
+			expect(queryClient.setQueryData).toHaveBeenCalledWith(
+				["artist", "test-id"],
+				previousDetail,
+			);
+			// フルデータのロールバック
+			expect(queryClient.setQueryData).toHaveBeenCalledWith(
+				["artist", "test-id", "full"],
+				previousFull,
+			);
+		});
+
+		test("onError should NOT rollback on ConflictError", () => {
+			const queryClient = createExtendedMockQueryClient();
+			const config = artistMutations.update(queryClient as never);
+
+			const previousArtists: [readonly unknown[], unknown][] = [
+				[["artists"], { data: [{ id: "test-id", name: "Old Name" }] }],
+			];
+			const previousDetail = { id: "test-id", name: "Old Name", aliases: [] };
+			const previousFull = {
+				artist: { id: "test-id", name: "Old Name" },
+				aliases: [],
+			};
+
+			const context = { previousArtists, previousDetail, previousFull };
+			const variables = { id: "test-id", data: { name: "New Name" } };
+			const conflictError = new ConflictError("Conflict detected", {
+				id: "test-id",
+				name: "Server Name",
+			});
+
+			// onErrorを呼び出す
+			config.onError(conflictError, variables, context as never);
+
+			// ロールバックが実行されないことを確認（setQueryDataが呼ばれない）
+			expect(queryClient.setQueryData).not.toHaveBeenCalled();
+		});
+
+		test("onSettled should invalidate related queries", () => {
+			const queryClient = createExtendedMockQueryClient();
+			const config = artistMutations.update(queryClient as never);
+
+			const variables = { id: "test-id", data: { name: "New Name" } };
+
+			// onSettledを呼び出す（成功時）
+			config.onSettled(
+				{ id: "test-id", name: "New Name" } as never,
+				undefined,
+				variables,
+			);
+
+			// invalidateQueriesが呼ばれることを確認
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artists"],
+			});
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artist", "test-id"],
 			});
 		});
 	});
