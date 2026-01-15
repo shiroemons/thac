@@ -46,7 +46,6 @@ function CreditRolesPage() {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(20);
 	const [search, setSearch] = useState("");
-	const [isReordering, setIsReordering] = useState(false);
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
@@ -75,6 +74,7 @@ function CreditRolesPage() {
 	const deleteMutation = useMutation(creditRoleMutations.delete(queryClient));
 	const updateMutation = useMutation(creditRoleMutations.update(queryClient));
 	const createMutation = useMutation(creditRoleMutations.create(queryClient));
+	const reorderMutation = useMutation(creditRoleMutations.reorder(queryClient));
 
 	const { data, isPending, isFetching, error } = useQuery({
 		queryKey: [
@@ -141,21 +141,13 @@ function CreditRolesPage() {
 	};
 
 	// 順序を整理
-	const handleReorder = async () => {
+	const handleReorder = () => {
 		if (items.length === 0) return;
-		setIsReordering(true);
-		try {
-			const reorderItems = items.map((item, index) => ({
-				code: item.code,
-				sortOrder: index,
-			}));
-			await creditRolesApi.reorder(reorderItems);
-			invalidateQuery();
-		} catch (e) {
-			console.error("順序の整理に失敗しました", e);
-		} finally {
-			setIsReordering(false);
-		}
+		const reorderItems = items.map((item, index) => ({
+			code: item.code,
+			sortOrder: index,
+		}));
+		reorderMutation.mutate(reorderItems);
 	};
 
 	const handleCreate = (formData: Record<string, string>) => {
@@ -198,7 +190,10 @@ function CreditRolesPage() {
 	};
 
 	const mutationError =
-		deleteMutation.error || updateMutation.error || createMutation.error;
+		deleteMutation.error ||
+		updateMutation.error ||
+		createMutation.error ||
+		reorderMutation.error;
 	const displayError =
 		(mutationError instanceof Error ? mutationError.message : null) ||
 		(error instanceof Error ? error.message : null);
@@ -238,10 +233,10 @@ function CreditRolesPage() {
 					}}
 					secondaryActions={[
 						{
-							label: isReordering ? "整理中..." : "順序を整理",
+							label: reorderMutation.isPending ? "整理中..." : "順序を整理",
 							icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
 							onClick: handleReorder,
-							disabled: isReordering || items.length === 0,
+							disabled: reorderMutation.isPending || items.length === 0,
 						},
 						{
 							label: "インポート",

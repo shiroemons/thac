@@ -85,7 +85,6 @@ function PlatformsPage() {
 	const [pageSize, setPageSize] = useState(20);
 	const [search, setSearch] = useState("");
 	const [category, setCategory] = useState("");
-	const [isReordering, setIsReordering] = useState(false);
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
@@ -108,11 +107,11 @@ function PlatformsPage() {
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 	const [deleteTarget, setDeleteTarget] = useState<Platform | null>(null);
-	const [reorderError, setReorderError] = useState<string | null>(null);
 
 	// Mutations
 	const deleteMutation = useMutation(platformMutations.delete(queryClient));
 	const updateMutation = useMutation(platformMutations.update(queryClient));
+	const reorderMutation = useMutation(platformMutations.reorder(queryClient));
 
 	const { data, isPending, isFetching, error } = useQuery({
 		queryKey: [
@@ -183,25 +182,14 @@ function PlatformsPage() {
 		);
 	};
 
-	// 順序を整理
-	const handleReorder = async () => {
+	// 順序を整理（連番に振り直し）
+	const handleReorder = () => {
 		if (platforms.length === 0) return;
-		setIsReordering(true);
-		setReorderError(null);
-		try {
-			const items = platforms.map((p, index) => ({
-				code: p.code,
-				sortOrder: index,
-			}));
-			await platformsApi.reorder(items);
-			invalidateQuery();
-		} catch (e) {
-			setReorderError(
-				e instanceof Error ? e.message : "順序の整理に失敗しました",
-			);
-		} finally {
-			setIsReordering(false);
-		}
+		const items = platforms.map((p, index) => ({
+			code: p.code,
+			sortOrder: index,
+		}));
+		reorderMutation.mutate(items);
 	};
 
 	const handleDelete = () => {
@@ -233,9 +221,9 @@ function PlatformsPage() {
 	};
 
 	const mutationError =
-		deleteMutation.error || updateMutation.error || reorderError;
+		deleteMutation.error || updateMutation.error || reorderMutation.error;
 	const displayError =
-		(mutationError instanceof Error ? mutationError.message : mutationError) ||
+		(mutationError instanceof Error ? mutationError.message : null) ||
 		(error instanceof Error ? error.message : null);
 
 	return (
@@ -277,10 +265,10 @@ function PlatformsPage() {
 					}}
 					secondaryActions={[
 						{
-							label: isReordering ? "整理中..." : "順序を整理",
+							label: reorderMutation.isPending ? "整理中..." : "順序を整理",
 							icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
 							onClick: handleReorder,
-							disabled: isReordering || platforms.length === 0,
+							disabled: reorderMutation.isPending || platforms.length === 0,
 						},
 						{
 							label: "インポート",

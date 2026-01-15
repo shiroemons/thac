@@ -52,7 +52,6 @@ function OfficialWorkCategoriesPage() {
 	const [page, setPage] = useState(1);
 	const [pageSize, setPageSize] = useState(20);
 	const [search, setSearch] = useState("");
-	const [isReordering, setIsReordering] = useState(false);
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
@@ -77,7 +76,6 @@ function OfficialWorkCategoriesPage() {
 	const [deleteTarget, setDeleteTarget] = useState<OfficialWorkCategory | null>(
 		null,
 	);
-	const [reorderError, setReorderError] = useState<string | null>(null);
 
 	// Mutations
 	const deleteMutation = useMutation(
@@ -88,6 +86,9 @@ function OfficialWorkCategoriesPage() {
 	);
 	const createMutation = useMutation(
 		officialWorkCategoryMutations.create(queryClient),
+	);
+	const reorderMutation = useMutation(
+		officialWorkCategoryMutations.reorder(queryClient),
 	);
 
 	const { data, isPending, isFetching, error } = useQuery({
@@ -155,24 +156,13 @@ function OfficialWorkCategoriesPage() {
 	};
 
 	// 順序を整理
-	const handleReorder = async () => {
+	const handleReorder = () => {
 		if (items.length === 0) return;
-		setIsReordering(true);
-		setReorderError(null);
-		try {
-			const reorderItems = items.map((item, index) => ({
-				code: item.code,
-				sortOrder: index,
-			}));
-			await officialWorkCategoriesApi.reorder(reorderItems);
-			invalidateQuery();
-		} catch (e) {
-			setReorderError(
-				e instanceof Error ? e.message : "順序の整理に失敗しました",
-			);
-		} finally {
-			setIsReordering(false);
-		}
+		const reorderItems = items.map((item, index) => ({
+			code: item.code,
+			sortOrder: index,
+		}));
+		reorderMutation.mutate(reorderItems);
 	};
 
 	const handleCreate = (formData: Record<string, string>) => {
@@ -218,9 +208,9 @@ function OfficialWorkCategoriesPage() {
 		deleteMutation.error ||
 		updateMutation.error ||
 		createMutation.error ||
-		reorderError;
+		reorderMutation.error;
 	const displayError =
-		(mutationError instanceof Error ? mutationError.message : mutationError) ||
+		(mutationError instanceof Error ? mutationError.message : null) ||
 		(error instanceof Error ? error.message : null);
 
 	return (
@@ -258,10 +248,10 @@ function OfficialWorkCategoriesPage() {
 					}}
 					secondaryActions={[
 						{
-							label: isReordering ? "整理中..." : "順序を整理",
+							label: reorderMutation.isPending ? "整理中..." : "順序を整理",
 							icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
 							onClick: handleReorder,
-							disabled: isReordering || items.length === 0,
+							disabled: reorderMutation.isPending || items.length === 0,
 						},
 						{
 							label: "インポート",

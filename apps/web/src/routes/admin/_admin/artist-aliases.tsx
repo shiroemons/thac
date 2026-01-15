@@ -29,7 +29,6 @@ import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
 	type ArtistAlias,
 	aliasTypesApi,
-	artistAliasesApi,
 	artistsApi,
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
@@ -129,8 +128,11 @@ function ArtistAliasesPage() {
 	const [editingAlias, setEditingAlias] = useState<ArtistAlias | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-	// Mutation
+	// Mutations
 	const deleteMutation = useMutation(artistAliasMutations.delete(queryClient));
+	const batchDeleteMutation = useMutation(
+		artistAliasMutations.batchDelete(queryClient),
+	);
 
 	// 選択状態管理
 	const {
@@ -146,7 +148,6 @@ function ArtistAliasesPage() {
 
 	// 一括削除ダイアログ状態
 	const [isBatchDeleteDialogOpen, setIsBatchDeleteDialogOpen] = useState(false);
-	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
 	// 個別削除ダイアログ状態
@@ -193,37 +194,33 @@ function ArtistAliasesPage() {
 		});
 	};
 
-	const handleBatchDelete = async () => {
-		setIsBatchDeleting(true);
+	const handleBatchDelete = () => {
 		setBatchDeleteError(null);
 
-		try {
-			const ids = Array.from(selectedItems.values()).map((item) => item.id);
+		const ids = Array.from(selectedItems.values()).map((item) => item.id);
 
-			if (ids.length === 0) {
-				setBatchDeleteError("削除可能な名義がありません");
-				return;
-			}
-
-			const result = await artistAliasesApi.batchDelete(ids);
-
-			if (result.failed.length > 0) {
-				setBatchDeleteError(
-					`${result.deleted.length}件削除、${result.failed.length}件失敗`,
-				);
-			} else {
-				setIsBatchDeleteDialogOpen(false);
-				clearSelection();
-			}
-
-			invalidateQuery();
-		} catch (e) {
-			setBatchDeleteError(
-				e instanceof Error ? e.message : "一括削除に失敗しました",
-			);
-		} finally {
-			setIsBatchDeleting(false);
+		if (ids.length === 0) {
+			setBatchDeleteError("削除可能な名義がありません");
+			return;
 		}
+
+		batchDeleteMutation.mutate(ids, {
+			onSuccess: (result) => {
+				if (result.failed.length > 0) {
+					setBatchDeleteError(
+						`${result.deleted.length}件削除、${result.failed.length}件失敗`,
+					);
+				} else {
+					setIsBatchDeleteDialogOpen(false);
+					clearSelection();
+				}
+			},
+			onError: (e) => {
+				setBatchDeleteError(
+					e instanceof Error ? e.message : "一括削除に失敗しました",
+				);
+			},
+		});
 	};
 
 	const handlePageChange = (newPage: number) => {
@@ -620,6 +617,7 @@ function ArtistAliasesPage() {
 					setIsBatchDeleteDialogOpen(open);
 					if (!open) {
 						setBatchDeleteError(null);
+						batchDeleteMutation.reset();
 					}
 				}}
 				title="アーティスト名義の一括削除"
@@ -637,7 +635,7 @@ function ArtistAliasesPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleBatchDelete}
-				isLoading={isBatchDeleting}
+				isLoading={batchDeleteMutation.isPending}
 			/>
 
 			{/* 個別削除確認ダイアログ */}

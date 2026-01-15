@@ -115,7 +115,6 @@ function TracksPage() {
 
 	// 一括削除ダイアログ状態
 	const [isBatchDeleteDialogOpen, setIsBatchDeleteDialogOpen] = useState(false);
-	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
 	// 個別削除ダイアログ状態
@@ -127,6 +126,9 @@ function TracksPage() {
 	// Mutations
 	const createMutation = useMutation(trackMutations.create(queryClient));
 	const deleteMutation = useMutation(trackMutations.delete(queryClient));
+	const batchDeleteMutation = useMutation(
+		trackMutations.batchDelete(queryClient),
+	);
 
 	// 作品一覧取得（フィルター用・新規作成用）
 	const { data: releasesData } = useQuery({
@@ -213,43 +215,39 @@ function TracksPage() {
 		);
 	};
 
-	const handleBatchDelete = async () => {
-		setIsBatchDeleting(true);
+	const handleBatchDelete = () => {
 		setBatchDeleteError(null);
 
-		try {
-			// 選択されたアイテムからreleaseIdとtrackIdを抽出
-			const items = Array.from(selectedItems.values())
-				.filter((item) => item.releaseId)
-				.map((item) => ({
-					trackId: item.id,
-					releaseId: item.releaseId as string,
-				}));
+		// 選択されたアイテムからreleaseIdとtrackIdを抽出
+		const items = Array.from(selectedItems.values())
+			.filter((item) => item.releaseId)
+			.map((item) => ({
+				trackId: item.id,
+				releaseId: item.releaseId as string,
+			}));
 
-			if (items.length === 0) {
-				setBatchDeleteError("削除可能なトラックがありません");
-				return;
-			}
-
-			const result = await tracksApi.batchDelete(items);
-
-			if (result.failed.length > 0) {
-				setBatchDeleteError(
-					`${result.deleted.length}件削除、${result.failed.length}件失敗`,
-				);
-			} else {
-				setIsBatchDeleteDialogOpen(false);
-				clearSelection();
-			}
-
-			invalidateQuery();
-		} catch (e) {
-			setBatchDeleteError(
-				e instanceof Error ? e.message : "一括削除に失敗しました",
-			);
-		} finally {
-			setIsBatchDeleting(false);
+		if (items.length === 0) {
+			setBatchDeleteError("削除可能なトラックがありません");
+			return;
 		}
+
+		batchDeleteMutation.mutate(items, {
+			onSuccess: (result) => {
+				if (result.failed.length > 0) {
+					setBatchDeleteError(
+						`${result.deleted.length}件削除、${result.failed.length}件失敗`,
+					);
+				} else {
+					setIsBatchDeleteDialogOpen(false);
+					clearSelection();
+				}
+			},
+			onError: (e) => {
+				setBatchDeleteError(
+					e instanceof Error ? e.message : "一括削除に失敗しました",
+				);
+			},
+		});
 	};
 
 	const handleEdit = (track: TrackListItem) => {
@@ -302,7 +300,8 @@ function TracksPage() {
 			label: r.name,
 		})) ?? [];
 
-	const mutationError = createMutation.error || deleteMutation.error;
+	const mutationError =
+		createMutation.error || deleteMutation.error || batchDeleteMutation.error;
 	const displayError =
 		(mutationError instanceof Error ? mutationError.message : null) ||
 		exportError ||
@@ -853,6 +852,7 @@ function TracksPage() {
 					setIsBatchDeleteDialogOpen(open);
 					if (!open) {
 						setBatchDeleteError(null);
+						batchDeleteMutation.reset();
 					}
 				}}
 				title="トラックの一括削除"
@@ -870,7 +870,7 @@ function TracksPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleBatchDelete}
-				isLoading={isBatchDeleting}
+				isLoading={batchDeleteMutation.isPending}
 			/>
 
 			{/* 個別削除確認ダイアログ */}

@@ -22,7 +22,7 @@ import {
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useSortableTable } from "@/hooks/use-sortable-table";
-import { type EventSeries, eventSeriesApi } from "@/lib/api-client";
+import type { EventSeries } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 import { eventSeriesMutations } from "@/lib/mutation-options";
 import { eventSeriesListQueryOptions } from "@/lib/query-options";
@@ -61,9 +61,7 @@ function EventSeriesPage() {
 	);
 
 	const [editingSeries, setEditingSeries] = useState<EventSeries | null>(null);
-	const [reorderError, setReorderError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [isReordering, setIsReordering] = useState(false);
 
 	// 個別削除ダイアログ状態
 	const [deleteTarget, setDeleteTarget] = useState<EventSeries | null>(null);
@@ -71,6 +69,9 @@ function EventSeriesPage() {
 	// Mutations
 	const deleteMutation = useMutation(eventSeriesMutations.delete(queryClient));
 	const updateMutation = useMutation(eventSeriesMutations.update(queryClient));
+	const reorderMutation = useMutation(
+		eventSeriesMutations.reorder(queryClient),
+	);
 
 	const { data, isPending, isFetching, error } = useQuery(
 		eventSeriesListQueryOptions({
@@ -129,24 +130,13 @@ function EventSeriesPage() {
 	};
 
 	// 順序を整理（連番に振り直し）
-	const handleReorder = async () => {
+	const handleReorder = () => {
 		if (seriesList.length === 0) return;
-		setIsReordering(true);
-		setReorderError(null);
-		try {
-			const items = seriesList.map((item, index) => ({
-				id: item.id,
-				sortOrder: index,
-			}));
-			await eventSeriesApi.reorder(items);
-			invalidateQuery();
-		} catch (e) {
-			setReorderError(
-				e instanceof Error ? e.message : "順序の整理に失敗しました",
-			);
-		} finally {
-			setIsReordering(false);
-		}
+		const items = seriesList.map((item, index) => ({
+			id: item.id,
+			sortOrder: index,
+		}));
+		reorderMutation.mutate(items);
 	};
 
 	const handleDelete = () => {
@@ -166,10 +156,10 @@ function EventSeriesPage() {
 		setSearch(value);
 	};
 
-	const mutationError = deleteMutation.error || updateMutation.error;
+	const mutationError =
+		deleteMutation.error || updateMutation.error || reorderMutation.error;
 	const displayError =
 		(mutationError instanceof Error ? mutationError.message : null) ||
-		reorderError ||
 		(error instanceof Error ? error.message : null);
 
 	return (
@@ -207,10 +197,10 @@ function EventSeriesPage() {
 					}}
 					secondaryActions={[
 						{
-							label: isReordering ? "整理中..." : "順序を整理",
+							label: reorderMutation.isPending ? "整理中..." : "順序を整理",
 							icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
 							onClick: handleReorder,
-							disabled: isReordering || seriesList.length === 0,
+							disabled: reorderMutation.isPending || seriesList.length === 0,
 						},
 					]}
 				/>

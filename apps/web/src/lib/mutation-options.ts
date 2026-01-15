@@ -724,6 +724,13 @@ export const platformMutations = {
 			queryClient.invalidateQueries({ queryKey: ["platforms"] });
 		},
 	}),
+	reorder: (queryClient: QueryClient) => ({
+		mutationFn: (items: Array<{ code: string; sortOrder: number }>) =>
+			platformsApi.reorder(items),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["platforms"] });
+		},
+	}),
 };
 
 // ===== マスターデータ: 名義種別 =====
@@ -759,6 +766,13 @@ export const aliasTypeMutations = {
 	}),
 	delete: (queryClient: QueryClient) => ({
 		mutationFn: (code: string) => aliasTypesApi.delete(code),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["aliasTypes"] });
+		},
+	}),
+	reorder: (queryClient: QueryClient) => ({
+		mutationFn: (items: Array<{ code: string; sortOrder: number }>) =>
+			aliasTypesApi.reorder(items),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["aliasTypes"] });
 		},
@@ -807,6 +821,13 @@ export const creditRoleMutations = {
 			queryClient.invalidateQueries({ queryKey: ["creditRoles"] });
 		},
 	}),
+	reorder: (queryClient: QueryClient) => ({
+		mutationFn: (items: Array<{ code: string; sortOrder: number }>) =>
+			creditRolesApi.reorder(items),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["creditRoles"] });
+		},
+	}),
 };
 
 // ===== マスターデータ: 公式作品カテゴリ =====
@@ -846,6 +867,13 @@ export const officialWorkCategoryMutations = {
 	}),
 	delete: (queryClient: QueryClient) => ({
 		mutationFn: (code: string) => officialWorkCategoriesApi.delete(code),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["officialWorkCategories"] });
+		},
+	}),
+	reorder: (queryClient: QueryClient) => ({
+		mutationFn: (items: Array<{ code: string; sortOrder: number }>) =>
+			officialWorkCategoriesApi.reorder(items),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["officialWorkCategories"] });
 		},
