@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Home, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -7,8 +7,8 @@ import { PlatformEditDialog } from "@/components/admin/platform-edit-dialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
-import { platformsApi } from "@/lib/api-client";
 import { createMasterDetailHead } from "@/lib/head";
+import { platformMutations } from "@/lib/mutation-options";
 import { platformDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/master/platforms_/$code")({
@@ -32,33 +32,24 @@ function PlatformDetailPage() {
 
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-	const [isDeleting, setIsDeleting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+
+	// Mutations
+	const deleteMutation = useMutation(platformMutations.delete(queryClient));
 
 	const handleEdit = () => {
 		if (!platform) return;
-		setError(null);
+		deleteMutation.reset();
 		setIsEditDialogOpen(true);
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!platform) return;
-		setIsDeleting(true);
-		setError(null);
-		try {
-			await platformsApi.delete(platform.code);
-			setIsDeleteDialogOpen(false);
-			queryClient.invalidateQueries({ queryKey: ["platforms"] });
-			navigate({ to: "/admin/master/platforms" });
-		} catch (e) {
-			setError(
-				e instanceof Error
-					? e.message
-					: "削除に失敗しました。使用中の可能性があります。",
-			);
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(platform.code, {
+			onSuccess: () => {
+				setIsDeleteDialogOpen(false);
+				navigate({ to: "/admin/master/platforms" });
+			},
+		});
 	};
 
 	// ローディング
@@ -123,9 +114,13 @@ function PlatformDetailPage() {
 				</div>
 			</div>
 
-			{error && (
+			{deleteMutation.error && (
 				<div className="alert alert-error">
-					<span>{error}</span>
+					<span>
+						{deleteMutation.error instanceof Error
+							? deleteMutation.error.message
+							: "削除に失敗しました。使用中の可能性があります。"}
+					</span>
 				</div>
 			)}
 
@@ -173,7 +168,10 @@ function PlatformDetailPage() {
 			{/* 削除確認ダイアログ */}
 			<ConfirmDialog
 				open={isDeleteDialogOpen}
-				onOpenChange={setIsDeleteDialogOpen}
+				onOpenChange={(open) => {
+					setIsDeleteDialogOpen(open);
+					if (!open) deleteMutation.reset();
+				}}
 				title="プラットフォームの削除"
 				description={
 					<div>
@@ -186,7 +184,7 @@ function PlatformDetailPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

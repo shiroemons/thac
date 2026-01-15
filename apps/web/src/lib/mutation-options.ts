@@ -688,7 +688,12 @@ export const platformMutations = {
 
 // ===== マスターデータ: 名義種別 =====
 
-type CreateAliasTypeData = Omit<AliasType, "createdAt" | "updatedAt">;
+type CreateAliasTypeData = Omit<
+	AliasType,
+	"createdAt" | "updatedAt" | "sortOrder"
+> & {
+	sortOrder?: number;
+};
 type UpdateAliasTypeData = Partial<
 	Omit<AliasType, "code" | "createdAt" | "updatedAt">
 > & {
@@ -722,7 +727,12 @@ export const aliasTypeMutations = {
 
 // ===== マスターデータ: クレジット役割 =====
 
-type CreateCreditRoleData = Omit<CreditRole, "createdAt" | "updatedAt">;
+type CreateCreditRoleData = Omit<
+	CreditRole,
+	"createdAt" | "updatedAt" | "sortOrder"
+> & {
+	sortOrder?: number;
+};
 type UpdateCreditRoleData = Partial<
 	Omit<CreditRole, "code" | "createdAt" | "updatedAt">
 > & {
@@ -763,8 +773,10 @@ export const creditRoleMutations = {
 
 type CreateOfficialWorkCategoryData = Omit<
 	OfficialWorkCategory,
-	"createdAt" | "updatedAt"
->;
+	"createdAt" | "updatedAt" | "sortOrder"
+> & {
+	sortOrder?: number;
+};
 type UpdateOfficialWorkCategoryData = Partial<
 	Omit<OfficialWorkCategory, "code" | "createdAt" | "updatedAt">
 > & { updatedAt?: string };

@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
@@ -45,6 +45,7 @@ import {
 	tracksApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { trackMutations } from "@/lib/mutation-options";
 
 export const Route = createFileRoute("/admin/_admin/tracks")({
 	head: () => createPageHead("トラック"),
@@ -94,12 +95,11 @@ function TracksPage() {
 	);
 
 	const [editingTrack, setEditingTrack] = useState<TrackListItem | null>(null);
-	const [mutationError, setMutationError] = useState<string | null>(null);
+	const [exportError, setExportError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [createForm, setCreateForm] = useState<
 		Partial<Track & { releaseId: string }>
 	>({});
-	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// 選択状態管理
 	const {
@@ -120,10 +120,13 @@ function TracksPage() {
 
 	// 個別削除ダイアログ状態
 	const [deleteTarget, setDeleteTarget] = useState<TrackListItem | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
 
 	// エクスポート状態
 	const [isExporting, setIsExporting] = useState(false);
+
+	// Mutations
+	const createMutation = useMutation(trackMutations.create(queryClient));
+	const deleteMutation = useMutation(trackMutations.delete(queryClient));
 
 	// 作品一覧取得（フィルター用・新規作成用）
 	const { data: releasesData } = useQuery({
@@ -163,54 +166,51 @@ function TracksPage() {
 		queryClient.invalidateQueries({ queryKey: ["releases"] });
 	};
 
-	const handleCreate = async () => {
+	const handleCreate = () => {
 		if (!createForm.releaseId) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const id = createId.track();
-			await tracksApi.create(createForm.releaseId, {
-				id,
-				trackNumber: createForm.trackNumber ?? 1,
-				name: createForm.name || "",
-				nameJa: createForm.nameJa || null,
-				nameEn: createForm.nameEn || null,
-				discId: createForm.discId || null,
-				releaseDate: null,
-				releaseYear: null,
-				releaseMonth: null,
-				releaseDay: null,
-				eventId: null,
-				eventDayId: null,
-			});
-			setIsCreateDialogOpen(false);
-			setCreateForm({});
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "作成に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
+		const id = createId.track();
+		createMutation.mutate(
+			{
+				releaseId: createForm.releaseId,
+				data: {
+					id,
+					trackNumber: createForm.trackNumber ?? 1,
+					name: createForm.name || "",
+					nameJa: createForm.nameJa || null,
+					nameEn: createForm.nameEn || null,
+					discId: createForm.discId || null,
+					releaseDate: null,
+					releaseYear: null,
+					releaseMonth: null,
+					releaseDay: null,
+					eventId: null,
+					eventDayId: null,
+				},
+			},
+			{
+				onSuccess: () => {
+					setIsCreateDialogOpen(false);
+					setCreateForm({});
+					queryClient.invalidateQueries({ queryKey: ["all-tracks"] });
+				},
+			},
+		);
 	};
 
-	const handleDelete = async () => {
-		if (!deleteTarget) return;
-		if (!deleteTarget.releaseId) {
-			setMutationError(
-				"作品に紐づかないトラックの削除は現在サポートされていません",
-			);
-			return;
-		}
-		setIsDeleting(true);
-		try {
-			await tracksApi.delete(deleteTarget.releaseId, deleteTarget.id);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+	const handleDelete = () => {
+		if (!deleteTarget || !deleteTarget.releaseId) return;
+		deleteMutation.mutate(
+			{
+				releaseId: deleteTarget.releaseId,
+				trackId: deleteTarget.id,
+			},
+			{
+				onSuccess: () => {
+					setDeleteTarget(null);
+					queryClient.invalidateQueries({ queryKey: ["all-tracks"] });
+				},
+			},
+		);
 	};
 
 	const handleBatchDelete = async () => {
@@ -288,7 +288,7 @@ function TracksPage() {
 				releaseId: releaseFilter || undefined,
 			});
 		} catch (e) {
-			setMutationError(
+			setExportError(
 				e instanceof Error ? e.message : "エクスポートに失敗しました",
 			);
 		} finally {
@@ -302,8 +302,11 @@ function TracksPage() {
 			label: r.name,
 		})) ?? [];
 
+	const mutationError = createMutation.error || deleteMutation.error;
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		(mutationError instanceof Error ? mutationError.message : null) ||
+		exportError ||
+		(error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -707,7 +710,7 @@ function TracksPage() {
 					if (!open) {
 						setIsCreateDialogOpen(false);
 						setCreateForm({});
-						setMutationError(null);
+						createMutation.reset();
 					}
 				}}
 			>
@@ -797,9 +800,11 @@ function TracksPage() {
 								placeholder="1"
 							/>
 						</div>
-						{mutationError && (
+						{createMutation.error && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{createMutation.error instanceof Error
+									? createMutation.error.message
+									: "作成に失敗しました"}
 							</div>
 						)}
 					</div>
@@ -814,10 +819,12 @@ function TracksPage() {
 							variant="primary"
 							onClick={handleCreate}
 							disabled={
-								isSubmitting || !createForm.releaseId || !createForm.name
+								createMutation.isPending ||
+								!createForm.releaseId ||
+								!createForm.name
 							}
 						>
-							{isSubmitting ? "作成中..." : "作成"}
+							{createMutation.isPending ? "作成中..." : "作成"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -870,7 +877,10 @@ function TracksPage() {
 			<ConfirmDialog
 				open={!!deleteTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteTarget(null);
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
 				}}
 				title="トラックの削除"
 				description={
@@ -884,7 +894,7 @@ function TracksPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

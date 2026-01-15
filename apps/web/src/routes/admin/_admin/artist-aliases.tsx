@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -35,6 +35,7 @@ import {
 	type InitialScript,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { artistAliasMutations } from "@/lib/mutation-options";
 import { artistAliasesListQueryOptions } from "@/lib/query-options";
 
 const DEFAULT_PAGE = 1;
@@ -126,8 +127,10 @@ function ArtistAliasesPage() {
 	);
 
 	const [editingAlias, setEditingAlias] = useState<ArtistAlias | null>(null);
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+	// Mutation
+	const deleteMutation = useMutation(artistAliasMutations.delete(queryClient));
 
 	// 選択状態管理
 	const {
@@ -148,7 +151,6 @@ function ArtistAliasesPage() {
 
 	// 個別削除ダイアログ状態
 	const [deleteTarget, setDeleteTarget] = useState<ArtistAlias | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
 
 	// アーティスト一覧取得（セレクト用）
 	const { data: artistsData } = useQuery({
@@ -184,18 +186,11 @@ function ArtistAliasesPage() {
 		queryClient.invalidateQueries({ queryKey: ["artistAliases"] });
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!deleteTarget) return;
-		setIsDeleting(true);
-		try {
-			await artistAliasesApi.delete(deleteTarget.id);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(deleteTarget.id, {
+			onSuccess: () => setDeleteTarget(null),
+		});
 	};
 
 	const handleBatchDelete = async () => {
@@ -266,7 +261,9 @@ function ArtistAliasesPage() {
 	}, [artists, editingAlias?.artistId, editingAlias?.artistName]);
 
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		(deleteMutation.error instanceof Error
+			? deleteMutation.error.message
+			: null) || (error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -561,7 +558,7 @@ function ArtistAliasesPage() {
 														size="icon"
 														onClick={() => {
 															setEditingAlias(alias);
-															setMutationError(null);
+															deleteMutation.reset();
 														}}
 													>
 														<Pencil className="h-4 w-4" />
@@ -647,14 +644,17 @@ function ArtistAliasesPage() {
 			<ConfirmDialog
 				open={!!deleteTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteTarget(null);
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
 				}}
 				title="名義の削除"
 				description={`「${deleteTarget?.name}」を削除しますか？この操作は取り消せません。`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

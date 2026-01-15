@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -30,9 +30,9 @@ import {
 	importApi,
 	type OfficialWork,
 	officialWorkCategoriesApi,
-	officialWorksApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { officialWorkMutations } from "@/lib/mutation-options";
 import { officialWorksListQueryOptions } from "@/lib/query-options";
 
 // 初期表示用のデフォルト値
@@ -103,16 +103,18 @@ function OfficialWorksPage() {
 	);
 
 	const [editingWork, setEditingWork] = useState<OfficialWork | null>(null);
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
 	// 個別削除ダイアログ状態
 	const [deleteTarget, setDeleteTarget] = useState<OfficialWork | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
 
 	// エクスポート状態
 	const [isExporting, setIsExporting] = useState(false);
+	const [exportError, setExportError] = useState<string | null>(null);
+
+	// Mutations
+	const deleteMutation = useMutation(officialWorkMutations.delete(queryClient));
 
 	// カテゴリ一覧を取得
 	const { data: categoriesData } = useQuery({
@@ -145,18 +147,11 @@ function OfficialWorksPage() {
 		queryClient.invalidateQueries({ queryKey: ["officialWorks"] });
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!deleteTarget) return;
-		setIsDeleting(true);
-		try {
-			await officialWorksApi.delete(deleteTarget.id);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(deleteTarget.id, {
+			onSuccess: () => setDeleteTarget(null),
+		});
 	};
 
 	const handlePageChange = (newPage: number) => {
@@ -183,6 +178,7 @@ function OfficialWorksPage() {
 		includeRelations: boolean,
 	) => {
 		setIsExporting(true);
+		setExportError(null);
 		try {
 			await exportApi.officialWorks({
 				format,
@@ -191,7 +187,7 @@ function OfficialWorksPage() {
 				categoryCode: category || undefined,
 			});
 		} catch (e) {
-			setMutationError(
+			setExportError(
 				e instanceof Error ? e.message : "エクスポートに失敗しました",
 			);
 		} finally {
@@ -208,8 +204,11 @@ function OfficialWorksPage() {
 		return CATEGORY_COLORS[code] || "ghost";
 	};
 
+	const mutationError = deleteMutation.error;
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		(mutationError instanceof Error ? mutationError.message : null) ||
+		exportError ||
+		(error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -503,7 +502,7 @@ function OfficialWorksPage() {
 														size="icon"
 														onClick={() => {
 															setEditingWork(w);
-															setMutationError(null);
+															deleteMutation.reset();
 														}}
 													>
 														<Pencil className="h-4 w-4" />
@@ -571,7 +570,10 @@ function OfficialWorksPage() {
 			<ConfirmDialog
 				open={!!deleteTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteTarget(null);
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
 				}}
 				title="作品の削除"
 				description={
@@ -585,7 +587,7 @@ function OfficialWorksPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

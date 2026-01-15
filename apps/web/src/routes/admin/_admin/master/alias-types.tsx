@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowUpDown, Eye, Home, Pencil, Trash2, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -25,6 +25,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useSortableTable } from "@/hooks/use-sortable-table";
 import { type AliasType, aliasTypesApi, importApi } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { aliasTypeMutations } from "@/lib/mutation-options";
 
 export const Route = createFileRoute("/admin/_admin/master/alias-types")({
 	head: () => createPageHead("名義種別"),
@@ -63,11 +64,15 @@ function AliasTypesPage() {
 	);
 
 	const [editingItem, setEditingItem] = useState<AliasType | null>(null);
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 	const [deleteTarget, setDeleteTarget] = useState<AliasType | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
+	const [reorderError, setReorderError] = useState<string | null>(null);
+
+	// Mutations
+	const deleteMutation = useMutation(aliasTypeMutations.delete(queryClient));
+	const updateMutation = useMutation(aliasTypeMutations.update(queryClient));
+	const createMutation = useMutation(aliasTypeMutations.create(queryClient));
 
 	const { data, isPending, isFetching, error } = useQuery({
 		queryKey: [
@@ -100,39 +105,44 @@ function AliasTypesPage() {
 	const isReorderDisabled = !!debouncedSearch || sortBy !== "sortOrder";
 
 	// 上へ移動
-	const handleMoveUp = async (item: AliasType, index: number) => {
+	const handleMoveUp = (item: AliasType, index: number) => {
 		if (index === 0 || isReorderDisabled) return;
 		const prevItem = items[index - 1];
-		try {
-			await aliasTypesApi.update(item.code, { sortOrder: prevItem.sortOrder });
-			await aliasTypesApi.update(prevItem.code, { sortOrder: item.sortOrder });
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "順序変更に失敗しました",
-			);
-		}
+		updateMutation.mutate(
+			{ code: item.code, data: { sortOrder: prevItem.sortOrder } },
+			{
+				onSuccess: () => {
+					updateMutation.mutate({
+						code: prevItem.code,
+						data: { sortOrder: item.sortOrder },
+					});
+				},
+			},
+		);
 	};
 
 	// 下へ移動
-	const handleMoveDown = async (item: AliasType, index: number) => {
+	const handleMoveDown = (item: AliasType, index: number) => {
 		if (index === items.length - 1 || isReorderDisabled) return;
 		const nextItem = items[index + 1];
-		try {
-			await aliasTypesApi.update(item.code, { sortOrder: nextItem.sortOrder });
-			await aliasTypesApi.update(nextItem.code, { sortOrder: item.sortOrder });
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "順序変更に失敗しました",
-			);
-		}
+		updateMutation.mutate(
+			{ code: item.code, data: { sortOrder: nextItem.sortOrder } },
+			{
+				onSuccess: () => {
+					updateMutation.mutate({
+						code: nextItem.code,
+						data: { sortOrder: item.sortOrder },
+					});
+				},
+			},
+		);
 	};
 
 	// 順序を整理
 	const handleReorder = async () => {
 		if (items.length === 0) return;
 		setIsReordering(true);
+		setReorderError(null);
 		try {
 			const reorderItems = items.map((item, index) => ({
 				code: item.code,
@@ -141,7 +151,7 @@ function AliasTypesPage() {
 			await aliasTypesApi.reorder(reorderItems);
 			invalidateQuery();
 		} catch (e) {
-			setMutationError(
+			setReorderError(
 				e instanceof Error ? e.message : "順序の整理に失敗しました",
 			);
 		} finally {
@@ -149,26 +159,29 @@ function AliasTypesPage() {
 		}
 	};
 
-	const handleCreate = async (formData: Record<string, string>) => {
-		await aliasTypesApi.create({
-			code: formData.code,
-			label: formData.label,
-			description: formData.description || null,
+	const handleCreate = (formData: Record<string, string>) => {
+		return new Promise<void>((resolve, reject) => {
+			createMutation.mutate(
+				{
+					code: formData.code,
+					label: formData.label,
+					description: formData.description || null,
+				},
+				{
+					onSuccess: () => resolve(),
+					onError: (error) => reject(error),
+				},
+			);
 		});
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!deleteTarget) return;
-		setIsDeleting(true);
-		try {
-			await aliasTypesApi.delete(deleteTarget.code);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(deleteTarget.code, {
+			onSuccess: () => {
+				setDeleteTarget(null);
+			},
+		});
 	};
 
 	const handlePageChange = (newPage: number) => {
@@ -185,8 +198,14 @@ function AliasTypesPage() {
 		setPage(1);
 	};
 
+	const mutationError =
+		deleteMutation.error ||
+		updateMutation.error ||
+		createMutation.error ||
+		reorderError;
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		(mutationError instanceof Error ? mutationError.message : mutationError) ||
+		(error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -429,13 +448,18 @@ function AliasTypesPage() {
 			{/* 削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteTarget}
-				onOpenChange={(open) => !open && setDeleteTarget(null)}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
+				}}
 				title="名義種別の削除"
 				description={`「${deleteTarget?.label}」を削除しますか？この操作は取り消せません。`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

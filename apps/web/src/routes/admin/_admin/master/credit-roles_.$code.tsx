@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Home, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
 import { getCreditRole } from "@/functions/get-credit-role";
-import { creditRolesApi } from "@/lib/api-client";
 import { createMasterDetailHead } from "@/lib/head";
+import { creditRoleMutations } from "@/lib/mutation-options";
 
 export const Route = createFileRoute(
 	"/admin/_admin/master/credit-roles_/$code",
@@ -26,27 +26,18 @@ function CreditRoleDetailPage() {
 
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-	const [isDeleting, setIsDeleting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 
-	const handleDelete = async () => {
+	// Mutations
+	const deleteMutation = useMutation(creditRoleMutations.delete(queryClient));
+
+	const handleDelete = () => {
 		if (!creditRole) return;
-		setIsDeleting(true);
-		setError(null);
-		try {
-			await creditRolesApi.delete(creditRole.code);
-			setIsDeleteDialogOpen(false);
-			queryClient.invalidateQueries({ queryKey: ["creditRoles"] });
-			navigate({ to: "/admin/master/credit-roles" });
-		} catch (e) {
-			setError(
-				e instanceof Error
-					? e.message
-					: "削除に失敗しました。使用中の可能性があります。",
-			);
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(creditRole.code, {
+			onSuccess: () => {
+				setIsDeleteDialogOpen(false);
+				navigate({ to: "/admin/master/credit-roles" });
+			},
+		});
 	};
 
 	// エラー・未存在
@@ -113,9 +104,13 @@ function CreditRoleDetailPage() {
 				</div>
 			</div>
 
-			{error && (
+			{deleteMutation.error && (
 				<div className="alert alert-error">
-					<span>{error}</span>
+					<span>
+						{deleteMutation.error instanceof Error
+							? deleteMutation.error.message
+							: "削除に失敗しました。使用中の可能性があります。"}
+					</span>
 				</div>
 			)}
 
@@ -160,7 +155,10 @@ function CreditRoleDetailPage() {
 			{/* 削除確認ダイアログ */}
 			<ConfirmDialog
 				open={isDeleteDialogOpen}
-				onOpenChange={setIsDeleteDialogOpen}
+				onOpenChange={(open) => {
+					setIsDeleteDialogOpen(open);
+					if (!open) deleteMutation.reset();
+				}}
 				title="クレジット役割の削除"
 				description={
 					<div>
@@ -173,7 +171,7 @@ function CreditRoleDetailPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

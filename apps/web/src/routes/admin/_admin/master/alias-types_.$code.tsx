@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Home, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
 import { getAliasType } from "@/functions/get-alias-type";
-import { aliasTypesApi } from "@/lib/api-client";
 import { createMasterDetailHead } from "@/lib/head";
+import { aliasTypeMutations } from "@/lib/mutation-options";
 
 export const Route = createFileRoute("/admin/_admin/master/alias-types_/$code")(
 	{
@@ -26,32 +26,23 @@ function AliasTypeDetailPage() {
 
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-	const [isDeleting, setIsDeleting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+
+	// Mutations
+	const deleteMutation = useMutation(aliasTypeMutations.delete(queryClient));
 
 	const handleEditSuccess = () => {
 		queryClient.invalidateQueries({ queryKey: ["aliasTypes"] });
 		window.location.reload();
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!aliasType) return;
-		setIsDeleting(true);
-		setError(null);
-		try {
-			await aliasTypesApi.delete(aliasType.code);
-			setIsDeleteDialogOpen(false);
-			queryClient.invalidateQueries({ queryKey: ["aliasTypes"] });
-			navigate({ to: "/admin/master/alias-types" });
-		} catch (e) {
-			setError(
-				e instanceof Error
-					? e.message
-					: "削除に失敗しました。使用中の可能性があります。",
-			);
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(aliasType.code, {
+			onSuccess: () => {
+				setIsDeleteDialogOpen(false);
+				navigate({ to: "/admin/master/alias-types" });
+			},
+		});
 	};
 
 	// エラー・未存在
@@ -115,9 +106,13 @@ function AliasTypeDetailPage() {
 				</div>
 			</div>
 
-			{error && (
+			{deleteMutation.error && (
 				<div className="alert alert-error">
-					<span>{error}</span>
+					<span>
+						{deleteMutation.error instanceof Error
+							? deleteMutation.error.message
+							: "削除に失敗しました。使用中の可能性があります。"}
+					</span>
 				</div>
 			)}
 
@@ -159,7 +154,10 @@ function AliasTypeDetailPage() {
 			{/* 削除確認ダイアログ */}
 			<ConfirmDialog
 				open={isDeleteDialogOpen}
-				onOpenChange={setIsDeleteDialogOpen}
+				onOpenChange={(open) => {
+					setIsDeleteDialogOpen(open);
+					if (!open) deleteMutation.reset();
+				}}
 				title="名義種別の削除"
 				description={
 					<div>
@@ -172,7 +170,7 @@ function AliasTypeDetailPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

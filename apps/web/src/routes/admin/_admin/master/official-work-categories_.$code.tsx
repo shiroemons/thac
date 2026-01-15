@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Home, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
 import { getOfficialWorkCategory } from "@/functions/get-official-work-category";
-import { officialWorkCategoriesApi } from "@/lib/api-client";
 import { createMasterDetailHead } from "@/lib/head";
+import { officialWorkCategoryMutations } from "@/lib/mutation-options";
 
 export const Route = createFileRoute(
 	"/admin/_admin/master/official-work-categories_/$code",
@@ -26,8 +26,11 @@ function OfficialWorkCategoryDetailPage() {
 
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-	const [isDeleting, setIsDeleting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+
+	// Mutations
+	const deleteMutation = useMutation(
+		officialWorkCategoryMutations.delete(queryClient),
+	);
 
 	const invalidateQuery = () => {
 		queryClient.invalidateQueries({ queryKey: ["officialWorkCategories"] });
@@ -35,28 +38,18 @@ function OfficialWorkCategoryDetailPage() {
 
 	const handleEdit = () => {
 		if (!category) return;
-		setError(null);
+		deleteMutation.reset();
 		setIsEditDialogOpen(true);
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!category) return;
-		setIsDeleting(true);
-		setError(null);
-		try {
-			await officialWorkCategoriesApi.delete(category.code);
-			setIsDeleteDialogOpen(false);
-			invalidateQuery();
-			navigate({ to: "/admin/master/official-work-categories" });
-		} catch (e) {
-			setError(
-				e instanceof Error
-					? e.message
-					: "削除に失敗しました。使用中の可能性があります。",
-			);
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(category.code, {
+			onSuccess: () => {
+				setIsDeleteDialogOpen(false);
+				navigate({ to: "/admin/master/official-work-categories" });
+			},
+		});
 	};
 
 	// エラー・未存在
@@ -124,9 +117,13 @@ function OfficialWorkCategoryDetailPage() {
 				</div>
 			</div>
 
-			{error && (
+			{deleteMutation.error && (
 				<div className="alert alert-error">
-					<span>{error}</span>
+					<span>
+						{deleteMutation.error instanceof Error
+							? deleteMutation.error.message
+							: "削除に失敗しました。使用中の可能性があります。"}
+					</span>
 				</div>
 			)}
 
@@ -171,7 +168,10 @@ function OfficialWorkCategoryDetailPage() {
 			{/* 削除確認ダイアログ */}
 			<ConfirmDialog
 				open={isDeleteDialogOpen}
-				onOpenChange={setIsDeleteDialogOpen}
+				onOpenChange={(open) => {
+					setIsDeleteDialogOpen(open);
+					if (!open) deleteMutation.reset();
+				}}
 				title="公式作品カテゴリの削除"
 				description={
 					<div>
@@ -184,7 +184,7 @@ function OfficialWorkCategoryDetailPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);
