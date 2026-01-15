@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import {
@@ -37,8 +37,6 @@ import {
 } from "@/components/ui/table";
 import {
 	type CircleLink,
-	circleLinksApi,
-	circlesApi,
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 	PARTICIPATION_TYPE_COLORS,
@@ -53,6 +51,7 @@ import {
 	PLATFORM_CATEGORY_ORDER,
 } from "@/lib/constants";
 import { createCircleDetailHead } from "@/lib/head";
+import { circleLinkMutations, circleMutations } from "@/lib/mutation-options";
 import { circleFullQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/circles_/$id")({
@@ -68,16 +67,24 @@ function CircleDetailPage() {
 	const navigate = useNavigate();
 
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	const [mutationError, setMutationError] = useState<string | null>(null);
-	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// 削除ダイアログ状態
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-	const [isDeleting, setIsDeleting] = useState(false);
 	const [deleteLinkTarget, setDeleteLinkTarget] = useState<CircleLink | null>(
 		null,
 	);
-	const [isDeletingLink, setIsDeletingLink] = useState(false);
+
+	// useMutation hooks
+	const deleteMutation = useMutation(circleMutations.delete(queryClient));
+	const linkCreateMutation = useMutation(
+		circleLinkMutations.create(queryClient),
+	);
+	const linkUpdateMutation = useMutation(
+		circleLinkMutations.update(queryClient),
+	);
+	const linkDeleteMutation = useMutation(
+		circleLinkMutations.delete(queryClient),
+	);
 
 	// 外部リンク管理用
 	const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
@@ -133,11 +140,9 @@ function CircleDetailPage() {
 		[],
 	);
 
-	const invalidateQuery = () => {
-		queryClient.invalidateQueries({ queryKey: ["circle", id] });
-		queryClient.invalidateQueries({ queryKey: ["circle", id, "full"] });
-		queryClient.invalidateQueries({ queryKey: ["circles"] });
-	};
+	// ローディング状態
+	const isLinkSubmitting =
+		linkCreateMutation.isPending || linkUpdateMutation.isPending;
 
 	// 役割ラベル
 	const ROLE_LABELS: Record<string, string> = {
@@ -154,20 +159,13 @@ function CircleDetailPage() {
 	};
 
 	// サークル削除
-	const handleDelete = async () => {
-		setIsDeleting(true);
-		try {
-			await circlesApi.delete(id);
-			setIsDeleteDialogOpen(false);
-			queryClient.invalidateQueries({ queryKey: ["circles"] });
-			navigate({ to: "/admin/circles" });
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "削除に失敗しました",
-			);
-		} finally {
-			setIsDeleting(false);
-		}
+	const handleDelete = () => {
+		deleteMutation.mutate(id, {
+			onSuccess: () => {
+				setIsDeleteDialogOpen(false);
+				navigate({ to: "/admin/circles" });
+			},
+		});
 	};
 
 	// 外部リンク関連
@@ -192,53 +190,52 @@ function CircleDetailPage() {
 		setIsLinkDialogOpen(true);
 	};
 
-	const handleLinkSubmit = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			if (editingLink) {
-				await circleLinksApi.update(id, editingLink.id, {
-					platformCode: linkForm.platformCode,
-					url: linkForm.url,
-					isOfficial: linkForm.isOfficial,
-					isPrimary: linkForm.isPrimary,
-				});
-			} else {
-				await circleLinksApi.create(id, {
-					id: createId.circleLink(),
-					platformCode: linkForm.platformCode,
-					url: linkForm.url,
-					platformId: null,
-					handle: null,
-					isOfficial: linkForm.isOfficial,
-					isPrimary: linkForm.isPrimary,
-				});
-			}
-			invalidateQuery();
-			setIsLinkDialogOpen(false);
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
+	const handleLinkSubmit = () => {
+		if (editingLink) {
+			linkUpdateMutation.mutate(
+				{
+					circleId: id,
+					linkId: editingLink.id,
+					data: {
+						platformCode: linkForm.platformCode,
+						url: linkForm.url,
+						isOfficial: linkForm.isOfficial,
+						isPrimary: linkForm.isPrimary,
+					},
+				},
+				{
+					onSuccess: () => setIsLinkDialogOpen(false),
+				},
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			linkCreateMutation.mutate(
+				{
+					circleId: id,
+					data: {
+						id: createId.circleLink(),
+						platformCode: linkForm.platformCode,
+						url: linkForm.url,
+						platformId: null,
+						handle: null,
+						isOfficial: linkForm.isOfficial,
+						isPrimary: linkForm.isPrimary,
+					},
+				},
+				{
+					onSuccess: () => setIsLinkDialogOpen(false),
+				},
+			);
 		}
 	};
 
-	const handleLinkDelete = async () => {
+	const handleLinkDelete = () => {
 		if (!deleteLinkTarget) return;
-		setIsDeletingLink(true);
-		try {
-			await circleLinksApi.delete(id, deleteLinkTarget.id);
-			setDeleteLinkTarget(null);
-			invalidateQuery();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingLink(false);
-		}
+		linkDeleteMutation.mutate(
+			{ circleId: id, linkId: deleteLinkTarget.id },
+			{
+				onSuccess: () => setDeleteLinkTarget(null),
+			},
+		);
 	};
 
 	// ローディング
@@ -692,7 +689,16 @@ function CircleDetailPage() {
 			</div>
 
 			{/* 外部リンク編集ダイアログ */}
-			<Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+			<Dialog
+				open={isLinkDialogOpen}
+				onOpenChange={(open) => {
+					setIsLinkDialogOpen(open);
+					if (!open) {
+						linkCreateMutation.reset();
+						linkUpdateMutation.reset();
+					}
+				}}
+			>
 				<DialogContent className="sm:max-w-[600px]">
 					<DialogHeader>
 						<DialogTitle>
@@ -700,9 +706,12 @@ function CircleDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && (
+						{(linkCreateMutation.error || linkUpdateMutation.error) && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{
+									(linkCreateMutation.error || linkUpdateMutation.error)
+										?.message
+								}
 							</div>
 						)}
 
@@ -780,16 +789,18 @@ function CircleDetailPage() {
 						<Button
 							variant="ghost"
 							onClick={() => setIsLinkDialogOpen(false)}
-							disabled={isSubmitting}
+							disabled={isLinkSubmitting}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={handleLinkSubmit}
-							disabled={isSubmitting || !linkForm.platformCode || !linkForm.url}
+							disabled={
+								isLinkSubmitting || !linkForm.platformCode || !linkForm.url
+							}
 						>
-							{isSubmitting
+							{isLinkSubmitting
 								? editingLink
 									? "更新中..."
 									: "追加中..."
@@ -807,13 +818,15 @@ function CircleDetailPage() {
 				onOpenChange={setIsEditDialogOpen}
 				mode="edit"
 				circle={circle}
-				onSuccess={invalidateQuery}
 			/>
 
 			{/* サークル削除確認ダイアログ */}
 			<ConfirmDialog
 				open={isDeleteDialogOpen}
-				onOpenChange={setIsDeleteDialogOpen}
+				onOpenChange={(open) => {
+					setIsDeleteDialogOpen(open);
+					if (!open) deleteMutation.reset();
+				}}
 				title="サークルの削除"
 				description={
 					<div>
@@ -821,19 +834,27 @@ function CircleDetailPage() {
 						<p className="mt-2 text-error text-sm">
 							※関連するリリースやリンクも削除されます。この操作は取り消せません。
 						</p>
+						{deleteMutation.error && (
+							<p className="mt-2 text-error text-sm">
+								{deleteMutation.error.message}
+							</p>
+						)}
 					</div>
 				}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 
 			{/* 外部リンク削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteLinkTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteLinkTarget(null);
+					if (!open) {
+						setDeleteLinkTarget(null);
+						linkDeleteMutation.reset();
+					}
 				}}
 				title="外部リンクの削除"
 				description={
@@ -846,12 +867,17 @@ function CircleDetailPage() {
 						<p className="mt-2 text-error text-sm">
 							※この操作は取り消せません。
 						</p>
+						{linkDeleteMutation.error && (
+							<p className="mt-2 text-error text-sm">
+								{linkDeleteMutation.error.message}
+							</p>
+						)}
 					</div>
 				}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleLinkDelete}
-				isLoading={isDeletingLink}
+				isLoading={linkDeleteMutation.isPending}
 			/>
 		</div>
 	);

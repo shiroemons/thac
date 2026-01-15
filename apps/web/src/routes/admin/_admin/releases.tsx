@@ -39,7 +39,6 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useRowSelection } from "@/hooks/use-row-selection";
 import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
-	discsApi,
 	type ExportFormat,
 	eventDaysApi,
 	eventsApi,
@@ -53,7 +52,7 @@ import {
 	releasesApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
-import { releaseMutations } from "@/lib/mutation-options";
+import { discMutations, releaseMutations } from "@/lib/mutation-options";
 import { releasesListQueryOptions } from "@/lib/query-options";
 
 const DEFAULT_PAGE = 1;
@@ -120,12 +119,10 @@ function ReleasesPage() {
 	const [editingRelease, setEditingRelease] = useState<ReleaseWithDiscs | null>(
 		null,
 	);
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [createForm, setCreateForm] = useState<Partial<Release>>({
 		releaseType: "album",
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedEventIdForCreate, setSelectedEventIdForCreate] = useState<
 		string | null
 	>(null);
@@ -154,6 +151,8 @@ function ReleasesPage() {
 	const [isExporting, setIsExporting] = useState(false);
 
 	// useMutation hooks
+	const createMutation = useMutation(releaseMutations.create(queryClient));
+	const discCreateMutation = useMutation(discMutations.create(queryClient));
 	const deleteMutation = useMutation(releaseMutations.delete(queryClient));
 	const batchDeleteMutation = useMutation(
 		releaseMutations.batchDelete(queryClient),
@@ -235,14 +234,13 @@ function ReleasesPage() {
 		}
 	}, [isCreateDialogOpen, selectedEventIdForCreate, eventDaysDataForCreate]);
 
-	const handleCreate = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const id = createId.release();
-			const releaseType = (createForm.releaseType as ReleaseType) || null;
-			await releasesApi.create({
-				id,
+	const handleCreate = () => {
+		const releaseId = createId.release();
+		const releaseType = (createForm.releaseType as ReleaseType) || null;
+
+		createMutation.mutate(
+			{
+				id: releaseId,
 				name: createForm.name || "",
 				nameJa: createForm.nameJa || null,
 				nameEn: createForm.nameEn || null,
@@ -254,27 +252,38 @@ function ReleasesPage() {
 				eventId: createForm.eventId || null,
 				eventDayId: createForm.eventDayId || null,
 				notes: createForm.notes || null,
-			});
-			// アルバム、シングル、EPの場合はデフォルトでDisc 1を作成
-			if (
-				releaseType === "album" ||
-				releaseType === "single" ||
-				releaseType === "ep"
-			) {
-				await discsApi.create(id, {
-					id: createId.disc(),
-					discNumber: 1,
-					discName: createForm.name || null,
-				});
-			}
-			setIsCreateDialogOpen(false);
-			setCreateForm({ releaseType: "album" });
-			queryClient.invalidateQueries({ queryKey: ["releases"] });
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "作成に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
+			},
+			{
+				onSuccess: () => {
+					// アルバム、シングル、EPの場合はデフォルトでDisc 1を作成
+					if (
+						releaseType === "album" ||
+						releaseType === "single" ||
+						releaseType === "ep"
+					) {
+						discCreateMutation.mutate(
+							{
+								releaseId,
+								data: {
+									id: createId.disc(),
+									discNumber: 1,
+									discName: createForm.name || null,
+								},
+							},
+							{
+								onSuccess: () => {
+									setIsCreateDialogOpen(false);
+									setCreateForm({ releaseType: "album" });
+								},
+							},
+						);
+					} else {
+						setIsCreateDialogOpen(false);
+						setCreateForm({ releaseType: "album" });
+					}
+				},
+			},
+		);
 	};
 
 	const handleDelete = () => {
@@ -352,13 +361,19 @@ function ReleasesPage() {
 		}
 	};
 
-	// エラー表示（作成時のエラーとmutation/queryエラー）
-	const deletionError =
-		deleteMutation.error || batchDeleteMutation.error || null;
+	// エラー表示（mutation/queryエラー）
+	const mutationError =
+		createMutation.error ||
+		discCreateMutation.error ||
+		deleteMutation.error ||
+		batchDeleteMutation.error ||
+		null;
 	const displayError =
-		mutationError ||
-		(deletionError instanceof Error ? deletionError.message : null) ||
+		(mutationError instanceof Error ? mutationError.message : null) ||
 		(error instanceof Error ? error.message : null);
+
+	// 作成中かどうか
+	const isCreating = createMutation.isPending || discCreateMutation.isPending;
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -725,7 +740,8 @@ function ReleasesPage() {
 						setIsCreateDialogOpen(false);
 						setCreateForm({ releaseType: "album" });
 						setSelectedEventIdForCreate(null);
-						setMutationError(null);
+						createMutation.reset();
+						discCreateMutation.reset();
 					}
 				}}
 			>
@@ -884,9 +900,9 @@ function ReleasesPage() {
 						<Button
 							variant="primary"
 							onClick={handleCreate}
-							disabled={isSubmitting}
+							disabled={isCreating}
 						>
-							{isSubmitting ? "作成中..." : "作成"}
+							{isCreating ? "作成中..." : "作成"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
