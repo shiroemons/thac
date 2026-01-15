@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
 import {
@@ -7,6 +7,7 @@ import {
 	officialWorkCategoriesApi,
 	officialWorksApi,
 } from "@/lib/api-client";
+import { officialWorkMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -62,6 +63,7 @@ export function OfficialWorkEditDialog({
 	work,
 	onSuccess,
 }: OfficialWorkEditDialogProps) {
+	const queryClient = useQueryClient();
 	const [form, setForm] = useState<OfficialWorkFormData>({
 		id: "",
 		categoryCode: "",
@@ -76,14 +78,20 @@ export function OfficialWorkEditDialog({
 		position: null,
 		notes: null,
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	// 楽観的ロック用: 編集開始時のupdatedAtを記録
 	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
 		null,
 	);
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<OfficialWork>();
+
+	// useMutation hooks
+	const createMutation = useMutation(officialWorkMutations.create(queryClient));
+	const updateMutation = useMutation(officialWorkMutations.update(queryClient));
+
+	// ローディング状態とエラー状態
+	const isPending = createMutation.isPending || updateMutation.isPending;
+	const mutationError = createMutation.error || updateMutation.error;
 
 	// カテゴリ一覧を取得
 	const { data: categoriesData } = useQuery({
@@ -177,10 +185,19 @@ export function OfficialWorkEditDialog({
 				});
 				setOriginalUpdatedAt(null);
 			}
-			setError(null);
+			// ダイアログを開いた時にmutationのエラー状態をリセット
+			createMutation.reset();
+			updateMutation.reset();
 			clearConflict();
 		}
-	}, [open, mode, work, clearConflict]);
+	}, [
+		open,
+		mode,
+		work,
+		clearConflict,
+		createMutation.reset,
+		updateMutation.reset,
+	]);
 
 	const handleCategoryChange = (categoryCode: string) => {
 		if (mode === "create") {
@@ -197,23 +214,18 @@ export function OfficialWorkEditDialog({
 		}
 	};
 
-	const handleSubmit = async (overrideUpdatedAt?: string) => {
+	const handleSubmit = (overrideUpdatedAt?: string) => {
 		if (!form.categoryCode || !form.name || !form.nameJa) {
-			setError("必須項目を入力してください");
 			return;
 		}
 
 		if (mode === "create" && !form.id) {
-			setError("カテゴリを選択してIDを生成してください");
 			return;
 		}
 
-		setIsSubmitting(true);
-		setError(null);
-
-		try {
-			if (mode === "create") {
-				await officialWorksApi.create({
+		if (mode === "create") {
+			createMutation.mutate(
+				{
 					id: form.id,
 					categoryCode: form.categoryCode,
 					name: form.name,
@@ -226,41 +238,47 @@ export function OfficialWorkEditDialog({
 					officialOrganization: form.officialOrganization,
 					position: form.position,
 					notes: form.notes,
-				});
-			} else if (work) {
-				await officialWorksApi.update(work.id, {
-					categoryCode: form.categoryCode,
-					name: form.name,
-					nameJa: form.nameJa,
-					nameEn: form.nameEn,
-					shortNameJa: form.shortNameJa,
-					shortNameEn: form.shortNameEn,
-					numberInSeries: form.numberInSeries,
-					releaseDate: form.releaseDate,
-					officialOrganization: form.officialOrganization,
-					notes: form.notes,
-					// position は編集時には更新しない
-					// 楽観的ロック: updatedAtを送信
-					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
-				});
-			}
-			onOpenChange(false);
-			onSuccess?.();
-		} catch (e) {
-			// 楽観的ロック競合エラーの場合
-			if (isConflictError<OfficialWork>(e)) {
-				setConflict(e.current);
-				return;
-			}
-			setError(
-				e instanceof Error
-					? e.message
-					: mode === "create"
-						? "作成に失敗しました"
-						: "更新に失敗しました",
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else if (work) {
+			updateMutation.mutate(
+				{
+					id: work.id,
+					data: {
+						categoryCode: form.categoryCode,
+						name: form.name,
+						nameJa: form.nameJa,
+						nameEn: form.nameEn,
+						shortNameJa: form.shortNameJa,
+						shortNameEn: form.shortNameEn,
+						numberInSeries: form.numberInSeries,
+						releaseDate: form.releaseDate,
+						officialOrganization: form.officialOrganization,
+						notes: form.notes,
+						// position は編集時には更新しない
+						// 楽観的ロック: updatedAtを送信
+						updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
+					},
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+					onError: (e) => {
+						// 楽観的ロック競合エラーの場合
+						if (isConflictError<OfficialWork>(e)) {
+							setConflict(e.current);
+						}
+					},
+				},
+			);
 		}
 	};
 
@@ -295,6 +313,16 @@ export function OfficialWorkEditDialog({
 
 	const title = mode === "create" ? "新規公式作品" : "公式作品の編集";
 
+	// エラーメッセージの取得（競合エラー以外）
+	const displayError =
+		mutationError && !isConflictError(mutationError)
+			? mutationError instanceof Error
+				? mutationError.message
+				: mode === "create"
+					? "作成に失敗しました"
+					: "更新に失敗しました"
+			: null;
+
 	return (
 		<>
 			<Dialog open={open} onOpenChange={onOpenChange}>
@@ -303,9 +331,9 @@ export function OfficialWorkEditDialog({
 						<DialogTitle>{title}</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{error && (
+						{displayError && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{error}
+								{displayError}
 							</div>
 						)}
 						<div className="grid grid-cols-2 gap-4">
@@ -317,7 +345,7 @@ export function OfficialWorkEditDialog({
 									id={`${mode}-work-categoryCode`}
 									value={form.categoryCode}
 									onChange={(e) => handleCategoryChange(e.target.value)}
-									disabled={isSubmitting || mode === "edit"}
+									disabled={isPending || mode === "edit"}
 								>
 									<option value="">選択してください</option>
 									{categoryOptions.map((opt) => (
@@ -348,7 +376,7 @@ export function OfficialWorkEditDialog({
 								value={form.name}
 								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: Touhou Koumakyou"
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -361,7 +389,7 @@ export function OfficialWorkEditDialog({
 									value={form.nameJa}
 									onChange={(e) => setForm({ ...form, nameJa: e.target.value })}
 									placeholder="例: 東方紅魔郷"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -373,7 +401,7 @@ export function OfficialWorkEditDialog({
 										setForm({ ...form, nameEn: e.target.value || null })
 									}
 									placeholder="例: Embodiment of Scarlet Devil"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 						</div>
@@ -389,7 +417,7 @@ export function OfficialWorkEditDialog({
 										setForm({ ...form, shortNameJa: e.target.value || null })
 									}
 									placeholder="例: 紅"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -403,7 +431,7 @@ export function OfficialWorkEditDialog({
 										setForm({ ...form, shortNameEn: e.target.value || null })
 									}
 									placeholder="例: EoSD"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 						</div>
@@ -425,7 +453,7 @@ export function OfficialWorkEditDialog({
 										})
 									}
 									placeholder="例: 6"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -437,7 +465,7 @@ export function OfficialWorkEditDialog({
 									onChange={(e) =>
 										setForm({ ...form, releaseDate: e.target.value || null })
 									}
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 						</div>
@@ -455,7 +483,7 @@ export function OfficialWorkEditDialog({
 									})
 								}
 								placeholder="例: 上海アリス幻樂団"
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -467,7 +495,7 @@ export function OfficialWorkEditDialog({
 									setForm({ ...form, notes: e.target.value || null })
 								}
 								rows={3}
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 					</div>
@@ -475,7 +503,7 @@ export function OfficialWorkEditDialog({
 						<Button
 							variant="ghost"
 							onClick={() => onOpenChange(false)}
-							disabled={isSubmitting}
+							disabled={isPending}
 						>
 							キャンセル
 						</Button>
@@ -483,10 +511,10 @@ export function OfficialWorkEditDialog({
 							variant="primary"
 							onClick={() => handleSubmit()}
 							disabled={
-								isSubmitting || !form.categoryCode || !form.name || !form.nameJa
+								isPending || !form.categoryCode || !form.name || !form.nameJa
 							}
 						>
-							{isSubmitting
+							{isPending
 								? mode === "create"
 									? "作成中..."
 									: "保存中..."
@@ -506,7 +534,7 @@ export function OfficialWorkEditDialog({
 				getDisplayName={(data) => data.name}
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
-				isLoading={isSubmitting}
+				isLoading={isPending}
 			/>
 		</>
 	);

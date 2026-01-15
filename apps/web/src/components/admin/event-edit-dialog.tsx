@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createId } from "@thac/db";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
@@ -6,10 +6,10 @@ import {
 	type Event,
 	type EventWithDays,
 	eventSeriesApi,
-	eventsApi,
 	isConflictError,
 } from "@/lib/api-client";
 import { suggestFromEventName } from "@/lib/event-name-parser";
+import { eventMutations, eventSeriesMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -57,8 +57,6 @@ export function EventEditDialog({
 		startDate: null,
 		endDate: null,
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	// 楽観的ロック用: 編集開始時のupdatedAtを記録
 	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
 		null,
@@ -69,6 +67,21 @@ export function EventEditDialog({
 	// シリーズ新規作成用
 	const [isSeriesDialogOpen, setIsSeriesDialogOpen] = useState(false);
 	const [newSeriesName, setNewSeriesName] = useState("");
+
+	// useMutation hooks
+	const createMutation = useMutation(eventMutations.create(queryClient));
+	const updateMutation = useMutation(eventMutations.update(queryClient));
+	const seriesCreateMutation = useMutation(
+		eventSeriesMutations.create(queryClient),
+	);
+
+	// ローディング状態とエラー状態
+	const isPending =
+		createMutation.isPending ||
+		updateMutation.isPending ||
+		seriesCreateMutation.isPending;
+	const mutationError =
+		createMutation.error || updateMutation.error || seriesCreateMutation.error;
 
 	// シリーズ一覧取得
 	const { data: seriesData } = useQuery({
@@ -113,10 +126,21 @@ export function EventEditDialog({
 				});
 				setOriginalUpdatedAt(null);
 			}
-			setError(null);
+			// ダイアログを開いた時にmutationのエラー状態をリセット
+			createMutation.reset();
+			updateMutation.reset();
+			seriesCreateMutation.reset();
 			clearConflict();
 		}
-	}, [open, mode, event, clearConflict]);
+	}, [
+		open,
+		mode,
+		event,
+		clearConflict,
+		createMutation.reset,
+		updateMutation.reset,
+		seriesCreateMutation.reset,
+	]);
 
 	const handleNameChange = (name: string) => {
 		const suggestion = suggest(name);
@@ -132,41 +156,34 @@ export function EventEditDialog({
 		}
 	};
 
-	const handleCreateSeries = async () => {
+	const handleCreateSeries = () => {
 		if (!newSeriesName.trim()) return;
-		setIsSubmitting(true);
-		setError(null);
-		try {
-			const id = createId.eventSeries();
-			const newSeries = await eventSeriesApi.create({
+		const id = createId.eventSeries();
+		seriesCreateMutation.mutate(
+			{
 				id,
 				name: newSeriesName.trim(),
 				sortOrder: seriesList.length + 1,
-			});
-			queryClient.invalidateQueries({ queryKey: ["event-series"] });
-			setForm({ ...form, eventSeriesId: newSeries.id });
-			setIsSeriesDialogOpen(false);
-			setNewSeriesName("");
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "シリーズの作成に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
+			},
+			{
+				onSuccess: (newSeries) => {
+					setForm({ ...form, eventSeriesId: newSeries.id });
+					setIsSeriesDialogOpen(false);
+					setNewSeriesName("");
+				},
+			},
+		);
 	};
 
-	const handleSubmit = async (overrideUpdatedAt?: string) => {
+	const handleSubmit = (overrideUpdatedAt?: string) => {
 		if (!form.name.trim()) {
-			setError("イベント名を入力してください");
 			return;
 		}
 
-		setIsSubmitting(true);
-		setError(null);
-
-		try {
-			if (mode === "create") {
-				const id = createId.event();
-				await eventsApi.create({
+		if (mode === "create") {
+			const id = createId.event();
+			createMutation.mutate(
+				{
 					id,
 					eventSeriesId: form.eventSeriesId || "",
 					name: form.name,
@@ -175,36 +192,42 @@ export function EventEditDialog({
 					venue: form.venue,
 					startDate: form.startDate,
 					endDate: form.endDate,
-				});
-			} else if (event) {
-				await eventsApi.update(event.id, {
-					eventSeriesId: form.eventSeriesId,
-					name: form.name,
-					edition: form.edition,
-					venue: form.venue,
-					startDate: form.startDate,
-					endDate: form.endDate,
-					// 楽観的ロック: updatedAtを送信
-					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
-				});
-			}
-			onOpenChange(false);
-			onSuccess?.();
-		} catch (e) {
-			// 楽観的ロック競合エラーの場合
-			if (isConflictError<Event>(e)) {
-				setConflict(e.current);
-				return;
-			}
-			setError(
-				e instanceof Error
-					? e.message
-					: mode === "create"
-						? "作成に失敗しました"
-						: "更新に失敗しました",
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else if (event) {
+			updateMutation.mutate(
+				{
+					id: event.id,
+					data: {
+						eventSeriesId: form.eventSeriesId,
+						name: form.name,
+						edition: form.edition,
+						venue: form.venue,
+						startDate: form.startDate,
+						endDate: form.endDate,
+						// 楽観的ロック: updatedAtを送信
+						updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
+					},
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+					onError: (e) => {
+						// 楽観的ロック競合エラーの場合
+						if (isConflictError<Event>(e)) {
+							setConflict(e.current);
+						}
+					},
+				},
+			);
 		}
 	};
 
@@ -231,6 +254,16 @@ export function EventEditDialog({
 		}
 	};
 
+	// エラーメッセージの取得（競合エラー以外）
+	const displayError =
+		mutationError && !isConflictError(mutationError)
+			? mutationError instanceof Error
+				? mutationError.message
+				: mode === "create"
+					? "作成に失敗しました"
+					: "更新に失敗しました"
+			: null;
+
 	const title = mode === "create" ? "新規イベント" : "イベントの編集";
 
 	return (
@@ -241,9 +274,9 @@ export function EventEditDialog({
 						<DialogTitle>{title}</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{error && (
+						{displayError && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{error}
+								{displayError}
 							</div>
 						)}
 						<div className="grid gap-2">
@@ -255,7 +288,7 @@ export function EventEditDialog({
 								value={form.name}
 								onChange={(e) => handleNameChange(e.target.value)}
 								placeholder="例: 博麗神社例大祭21"
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -266,7 +299,7 @@ export function EventEditDialog({
 									size="sm"
 									className="h-auto p-0 text-primary text-xs hover:underline"
 									onClick={() => setIsSeriesDialogOpen(true)}
-									disabled={isSubmitting}
+									disabled={isPending}
 								>
 									+ 新規シリーズ作成
 								</Button>
@@ -281,7 +314,7 @@ export function EventEditDialog({
 								placeholder="シリーズを選択..."
 								searchPlaceholder="シリーズを検索..."
 								emptyMessage="シリーズが見つかりません"
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -300,7 +333,7 @@ export function EventEditDialog({
 										})
 									}
 									placeholder="例: 21"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -312,7 +345,7 @@ export function EventEditDialog({
 										setForm({ ...form, venue: e.target.value || null })
 									}
 									placeholder="例: 東京ビッグサイト"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 						</div>
@@ -326,7 +359,7 @@ export function EventEditDialog({
 									onChange={(e) =>
 										setForm({ ...form, startDate: e.target.value || null })
 									}
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -338,7 +371,7 @@ export function EventEditDialog({
 									onChange={(e) =>
 										setForm({ ...form, endDate: e.target.value || null })
 									}
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 						</div>
@@ -347,16 +380,16 @@ export function EventEditDialog({
 						<Button
 							variant="ghost"
 							onClick={() => onOpenChange(false)}
-							disabled={isSubmitting}
+							disabled={isPending}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={() => handleSubmit()}
-							disabled={isSubmitting || !form.name.trim()}
+							disabled={isPending || !form.name.trim()}
 						>
-							{isSubmitting
+							{isPending
 								? mode === "create"
 									? "作成中..."
 									: "保存中..."
@@ -384,7 +417,7 @@ export function EventEditDialog({
 								value={newSeriesName}
 								onChange={(e) => setNewSeriesName(e.target.value)}
 								placeholder="例: 博麗神社例大祭"
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 					</div>
@@ -392,16 +425,16 @@ export function EventEditDialog({
 						<Button
 							variant="ghost"
 							onClick={() => setIsSeriesDialogOpen(false)}
-							disabled={isSubmitting}
+							disabled={isPending}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={handleCreateSeries}
-							disabled={isSubmitting || !newSeriesName.trim()}
+							disabled={isPending || !newSeriesName.trim()}
 						>
-							{isSubmitting ? "作成中..." : "作成"}
+							{isPending ? "作成中..." : "作成"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -415,7 +448,7 @@ export function EventEditDialog({
 				getDisplayName={(data) => data.name}
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
-				isLoading={isSubmitting}
+				isLoading={isPending}
 			/>
 		</>
 	);

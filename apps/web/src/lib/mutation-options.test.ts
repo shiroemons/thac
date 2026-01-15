@@ -43,7 +43,7 @@ function createMockQueryClient() {
 function callCallback(
 	config: Record<string, unknown>,
 	name: "onSuccess" | "onSettled",
-	variables?: Record<string, string>,
+	variables?: Record<string, unknown>,
 ) {
 	const callback = config[name] as ((...args: unknown[]) => void) | undefined;
 	if (callback) {
@@ -126,6 +126,71 @@ describe("mutation-options", () => {
 			expect(config).toHaveProperty("onSuccess");
 		});
 
+		test("create.onSuccess invalidates artistAliases and artist queries", () => {
+			const queryClient = createMockQueryClient();
+			const config = artistAliasMutations.create(queryClient as never);
+
+			callCallback(config, "onSuccess", { artistId: "artist-123" });
+
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artistAliases"],
+			});
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artist", "artist-123"],
+			});
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artist", "artist-123", "full"],
+			});
+		});
+
+		test("update.onSuccess invalidates artistAliases and artistAlias queries", () => {
+			const queryClient = createMockQueryClient();
+			const config = artistAliasMutations.update(queryClient as never);
+
+			callCallback(config, "onSuccess", { id: "alias-123", data: {} });
+
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artistAliases"],
+			});
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artistAlias", "alias-123"],
+			});
+		});
+
+		test("update.onSuccess invalidates artist queries when artistId is provided", () => {
+			const queryClient = createMockQueryClient();
+			const config = artistAliasMutations.update(queryClient as never);
+
+			callCallback(config, "onSuccess", {
+				id: "alias-123",
+				data: { artistId: "artist-456" },
+			});
+
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artistAliases"],
+			});
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artistAlias", "alias-123"],
+			});
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artist", "artist-456"],
+			});
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artist", "artist-456", "full"],
+			});
+		});
+
+		test("delete.onSuccess invalidates artistAliases query", () => {
+			const queryClient = createMockQueryClient();
+			const config = artistAliasMutations.delete(queryClient as never);
+
+			callCallback(config, "onSuccess");
+
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["artistAliases"],
+			});
+		});
+
 		test("batchDelete.onSettled invalidates artistAliases query", () => {
 			const queryClient = createMockQueryClient();
 			const config = artistAliasMutations.batchDelete(queryClient as never);
@@ -180,6 +245,43 @@ describe("mutation-options", () => {
 
 			expect(config).toHaveProperty("mutationFn");
 			expect(config).toHaveProperty("onSuccess");
+		});
+
+		test("create.onSuccess invalidates eventSeries query", () => {
+			const queryClient = createMockQueryClient();
+			const config = eventSeriesMutations.create(queryClient as never);
+
+			callCallback(config, "onSuccess");
+
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["eventSeries"],
+			});
+		});
+
+		test("update.onSuccess invalidates eventSeries and specific event-series queries", () => {
+			const queryClient = createMockQueryClient();
+			const config = eventSeriesMutations.update(queryClient as never);
+
+			callCallback(config, "onSuccess", { id: "series-123" });
+
+			expect(queryClient.invalidateQueries).toHaveBeenCalledTimes(2);
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["eventSeries"],
+			});
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["eventSeries", "series-123"],
+			});
+		});
+
+		test("delete.onSuccess invalidates eventSeries query", () => {
+			const queryClient = createMockQueryClient();
+			const config = eventSeriesMutations.delete(queryClient as never);
+
+			callCallback(config, "onSuccess");
+
+			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+				queryKey: ["eventSeries"],
+			});
 		});
 
 		test("reorder.onSuccess invalidates eventSeries query", () => {

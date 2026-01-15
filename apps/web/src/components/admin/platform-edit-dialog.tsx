@@ -1,6 +1,8 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
-import { isConflictError, type Platform, platformsApi } from "@/lib/api-client";
+import { isConflictError, type Platform } from "@/lib/api-client";
+import { platformMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -47,20 +49,39 @@ export function PlatformEditDialog({
 	currentPlatformsCount,
 	onSuccess,
 }: PlatformEditDialogProps) {
+	const queryClient = useQueryClient();
 	const [form, setForm] = useState<PlatformFormData>({
 		code: "",
 		name: "",
 		category: "",
 		urlPattern: "",
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	// 楽観的ロック用: 編集開始時のupdatedAtを記録
 	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
 		null,
 	);
+	// 上書き用のupdatedAt（競合解決時に使用）
+	const [overrideUpdatedAt, setOverrideUpdatedAt] = useState<string | null>(
+		null,
+	);
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<Platform>();
+
+	// useMutation hooks
+	const createMutation = useMutation(platformMutations.create(queryClient));
+	const updateMutation = useMutation({
+		...platformMutations.update(queryClient),
+		onError: (error: Error) => {
+			// 楽観的ロック競合エラーの場合
+			if (isConflictError<Platform>(error)) {
+				setConflict(error.current);
+			}
+		},
+	});
+
+	// ローディング状態とエラー状態
+	const isPending = createMutation.isPending || updateMutation.isPending;
+	const mutationError = createMutation.error || updateMutation.error;
 
 	// ダイアログが開いた時にフォームを初期化
 	useEffect(() => {
@@ -82,65 +103,83 @@ export function PlatformEditDialog({
 				});
 				setOriginalUpdatedAt(null);
 			}
-			setError(null);
+			setOverrideUpdatedAt(null);
 			clearConflict();
+			// ダイアログを開いた時にmutationのエラー状態をリセット
+			createMutation.reset();
+			updateMutation.reset();
 		}
-	}, [open, mode, platform, clearConflict]);
+	}, [
+		open,
+		mode,
+		platform,
+		clearConflict,
+		createMutation.reset,
+		updateMutation.reset,
+	]);
 
-	const handleSubmit = async (overrideUpdatedAt?: string) => {
+	const handleSubmit = (submitOverrideUpdatedAt?: string) => {
 		if (!form.code.trim()) {
-			setError("コードを入力してください");
 			return;
 		}
 		if (!form.name.trim()) {
-			setError("名前を入力してください");
 			return;
 		}
 		if (!form.category.trim()) {
-			setError("カテゴリを選択してください");
 			return;
 		}
 
-		setIsSubmitting(true);
-		setError(null);
-
-		try {
-			if (mode === "create") {
-				await platformsApi.create({
+		if (mode === "create") {
+			createMutation.mutate(
+				{
 					code: form.code,
 					name: form.name,
 					category: form.category,
 					urlPattern: form.urlPattern || null,
 					sortOrder: currentPlatformsCount ?? 0,
-				});
-			} else if (platform) {
-				await platformsApi.update(platform.code, {
-					name: form.name,
-					category: form.category,
-					urlPattern: form.urlPattern || null,
-					// 楽観的ロック: updatedAtを送信
-					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
-				});
-			}
-			onOpenChange(false);
-			onSuccess?.();
-		} catch (e) {
-			// 楽観的ロック競合エラーの場合
-			if (isConflictError<Platform>(e)) {
-				setConflict(e.current);
-				return;
-			}
-			setError(
-				e instanceof Error
-					? e.message
-					: mode === "create"
-						? "作成に失敗しました"
-						: "更新に失敗しました",
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else if (platform) {
+			updateMutation.mutate(
+				{
+					code: platform.code,
+					data: {
+						name: form.name,
+						category: form.category,
+						urlPattern: form.urlPattern || null,
+						// 楽観的ロック: updatedAtを送信
+						updatedAt:
+							submitOverrideUpdatedAt ||
+							overrideUpdatedAt ||
+							originalUpdatedAt ||
+							undefined,
+					},
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
+			);
 		}
 	};
+
+	// エラーメッセージの取得（競合エラーは除外）
+	const displayError =
+		mutationError && !isConflictError(mutationError)
+			? mutationError instanceof Error
+				? mutationError.message
+				: mode === "create"
+					? "作成に失敗しました"
+					: "更新に失敗しました"
+			: null;
 
 	// 競合ダイアログで「編集を続ける」を選択した場合
 	const handleContinueEditing = (data: Platform) => {
@@ -151,6 +190,8 @@ export function PlatformEditDialog({
 			urlPattern: data.urlPattern ?? "",
 		});
 		setOriginalUpdatedAt(data.updatedAt);
+		setOverrideUpdatedAt(null);
+		updateMutation.reset();
 		clearConflict();
 	};
 
@@ -158,8 +199,10 @@ export function PlatformEditDialog({
 	const handleOverwrite = () => {
 		if (conflictState.conflictData) {
 			// 最新のupdatedAtで再送信
-			handleSubmit(conflictState.conflictData.updatedAt);
+			setOverrideUpdatedAt(conflictState.conflictData.updatedAt);
+			updateMutation.reset();
 			clearConflict();
+			handleSubmit(conflictState.conflictData.updatedAt);
 		}
 	};
 
@@ -174,9 +217,9 @@ export function PlatformEditDialog({
 						<DialogTitle>{title}</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{error && (
+						{displayError && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{error}
+								{displayError}
 							</div>
 						)}
 						<div className="grid gap-2">
@@ -188,7 +231,7 @@ export function PlatformEditDialog({
 								value={form.code}
 								onChange={(e) => setForm({ ...form, code: e.target.value })}
 								placeholder="例: spotify"
-								disabled={isSubmitting || mode === "edit"}
+								disabled={isPending || mode === "edit"}
 								autoComplete="off"
 							/>
 							{mode === "edit" && (
@@ -206,7 +249,7 @@ export function PlatformEditDialog({
 								value={form.name}
 								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: Spotify"
-								disabled={isSubmitting}
+								disabled={isPending}
 								autoComplete="off"
 							/>
 						</div>
@@ -218,7 +261,7 @@ export function PlatformEditDialog({
 								id={`${mode}-platform-category`}
 								value={form.category}
 								onChange={(e) => setForm({ ...form, category: e.target.value })}
-								disabled={isSubmitting}
+								disabled={isPending}
 							>
 								{categoryOptions.map((option) => (
 									<option key={option.value} value={option.value}>
@@ -236,7 +279,7 @@ export function PlatformEditDialog({
 									setForm({ ...form, urlPattern: e.target.value })
 								}
 								placeholder="例: ^https?://open\.spotify\.com/"
-								disabled={isSubmitting}
+								disabled={isPending}
 								autoComplete="off"
 							/>
 						</div>
@@ -245,7 +288,7 @@ export function PlatformEditDialog({
 						<Button
 							variant="ghost"
 							onClick={() => onOpenChange(false)}
-							disabled={isSubmitting}
+							disabled={isPending}
 						>
 							キャンセル
 						</Button>
@@ -253,13 +296,13 @@ export function PlatformEditDialog({
 							variant="primary"
 							onClick={() => handleSubmit()}
 							disabled={
-								isSubmitting ||
+								isPending ||
 								!form.code.trim() ||
 								!form.name.trim() ||
 								!form.category.trim()
 							}
 						>
-							{isSubmitting
+							{isPending
 								? mode === "create"
 									? "作成中..."
 									: "保存中..."
@@ -279,7 +322,7 @@ export function PlatformEditDialog({
 				getDisplayName={(data) => data.name}
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
-				isLoading={isSubmitting}
+				isLoading={isPending}
 			/>
 		</>
 	);

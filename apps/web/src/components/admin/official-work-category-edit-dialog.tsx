@@ -1,8 +1,7 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import {
-	type OfficialWorkCategory,
-	officialWorkCategoriesApi,
-} from "@/lib/api-client";
+import type { OfficialWorkCategory } from "@/lib/api-client";
+import { officialWorkCategoryMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -36,13 +35,24 @@ export function OfficialWorkCategoryEditDialog({
 	category,
 	onSuccess,
 }: OfficialWorkCategoryEditDialogProps) {
+	const queryClient = useQueryClient();
 	const [form, setForm] = useState<OfficialWorkCategoryFormData>({
 		code: "",
 		name: "",
 		description: null,
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+
+	// useMutation hooks
+	const createMutation = useMutation(
+		officialWorkCategoryMutations.create(queryClient),
+	);
+	const updateMutation = useMutation(
+		officialWorkCategoryMutations.update(queryClient),
+	);
+
+	// ローディング状態とエラー状態
+	const isPending = createMutation.isPending || updateMutation.isPending;
+	const mutationError = createMutation.error || updateMutation.error;
 
 	// ダイアログが開いた時にフォームを初期化
 	useEffect(() => {
@@ -60,50 +70,61 @@ export function OfficialWorkCategoryEditDialog({
 					description: null,
 				});
 			}
-			setError(null);
+			// ダイアログを開いた時にmutationのエラー状態をリセット
+			createMutation.reset();
+			updateMutation.reset();
 		}
-	}, [open, mode, category]);
+	}, [open, mode, category, createMutation.reset, updateMutation.reset]);
 
-	const handleSubmit = async () => {
+	const handleSubmit = () => {
 		if (!form.code.trim()) {
-			setError("コードを入力してください");
 			return;
 		}
 		if (!form.name.trim()) {
-			setError("名前を入力してください");
 			return;
 		}
 
-		setIsSubmitting(true);
-		setError(null);
-
-		try {
-			if (mode === "create") {
-				await officialWorkCategoriesApi.create({
+		if (mode === "create") {
+			createMutation.mutate(
+				{
 					code: form.code,
 					name: form.name,
 					description: form.description,
-				});
-			} else if (category) {
-				await officialWorkCategoriesApi.update(category.code, {
-					name: form.name,
-					description: form.description,
-				});
-			}
-			onOpenChange(false);
-			onSuccess?.();
-		} catch (e) {
-			setError(
-				e instanceof Error
-					? e.message
-					: mode === "create"
-						? "作成に失敗しました"
-						: "更新に失敗しました",
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else if (category) {
+			updateMutation.mutate(
+				{
+					code: category.code,
+					data: {
+						name: form.name,
+						description: form.description,
+					},
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
+			);
 		}
 	};
+
+	// エラーメッセージの取得
+	const displayError = mutationError
+		? mutationError instanceof Error
+			? mutationError.message
+			: mode === "create"
+				? "作成に失敗しました"
+				: "更新に失敗しました"
+		: null;
 
 	const title =
 		mode === "create" ? "新規公式作品カテゴリ" : "公式作品カテゴリの編集";
@@ -115,9 +136,9 @@ export function OfficialWorkCategoryEditDialog({
 					<DialogTitle>{title}</DialogTitle>
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
-					{error && (
+					{displayError && (
 						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{error}
+							{displayError}
 						</div>
 					)}
 					<div className="grid gap-2">
@@ -129,7 +150,7 @@ export function OfficialWorkCategoryEditDialog({
 							value={form.code}
 							onChange={(e) => setForm({ ...form, code: e.target.value })}
 							placeholder="例: windows"
-							disabled={isSubmitting || mode === "edit"}
+							disabled={isPending || mode === "edit"}
 							autoComplete="off"
 						/>
 						{mode === "edit" && (
@@ -147,7 +168,7 @@ export function OfficialWorkCategoryEditDialog({
 							value={form.name}
 							onChange={(e) => setForm({ ...form, name: e.target.value })}
 							placeholder="例: Windows作品"
-							disabled={isSubmitting}
+							disabled={isPending}
 							autoComplete="off"
 						/>
 					</div>
@@ -161,7 +182,7 @@ export function OfficialWorkCategoryEditDialog({
 							}
 							placeholder="例: Windows向けにリリースされた作品"
 							rows={3}
-							disabled={isSubmitting}
+							disabled={isPending}
 							autoComplete="off"
 						/>
 					</div>
@@ -170,16 +191,16 @@ export function OfficialWorkCategoryEditDialog({
 					<Button
 						variant="ghost"
 						onClick={() => onOpenChange(false)}
-						disabled={isSubmitting}
+						disabled={isPending}
 					>
 						キャンセル
 					</Button>
 					<Button
 						variant="primary"
 						onClick={handleSubmit}
-						disabled={isSubmitting || !form.code.trim() || !form.name.trim()}
+						disabled={isPending || !form.code.trim() || !form.name.trim()}
 					>
-						{isSubmitting
+						{isPending
 							? mode === "create"
 								? "作成中..."
 								: "保存中..."
