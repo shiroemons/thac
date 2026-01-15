@@ -72,6 +72,7 @@ export function EventSeriesEditDialog({
 	const mutationError = createMutation.error || updateMutation.error;
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && eventSeries) {
@@ -93,15 +94,7 @@ export function EventSeriesEditDialog({
 			createMutation.reset();
 			updateMutation.reset();
 		}
-	}, [
-		open,
-		mode,
-		eventSeries,
-		defaultSortOrder,
-		clearConflict,
-		createMutation.reset,
-		updateMutation.reset,
-	]);
+	}, [open, mode, eventSeries, defaultSortOrder, clearConflict]);
 
 	const handleSubmit = (submitOverrideUpdatedAt?: string) => {
 		if (!form.name.trim()) {

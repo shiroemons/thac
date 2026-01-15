@@ -51,6 +51,7 @@ export function CreditRoleEditDialog({
 	const mutationError = createMutation.error || updateMutation.error;
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && creditRole) {
@@ -70,7 +71,7 @@ export function CreditRoleEditDialog({
 			createMutation.reset();
 			updateMutation.reset();
 		}
-	}, [open, mode, creditRole, createMutation.reset, updateMutation.reset]);
+	}, [open, mode, creditRole]);
 
 	const handleSubmit = () => {
 		if (!form.code.trim()) {

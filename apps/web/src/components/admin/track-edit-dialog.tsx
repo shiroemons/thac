@@ -57,6 +57,7 @@ export function TrackEditDialog({
 	const mutationError = updateMutation.error;
 
 	// ダイアログが開いたらフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open && track) {
 			setEditForm({
@@ -77,7 +78,7 @@ export function TrackEditDialog({
 			updateMutation.reset();
 			clearConflict();
 		}
-	}, [open, track, clearConflict, updateMutation.reset]);
+	}, [open, track, clearConflict]);
 
 	// 作品一覧取得
 	const { data: releasesData } = useQuery({

@@ -51,6 +51,7 @@ export function AliasTypeEditDialog({
 	const mutationError = createMutation.error || updateMutation.error;
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && aliasType) {
@@ -70,7 +71,7 @@ export function AliasTypeEditDialog({
 			createMutation.reset();
 			updateMutation.reset();
 		}
-	}, [open, mode, aliasType, createMutation.reset, updateMutation.reset]);
+	}, [open, mode, aliasType]);
 
 	const handleSubmit = () => {
 		if (!form.code.trim()) {

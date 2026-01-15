@@ -84,6 +84,7 @@ export function PlatformEditDialog({
 	const mutationError = createMutation.error || updateMutation.error;
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && platform) {
@@ -109,14 +110,7 @@ export function PlatformEditDialog({
 			createMutation.reset();
 			updateMutation.reset();
 		}
-	}, [
-		open,
-		mode,
-		platform,
-		clearConflict,
-		createMutation.reset,
-		updateMutation.reset,
-	]);
+	}, [open, mode, platform, clearConflict]);
 
 	const handleSubmit = (submitOverrideUpdatedAt?: string) => {
 		if (!form.code.trim()) {

@@ -150,6 +150,7 @@ export function OfficialWorkEditDialog({
 	};
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && work) {
@@ -190,14 +191,7 @@ export function OfficialWorkEditDialog({
 			updateMutation.reset();
 			clearConflict();
 		}
-	}, [
-		open,
-		mode,
-		work,
-		clearConflict,
-		createMutation.reset,
-		updateMutation.reset,
-	]);
+	}, [open, mode, work, clearConflict]);
 
 	const handleCategoryChange = (categoryCode: string) => {
 		if (mode === "create") {

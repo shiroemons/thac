@@ -113,6 +113,7 @@ export function ArtistAliasEditDialog({
 	const aliasTypes = aliasTypesData?.data ?? [];
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && alias) {
@@ -144,16 +145,7 @@ export function ArtistAliasEditDialog({
 			artistCreateMutation.reset();
 			clearConflict();
 		}
-	}, [
-		open,
-		mode,
-		alias,
-		defaultArtistId,
-		clearConflict,
-		createMutation.reset,
-		updateMutation.reset,
-		artistCreateMutation.reset,
-	]);
+	}, [open, mode, alias, defaultArtistId, clearConflict]);
 
 	const handleNameChange = (name: string) => {
 		const initial = detectInitial(name);

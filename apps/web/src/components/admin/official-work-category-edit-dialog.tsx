@@ -55,6 +55,7 @@ export function OfficialWorkCategoryEditDialog({
 	const mutationError = createMutation.error || updateMutation.error;
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && category) {
@@ -74,7 +75,7 @@ export function OfficialWorkCategoryEditDialog({
 			createMutation.reset();
 			updateMutation.reset();
 		}
-	}, [open, mode, category, createMutation.reset, updateMutation.reset]);
+	}, [open, mode, category]);
 
 	const handleSubmit = () => {
 		if (!form.code.trim()) {

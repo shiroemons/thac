@@ -61,6 +61,7 @@ export function ReleaseEditDialog({
 	const mutationError = updateMutation.error;
 
 	// ダイアログが開いたらフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open && release) {
 			setEditForm({
@@ -78,7 +79,7 @@ export function ReleaseEditDialog({
 			updateMutation.reset();
 			clearConflict();
 		}
-	}, [open, release, clearConflict, updateMutation.reset]);
+	}, [open, release, clearConflict]);
 
 	// イベント一覧取得
 	const { data: eventsData } = useQuery({

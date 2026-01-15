@@ -103,6 +103,7 @@ export function EventEditDialog({
 	);
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && event) {
@@ -132,15 +133,7 @@ export function EventEditDialog({
 			seriesCreateMutation.reset();
 			clearConflict();
 		}
-	}, [
-		open,
-		mode,
-		event,
-		clearConflict,
-		createMutation.reset,
-		updateMutation.reset,
-		seriesCreateMutation.reset,
-	]);
+	}, [open, mode, event, clearConflict]);
 
 	const handleNameChange = (name: string) => {
 		const suggestion = suggest(name);

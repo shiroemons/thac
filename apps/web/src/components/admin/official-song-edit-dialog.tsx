@@ -179,6 +179,7 @@ export function OfficialSongEditDialog({
 	}, [allSongsData, form.id]);
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && song) {
@@ -217,14 +218,7 @@ export function OfficialSongEditDialog({
 			updateMutation.reset();
 			clearConflict();
 		}
-	}, [
-		open,
-		mode,
-		song,
-		clearConflict,
-		createMutation.reset,
-		updateMutation.reset,
-	]);
+	}, [open, mode, song, clearConflict]);
 
 	const handleWorkChange = (workId: string | null) => {
 		if (mode === "create" && workId) {
