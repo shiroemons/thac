@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -27,13 +27,13 @@ import { useRowSelection } from "@/hooks/use-row-selection";
 import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
 	type Artist,
-	artistsApi,
 	type ExportFormat,
 	exportApi,
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { artistMutations } from "@/lib/mutation-options";
 import { artistsListQueryOptions } from "@/lib/query-options";
 
 const DEFAULT_PAGE = 1;
@@ -49,7 +49,10 @@ export const Route = createFileRoute("/admin/_admin/artists")({
 });
 
 const initialScriptOptions = Object.entries(INITIAL_SCRIPT_LABELS).map(
-	([value, label]) => ({ value, label }),
+	([value, label]) => ({
+		value,
+		label,
+	}),
 );
 
 // カラム定義
@@ -92,7 +95,6 @@ function ArtistsPage() {
 	);
 
 	const [editingArtist, setEditingArtist] = useState<Artist | null>(null);
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
 	// 選択状態管理
@@ -109,15 +111,20 @@ function ArtistsPage() {
 
 	// 一括削除ダイアログ状態
 	const [isBatchDeleteDialogOpen, setIsBatchDeleteDialogOpen] = useState(false);
-	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
 	// 個別削除ダイアログ状態
 	const [deleteTarget, setDeleteTarget] = useState<Artist | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
 
 	// エクスポート状態
 	const [isExporting, setIsExporting] = useState(false);
+	const [exportError, setExportError] = useState<string | null>(null);
+
+	// useMutation hooks
+	const deleteMutation = useMutation(artistMutations.delete(queryClient));
+	const batchDeleteMutation = useMutation(
+		artistMutations.batchDelete(queryClient),
+	);
 
 	// ensureQueryData + queryOptionsパターン
 	// ローダーでプリフェッチしたデータを自動的に使用
@@ -135,15 +142,12 @@ function ArtistsPage() {
 	const artists = data?.data ?? [];
 	const total = data?.total ?? 0;
 
-	const invalidateQuery = () => {
-		queryClient.invalidateQueries({ queryKey: ["artists"] });
-	};
-
 	const handleExport = async (
 		format: ExportFormat,
 		includeRelations: boolean,
 	) => {
 		setIsExporting(true);
+		setExportError(null);
 		try {
 			await exportApi.artists({
 				format,
@@ -152,7 +156,7 @@ function ArtistsPage() {
 				initialScript: initialScript || undefined,
 			});
 		} catch (e) {
-			setMutationError(
+			setExportError(
 				e instanceof Error ? e.message : "エクスポートに失敗しました",
 			);
 		} finally {
@@ -160,51 +164,36 @@ function ArtistsPage() {
 		}
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!deleteTarget) return;
-		setIsDeleting(true);
-		try {
-			await artistsApi.delete(deleteTarget.id);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(deleteTarget.id, {
+			onSuccess: () => {
+				setDeleteTarget(null);
+			},
+		});
 	};
 
-	const handleBatchDelete = async () => {
-		setIsBatchDeleting(true);
+	const handleBatchDelete = () => {
 		setBatchDeleteError(null);
+		const ids = Array.from(selectedItems.values()).map((item) => item.id);
 
-		try {
-			const ids = Array.from(selectedItems.values()).map((item) => item.id);
-
-			if (ids.length === 0) {
-				setBatchDeleteError("削除可能なアーティストがありません");
-				return;
-			}
-
-			const result = await artistsApi.batchDelete(ids);
-
-			if (result.failed.length > 0) {
-				setBatchDeleteError(
-					`${result.deleted.length}件削除、${result.failed.length}件失敗`,
-				);
-			} else {
-				setIsBatchDeleteDialogOpen(false);
-				clearSelection();
-			}
-
-			invalidateQuery();
-		} catch (e) {
-			setBatchDeleteError(
-				e instanceof Error ? e.message : "一括削除に失敗しました",
-			);
-		} finally {
-			setIsBatchDeleting(false);
+		if (ids.length === 0) {
+			setBatchDeleteError("削除可能なアーティストがありません");
+			return;
 		}
+
+		batchDeleteMutation.mutate(ids, {
+			onSuccess: (result) => {
+				if (result.failed.length > 0) {
+					setBatchDeleteError(
+						`${result.deleted.length}件削除、${result.failed.length}件失敗`,
+					);
+				} else {
+					setIsBatchDeleteDialogOpen(false);
+					clearSelection();
+				}
+			},
+		});
 	};
 
 	const handlePageChange = (newPage: number) => {
@@ -226,8 +215,16 @@ function ArtistsPage() {
 		setPage(1);
 	};
 
+	// エラーメッセージの統合
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		exportError ||
+		(deleteMutation.error instanceof Error
+			? deleteMutation.error.message
+			: null) ||
+		(batchDeleteMutation.error instanceof Error
+			? batchDeleteMutation.error.message
+			: null) ||
+		(error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -503,7 +500,9 @@ function ArtistsPage() {
 													{format(
 														new Date(artist.createdAt),
 														"yyyy/MM/dd HH:mm:ss",
-														{ locale: ja },
+														{
+															locale: ja,
+														},
 													)}
 												</TableCell>
 											)}
@@ -512,7 +511,9 @@ function ArtistsPage() {
 													{format(
 														new Date(artist.updatedAt),
 														"yyyy/MM/dd HH:mm:ss",
-														{ locale: ja },
+														{
+															locale: ja,
+														},
 													)}
 												</TableCell>
 											)}
@@ -531,7 +532,6 @@ function ArtistsPage() {
 														size="icon"
 														onClick={() => {
 															setEditingArtist(artist);
-															setMutationError(null);
 														}}
 													>
 														<Pencil className="h-4 w-4" />
@@ -572,7 +572,6 @@ function ArtistsPage() {
 				open={isCreateDialogOpen}
 				onOpenChange={setIsCreateDialogOpen}
 				mode="create"
-				onSuccess={invalidateQuery}
 			/>
 
 			{/* 編集ダイアログ */}
@@ -583,7 +582,6 @@ function ArtistsPage() {
 				}}
 				mode="edit"
 				artist={editingArtist}
-				onSuccess={invalidateQuery}
 			/>
 
 			{/* 一括削除確認ダイアログ */}
@@ -593,6 +591,7 @@ function ArtistsPage() {
 					setIsBatchDeleteDialogOpen(open);
 					if (!open) {
 						setBatchDeleteError(null);
+						batchDeleteMutation.reset();
 					}
 				}}
 				title="アーティストの一括削除"
@@ -610,14 +609,17 @@ function ArtistsPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleBatchDelete}
-				isLoading={isBatchDeleting}
+				isLoading={batchDeleteMutation.isPending}
 			/>
 
 			{/* 個別削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteTarget(null);
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
 				}}
 				title="アーティストの削除"
 				description={
@@ -631,7 +633,7 @@ function ArtistsPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -29,12 +29,12 @@ import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
 	type ArtistAlias,
 	aliasTypesApi,
-	artistAliasesApi,
 	artistsApi,
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { artistAliasMutations } from "@/lib/mutation-options";
 import { artistAliasesListQueryOptions } from "@/lib/query-options";
 
 const DEFAULT_PAGE = 1;
@@ -126,8 +126,13 @@ function ArtistAliasesPage() {
 	);
 
 	const [editingAlias, setEditingAlias] = useState<ArtistAlias | null>(null);
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+	// Mutations
+	const deleteMutation = useMutation(artistAliasMutations.delete(queryClient));
+	const batchDeleteMutation = useMutation(
+		artistAliasMutations.batchDelete(queryClient),
+	);
 
 	// 選択状態管理
 	const {
@@ -143,12 +148,10 @@ function ArtistAliasesPage() {
 
 	// 一括削除ダイアログ状態
 	const [isBatchDeleteDialogOpen, setIsBatchDeleteDialogOpen] = useState(false);
-	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
 	// 個別削除ダイアログ状態
 	const [deleteTarget, setDeleteTarget] = useState<ArtistAlias | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
 
 	// アーティスト一覧取得（セレクト用）
 	const { data: artistsData } = useQuery({
@@ -184,51 +187,40 @@ function ArtistAliasesPage() {
 		queryClient.invalidateQueries({ queryKey: ["artistAliases"] });
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!deleteTarget) return;
-		setIsDeleting(true);
-		try {
-			await artistAliasesApi.delete(deleteTarget.id);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(deleteTarget.id, {
+			onSuccess: () => setDeleteTarget(null),
+		});
 	};
 
-	const handleBatchDelete = async () => {
-		setIsBatchDeleting(true);
+	const handleBatchDelete = () => {
 		setBatchDeleteError(null);
 
-		try {
-			const ids = Array.from(selectedItems.values()).map((item) => item.id);
+		const ids = Array.from(selectedItems.values()).map((item) => item.id);
 
-			if (ids.length === 0) {
-				setBatchDeleteError("削除可能な名義がありません");
-				return;
-			}
-
-			const result = await artistAliasesApi.batchDelete(ids);
-
-			if (result.failed.length > 0) {
-				setBatchDeleteError(
-					`${result.deleted.length}件削除、${result.failed.length}件失敗`,
-				);
-			} else {
-				setIsBatchDeleteDialogOpen(false);
-				clearSelection();
-			}
-
-			invalidateQuery();
-		} catch (e) {
-			setBatchDeleteError(
-				e instanceof Error ? e.message : "一括削除に失敗しました",
-			);
-		} finally {
-			setIsBatchDeleting(false);
+		if (ids.length === 0) {
+			setBatchDeleteError("削除可能な名義がありません");
+			return;
 		}
+
+		batchDeleteMutation.mutate(ids, {
+			onSuccess: (result) => {
+				if (result.failed.length > 0) {
+					setBatchDeleteError(
+						`${result.deleted.length}件削除、${result.failed.length}件失敗`,
+					);
+				} else {
+					setIsBatchDeleteDialogOpen(false);
+					clearSelection();
+				}
+			},
+			onError: (e) => {
+				setBatchDeleteError(
+					e instanceof Error ? e.message : "一括削除に失敗しました",
+				);
+			},
+		});
 	};
 
 	const handlePageChange = (newPage: number) => {
@@ -266,7 +258,9 @@ function ArtistAliasesPage() {
 	}, [artists, editingAlias?.artistId, editingAlias?.artistName]);
 
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		(deleteMutation.error instanceof Error
+			? deleteMutation.error.message
+			: null) || (error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -561,7 +555,7 @@ function ArtistAliasesPage() {
 														size="icon"
 														onClick={() => {
 															setEditingAlias(alias);
-															setMutationError(null);
+															deleteMutation.reset();
 														}}
 													>
 														<Pencil className="h-4 w-4" />
@@ -623,6 +617,7 @@ function ArtistAliasesPage() {
 					setIsBatchDeleteDialogOpen(open);
 					if (!open) {
 						setBatchDeleteError(null);
+						batchDeleteMutation.reset();
 					}
 				}}
 				title="アーティスト名義の一括削除"
@@ -640,21 +635,24 @@ function ArtistAliasesPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleBatchDelete}
-				isLoading={isBatchDeleting}
+				isLoading={batchDeleteMutation.isPending}
 			/>
 
 			{/* 個別削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteTarget(null);
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
 				}}
 				title="名義の削除"
 				description={`「${deleteTarget?.name}」を削除しますか？この操作は取り消せません。`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

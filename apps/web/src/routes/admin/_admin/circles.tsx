@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { detectInitial } from "@thac/utils";
@@ -52,7 +52,6 @@ import {
 	type Circle,
 	type CircleLink,
 	type CircleWithLinks,
-	circleLinksApi,
 	circlesApi,
 	type ExportFormat,
 	exportApi,
@@ -62,6 +61,7 @@ import {
 	platformsApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { circleLinkMutations, circleMutations } from "@/lib/mutation-options";
 import { circlesListQueryOptions } from "@/lib/query-options";
 import { getExternalLinkUrl } from "@/lib/utils";
 
@@ -126,9 +126,7 @@ function CirclesPage() {
 		null,
 	);
 	const [editForm, setEditForm] = useState<Partial<Circle>>({});
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// リンク編集用
 	const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
@@ -152,21 +150,46 @@ function CirclesPage() {
 
 	// 一括削除ダイアログ状態
 	const [isBatchDeleteDialogOpen, setIsBatchDeleteDialogOpen] = useState(false);
-	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
-	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
 	// 個別削除ダイアログ状態
 	const [deleteTarget, setDeleteTarget] = useState<Circle | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
 
 	// リンク削除ダイアログ状態
 	const [deleteLinkTarget, setDeleteLinkTarget] = useState<CircleLink | null>(
 		null,
 	);
-	const [isDeletingLink, setIsDeletingLink] = useState(false);
 
 	// エクスポート状態
 	const [isExporting, setIsExporting] = useState(false);
+
+	// useMutation hooks
+	const deleteMutation = useMutation(circleMutations.delete(queryClient));
+	const batchDeleteMutation = useMutation(
+		circleMutations.batchDelete(queryClient),
+	);
+	const updateMutation = useMutation(circleMutations.update(queryClient));
+	const createLinkMutation = useMutation(
+		circleLinkMutations.create(queryClient),
+	);
+	const updateLinkMutation = useMutation(
+		circleLinkMutations.update(queryClient),
+	);
+	const deleteLinkMutation = useMutation(
+		circleLinkMutations.delete(queryClient),
+	);
+
+	// ローディング状態とエラー状態
+	const isSubmitting =
+		updateMutation.isPending ||
+		createLinkMutation.isPending ||
+		updateLinkMutation.isPending;
+	const mutationError =
+		deleteMutation.error ||
+		batchDeleteMutation.error ||
+		updateMutation.error ||
+		createLinkMutation.error ||
+		updateLinkMutation.error ||
+		deleteLinkMutation.error;
 
 	// プラットフォーム一覧取得
 	const { data: platformsData } = useQuery({
@@ -253,10 +276,6 @@ function CirclesPage() {
 	const circles = data?.data ?? [];
 	const total = data?.total ?? 0;
 
-	const invalidateQuery = () => {
-		queryClient.invalidateQueries({ queryKey: ["circles"] });
-	};
-
 	const handleExport = async (
 		format: ExportFormat,
 		includeRelations: boolean,
@@ -269,85 +288,60 @@ function CirclesPage() {
 				search: debouncedSearch || undefined,
 				initialScript: initialScript || undefined,
 			});
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "エクスポートに失敗しました",
-			);
 		} finally {
 			setIsExporting(false);
 		}
 	};
 
-	const handleUpdate = async () => {
+	const handleUpdate = () => {
 		if (!editingCircle) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await circlesApi.update(editingCircle.id, {
-				name: editForm.name,
-				nameJa: editForm.nameJa,
-				nameEn: editForm.nameEn,
-				sortName: editForm.sortName,
-				nameInitial: editForm.nameInitial,
-				initialScript: editForm.initialScript,
-				notes: editForm.notes,
-			});
-			// 編集中のサークル情報を更新
-			const updated = await circlesApi.get(editingCircle.id);
-			setEditingCircle(updated);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
+		updateMutation.mutate(
+			{
+				id: editingCircle.id,
+				data: {
+					name: editForm.name,
+					nameJa: editForm.nameJa,
+					nameEn: editForm.nameEn,
+					sortName: editForm.sortName,
+					nameInitial: editForm.nameInitial,
+					initialScript: editForm.initialScript,
+					notes: editForm.notes,
+				},
+			},
+			{
+				onSuccess: async () => {
+					// 編集中のサークル情報を更新
+					const updated = await circlesApi.get(editingCircle.id);
+					setEditingCircle(updated);
+				},
+			},
+		);
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!deleteTarget) return;
-		setIsDeleting(true);
-		try {
-			await circlesApi.delete(deleteTarget.id);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(deleteTarget.id, {
+			onSuccess: () => {
+				setDeleteTarget(null);
+			},
+		});
 	};
 
-	const handleBatchDelete = async () => {
-		setIsBatchDeleting(true);
-		setBatchDeleteError(null);
+	const handleBatchDelete = () => {
+		const ids = Array.from(selectedItems.values()).map((item) => item.id);
 
-		try {
-			const ids = Array.from(selectedItems.values()).map((item) => item.id);
-
-			if (ids.length === 0) {
-				setBatchDeleteError("削除可能なサークルがありません");
-				return;
-			}
-
-			const result = await circlesApi.batchDelete(ids);
-
-			if (result.failed.length > 0) {
-				setBatchDeleteError(
-					`${result.deleted.length}件削除、${result.failed.length}件失敗`,
-				);
-			} else {
-				setIsBatchDeleteDialogOpen(false);
-				clearSelection();
-			}
-
-			invalidateQuery();
-		} catch (e) {
-			setBatchDeleteError(
-				e instanceof Error ? e.message : "一括削除に失敗しました",
-			);
-		} finally {
-			setIsBatchDeleting(false);
+		if (ids.length === 0) {
+			return;
 		}
+
+		batchDeleteMutation.mutate(ids, {
+			onSuccess: (result) => {
+				if (result.failed.length === 0) {
+					setIsBatchDeleteDialogOpen(false);
+					clearSelection();
+				}
+			},
+		});
 	};
 
 	// サークルを編集モードで開く（詳細取得）
@@ -364,11 +358,13 @@ function CirclesPage() {
 				initialScript: circleWithLinks.initialScript,
 				notes: circleWithLinks.notes,
 			});
-			setMutationError(null);
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "サークル情報の取得に失敗しました",
-			);
+			// ミューテーションエラーをリセット
+			updateMutation.reset();
+			createLinkMutation.reset();
+			updateLinkMutation.reset();
+			deleteLinkMutation.reset();
+		} catch {
+			// サークル情報の取得に失敗した場合はそのまま表示しない
 		}
 	};
 
@@ -401,63 +397,70 @@ function CirclesPage() {
 	};
 
 	// リンク保存
-	const handleSaveLink = async () => {
+	const handleSaveLink = () => {
 		if (!editingCircle) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			if (editingLink) {
-				// 更新
-				await circleLinksApi.update(editingCircle.id, editingLink.id, {
-					platformCode: linkForm.platformCode,
-					url: linkForm.url,
-					platformId: linkForm.platformId,
-					handle: linkForm.handle,
-					isOfficial: linkForm.isOfficial,
-					isPrimary: linkForm.isPrimary,
-				});
-			} else {
-				// 新規作成
-				const id = createId.circleLink();
-				await circleLinksApi.create(editingCircle.id, {
-					id,
-					platformCode: linkForm.platformCode || "",
-					url: linkForm.url || "",
-					platformId: linkForm.platformId || null,
-					handle: linkForm.handle || null,
-					isOfficial: linkForm.isOfficial ?? true,
-					isPrimary: linkForm.isPrimary ?? false,
-				});
-			}
+
+		const onSuccess = async () => {
 			setIsLinkDialogOpen(false);
 			// サークル詳細を再取得
 			const updated = await circlesApi.get(editingCircle.id);
 			setEditingCircle(updated);
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "リンクの保存に失敗しました",
+		};
+
+		if (editingLink) {
+			// 更新
+			updateLinkMutation.mutate(
+				{
+					circleId: editingCircle.id,
+					linkId: editingLink.id,
+					data: {
+						platformCode: linkForm.platformCode,
+						url: linkForm.url,
+						platformId: linkForm.platformId,
+						handle: linkForm.handle,
+						isOfficial: linkForm.isOfficial,
+						isPrimary: linkForm.isPrimary,
+					},
+				},
+				{ onSuccess },
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			// 新規作成
+			const id = createId.circleLink();
+			createLinkMutation.mutate(
+				{
+					circleId: editingCircle.id,
+					data: {
+						id,
+						platformCode: linkForm.platformCode || "",
+						url: linkForm.url || "",
+						platformId: linkForm.platformId || null,
+						handle: linkForm.handle || null,
+						isOfficial: linkForm.isOfficial ?? true,
+						isPrimary: linkForm.isPrimary ?? false,
+					},
+				},
+				{ onSuccess },
+			);
 		}
 	};
 
 	// リンク削除
-	const handleDeleteLink = async () => {
+	const handleDeleteLink = () => {
 		if (!editingCircle || !deleteLinkTarget) return;
-		setIsDeletingLink(true);
-		try {
-			await circleLinksApi.delete(editingCircle.id, deleteLinkTarget.id);
-			const updated = await circlesApi.get(editingCircle.id);
-			setEditingCircle(updated);
-			setDeleteLinkTarget(null);
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "リンクの削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingLink(false);
-		}
+		deleteLinkMutation.mutate(
+			{
+				circleId: editingCircle.id,
+				linkId: deleteLinkTarget.id,
+			},
+			{
+				onSuccess: async () => {
+					const updated = await circlesApi.get(editingCircle.id);
+					setEditingCircle(updated);
+					setDeleteLinkTarget(null);
+				},
+			},
+		);
 	};
 
 	const handlePageChange = (newPage: number) => {
@@ -480,7 +483,8 @@ function CirclesPage() {
 	};
 
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		(mutationError instanceof Error ? mutationError.message : null) ||
+		(error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -822,7 +826,6 @@ function CirclesPage() {
 				open={isCreateDialogOpen}
 				onOpenChange={setIsCreateDialogOpen}
 				mode="create"
-				onSuccess={invalidateQuery}
 			/>
 
 			{/* 編集ダイアログ（リンク管理含む） */}
@@ -831,7 +834,7 @@ function CirclesPage() {
 				onOpenChange={(open) => {
 					if (!open) {
 						setEditingCircle(null);
-						setMutationError(null);
+						updateMutation.reset();
 					}
 				}}
 			>
@@ -1055,7 +1058,8 @@ function CirclesPage() {
 							isOfficial: true,
 							isPrimary: false,
 						});
-						setMutationError(null);
+						createLinkMutation.reset();
+						updateLinkMutation.reset();
 					}
 				}}
 			>
@@ -1163,9 +1167,12 @@ function CirclesPage() {
 								</Label>
 							</div>
 						</div>
-						{mutationError && (
+						{(createLinkMutation.error || updateLinkMutation.error) && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{
+									(createLinkMutation.error || updateLinkMutation.error)
+										?.message
+								}
 							</div>
 						)}
 					</div>
@@ -1176,9 +1183,13 @@ function CirclesPage() {
 						<Button
 							variant="primary"
 							onClick={handleSaveLink}
-							disabled={isSubmitting}
+							disabled={
+								createLinkMutation.isPending || updateLinkMutation.isPending
+							}
 						>
-							{isSubmitting ? "保存中..." : "保存"}
+							{createLinkMutation.isPending || updateLinkMutation.isPending
+								? "保存中..."
+								: "保存"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -1190,7 +1201,7 @@ function CirclesPage() {
 				onOpenChange={(open) => {
 					setIsBatchDeleteDialogOpen(open);
 					if (!open) {
-						setBatchDeleteError(null);
+						batchDeleteMutation.reset();
 					}
 				}}
 				title="サークルの一括削除"
@@ -1200,22 +1211,27 @@ function CirclesPage() {
 						<p className="mt-2 text-error text-sm">
 							※関連する外部リンクも削除されます。この操作は取り消せません。
 						</p>
-						{batchDeleteError && (
-							<p className="mt-2 text-error text-sm">{batchDeleteError}</p>
+						{batchDeleteMutation.error && (
+							<p className="mt-2 text-error text-sm">
+								{batchDeleteMutation.error.message}
+							</p>
 						)}
 					</div>
 				}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleBatchDelete}
-				isLoading={isBatchDeleting}
+				isLoading={batchDeleteMutation.isPending}
 			/>
 
 			{/* 個別削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteTarget(null);
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
 				}}
 				title="サークルの削除"
 				description={
@@ -1229,21 +1245,24 @@ function CirclesPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 
 			{/* リンク削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteLinkTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteLinkTarget(null);
+					if (!open) {
+						setDeleteLinkTarget(null);
+						deleteLinkMutation.reset();
+					}
 				}}
 				title="リンクの削除"
 				description="このリンクを削除しますか？この操作は取り消せません。"
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDeleteLink}
-				isLoading={isDeletingLink}
+				isLoading={deleteLinkMutation.isPending}
 			/>
 		</div>
 	);

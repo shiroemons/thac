@@ -1,5 +1,7 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { type CreditRole, creditRolesApi } from "@/lib/api-client";
+import type { CreditRole } from "@/lib/api-client";
+import { creditRoleMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -33,15 +35,23 @@ export function CreditRoleEditDialog({
 	creditRole,
 	onSuccess,
 }: CreditRoleEditDialogProps) {
+	const queryClient = useQueryClient();
 	const [form, setForm] = useState<CreditRoleFormData>({
 		code: "",
 		label: "",
 		description: null,
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+
+	// useMutation hooks
+	const createMutation = useMutation(creditRoleMutations.create(queryClient));
+	const updateMutation = useMutation(creditRoleMutations.update(queryClient));
+
+	// ローディング状態とエラー状態
+	const isPending = createMutation.isPending || updateMutation.isPending;
+	const mutationError = createMutation.error || updateMutation.error;
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && creditRole) {
@@ -57,50 +67,61 @@ export function CreditRoleEditDialog({
 					description: null,
 				});
 			}
-			setError(null);
+			// ダイアログを開いた時にmutationのエラー状態をリセット
+			createMutation.reset();
+			updateMutation.reset();
 		}
 	}, [open, mode, creditRole]);
 
-	const handleSubmit = async () => {
+	const handleSubmit = () => {
 		if (!form.code.trim()) {
-			setError("コードを入力してください");
 			return;
 		}
 		if (!form.label.trim()) {
-			setError("ラベルを入力してください");
 			return;
 		}
 
-		setIsSubmitting(true);
-		setError(null);
-
-		try {
-			if (mode === "create") {
-				await creditRolesApi.create({
+		if (mode === "create") {
+			createMutation.mutate(
+				{
 					code: form.code,
 					label: form.label,
 					description: form.description,
-				});
-			} else if (creditRole) {
-				await creditRolesApi.update(creditRole.code, {
-					label: form.label,
-					description: form.description,
-				});
-			}
-			onOpenChange(false);
-			onSuccess?.();
-		} catch (e) {
-			setError(
-				e instanceof Error
-					? e.message
-					: mode === "create"
-						? "作成に失敗しました"
-						: "更新に失敗しました",
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else if (creditRole) {
+			updateMutation.mutate(
+				{
+					code: creditRole.code,
+					data: {
+						label: form.label,
+						description: form.description,
+					},
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
+			);
 		}
 	};
+
+	// エラーメッセージの取得
+	const displayError = mutationError
+		? mutationError instanceof Error
+			? mutationError.message
+			: mode === "create"
+				? "作成に失敗しました"
+				: "更新に失敗しました"
+		: null;
 
 	const title =
 		mode === "create" ? "新規クレジット役割" : "クレジット役割の編集";
@@ -112,9 +133,9 @@ export function CreditRoleEditDialog({
 					<DialogTitle>{title}</DialogTitle>
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
-					{error && (
+					{displayError && (
 						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{error}
+							{displayError}
 						</div>
 					)}
 					<div className="grid gap-2">
@@ -126,7 +147,7 @@ export function CreditRoleEditDialog({
 							value={form.code}
 							onChange={(e) => setForm({ ...form, code: e.target.value })}
 							placeholder="例: composer"
-							disabled={isSubmitting || mode === "edit"}
+							disabled={isPending || mode === "edit"}
 						/>
 						{mode === "edit" && (
 							<p className="text-muted-foreground text-xs">
@@ -143,7 +164,7 @@ export function CreditRoleEditDialog({
 							value={form.label}
 							onChange={(e) => setForm({ ...form, label: e.target.value })}
 							placeholder="例: 作曲"
-							disabled={isSubmitting}
+							disabled={isPending}
 						/>
 					</div>
 					<div className="grid gap-2">
@@ -156,7 +177,7 @@ export function CreditRoleEditDialog({
 							}
 							placeholder="例: 楽曲の作曲を担当したクレジット"
 							rows={3}
-							disabled={isSubmitting}
+							disabled={isPending}
 						/>
 					</div>
 				</div>
@@ -164,16 +185,16 @@ export function CreditRoleEditDialog({
 					<Button
 						variant="ghost"
 						onClick={() => onOpenChange(false)}
-						disabled={isSubmitting}
+						disabled={isPending}
 					>
 						キャンセル
 					</Button>
 					<Button
 						variant="primary"
 						onClick={handleSubmit}
-						disabled={isSubmitting || !form.code.trim() || !form.label.trim()}
+						disabled={isPending || !form.code.trim() || !form.label.trim()}
 					>
-						{isSubmitting
+						{isPending
 							? mode === "create"
 								? "作成中..."
 								: "保存中..."

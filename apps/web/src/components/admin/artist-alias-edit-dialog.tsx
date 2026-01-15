@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createId } from "@thac/db";
 import { detectInitial } from "@thac/utils";
 import { useEffect, useMemo, useState } from "react";
@@ -7,11 +7,11 @@ import {
 	type Artist,
 	type ArtistAlias,
 	aliasTypesApi,
-	artistAliasesApi,
 	artistsApi,
 	type InitialScript,
 	isConflictError,
 } from "@/lib/api-client";
+import { artistAliasMutations, artistMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -64,8 +64,6 @@ export function ArtistAliasEditDialog({
 		periodFrom: null,
 		periodTo: null,
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	// 楽観的ロック用: 編集開始時のupdatedAtを記録
 	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
 		null,
@@ -79,6 +77,19 @@ export function ArtistAliasEditDialog({
 	const [artistCreateForm, setArtistCreateForm] = useState<Partial<Artist>>({
 		initialScript: "latin",
 	});
+
+	// useMutation hooks
+	const createMutation = useMutation(artistAliasMutations.create(queryClient));
+	const updateMutation = useMutation(artistAliasMutations.update(queryClient));
+	const artistCreateMutation = useMutation(artistMutations.create(queryClient));
+
+	// ローディング状態とエラー状態
+	const isPending =
+		createMutation.isPending ||
+		updateMutation.isPending ||
+		artistCreateMutation.isPending;
+	const mutationError =
+		createMutation.error || updateMutation.error || artistCreateMutation.error;
 
 	// アーティスト一覧取得
 	const { data: artistsData } = useQuery({
@@ -102,6 +113,7 @@ export function ArtistAliasEditDialog({
 	const aliasTypes = aliasTypesData?.data ?? [];
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && alias) {
@@ -127,7 +139,10 @@ export function ArtistAliasEditDialog({
 				});
 				setOriginalUpdatedAt(null);
 			}
-			setError(null);
+			// ダイアログを開いた時にmutationのエラー状態をリセット
+			createMutation.reset();
+			updateMutation.reset();
+			artistCreateMutation.reset();
 			clearConflict();
 		}
 	}, [open, mode, alias, defaultArtistId, clearConflict]);
@@ -143,13 +158,11 @@ export function ArtistAliasEditDialog({
 	};
 
 	// アーティスト作成（ネストダイアログから）
-	const handleArtistCreate = async () => {
-		setIsSubmitting(true);
-		setError(null);
-		try {
-			const id = createId.artist();
-			const initial = detectInitial(artistCreateForm.name || "");
-			const newArtist = await artistsApi.create({
+	const handleArtistCreate = () => {
+		const id = createId.artist();
+		const initial = detectInitial(artistCreateForm.name || "");
+		artistCreateMutation.mutate(
+			{
 				id,
 				name: artistCreateForm.name || "",
 				nameJa: artistCreateForm.nameJa || null,
@@ -158,37 +171,26 @@ export function ArtistAliasEditDialog({
 				nameInitial: initial.nameInitial,
 				initialScript: initial.initialScript as InitialScript,
 				notes: artistCreateForm.notes || null,
-			});
-			queryClient.invalidateQueries({ queryKey: ["artists"] });
-			setForm({ ...form, artistId: newArtist.id });
-			setIsArtistCreateDialogOpen(false);
-			setArtistCreateForm({ initialScript: "latin" });
-		} catch (e) {
-			setError(
-				e instanceof Error ? e.message : "アーティストの作成に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
+			},
+			{
+				onSuccess: (newArtist) => {
+					setForm({ ...form, artistId: newArtist.id });
+					setIsArtistCreateDialogOpen(false);
+					setArtistCreateForm({ initialScript: "latin" });
+				},
+			},
+		);
 	};
 
-	const handleSubmit = async (overrideUpdatedAt?: string) => {
-		if (!form.name.trim()) {
-			setError("名義名を入力してください");
-			return;
-		}
-		if (!form.artistId) {
-			setError("アーティストを選択してください");
+	const handleSubmit = (overrideUpdatedAt?: string) => {
+		if (!form.name.trim() || !form.artistId) {
 			return;
 		}
 
-		setIsSubmitting(true);
-		setError(null);
-
-		try {
-			if (mode === "create") {
-				const id = createId.artistAlias();
-				await artistAliasesApi.create({
+		if (mode === "create") {
+			const id = createId.artistAlias();
+			createMutation.mutate(
+				{
 					id,
 					name: form.name,
 					artistId: form.artistId,
@@ -197,37 +199,43 @@ export function ArtistAliasEditDialog({
 					nameInitial: form.nameInitial,
 					periodFrom: form.periodFrom || null,
 					periodTo: form.periodTo || null,
-				});
-			} else if (alias) {
-				await artistAliasesApi.update(alias.id, {
-					name: form.name,
-					artistId: form.artistId,
-					aliasTypeCode: form.aliasTypeCode,
-					initialScript: form.initialScript,
-					nameInitial: form.nameInitial,
-					periodFrom: form.periodFrom || null,
-					periodTo: form.periodTo || null,
-					// 楽観的ロック: updatedAtを送信
-					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
-				});
-			}
-			onOpenChange(false);
-			onSuccess?.();
-		} catch (e) {
-			// 楽観的ロック競合エラーの場合
-			if (isConflictError<ArtistAlias>(e)) {
-				setConflict(e.current);
-				return;
-			}
-			setError(
-				e instanceof Error
-					? e.message
-					: mode === "create"
-						? "作成に失敗しました"
-						: "更新に失敗しました",
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else if (alias) {
+			updateMutation.mutate(
+				{
+					id: alias.id,
+					data: {
+						name: form.name,
+						artistId: form.artistId,
+						aliasTypeCode: form.aliasTypeCode,
+						initialScript: form.initialScript,
+						nameInitial: form.nameInitial,
+						periodFrom: form.periodFrom || null,
+						periodTo: form.periodTo || null,
+						// 楽観的ロック: updatedAtを送信
+						updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
+					},
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+					onError: (e) => {
+						// 楽観的ロック競合エラーの場合
+						if (isConflictError<ArtistAlias>(e)) {
+							setConflict(e.current);
+						}
+					},
+				},
+			);
 		}
 	};
 
@@ -255,6 +263,16 @@ export function ArtistAliasEditDialog({
 		}
 	};
 
+	// エラーメッセージの取得（競合エラー以外）
+	const displayError =
+		mutationError && !isConflictError(mutationError)
+			? mutationError instanceof Error
+				? mutationError.message
+				: mode === "create"
+					? "作成に失敗しました"
+					: "更新に失敗しました"
+			: null;
+
 	const title =
 		mode === "create" ? "新規アーティスト名義" : "アーティスト名義の編集";
 
@@ -266,9 +284,9 @@ export function ArtistAliasEditDialog({
 						<DialogTitle>{title}</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{error && (
+						{displayError && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{error}
+								{displayError}
 							</div>
 						)}
 						<div className="grid gap-2">
@@ -280,7 +298,7 @@ export function ArtistAliasEditDialog({
 								value={form.name}
 								onChange={(e) => handleNameChange(e.target.value)}
 								placeholder="例: ZUN"
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -293,7 +311,7 @@ export function ArtistAliasEditDialog({
 									size="sm"
 									className="h-auto p-0 text-primary text-xs hover:underline"
 									onClick={() => setIsArtistCreateDialogOpen(true)}
-									disabled={isSubmitting}
+									disabled={isPending}
 								>
 									+ 新規アーティスト作成
 								</Button>
@@ -306,7 +324,7 @@ export function ArtistAliasEditDialog({
 								placeholder="アーティストを選択..."
 								searchPlaceholder="アーティストを検索..."
 								emptyMessage="アーティストが見つかりません"
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -317,7 +335,7 @@ export function ArtistAliasEditDialog({
 								onChange={(e) =>
 									setForm({ ...form, aliasTypeCode: e.target.value || null })
 								}
-								disabled={isSubmitting}
+								disabled={isPending}
 							>
 								<option value="">選択なし</option>
 								{aliasTypes.map((type) => (
@@ -337,7 +355,7 @@ export function ArtistAliasEditDialog({
 									onChange={(e) =>
 										setForm({ ...form, periodFrom: e.target.value || null })
 									}
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -349,7 +367,7 @@ export function ArtistAliasEditDialog({
 									onChange={(e) =>
 										setForm({ ...form, periodTo: e.target.value || null })
 									}
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 						</div>
@@ -358,16 +376,16 @@ export function ArtistAliasEditDialog({
 						<Button
 							variant="ghost"
 							onClick={() => onOpenChange(false)}
-							disabled={isSubmitting}
+							disabled={isPending}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={() => handleSubmit()}
-							disabled={isSubmitting || !form.name.trim() || !form.artistId}
+							disabled={isPending || !form.name.trim() || !form.artistId}
 						>
-							{isSubmitting
+							{isPending
 								? mode === "create"
 									? "作成中..."
 									: "保存中..."
@@ -406,7 +424,7 @@ export function ArtistAliasEditDialog({
 									});
 								}}
 								placeholder="例: ZUN"
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -421,7 +439,7 @@ export function ArtistAliasEditDialog({
 											nameJa: e.target.value,
 										})
 									}
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -435,7 +453,7 @@ export function ArtistAliasEditDialog({
 											nameEn: e.target.value,
 										})
 									}
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 						</div>
@@ -450,7 +468,7 @@ export function ArtistAliasEditDialog({
 										sortName: e.target.value,
 									})
 								}
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 					</div>
@@ -458,16 +476,16 @@ export function ArtistAliasEditDialog({
 						<Button
 							variant="ghost"
 							onClick={() => setIsArtistCreateDialogOpen(false)}
-							disabled={isSubmitting}
+							disabled={isPending}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={handleArtistCreate}
-							disabled={isSubmitting || !artistCreateForm.name?.trim()}
+							disabled={isPending || !artistCreateForm.name?.trim()}
 						>
-							{isSubmitting ? "作成中..." : "作成"}
+							{isPending ? "作成中..." : "作成"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -481,7 +499,7 @@ export function ArtistAliasEditDialog({
 				getDisplayName={(data) => data.name}
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
-				isLoading={isSubmitting}
+				isLoading={isPending}
 			/>
 		</>
 	);

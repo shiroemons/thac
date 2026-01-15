@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -35,6 +35,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useSortableTable } from "@/hooks/use-sortable-table";
 import { importApi, type Platform, platformsApi } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { platformMutations } from "@/lib/mutation-options";
 
 export const Route = createFileRoute("/admin/_admin/master/platforms")({
 	head: () => createPageHead("プラットフォーム"),
@@ -84,7 +85,6 @@ function PlatformsPage() {
 	const [pageSize, setPageSize] = useState(20);
 	const [search, setSearch] = useState("");
 	const [category, setCategory] = useState("");
-	const [isReordering, setIsReordering] = useState(false);
 
 	// API呼び出し用にデバウンス（300ms）
 	const debouncedSearch = useDebounce(search, 300);
@@ -104,11 +104,14 @@ function PlatformsPage() {
 	);
 
 	const [editingPlatform, setEditingPlatform] = useState<Platform | null>(null);
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 	const [deleteTarget, setDeleteTarget] = useState<Platform | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
+
+	// Mutations
+	const deleteMutation = useMutation(platformMutations.delete(queryClient));
+	const updateMutation = useMutation(platformMutations.update(queryClient));
+	const reorderMutation = useMutation(platformMutations.reorder(queryClient));
 
 	const { data, isPending, isFetching, error } = useQuery({
 		queryKey: [
@@ -144,75 +147,58 @@ function PlatformsPage() {
 		!!debouncedSearch || !!category || sortBy !== "sortOrder";
 
 	// 上へ移動
-	const handleMoveUp = async (platform: Platform, index: number) => {
+	const handleMoveUp = (platform: Platform, index: number) => {
 		if (index === 0 || isReorderDisabled) return;
 		const prevPlatform = platforms[index - 1];
-		try {
-			await platformsApi.update(platform.code, {
-				sortOrder: prevPlatform.sortOrder,
-			});
-			await platformsApi.update(prevPlatform.code, {
-				sortOrder: platform.sortOrder,
-			});
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "順序変更に失敗しました",
-			);
-		}
+		// 順番に2つの更新を実行
+		updateMutation.mutate(
+			{ code: platform.code, data: { sortOrder: prevPlatform.sortOrder } },
+			{
+				onSuccess: () => {
+					updateMutation.mutate({
+						code: prevPlatform.code,
+						data: { sortOrder: platform.sortOrder },
+					});
+				},
+			},
+		);
 	};
 
 	// 下へ移動
-	const handleMoveDown = async (platform: Platform, index: number) => {
+	const handleMoveDown = (platform: Platform, index: number) => {
 		if (index === platforms.length - 1 || isReorderDisabled) return;
 		const nextPlatform = platforms[index + 1];
-		try {
-			await platformsApi.update(platform.code, {
-				sortOrder: nextPlatform.sortOrder,
-			});
-			await platformsApi.update(nextPlatform.code, {
-				sortOrder: platform.sortOrder,
-			});
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "順序変更に失敗しました",
-			);
-		}
+		// 順番に2つの更新を実行
+		updateMutation.mutate(
+			{ code: platform.code, data: { sortOrder: nextPlatform.sortOrder } },
+			{
+				onSuccess: () => {
+					updateMutation.mutate({
+						code: nextPlatform.code,
+						data: { sortOrder: platform.sortOrder },
+					});
+				},
+			},
+		);
 	};
 
-	// 順序を整理
-	const handleReorder = async () => {
+	// 順序を整理（連番に振り直し）
+	const handleReorder = () => {
 		if (platforms.length === 0) return;
-		setIsReordering(true);
-		try {
-			const items = platforms.map((p, index) => ({
-				code: p.code,
-				sortOrder: index,
-			}));
-			await platformsApi.reorder(items);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "順序の整理に失敗しました",
-			);
-		} finally {
-			setIsReordering(false);
-		}
+		const items = platforms.map((p, index) => ({
+			code: p.code,
+			sortOrder: index,
+		}));
+		reorderMutation.mutate(items);
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!deleteTarget) return;
-		setIsDeleting(true);
-		try {
-			await platformsApi.delete(deleteTarget.code);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(deleteTarget.code, {
+			onSuccess: () => {
+				setDeleteTarget(null);
+			},
+		});
 	};
 
 	const handlePageChange = (newPage: number) => {
@@ -234,8 +220,11 @@ function PlatformsPage() {
 		setPage(1);
 	};
 
+	const mutationError =
+		deleteMutation.error || updateMutation.error || reorderMutation.error;
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		(mutationError instanceof Error ? mutationError.message : null) ||
+		(error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -276,10 +265,10 @@ function PlatformsPage() {
 					}}
 					secondaryActions={[
 						{
-							label: isReordering ? "整理中..." : "順序を整理",
+							label: reorderMutation.isPending ? "整理中..." : "順序を整理",
 							icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
 							onClick: handleReorder,
-							disabled: isReordering || platforms.length === 0,
+							disabled: reorderMutation.isPending || platforms.length === 0,
 						},
 						{
 							label: "インポート",
@@ -579,13 +568,18 @@ function PlatformsPage() {
 			{/* 削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteTarget}
-				onOpenChange={(open) => !open && setDeleteTarget(null)}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
+				}}
 				title="プラットフォームの削除"
 				description={`「${deleteTarget?.name}」を削除しますか？この操作は取り消せません。`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

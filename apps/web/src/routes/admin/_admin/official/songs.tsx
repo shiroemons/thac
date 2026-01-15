@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -30,11 +30,11 @@ import {
 	exportApi,
 	importApi,
 	type OfficialSong,
-	officialSongsApi,
 	officialWorkCategoriesApi,
 	officialWorksApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { officialSongMutations } from "@/lib/mutation-options";
 import { officialSongsListQueryOptions } from "@/lib/query-options";
 
 // 初期表示用のデフォルト値
@@ -94,14 +94,16 @@ function OfficialSongsPage() {
 	);
 
 	const [editingSong, setEditingSong] = useState<OfficialSong | null>(null);
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 	const [deleteTarget, setDeleteTarget] = useState<OfficialSong | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
 
 	// エクスポート状態
 	const [isExporting, setIsExporting] = useState(false);
+	const [exportError, setExportError] = useState<string | null>(null);
+
+	// Mutations
+	const deleteMutation = useMutation(officialSongMutations.delete(queryClient));
 
 	// 作品一覧を取得（セレクトボックス用）
 	const { data: worksData } = useQuery({
@@ -176,18 +178,11 @@ function OfficialSongsPage() {
 			}));
 	}, [worksData, categoriesData]);
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!deleteTarget) return;
-		setIsDeleting(true);
-		try {
-			await officialSongsApi.delete(deleteTarget.id);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(deleteTarget.id, {
+			onSuccess: () => setDeleteTarget(null),
+		});
 	};
 
 	const handlePageChange = (newPage: number) => {
@@ -214,6 +209,7 @@ function OfficialSongsPage() {
 		includeRelations: boolean,
 	) => {
 		setIsExporting(true);
+		setExportError(null);
 		try {
 			await exportApi.officialSongs({
 				format,
@@ -222,7 +218,7 @@ function OfficialSongsPage() {
 				workId: workId || undefined,
 			});
 		} catch (e) {
-			setMutationError(
+			setExportError(
 				e instanceof Error ? e.message : "エクスポートに失敗しました",
 			);
 		} finally {
@@ -230,8 +226,11 @@ function OfficialSongsPage() {
 		}
 	};
 
+	const mutationError = deleteMutation.error;
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		(mutationError instanceof Error ? mutationError.message : null) ||
+		exportError ||
+		(error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -486,7 +485,7 @@ function OfficialSongsPage() {
 														size="icon"
 														onClick={() => {
 															setEditingSong(s);
-															setMutationError(null);
+															deleteMutation.reset();
 														}}
 													>
 														<Pencil className="h-4 w-4" />
@@ -553,13 +552,18 @@ function OfficialSongsPage() {
 			{/* 削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteTarget}
-				onOpenChange={(open) => !open && setDeleteTarget(null)}
+				onOpenChange={(open) => {
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
+				}}
 				title="公式楽曲の削除"
 				description={`「${deleteTarget?.nameJa}」を削除しますか？この操作は取り消せません。`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

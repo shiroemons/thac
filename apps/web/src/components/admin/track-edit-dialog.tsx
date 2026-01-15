@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +19,8 @@ import {
 	isConflictError,
 	releasesApi,
 	type Track,
-	tracksApi,
 } from "@/lib/api-client";
+import { trackMutations } from "@/lib/mutation-options";
 import { ConflictDialog } from "./conflict-dialog";
 
 interface TrackEditDialogProps {
@@ -36,9 +36,8 @@ export function TrackEditDialog({
 	track,
 	onSuccess,
 }: TrackEditDialogProps) {
+	const queryClient = useQueryClient();
 	const [editForm, setEditForm] = useState<Partial<Track>>({});
-	const [mutationError, setMutationError] = useState<string | null>(null);
-	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedReleaseId, setSelectedReleaseId] = useState<string | null>(
 		null,
 	);
@@ -50,7 +49,15 @@ export function TrackEditDialog({
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<Track>();
 
+	// useMutation hook
+	const updateMutation = useMutation(trackMutations.update(queryClient));
+
+	// ローディング状態とエラー状態
+	const isPending = updateMutation.isPending;
+	const mutationError = updateMutation.error;
+
 	// ダイアログが開いたらフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open && track) {
 			setEditForm({
@@ -67,7 +74,8 @@ export function TrackEditDialog({
 			setSelectedReleaseId(track.releaseId);
 			setSelectedEventId(track.eventId);
 			setOriginalUpdatedAt(track.updatedAt);
-			setMutationError(null);
+			// ダイアログを開いた時にmutationのエラー状態をリセット
+			updateMutation.reset();
 			clearConflict();
 		}
 	}, [open, track, clearConflict]);
@@ -171,41 +179,41 @@ export function TrackEditDialog({
 	}, [eventDaysData]);
 
 	// 保存
-	const handleSave = async (overrideUpdatedAt?: string) => {
+	const handleSave = (overrideUpdatedAt?: string) => {
 		if (!track.releaseId) {
-			setMutationError("作品IDが不正です");
 			return;
 		}
 
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await tracksApi.update(track.releaseId, track.id, {
-				name: editForm.name ?? "",
-				nameJa: editForm.nameJa || null,
-				nameEn: editForm.nameEn || null,
-				trackNumber: editForm.trackNumber,
-				discId: editForm.discId || null,
-				releaseDate: editForm.releaseDate || null,
-				eventId: editForm.eventId || null,
-				eventDayId: editForm.eventDayId || null,
-				// 楽観的ロック: updatedAtを送信
-				updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
-			});
-			onSuccess?.();
-			onOpenChange(false);
-		} catch (err) {
-			// 楽観的ロック競合エラーの場合
-			if (isConflictError<Track>(err)) {
-				setConflict(err.current);
-				return;
-			}
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
+		updateMutation.mutate(
+			{
+				releaseId: track.releaseId,
+				trackId: track.id,
+				data: {
+					name: editForm.name ?? "",
+					nameJa: editForm.nameJa || null,
+					nameEn: editForm.nameEn || null,
+					trackNumber: editForm.trackNumber,
+					discId: editForm.discId || null,
+					releaseDate: editForm.releaseDate || null,
+					eventId: editForm.eventId || null,
+					eventDayId: editForm.eventDayId || null,
+					// 楽観的ロック: updatedAtを送信
+					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
+				},
+			},
+			{
+				onSuccess: () => {
+					onOpenChange(false);
+					onSuccess?.();
+				},
+				onError: (err) => {
+					// 楽観的ロック競合エラーの場合
+					if (isConflictError<Track>(err)) {
+						setConflict(err.current);
+					}
+				},
+			},
+		);
 	};
 
 	// 競合ダイアログで「編集を続ける」を選択した場合
@@ -240,6 +248,14 @@ export function TrackEditDialog({
 	const isDiscFieldVisible = !!selectedReleaseId;
 	const isDiscSelectDisabled = !discsData || discsData.length <= 1;
 
+	// エラーメッセージの取得（競合エラー以外）
+	const displayError =
+		mutationError && !isConflictError(mutationError)
+			? mutationError instanceof Error
+				? mutationError.message
+				: "更新に失敗しました"
+			: null;
+
 	return (
 		<>
 			<Dialog open={open} onOpenChange={onOpenChange}>
@@ -248,9 +264,9 @@ export function TrackEditDialog({
 						<DialogTitle>トラックの編集</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && (
+						{displayError && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{displayError}
 							</div>
 						)}
 
@@ -452,16 +468,16 @@ export function TrackEditDialog({
 						<Button
 							variant="ghost"
 							onClick={() => onOpenChange(false)}
-							disabled={isSubmitting}
+							disabled={isPending}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={() => handleSave()}
-							disabled={isSubmitting || !editForm.name}
+							disabled={isPending || !editForm.name}
 						>
-							{isSubmitting ? "保存中..." : "保存"}
+							{isPending ? "保存中..." : "保存"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -475,7 +491,7 @@ export function TrackEditDialog({
 				getDisplayName={(data) => data.name}
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
-				isLoading={isSubmitting}
+				isLoading={isPending}
 			/>
 		</>
 	);

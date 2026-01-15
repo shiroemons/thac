@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
@@ -39,7 +39,6 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useRowSelection } from "@/hooks/use-row-selection";
 import { useSortableTable } from "@/hooks/use-sortable-table";
 import {
-	discsApi,
 	type ExportFormat,
 	eventDaysApi,
 	eventsApi,
@@ -53,6 +52,7 @@ import {
 	releasesApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { discMutations, releaseMutations } from "@/lib/mutation-options";
 import { releasesListQueryOptions } from "@/lib/query-options";
 
 const DEFAULT_PAGE = 1;
@@ -119,12 +119,10 @@ function ReleasesPage() {
 	const [editingRelease, setEditingRelease] = useState<ReleaseWithDiscs | null>(
 		null,
 	);
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [createForm, setCreateForm] = useState<Partial<Release>>({
 		releaseType: "album",
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedEventIdForCreate, setSelectedEventIdForCreate] = useState<
 		string | null
 	>(null);
@@ -143,17 +141,22 @@ function ReleasesPage() {
 
 	// 一括削除ダイアログ状態
 	const [isBatchDeleteDialogOpen, setIsBatchDeleteDialogOpen] = useState(false);
-	const [isBatchDeleting, setIsBatchDeleting] = useState(false);
-	const [batchDeleteError, setBatchDeleteError] = useState<string | null>(null);
 
 	// 個別削除ダイアログ状態
 	const [deleteTarget, setDeleteTarget] = useState<ReleaseWithCounts | null>(
 		null,
 	);
-	const [isDeleting, setIsDeleting] = useState(false);
 
 	// エクスポート状態
 	const [isExporting, setIsExporting] = useState(false);
+
+	// useMutation hooks
+	const createMutation = useMutation(releaseMutations.create(queryClient));
+	const discCreateMutation = useMutation(discMutations.create(queryClient));
+	const deleteMutation = useMutation(releaseMutations.delete(queryClient));
+	const batchDeleteMutation = useMutation(
+		releaseMutations.batchDelete(queryClient),
+	);
 
 	const { data, isPending, isFetching, error } = useQuery(
 		releasesListQueryOptions({
@@ -168,10 +171,6 @@ function ReleasesPage() {
 
 	const releases = data?.data ?? [];
 	const total = data?.total ?? 0;
-
-	const invalidateQuery = () => {
-		queryClient.invalidateQueries({ queryKey: ["releases"] });
-	};
 
 	// 新規作成用：イベント一覧取得
 	const { data: eventsDataForCreate } = useQuery({
@@ -235,14 +234,13 @@ function ReleasesPage() {
 		}
 	}, [isCreateDialogOpen, selectedEventIdForCreate, eventDaysDataForCreate]);
 
-	const handleCreate = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const id = createId.release();
-			const releaseType = (createForm.releaseType as ReleaseType) || null;
-			await releasesApi.create({
-				id,
+	const handleCreate = () => {
+		const releaseId = createId.release();
+		const releaseType = (createForm.releaseType as ReleaseType) || null;
+
+		createMutation.mutate(
+			{
+				id: releaseId,
 				name: createForm.name || "",
 				nameJa: createForm.nameJa || null,
 				nameEn: createForm.nameEn || null,
@@ -254,74 +252,64 @@ function ReleasesPage() {
 				eventId: createForm.eventId || null,
 				eventDayId: createForm.eventDayId || null,
 				notes: createForm.notes || null,
-			});
-			// アルバム、シングル、EPの場合はデフォルトでDisc 1を作成
-			if (
-				releaseType === "album" ||
-				releaseType === "single" ||
-				releaseType === "ep"
-			) {
-				await discsApi.create(id, {
-					id: createId.disc(),
-					discNumber: 1,
-					discName: createForm.name || null,
-				});
-			}
-			setIsCreateDialogOpen(false);
-			setCreateForm({ releaseType: "album" });
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "作成に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
+			},
+			{
+				onSuccess: () => {
+					// アルバム、シングル、EPの場合はデフォルトでDisc 1を作成
+					if (
+						releaseType === "album" ||
+						releaseType === "single" ||
+						releaseType === "ep"
+					) {
+						discCreateMutation.mutate(
+							{
+								releaseId,
+								data: {
+									id: createId.disc(),
+									discNumber: 1,
+									discName: createForm.name || null,
+								},
+							},
+							{
+								onSuccess: () => {
+									setIsCreateDialogOpen(false);
+									setCreateForm({ releaseType: "album" });
+								},
+							},
+						);
+					} else {
+						setIsCreateDialogOpen(false);
+						setCreateForm({ releaseType: "album" });
+					}
+				},
+			},
+		);
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!deleteTarget) return;
-		setIsDeleting(true);
-		try {
-			await releasesApi.delete(deleteTarget.id);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(deleteTarget.id, {
+			onSuccess: () => {
+				setDeleteTarget(null);
+			},
+		});
 	};
 
-	const handleBatchDelete = async () => {
-		setIsBatchDeleting(true);
-		setBatchDeleteError(null);
+	const handleBatchDelete = () => {
+		const ids = Array.from(selectedItems.values()).map((item) => item.id);
 
-		try {
-			const ids = Array.from(selectedItems.values()).map((item) => item.id);
-
-			if (ids.length === 0) {
-				setBatchDeleteError("削除可能な作品がありません");
-				return;
-			}
-
-			const result = await releasesApi.batchDelete(ids);
-
-			if (result.failed.length > 0) {
-				setBatchDeleteError(
-					`${result.deleted.length}件削除、${result.failed.length}件失敗`,
-				);
-			} else {
-				setIsBatchDeleteDialogOpen(false);
-				clearSelection();
-			}
-
-			invalidateQuery();
-		} catch (e) {
-			setBatchDeleteError(
-				e instanceof Error ? e.message : "一括削除に失敗しました",
-			);
-		} finally {
-			setIsBatchDeleting(false);
+		if (ids.length === 0) {
+			return;
 		}
+
+		batchDeleteMutation.mutate(ids, {
+			onSuccess: (result) => {
+				if (result.failed.length === 0) {
+					setIsBatchDeleteDialogOpen(false);
+					clearSelection();
+				}
+			},
+		});
 	};
 
 	// 作品を編集モードで開く（詳細取得）
@@ -329,11 +317,11 @@ function ReleasesPage() {
 		try {
 			const releaseDetail = await releasesApi.get(release.id);
 			setEditingRelease(releaseDetail);
-			setMutationError(null);
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "作品情報の取得に失敗しました",
-			);
+			// ミューテーションエラーをリセット
+			deleteMutation.reset();
+			batchDeleteMutation.reset();
+		} catch {
+			// 作品情報の取得に失敗した場合はそのまま表示しない
 		}
 	};
 
@@ -368,17 +356,24 @@ function ReleasesPage() {
 				search: debouncedSearch || undefined,
 				releaseType: releaseTypeFilter || undefined,
 			});
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "エクスポートに失敗しました",
-			);
 		} finally {
 			setIsExporting(false);
 		}
 	};
 
+	// エラー表示（mutation/queryエラー）
+	const mutationError =
+		createMutation.error ||
+		discCreateMutation.error ||
+		deleteMutation.error ||
+		batchDeleteMutation.error ||
+		null;
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		(mutationError instanceof Error ? mutationError.message : null) ||
+		(error instanceof Error ? error.message : null);
+
+	// 作成中かどうか
+	const isCreating = createMutation.isPending || discCreateMutation.isPending;
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -745,7 +740,8 @@ function ReleasesPage() {
 						setIsCreateDialogOpen(false);
 						setCreateForm({ releaseType: "album" });
 						setSelectedEventIdForCreate(null);
-						setMutationError(null);
+						createMutation.reset();
+						discCreateMutation.reset();
 					}
 				}}
 			>
@@ -904,9 +900,9 @@ function ReleasesPage() {
 						<Button
 							variant="primary"
 							onClick={handleCreate}
-							disabled={isSubmitting}
+							disabled={isCreating}
 						>
-							{isSubmitting ? "作成中..." : "作成"}
+							{isCreating ? "作成中..." : "作成"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -919,11 +915,9 @@ function ReleasesPage() {
 					onOpenChange={(open) => {
 						if (!open) {
 							setEditingRelease(null);
-							setMutationError(null);
 						}
 					}}
 					release={editingRelease}
-					onSuccess={invalidateQuery}
 				/>
 			)}
 
@@ -933,7 +927,7 @@ function ReleasesPage() {
 				onOpenChange={(open) => {
 					setIsBatchDeleteDialogOpen(open);
 					if (!open) {
-						setBatchDeleteError(null);
+						batchDeleteMutation.reset();
 					}
 				}}
 				title="作品の一括削除"
@@ -943,22 +937,27 @@ function ReleasesPage() {
 						<p className="mt-2 text-error text-sm">
 							※関連するディスク・トラックも削除されます。この操作は取り消せません。
 						</p>
-						{batchDeleteError && (
-							<p className="mt-2 text-error text-sm">{batchDeleteError}</p>
+						{batchDeleteMutation.error && (
+							<p className="mt-2 text-error text-sm">
+								{batchDeleteMutation.error.message}
+							</p>
 						)}
 					</div>
 				}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleBatchDelete}
-				isLoading={isBatchDeleting}
+				isLoading={batchDeleteMutation.isPending}
 			/>
 
 			{/* 個別削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteTarget(null);
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
 				}}
 				title="作品の削除"
 				description={
@@ -972,7 +971,7 @@ function ReleasesPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

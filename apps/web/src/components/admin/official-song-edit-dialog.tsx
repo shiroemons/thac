@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
 import {
@@ -8,6 +8,7 @@ import {
 	officialWorkCategoriesApi,
 	officialWorksApi,
 } from "@/lib/api-client";
+import { officialSongMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -53,6 +54,7 @@ export function OfficialSongEditDialog({
 	song,
 	onSuccess,
 }: OfficialSongEditDialogProps) {
+	const queryClient = useQueryClient();
 	const [form, setForm] = useState<OfficialSongFormData>({
 		id: "",
 		officialWorkId: null,
@@ -66,14 +68,20 @@ export function OfficialSongEditDialog({
 		sourceSongId: null,
 		notes: null,
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	// 楽観的ロック用: 編集開始時のupdatedAtを記録
 	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
 		null,
 	);
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<OfficialSong>();
+
+	// useMutation hooks
+	const createMutation = useMutation(officialSongMutations.create(queryClient));
+	const updateMutation = useMutation(officialSongMutations.update(queryClient));
+
+	// ローディング状態とエラー状態
+	const isPending = createMutation.isPending || updateMutation.isPending;
+	const mutationError = createMutation.error || updateMutation.error;
 
 	// 作品一覧を取得
 	const { data: worksData } = useQuery({
@@ -171,6 +179,7 @@ export function OfficialSongEditDialog({
 	}, [allSongsData, form.id]);
 
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && song) {
@@ -204,7 +213,9 @@ export function OfficialSongEditDialog({
 				});
 				setOriginalUpdatedAt(null);
 			}
-			setError(null);
+			// ダイアログを開いた時にmutationのエラー状態をリセット
+			createMutation.reset();
+			updateMutation.reset();
 			clearConflict();
 		}
 	}, [open, mode, song, clearConflict]);
@@ -218,29 +229,23 @@ export function OfficialSongEditDialog({
 		}
 	};
 
-	const handleSubmit = async (overrideUpdatedAt?: string) => {
+	const handleSubmit = (overrideUpdatedAt?: string) => {
 		if (!form.name || !form.nameJa) {
-			setError("名前と日本語名は必須です");
 			return;
 		}
 
 		if (mode === "create" && !form.id) {
-			setError("作品を選択してIDを生成してください");
 			return;
 		}
 
 		// 自己参照チェック
 		if (!form.isOriginal && form.sourceSongId === form.id) {
-			setError("自身を原曲に指定することはできません");
 			return;
 		}
 
-		setIsSubmitting(true);
-		setError(null);
-
-		try {
-			if (mode === "create") {
-				await officialSongsApi.create({
+		if (mode === "create") {
+			createMutation.mutate(
+				{
 					id: form.id,
 					officialWorkId: form.officialWorkId,
 					trackNumber: form.trackNumber,
@@ -252,40 +257,46 @@ export function OfficialSongEditDialog({
 					isOriginal: form.isOriginal,
 					sourceSongId: form.isOriginal ? null : form.sourceSongId,
 					notes: form.notes,
-				});
-			} else if (song) {
-				await officialSongsApi.update(song.id, {
-					officialWorkId: form.officialWorkId,
-					trackNumber: form.trackNumber,
-					name: form.name,
-					nameJa: form.nameJa,
-					nameEn: form.nameEn,
-					composerName: form.composerName,
-					arrangerName: form.arrangerName,
-					isOriginal: form.isOriginal,
-					sourceSongId: form.isOriginal ? null : form.sourceSongId,
-					notes: form.notes,
-					// 楽観的ロック: updatedAtを送信
-					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
-				});
-			}
-			onOpenChange(false);
-			onSuccess?.();
-		} catch (e) {
-			// 楽観的ロック競合エラーの場合
-			if (isConflictError<OfficialSong>(e)) {
-				setConflict(e.current);
-				return;
-			}
-			setError(
-				e instanceof Error
-					? e.message
-					: mode === "create"
-						? "作成に失敗しました"
-						: "更新に失敗しました",
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else if (song) {
+			updateMutation.mutate(
+				{
+					id: song.id,
+					data: {
+						officialWorkId: form.officialWorkId,
+						trackNumber: form.trackNumber,
+						name: form.name,
+						nameJa: form.nameJa,
+						nameEn: form.nameEn,
+						composerName: form.composerName,
+						arrangerName: form.arrangerName,
+						isOriginal: form.isOriginal,
+						sourceSongId: form.isOriginal ? null : form.sourceSongId,
+						notes: form.notes,
+						// 楽観的ロック: updatedAtを送信
+						updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
+					},
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+					onError: (e) => {
+						// 楽観的ロック競合エラーの場合
+						if (isConflictError<OfficialSong>(e)) {
+							setConflict(e.current);
+						}
+					},
+				},
+			);
 		}
 	};
 
@@ -319,6 +330,16 @@ export function OfficialSongEditDialog({
 
 	const title = mode === "create" ? "新規公式楽曲" : "公式楽曲の編集";
 
+	// エラーメッセージの取得（競合エラー以外）
+	const displayError =
+		mutationError && !isConflictError(mutationError)
+			? mutationError instanceof Error
+				? mutationError.message
+				: mode === "create"
+					? "作成に失敗しました"
+					: "更新に失敗しました"
+			: null;
+
 	return (
 		<>
 			<Dialog open={open} onOpenChange={onOpenChange}>
@@ -327,9 +348,9 @@ export function OfficialSongEditDialog({
 						<DialogTitle>{title}</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{error && (
+						{displayError && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{error}
+								{displayError}
 							</div>
 						)}
 						<div className="grid gap-2">
@@ -363,7 +384,7 @@ export function OfficialSongEditDialog({
 								value={form.name}
 								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: A Sacred Lot"
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -376,7 +397,7 @@ export function OfficialSongEditDialog({
 									value={form.nameJa}
 									onChange={(e) => setForm({ ...form, nameJa: e.target.value })}
 									placeholder="例: A Sacred Lot"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -388,7 +409,7 @@ export function OfficialSongEditDialog({
 										setForm({ ...form, nameEn: e.target.value || null })
 									}
 									placeholder="例: A Sacred Lot"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 						</div>
@@ -408,7 +429,7 @@ export function OfficialSongEditDialog({
 										})
 									}
 									placeholder="例: 1"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -424,7 +445,7 @@ export function OfficialSongEditDialog({
 												e.target.value === "true" ? null : form.sourceSongId,
 										})
 									}
-									disabled={isSubmitting}
+									disabled={isPending}
 								>
 									<option value="true">はい</option>
 									<option value="false">いいえ（アレンジ曲）</option>
@@ -444,7 +465,7 @@ export function OfficialSongEditDialog({
 									placeholder="原曲を選択..."
 									searchPlaceholder="楽曲を検索..."
 									emptyMessage="楽曲が見つかりません"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 						)}
@@ -458,7 +479,7 @@ export function OfficialSongEditDialog({
 										setForm({ ...form, composerName: e.target.value || null })
 									}
 									placeholder="例: ZUN"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -470,7 +491,7 @@ export function OfficialSongEditDialog({
 										setForm({ ...form, arrangerName: e.target.value || null })
 									}
 									placeholder="例: ZUN"
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 						</div>
@@ -484,7 +505,7 @@ export function OfficialSongEditDialog({
 								}
 								placeholder="例: アレンジバージョン、特記事項など"
 								rows={3}
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 					</div>
@@ -492,16 +513,16 @@ export function OfficialSongEditDialog({
 						<Button
 							variant="ghost"
 							onClick={() => onOpenChange(false)}
-							disabled={isSubmitting}
+							disabled={isPending}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={() => handleSubmit()}
-							disabled={isSubmitting || !form.name || !form.nameJa}
+							disabled={isPending || !form.name || !form.nameJa}
 						>
-							{isSubmitting
+							{isPending
 								? mode === "create"
 									? "作成中..."
 									: "保存中..."
@@ -521,7 +542,7 @@ export function OfficialSongEditDialog({
 				getDisplayName={(data) => data.nameJa}
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
-				isLoading={isSubmitting}
+				isLoading={isPending}
 			/>
 		</>
 	);

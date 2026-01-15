@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -24,8 +24,9 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { type EventSeries, eventSeriesApi } from "@/lib/api-client";
+import type { EventSeries } from "@/lib/api-client";
 import { createEventSeriesDetailHead } from "@/lib/head";
+import { eventSeriesMutations } from "@/lib/mutation-options";
 import { eventSeriesDetailQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/event-series_/$id")({
@@ -44,10 +45,11 @@ function EventSeriesDetailPage() {
 
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [editForm, setEditForm] = useState<Partial<EventSeries>>({});
-	const [isDeleting, setIsDeleting] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+
+	// Mutations
+	const updateMutation = useMutation(eventSeriesMutations.update(queryClient));
+	const deleteMutation = useMutation(eventSeriesMutations.delete(queryClient));
 
 	const { data: series, isPending } = useQuery(
 		eventSeriesDetailQueryOptions(id),
@@ -58,46 +60,34 @@ function EventSeriesDetailPage() {
 		setEditForm({
 			name: series.name,
 		});
-		setError(null);
+		updateMutation.reset();
 		setIsEditDialogOpen(true);
 	};
 
-	const handleUpdate = async () => {
+	const handleUpdate = () => {
 		if (!series) return;
-		setIsSubmitting(true);
-		setError(null);
-		try {
-			await eventSeriesApi.update(id, {
-				name: editForm.name,
-			});
-			setIsEditDialogOpen(false);
-			queryClient.invalidateQueries({ queryKey: ["eventSeries", { id }] });
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "更新に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
+		updateMutation.mutate(
+			{ id, data: { name: editForm.name } },
+			{
+				onSuccess: () => {
+					setIsEditDialogOpen(false);
+					queryClient.invalidateQueries({ queryKey: ["eventSeries", { id }] });
+				},
+			},
+		);
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!series) return;
-		setIsDeleting(true);
-		setError(null);
-		try {
-			await eventSeriesApi.delete(id);
-			setIsDeleteDialogOpen(false);
-			queryClient.invalidateQueries({ queryKey: ["eventSeries"] });
-			navigate({ to: "/admin/event-series" });
-		} catch (e) {
-			setError(
-				e instanceof Error
-					? e.message
-					: "削除に失敗しました。イベントが紐付いている可能性があります。",
-			);
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(id, {
+			onSuccess: () => {
+				setIsDeleteDialogOpen(false);
+				navigate({ to: "/admin/event-series" });
+			},
+		});
 	};
+
+	const mutationError = updateMutation.error || deleteMutation.error;
 
 	// ローディング
 	if (isPending && !series) {
@@ -169,9 +159,13 @@ function EventSeriesDetailPage() {
 				</div>
 			</div>
 
-			{error && (
+			{mutationError && (
 				<div className="alert alert-error">
-					<span>{error}</span>
+					<span>
+						{mutationError instanceof Error
+							? mutationError.message
+							: "エラーが発生しました"}
+					</span>
 				</div>
 			)}
 
@@ -268,7 +262,13 @@ function EventSeriesDetailPage() {
 							/>
 						</div>
 					</div>
-					{error && <div className="mb-4 text-error text-sm">{error}</div>}
+					{updateMutation.error && (
+						<div className="mb-4 text-error text-sm">
+							{updateMutation.error instanceof Error
+								? updateMutation.error.message
+								: "更新に失敗しました"}
+						</div>
+					)}
 					<DialogFooter>
 						<Button
 							variant="outline"
@@ -276,8 +276,8 @@ function EventSeriesDetailPage() {
 						>
 							キャンセル
 						</Button>
-						<Button onClick={handleUpdate} disabled={isSubmitting}>
-							{isSubmitting ? "保存中..." : "保存"}
+						<Button onClick={handleUpdate} disabled={updateMutation.isPending}>
+							{updateMutation.isPending ? "保存中..." : "保存"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -286,7 +286,10 @@ function EventSeriesDetailPage() {
 			{/* 削除確認ダイアログ */}
 			<ConfirmDialog
 				open={isDeleteDialogOpen}
-				onOpenChange={setIsDeleteDialogOpen}
+				onOpenChange={(open) => {
+					setIsDeleteDialogOpen(open);
+					if (!open) deleteMutation.reset();
+				}}
 				title="イベントシリーズの削除"
 				description={
 					<div>
@@ -299,7 +302,7 @@ function EventSeriesDetailPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

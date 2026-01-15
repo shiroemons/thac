@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -22,8 +22,9 @@ import {
 import { useColumnVisibility } from "@/hooks/use-column-visibility";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useSortableTable } from "@/hooks/use-sortable-table";
-import { type EventSeries, eventSeriesApi } from "@/lib/api-client";
+import type { EventSeries } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import { eventSeriesMutations } from "@/lib/mutation-options";
 import { eventSeriesListQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/event-series")({
@@ -60,13 +61,17 @@ function EventSeriesPage() {
 	);
 
 	const [editingSeries, setEditingSeries] = useState<EventSeries | null>(null);
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// 個別削除ダイアログ状態
 	const [deleteTarget, setDeleteTarget] = useState<EventSeries | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
+
+	// Mutations
+	const deleteMutation = useMutation(eventSeriesMutations.delete(queryClient));
+	const updateMutation = useMutation(eventSeriesMutations.update(queryClient));
+	const reorderMutation = useMutation(
+		eventSeriesMutations.reorder(queryClient),
+	);
 
 	const { data, isPending, isFetching, error } = useQuery(
 		eventSeriesListQueryOptions({
@@ -87,93 +92,75 @@ function EventSeriesPage() {
 	};
 
 	// 上へ移動
-	const handleMoveUp = async (series: EventSeries, index: number) => {
+	const handleMoveUp = (series: EventSeries, index: number) => {
 		if (index === 0 || isReorderDisabled) return;
 		const prevSeries = seriesList[index - 1];
 
-		try {
-			// 現在のシリーズと前のシリーズのsortOrderを入れ替え
-			await eventSeriesApi.update(series.id, {
-				sortOrder: prevSeries.sortOrder,
-			});
-			await eventSeriesApi.update(prevSeries.id, {
-				sortOrder: series.sortOrder,
-			});
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "順序変更に失敗しました",
-			);
-		}
+		// 現在のシリーズと前のシリーズのsortOrderを入れ替え
+		updateMutation.mutate(
+			{ id: series.id, data: { sortOrder: prevSeries.sortOrder } },
+			{
+				onSuccess: () => {
+					updateMutation.mutate({
+						id: prevSeries.id,
+						data: { sortOrder: series.sortOrder },
+					});
+				},
+			},
+		);
 	};
 
 	// 下へ移動
-	const handleMoveDown = async (series: EventSeries, index: number) => {
+	const handleMoveDown = (series: EventSeries, index: number) => {
 		if (index === seriesList.length - 1 || isReorderDisabled) return;
 		const nextSeries = seriesList[index + 1];
 
-		try {
-			// 現在のシリーズと次のシリーズのsortOrderを入れ替え
-			await eventSeriesApi.update(series.id, {
-				sortOrder: nextSeries.sortOrder,
-			});
-			await eventSeriesApi.update(nextSeries.id, {
-				sortOrder: series.sortOrder,
-			});
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "順序変更に失敗しました",
-			);
-		}
+		// 現在のシリーズと次のシリーズのsortOrderを入れ替え
+		updateMutation.mutate(
+			{ id: series.id, data: { sortOrder: nextSeries.sortOrder } },
+			{
+				onSuccess: () => {
+					updateMutation.mutate({
+						id: nextSeries.id,
+						data: { sortOrder: series.sortOrder },
+					});
+				},
+			},
+		);
 	};
 
 	// 順序を整理（連番に振り直し）
-	const handleReorder = async () => {
+	const handleReorder = () => {
 		if (seriesList.length === 0) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const items = seriesList.map((item, index) => ({
-				id: item.id,
-				sortOrder: index,
-			}));
-			await eventSeriesApi.reorder(items);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "順序の整理に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
+		const items = seriesList.map((item, index) => ({
+			id: item.id,
+			sortOrder: index,
+		}));
+		reorderMutation.mutate(items);
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!deleteTarget) return;
-		setIsDeleting(true);
-		try {
-			await eventSeriesApi.delete(deleteTarget.id);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(deleteTarget.id, {
+			onSuccess: () => setDeleteTarget(null),
+		});
 	};
 
 	const handleEdit = (series: EventSeries) => {
 		setEditingSeries(series);
-		setMutationError(null);
+		deleteMutation.reset();
+		updateMutation.reset();
 	};
 
 	const handleSearchChange = (value: string) => {
 		setSearch(value);
 	};
 
+	const mutationError =
+		deleteMutation.error || updateMutation.error || reorderMutation.error;
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		(mutationError instanceof Error ? mutationError.message : null) ||
+		(error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -210,10 +197,10 @@ function EventSeriesPage() {
 					}}
 					secondaryActions={[
 						{
-							label: isSubmitting ? "整理中..." : "順序を整理",
+							label: reorderMutation.isPending ? "整理中..." : "順序を整理",
 							icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
 							onClick: handleReorder,
-							disabled: isSubmitting || seriesList.length === 0,
+							disabled: reorderMutation.isPending || seriesList.length === 0,
 						},
 					]}
 				/>
@@ -401,7 +388,10 @@ function EventSeriesPage() {
 			<ConfirmDialog
 				open={!!deleteTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteTarget(null);
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
 				}}
 				title="イベントシリーズの削除"
 				description={
@@ -415,7 +405,7 @@ function EventSeriesPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 		</div>
 	);

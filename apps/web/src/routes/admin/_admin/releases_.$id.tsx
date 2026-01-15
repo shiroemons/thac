@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
@@ -41,7 +41,6 @@ import {
 	circlesApi,
 	creditRolesApi,
 	type Disc,
-	discsApi,
 	eventDaysApi,
 	eventsApi,
 	PARTICIPATION_TYPE_COLORS,
@@ -53,15 +52,10 @@ import {
 	type ReleaseCircleWithCircle,
 	type ReleaseJanCode,
 	type ReleasePublication,
-	releaseCirclesApi,
-	releaseJanCodesApi,
-	releasePublicationsApi,
 	type Track,
 	type TrackCredit,
 	type TrackWithCreditCount,
-	trackCreditRolesApi,
 	trackCreditsApi,
-	tracksApi,
 } from "@/lib/api-client";
 import {
 	COUNTRY_CODE_OPTIONS,
@@ -69,6 +63,14 @@ import {
 	PLATFORM_CATEGORY_ORDER,
 } from "@/lib/constants";
 import { createReleaseDetailHead } from "@/lib/head";
+import {
+	discMutations,
+	releaseCircleMutations,
+	releaseJanCodeMutations,
+	releasePublicationMutations,
+	trackCreditMutations,
+	trackMutations,
+} from "@/lib/mutation-options";
 import { releaseFullQueryOptions } from "@/lib/query-options";
 
 export const Route = createFileRoute("/admin/_admin/releases_/$id")({
@@ -109,10 +111,53 @@ function ReleaseDetailPage() {
 	const { id } = Route.useParams();
 	const queryClient = useQueryClient();
 
+	// Mutation Hooks
+	const discCreateMutation = useMutation(discMutations.create(queryClient));
+	const discUpdateMutation = useMutation(discMutations.update(queryClient));
+	const discDeleteMutation = useMutation(discMutations.delete(queryClient));
+	const circleAddMutation = useMutation(
+		releaseCircleMutations.add(queryClient),
+	);
+	const circleRemoveMutation = useMutation(
+		releaseCircleMutations.remove(queryClient),
+	);
+	const circleUpdateMutation = useMutation(
+		releaseCircleMutations.update(queryClient),
+	);
+	const trackCreateMutation = useMutation(trackMutations.create(queryClient));
+	const trackUpdateMutation = useMutation(trackMutations.update(queryClient));
+	const trackDeleteMutation = useMutation(trackMutations.delete(queryClient));
+	const trackReorderMutation = useMutation(trackMutations.reorder(queryClient));
+	const creditCreateMutation = useMutation(
+		trackCreditMutations.create(queryClient),
+	);
+	const creditUpdateMutation = useMutation(
+		trackCreditMutations.update(queryClient),
+	);
+	const creditDeleteMutation = useMutation(
+		trackCreditMutations.delete(queryClient),
+	);
+	const publicationCreateMutation = useMutation(
+		releasePublicationMutations.create(queryClient),
+	);
+	const publicationUpdateMutation = useMutation(
+		releasePublicationMutations.update(queryClient),
+	);
+	const publicationDeleteMutation = useMutation(
+		releasePublicationMutations.delete(queryClient),
+	);
+	const janCodeCreateMutation = useMutation(
+		releaseJanCodeMutations.create(queryClient),
+	);
+	const janCodeUpdateMutation = useMutation(
+		releaseJanCodeMutations.update(queryClient),
+	);
+	const janCodeDeleteMutation = useMutation(
+		releaseJanCodeMutations.delete(queryClient),
+	);
+
 	// 編集ダイアログ
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	const [mutationError, setMutationError] = useState<string | null>(null);
-	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// ディスク編集用
 	const [isDiscDialogOpen, setIsDiscDialogOpen] = useState(false);
@@ -183,22 +228,16 @@ function ReleaseDetailPage() {
 
 	// 削除ダイアログ状態
 	const [deleteDiscTarget, setDeleteDiscTarget] = useState<Disc | null>(null);
-	const [isDeletingDisc, setIsDeletingDisc] = useState(false);
 	const [deleteCircleTarget, setDeleteCircleTarget] =
 		useState<ReleaseCircleWithCircle | null>(null);
-	const [isDeletingCircle, setIsDeletingCircle] = useState(false);
 	const [deleteTrackTarget, setDeleteTrackTarget] =
 		useState<TrackWithCreditCount | null>(null);
-	const [isDeletingTrack, setIsDeletingTrack] = useState(false);
 	const [deleteCreditTarget, setDeleteCreditTarget] =
 		useState<TrackCredit | null>(null);
-	const [isDeletingCredit, setIsDeletingCredit] = useState(false);
 	const [deletePublicationTarget, setDeletePublicationTarget] =
 		useState<ReleasePublication | null>(null);
-	const [isDeletingPublication, setIsDeletingPublication] = useState(false);
 	const [deleteJanCodeTarget, setDeleteJanCodeTarget] =
 		useState<ReleaseJanCode | null>(null);
-	const [isDeletingJanCode, setIsDeletingJanCode] = useState(false);
 
 	// 統合クエリで全データを一括取得
 	const {
@@ -376,47 +415,40 @@ function ReleaseDetailPage() {
 		setIsDiscDialogOpen(true);
 	};
 
-	const handleDiscSubmit = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			if (editingDisc) {
-				await discsApi.update(id, editingDisc.id, {
-					discNumber: discForm.discNumber,
-					discName: discForm.discName || null,
-				});
-			} else {
-				await discsApi.create(id, {
-					id: createId.disc(),
-					discNumber: discForm.discNumber ?? 1,
-					discName: discForm.discName || null,
-				});
-			}
-			invalidateQuery();
-			setIsDiscDialogOpen(false);
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
+	const handleDiscSubmit = () => {
+		if (editingDisc) {
+			discUpdateMutation.mutate(
+				{
+					releaseId: id,
+					discId: editingDisc.id,
+					data: {
+						discNumber: discForm.discNumber,
+						discName: discForm.discName || null,
+					},
+				},
+				{ onSuccess: () => setIsDiscDialogOpen(false) },
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			discCreateMutation.mutate(
+				{
+					releaseId: id,
+					data: {
+						id: createId.disc(),
+						discNumber: discForm.discNumber ?? 1,
+						discName: discForm.discName || null,
+					},
+				},
+				{ onSuccess: () => setIsDiscDialogOpen(false) },
+			);
 		}
 	};
 
-	const handleDiscDelete = async () => {
+	const handleDiscDelete = () => {
 		if (!deleteDiscTarget) return;
-		setIsDeletingDisc(true);
-		try {
-			await discsApi.delete(id, deleteDiscTarget.id);
-			setDeleteDiscTarget(null);
-			invalidateQuery();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingDisc(false);
-		}
+		discDeleteMutation.mutate(
+			{ releaseId: id, discId: deleteDiscTarget.id },
+			{ onSuccess: () => setDeleteDiscTarget(null) },
+		);
 	};
 
 	// サークル関連
@@ -426,44 +458,30 @@ function ReleaseDetailPage() {
 		setIsCircleDialogOpen(true);
 	};
 
-	const handleCircleAdd = async () => {
+	const handleCircleAdd = () => {
 		if (!selectedCircleId) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await releaseCirclesApi.add(id, {
-				circleId: selectedCircleId,
-				participationType: selectedParticipationType,
-			});
-			invalidateQuery();
-			setIsCircleDialogOpen(false);
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "追加に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
+		circleAddMutation.mutate(
+			{
+				releaseId: id,
+				data: {
+					circleId: selectedCircleId,
+					participationType: selectedParticipationType,
+				},
+			},
+			{ onSuccess: () => setIsCircleDialogOpen(false) },
+		);
 	};
 
-	const handleCircleRemove = async () => {
+	const handleCircleRemove = () => {
 		if (!deleteCircleTarget) return;
-		setIsDeletingCircle(true);
-		try {
-			await releaseCirclesApi.remove(
-				id,
-				deleteCircleTarget.circleId,
-				deleteCircleTarget.participationType,
-			);
-			setDeleteCircleTarget(null);
-			invalidateQuery();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingCircle(false);
-		}
+		circleRemoveMutation.mutate(
+			{
+				releaseId: id,
+				circleId: deleteCircleTarget.circleId,
+				participationType: deleteCircleTarget.participationType,
+			},
+			{ onSuccess: () => setDeleteCircleTarget(null) },
+		);
 	};
 
 	const handleCircleMoveUp = async (
@@ -476,16 +494,18 @@ function ReleaseDetailPage() {
 
 		try {
 			// 順序を入れ替え
-			await releaseCirclesApi.update(id, rc.circleId, rc.participationType, {
-				position: prevCircle.position ?? index,
+			await circleUpdateMutation.mutateAsync({
+				releaseId: id,
+				circleId: rc.circleId,
+				participationType: rc.participationType,
+				data: { position: prevCircle.position ?? index },
 			});
-			await releaseCirclesApi.update(
-				id,
-				prevCircle.circleId,
-				prevCircle.participationType,
-				{ position: rc.position ?? index + 1 },
-			);
-			invalidateQuery();
+			await circleUpdateMutation.mutateAsync({
+				releaseId: id,
+				circleId: prevCircle.circleId,
+				participationType: prevCircle.participationType,
+				data: { position: rc.position ?? index + 1 },
+			});
 		} catch (err) {
 			alert(err instanceof Error ? err.message : "順序変更に失敗しました");
 		}
@@ -501,16 +521,18 @@ function ReleaseDetailPage() {
 
 		try {
 			// 順序を入れ替え
-			await releaseCirclesApi.update(id, rc.circleId, rc.participationType, {
-				position: nextCircle.position ?? index + 2,
+			await circleUpdateMutation.mutateAsync({
+				releaseId: id,
+				circleId: rc.circleId,
+				participationType: rc.participationType,
+				data: { position: nextCircle.position ?? index + 2 },
 			});
-			await releaseCirclesApi.update(
-				id,
-				nextCircle.circleId,
-				nextCircle.participationType,
-				{ position: rc.position ?? index + 1 },
-			);
-			invalidateQuery();
+			await circleUpdateMutation.mutateAsync({
+				releaseId: id,
+				circleId: nextCircle.circleId,
+				participationType: nextCircle.participationType,
+				data: { position: rc.position ?? index + 1 },
+			});
 		} catch (err) {
 			alert(err instanceof Error ? err.message : "順序変更に失敗しました");
 		}
@@ -546,89 +568,80 @@ function ReleaseDetailPage() {
 		setIsTrackDialogOpen(true);
 	};
 
-	const handleTrackSubmit = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			if (editingTrack) {
-				await tracksApi.update(id, editingTrack.id, {
-					trackNumber: trackForm.trackNumber,
-					name: trackForm.name,
-					nameJa: trackForm.nameJa || null,
-					nameEn: trackForm.nameEn || null,
-					discId: trackForm.discId || null,
-					eventId: null,
-					eventDayId: null,
-				});
-			} else {
-				await tracksApi.create(id, {
-					id: createId.track(),
-					trackNumber: trackForm.trackNumber ?? 1,
-					name: trackForm.name ?? "",
-					nameJa: trackForm.nameJa || null,
-					nameEn: trackForm.nameEn || null,
-					discId: trackForm.discId || null,
-					releaseDate: null,
-					releaseYear: null,
-					releaseMonth: null,
-					releaseDay: null,
-					eventId: null,
-					eventDayId: null,
-				});
-			}
-			invalidateQuery();
-			setIsTrackDialogOpen(false);
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
+	const handleTrackSubmit = () => {
+		if (editingTrack) {
+			trackUpdateMutation.mutate(
+				{
+					releaseId: id,
+					trackId: editingTrack.id,
+					data: {
+						trackNumber: trackForm.trackNumber,
+						name: trackForm.name,
+						nameJa: trackForm.nameJa || null,
+						nameEn: trackForm.nameEn || null,
+						discId: trackForm.discId || null,
+						eventId: null,
+						eventDayId: null,
+					},
+				},
+				{ onSuccess: () => setIsTrackDialogOpen(false) },
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			trackCreateMutation.mutate(
+				{
+					releaseId: id,
+					data: {
+						id: createId.track(),
+						trackNumber: trackForm.trackNumber ?? 1,
+						name: trackForm.name ?? "",
+						nameJa: trackForm.nameJa || null,
+						nameEn: trackForm.nameEn || null,
+						discId: trackForm.discId || null,
+						releaseDate: null,
+						releaseYear: null,
+						releaseMonth: null,
+						releaseDay: null,
+						eventId: null,
+						eventDayId: null,
+					},
+				},
+				{ onSuccess: () => setIsTrackDialogOpen(false) },
+			);
 		}
 	};
 
-	const handleTrackDelete = async () => {
+	const handleTrackDelete = () => {
 		if (!deleteTrackTarget) return;
-		setIsDeletingTrack(true);
-		try {
-			await tracksApi.delete(id, deleteTrackTarget.id);
-			setDeleteTrackTarget(null);
-			invalidateQuery();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingTrack(false);
-		}
+		trackDeleteMutation.mutate(
+			{ releaseId: id, trackId: deleteTrackTarget.id },
+			{ onSuccess: () => setDeleteTrackTarget(null) },
+		);
 	};
 
-	const handleTrackMoveUp = async (
+	const handleTrackMoveUp = (
 		track: TrackWithCreditCount,
 		index: number,
 		_scopeTracks: TrackWithCreditCount[],
 	) => {
 		if (index === 0) return;
-		try {
-			await tracksApi.reorder(id, track.id, "up");
-			invalidateQuery();
-		} catch (err) {
-			alert(err instanceof Error ? err.message : "順序変更に失敗しました");
-		}
+		trackReorderMutation.mutate({
+			releaseId: id,
+			trackId: track.id,
+			direction: "up",
+		});
 	};
 
-	const handleTrackMoveDown = async (
+	const handleTrackMoveDown = (
 		track: TrackWithCreditCount,
 		index: number,
 		scopeTracks: TrackWithCreditCount[],
 	) => {
 		if (index === scopeTracks.length - 1) return;
-		try {
-			await tracksApi.reorder(id, track.id, "down");
-			invalidateQuery();
-		} catch (err) {
-			alert(err instanceof Error ? err.message : "順序変更に失敗しました");
-		}
+		trackReorderMutation.mutate({
+			releaseId: id,
+			trackId: track.id,
+			direction: "down",
+		});
 	};
 
 	// クレジット関連
@@ -673,7 +686,8 @@ function ReleaseDetailPage() {
 	const closeCreditEditDialog = () => {
 		setIsCreditEditDialogOpen(false);
 		setEditingCredit(null);
-		setMutationError(null);
+		creditCreateMutation.reset();
+		creditUpdateMutation.reset();
 	};
 
 	// アーティスト名義選択時
@@ -712,95 +726,69 @@ function ReleaseDetailPage() {
 		}));
 	};
 
-	const handleCreditSubmit = async () => {
+	const handleCreditSubmit = () => {
 		if (!selectedTrackForCredits) return;
 
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			let creditId: string;
-
-			if (editingCredit) {
-				// 更新
-				await trackCreditsApi.update(
-					id,
-					selectedTrackForCredits.id,
-					editingCredit.id,
-					{
+		if (editingCredit) {
+			creditUpdateMutation.mutate(
+				{
+					releaseId: id,
+					trackId: selectedTrackForCredits.id,
+					creditId: editingCredit.id,
+					data: {
 						artistId: creditForm.artistId,
 						creditName: creditForm.creditName,
 						artistAliasId: creditForm.artistAliasId,
 						creditPosition: creditForm.creditPosition,
+						rolesCodes: creditForm.selectedRoles,
 					},
-				);
-				creditId = editingCredit.id;
-
-				// 既存の役割を削除
-				for (const role of editingCredit.roles) {
-					await trackCreditRolesApi.remove(
-						id,
-						selectedTrackForCredits.id,
-						creditId,
-						role.roleCode,
-						role.rolePosition,
-					);
-				}
-			} else {
-				// 新規作成
-				creditId = createId.trackCredit();
-				await trackCreditsApi.create(id, selectedTrackForCredits.id, {
-					id: creditId,
-					artistId: creditForm.artistId,
-					creditName: creditForm.creditName,
-					artistAliasId: creditForm.artistAliasId,
-					creditPosition: creditForm.creditPosition,
-				});
-			}
-
-			// 役割を追加
-			for (let i = 0; i < creditForm.selectedRoles.length; i++) {
-				await trackCreditRolesApi.add(
-					id,
-					selectedTrackForCredits.id,
-					creditId,
-					{
-						roleCode: creditForm.selectedRoles[i],
-						rolePosition: i + 1,
+				},
+				{
+					onSuccess: () => {
+						refetchCredits();
+						closeCreditEditDialog();
 					},
-				);
-			}
-
-			await refetchCredits();
-			invalidateQuery();
-			closeCreditEditDialog();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
+				},
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			creditCreateMutation.mutate(
+				{
+					releaseId: id,
+					trackId: selectedTrackForCredits.id,
+					data: {
+						id: createId.trackCredit(),
+						artistId: creditForm.artistId,
+						creditName: creditForm.creditName,
+						artistAliasId: creditForm.artistAliasId,
+						creditPosition: creditForm.creditPosition,
+						rolesCodes: creditForm.selectedRoles,
+					},
+				},
+				{
+					onSuccess: () => {
+						refetchCredits();
+						closeCreditEditDialog();
+					},
+				},
+			);
 		}
 	};
 
-	const handleCreditDelete = async () => {
+	const handleCreditDelete = () => {
 		if (!selectedTrackForCredits || !deleteCreditTarget) return;
-		setIsDeletingCredit(true);
-		try {
-			await trackCreditsApi.delete(
-				id,
-				selectedTrackForCredits.id,
-				deleteCreditTarget.id,
-			);
-			setDeleteCreditTarget(null);
-			await refetchCredits();
-			invalidateQuery();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingCredit(false);
-		}
+		creditDeleteMutation.mutate(
+			{
+				releaseId: id,
+				trackId: selectedTrackForCredits.id,
+				creditId: deleteCreditTarget.id,
+			},
+			{
+				onSuccess: () => {
+					setDeleteCreditTarget(null);
+					refetchCredits();
+				},
+			},
+		);
 	};
 
 	// 公開リンク関連
@@ -821,46 +809,37 @@ function ReleaseDetailPage() {
 		setIsPublicationDialogOpen(true);
 	};
 
-	const handlePublicationSubmit = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			if (editingPublication) {
-				await releasePublicationsApi.update(id, editingPublication.id, {
-					url: publicationForm.url,
-				});
-			} else {
-				await releasePublicationsApi.create(id, {
-					id: createId.releasePublication(),
-					platformCode: publicationForm.platformCode,
-					url: publicationForm.url,
-				});
-			}
-			invalidateQuery();
-			setIsPublicationDialogOpen(false);
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
+	const handlePublicationSubmit = () => {
+		if (editingPublication) {
+			publicationUpdateMutation.mutate(
+				{
+					releaseId: id,
+					publicationId: editingPublication.id,
+					data: { url: publicationForm.url },
+				},
+				{ onSuccess: () => setIsPublicationDialogOpen(false) },
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			publicationCreateMutation.mutate(
+				{
+					releaseId: id,
+					data: {
+						id: createId.releasePublication(),
+						platformCode: publicationForm.platformCode,
+						url: publicationForm.url,
+					},
+				},
+				{ onSuccess: () => setIsPublicationDialogOpen(false) },
+			);
 		}
 	};
 
-	const handlePublicationDelete = async () => {
+	const handlePublicationDelete = () => {
 		if (!deletePublicationTarget) return;
-		setIsDeletingPublication(true);
-		try {
-			await releasePublicationsApi.delete(id, deletePublicationTarget.id);
-			setDeletePublicationTarget(null);
-			invalidateQuery();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingPublication(false);
-		}
+		publicationDeleteMutation.mutate(
+			{ releaseId: id, publicationId: deletePublicationTarget.id },
+			{ onSuccess: () => setDeletePublicationTarget(null) },
+		);
 	};
 
 	// JANコード関連
@@ -887,50 +866,43 @@ function ReleaseDetailPage() {
 		setIsJanCodeDialogOpen(true);
 	};
 
-	const handleJanCodeSubmit = async () => {
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			if (editingJanCode) {
-				await releaseJanCodesApi.update(id, editingJanCode.id, {
-					label: janCodeForm.label || null,
-					countryCode: janCodeForm.countryCode || null,
-					isPrimary: janCodeForm.isPrimary,
-				});
-			} else {
-				await releaseJanCodesApi.create(id, {
-					id: createId.releaseJanCode(),
-					janCode: janCodeForm.janCode,
-					label: janCodeForm.label || null,
-					countryCode: janCodeForm.countryCode || null,
-					isPrimary: janCodeForm.isPrimary,
-				});
-			}
-			invalidateQuery();
-			setIsJanCodeDialogOpen(false);
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "保存に失敗しました",
+	const handleJanCodeSubmit = () => {
+		if (editingJanCode) {
+			janCodeUpdateMutation.mutate(
+				{
+					releaseId: id,
+					janCodeId: editingJanCode.id,
+					data: {
+						label: janCodeForm.label || null,
+						countryCode: janCodeForm.countryCode || null,
+						isPrimary: janCodeForm.isPrimary,
+					},
+				},
+				{ onSuccess: () => setIsJanCodeDialogOpen(false) },
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			janCodeCreateMutation.mutate(
+				{
+					releaseId: id,
+					data: {
+						id: createId.releaseJanCode(),
+						janCode: janCodeForm.janCode,
+						label: janCodeForm.label || null,
+						countryCode: janCodeForm.countryCode || null,
+						isPrimary: janCodeForm.isPrimary,
+					},
+				},
+				{ onSuccess: () => setIsJanCodeDialogOpen(false) },
+			);
 		}
 	};
 
-	const handleJanCodeDelete = async () => {
+	const handleJanCodeDelete = () => {
 		if (!deleteJanCodeTarget) return;
-		setIsDeletingJanCode(true);
-		try {
-			await releaseJanCodesApi.delete(id, deleteJanCodeTarget.id);
-			setDeleteJanCodeTarget(null);
-			invalidateQuery();
-		} catch (err) {
-			setMutationError(
-				err instanceof Error ? err.message : "削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingJanCode(false);
-		}
+		janCodeDeleteMutation.mutate(
+			{ releaseId: id, janCodeId: deleteJanCodeTarget.id },
+			{ onSuccess: () => setDeleteJanCodeTarget(null) },
+		);
 	};
 
 	// ローディング（キャッシュがない場合のみスケルトンを表示）
@@ -1651,9 +1623,10 @@ function ReleaseDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && (
+						{(discCreateMutation.error || discUpdateMutation.error) && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{discCreateMutation.error?.message ||
+									discUpdateMutation.error?.message}
 							</div>
 						)}
 						<div className="grid gap-2">
@@ -1685,17 +1658,25 @@ function ReleaseDetailPage() {
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => setIsDiscDialogOpen(false)}
-							disabled={isSubmitting}
+							onClick={() => {
+								setIsDiscDialogOpen(false);
+								discCreateMutation.reset();
+								discUpdateMutation.reset();
+							}}
+							disabled={
+								discCreateMutation.isPending || discUpdateMutation.isPending
+							}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={handleDiscSubmit}
-							disabled={isSubmitting}
+							disabled={
+								discCreateMutation.isPending || discUpdateMutation.isPending
+							}
 						>
-							{isSubmitting
+							{discCreateMutation.isPending || discUpdateMutation.isPending
 								? editingDisc
 									? "更新中..."
 									: "追加中..."
@@ -1714,9 +1695,9 @@ function ReleaseDetailPage() {
 						<DialogTitle>サークルの追加</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && (
+						{circleAddMutation.error && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{circleAddMutation.error.message}
 							</div>
 						)}
 						<div className="grid gap-2">
@@ -1757,17 +1738,20 @@ function ReleaseDetailPage() {
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => setIsCircleDialogOpen(false)}
-							disabled={isSubmitting}
+							onClick={() => {
+								setIsCircleDialogOpen(false);
+								circleAddMutation.reset();
+							}}
+							disabled={circleAddMutation.isPending}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={handleCircleAdd}
-							disabled={isSubmitting || !selectedCircleId}
+							disabled={circleAddMutation.isPending || !selectedCircleId}
 						>
-							{isSubmitting ? "追加中..." : "追加"}
+							{circleAddMutation.isPending ? "追加中..." : "追加"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -1782,9 +1766,10 @@ function ReleaseDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && (
+						{(trackCreateMutation.error || trackUpdateMutation.error) && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{trackCreateMutation.error?.message ||
+									trackUpdateMutation.error?.message}
 							</div>
 						)}
 						<div className="grid gap-2">
@@ -1872,17 +1857,27 @@ function ReleaseDetailPage() {
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => setIsTrackDialogOpen(false)}
-							disabled={isSubmitting}
+							onClick={() => {
+								setIsTrackDialogOpen(false);
+								trackCreateMutation.reset();
+								trackUpdateMutation.reset();
+							}}
+							disabled={
+								trackCreateMutation.isPending || trackUpdateMutation.isPending
+							}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={handleTrackSubmit}
-							disabled={isSubmitting || !trackForm.name}
+							disabled={
+								trackCreateMutation.isPending ||
+								trackUpdateMutation.isPending ||
+								!trackForm.name
+							}
 						>
-							{isSubmitting
+							{trackCreateMutation.isPending || trackUpdateMutation.isPending
 								? editingTrack
 									? "更新中..."
 									: "追加中..."
@@ -2023,9 +2018,10 @@ function ReleaseDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && (
+						{(creditCreateMutation.error || creditUpdateMutation.error) && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{creditCreateMutation.error?.message ||
+									creditUpdateMutation.error?.message}
 							</div>
 						)}
 
@@ -2132,7 +2128,9 @@ function ReleaseDetailPage() {
 						<Button
 							variant="ghost"
 							onClick={closeCreditEditDialog}
-							disabled={isSubmitting}
+							disabled={
+								creditCreateMutation.isPending || creditUpdateMutation.isPending
+							}
 						>
 							キャンセル
 						</Button>
@@ -2140,10 +2138,13 @@ function ReleaseDetailPage() {
 							variant="primary"
 							onClick={handleCreditSubmit}
 							disabled={
-								isSubmitting || !creditForm.artistId || !creditForm.creditName
+								creditCreateMutation.isPending ||
+								creditUpdateMutation.isPending ||
+								!creditForm.artistId ||
+								!creditForm.creditName
 							}
 						>
-							{isSubmitting
+							{creditCreateMutation.isPending || creditUpdateMutation.isPending
 								? editingCredit
 									? "更新中..."
 									: "追加中..."
@@ -2167,9 +2168,11 @@ function ReleaseDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && (
+						{(publicationCreateMutation.error ||
+							publicationUpdateMutation.error) && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{publicationCreateMutation.error?.message ||
+									publicationUpdateMutation.error?.message}
 							</div>
 						)}
 
@@ -2214,8 +2217,15 @@ function ReleaseDetailPage() {
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => setIsPublicationDialogOpen(false)}
-							disabled={isSubmitting}
+							onClick={() => {
+								setIsPublicationDialogOpen(false);
+								publicationCreateMutation.reset();
+								publicationUpdateMutation.reset();
+							}}
+							disabled={
+								publicationCreateMutation.isPending ||
+								publicationUpdateMutation.isPending
+							}
 						>
 							キャンセル
 						</Button>
@@ -2223,12 +2233,14 @@ function ReleaseDetailPage() {
 							variant="primary"
 							onClick={handlePublicationSubmit}
 							disabled={
-								isSubmitting ||
+								publicationCreateMutation.isPending ||
+								publicationUpdateMutation.isPending ||
 								!publicationForm.platformCode ||
 								!publicationForm.url
 							}
 						>
-							{isSubmitting
+							{publicationCreateMutation.isPending ||
+							publicationUpdateMutation.isPending
 								? editingPublication
 									? "更新中..."
 									: "追加中..."
@@ -2249,9 +2261,10 @@ function ReleaseDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && (
+						{(janCodeCreateMutation.error || janCodeUpdateMutation.error) && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{janCodeCreateMutation.error?.message ||
+									janCodeUpdateMutation.error?.message}
 							</div>
 						)}
 
@@ -2334,8 +2347,15 @@ function ReleaseDetailPage() {
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => setIsJanCodeDialogOpen(false)}
-							disabled={isSubmitting}
+							onClick={() => {
+								setIsJanCodeDialogOpen(false);
+								janCodeCreateMutation.reset();
+								janCodeUpdateMutation.reset();
+							}}
+							disabled={
+								janCodeCreateMutation.isPending ||
+								janCodeUpdateMutation.isPending
+							}
 						>
 							キャンセル
 						</Button>
@@ -2343,13 +2363,15 @@ function ReleaseDetailPage() {
 							variant="primary"
 							onClick={handleJanCodeSubmit}
 							disabled={
-								isSubmitting ||
+								janCodeCreateMutation.isPending ||
+								janCodeUpdateMutation.isPending ||
 								(!editingJanCode &&
 									janCodeForm.janCode.length !== 8 &&
 									janCodeForm.janCode.length !== 13)
 							}
 						>
-							{isSubmitting
+							{janCodeCreateMutation.isPending ||
+							janCodeUpdateMutation.isPending
 								? editingJanCode
 									? "更新中..."
 									: "追加中..."
@@ -2373,7 +2395,10 @@ function ReleaseDetailPage() {
 			<ConfirmDialog
 				open={!!deleteDiscTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteDiscTarget(null);
+					if (!open) {
+						setDeleteDiscTarget(null);
+						discDeleteMutation.reset();
+					}
 				}}
 				title="ディスクの削除"
 				description={
@@ -2387,19 +2412,27 @@ function ReleaseDetailPage() {
 						<p className="mt-2 text-error text-sm">
 							※この操作は取り消せません。
 						</p>
+						{discDeleteMutation.error && (
+							<p className="mt-2 text-error text-sm">
+								{discDeleteMutation.error.message}
+							</p>
+						)}
 					</div>
 				}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDiscDelete}
-				isLoading={isDeletingDisc}
+				isLoading={discDeleteMutation.isPending}
 			/>
 
 			{/* サークル関連付け解除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteCircleTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteCircleTarget(null);
+					if (!open) {
+						setDeleteCircleTarget(null);
+						circleRemoveMutation.reset();
+					}
 				}}
 				title="サークルの関連付け解除"
 				description={
@@ -2411,19 +2444,27 @@ function ReleaseDetailPage() {
 						<p className="mt-2 text-error text-sm">
 							※この操作は取り消せません。
 						</p>
+						{circleRemoveMutation.error && (
+							<p className="mt-2 text-error text-sm">
+								{circleRemoveMutation.error.message}
+							</p>
+						)}
 					</div>
 				}
 				confirmLabel="解除する"
 				variant="danger"
 				onConfirm={handleCircleRemove}
-				isLoading={isDeletingCircle}
+				isLoading={circleRemoveMutation.isPending}
 			/>
 
 			{/* トラック削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteTrackTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteTrackTarget(null);
+					if (!open) {
+						setDeleteTrackTarget(null);
+						trackDeleteMutation.reset();
+					}
 				}}
 				title="トラックの削除"
 				description={
@@ -2432,19 +2473,27 @@ function ReleaseDetailPage() {
 						<p className="mt-2 text-error text-sm">
 							※関連するクレジット情報も削除されます。この操作は取り消せません。
 						</p>
+						{trackDeleteMutation.error && (
+							<p className="mt-2 text-error text-sm">
+								{trackDeleteMutation.error.message}
+							</p>
+						)}
 					</div>
 				}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleTrackDelete}
-				isLoading={isDeletingTrack}
+				isLoading={trackDeleteMutation.isPending}
 			/>
 
 			{/* クレジット削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteCreditTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteCreditTarget(null);
+					if (!open) {
+						setDeleteCreditTarget(null);
+						creditDeleteMutation.reset();
+					}
 				}}
 				title="クレジットの削除"
 				description={
@@ -2453,19 +2502,27 @@ function ReleaseDetailPage() {
 						<p className="mt-2 text-error text-sm">
 							※関連する役割情報も削除されます。この操作は取り消せません。
 						</p>
+						{creditDeleteMutation.error && (
+							<p className="mt-2 text-error text-sm">
+								{creditDeleteMutation.error.message}
+							</p>
+						)}
 					</div>
 				}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleCreditDelete}
-				isLoading={isDeletingCredit}
+				isLoading={creditDeleteMutation.isPending}
 			/>
 
 			{/* 公開リンク削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deletePublicationTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeletePublicationTarget(null);
+					if (!open) {
+						setDeletePublicationTarget(null);
+						publicationDeleteMutation.reset();
+					}
 				}}
 				title="公開リンクの削除"
 				description={
@@ -2474,19 +2531,27 @@ function ReleaseDetailPage() {
 						<p className="mt-2 text-error text-sm">
 							※この操作は取り消せません。
 						</p>
+						{publicationDeleteMutation.error && (
+							<p className="mt-2 text-error text-sm">
+								{publicationDeleteMutation.error.message}
+							</p>
+						)}
 					</div>
 				}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handlePublicationDelete}
-				isLoading={isDeletingPublication}
+				isLoading={publicationDeleteMutation.isPending}
 			/>
 
 			{/* JANコード削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteJanCodeTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteJanCodeTarget(null);
+					if (!open) {
+						setDeleteJanCodeTarget(null);
+						janCodeDeleteMutation.reset();
+					}
 				}}
 				title="JANコードの削除"
 				description={
@@ -2495,12 +2560,17 @@ function ReleaseDetailPage() {
 						<p className="mt-2 text-error text-sm">
 							※この操作は取り消せません。
 						</p>
+						{janCodeDeleteMutation.error && (
+							<p className="mt-2 text-error text-sm">
+								{janCodeDeleteMutation.error.message}
+							</p>
+						)}
 					</div>
 				}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleJanCodeDelete}
-				isLoading={isDeletingJanCode}
+				isLoading={janCodeDeleteMutation.isPending}
 			/>
 		</div>
 	);

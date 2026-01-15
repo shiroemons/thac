@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { format } from "date-fns";
@@ -47,12 +47,16 @@ import {
 	type EventDay,
 	type EventWithDays,
 	type ExportFormat,
-	eventDaysApi,
 	eventSeriesApi,
 	eventsApi,
 	exportApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+import {
+	eventDayMutations,
+	eventMutations,
+	eventSeriesMutations,
+} from "@/lib/mutation-options";
 import { eventsListQueryOptions } from "@/lib/query-options";
 
 const DEFAULT_PAGE = 1;
@@ -106,9 +110,7 @@ function EventsPage() {
 
 	const [editingEvent, setEditingEvent] = useState<EventWithDays | null>(null);
 	const [editForm, setEditForm] = useState<Partial<Event>>({});
-	const [mutationError, setMutationError] = useState<string | null>(null);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// 開催日編集用
 	const [isDayDialogOpen, setIsDayDialogOpen] = useState(false);
@@ -121,14 +123,23 @@ function EventsPage() {
 
 	// 個別削除ダイアログ状態
 	const [deleteTarget, setDeleteTarget] = useState<Event | null>(null);
-	const [isDeleting, setIsDeleting] = useState(false);
 
 	// 開催日削除ダイアログ状態
 	const [deleteDayTarget, setDeleteDayTarget] = useState<EventDay | null>(null);
-	const [isDeletingDay, setIsDeletingDay] = useState(false);
 
 	// エクスポート状態
 	const [isExporting, setIsExporting] = useState(false);
+	const [exportError, setExportError] = useState<string | null>(null);
+
+	// Mutations
+	const deleteMutation = useMutation(eventMutations.delete(queryClient));
+	const updateMutation = useMutation(eventMutations.update(queryClient));
+	const createSeriesMutation = useMutation(
+		eventSeriesMutations.create(queryClient),
+	);
+	const createDayMutation = useMutation(eventDayMutations.create(queryClient));
+	const updateDayMutation = useMutation(eventDayMutations.update(queryClient));
+	const deleteDayMutation = useMutation(eventDayMutations.delete(queryClient));
 
 	// シリーズ一覧取得
 	const { data: seriesData } = useQuery({
@@ -161,69 +172,54 @@ function EventsPage() {
 		queryClient.invalidateQueries({ queryKey: ["events"] });
 	};
 
-	const handleCreateSeries = async () => {
+	const handleCreateSeries = () => {
 		if (!newSeriesName.trim()) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			const id = createId.eventSeries();
-			const newSeries = await eventSeriesApi.create({
+		const id = createId.eventSeries();
+		createSeriesMutation.mutate(
+			{
 				id,
 				name: newSeriesName.trim(),
 				sortOrder: seriesList.length + 1,
-			});
-			// シリーズ一覧を更新
-			queryClient.invalidateQueries({ queryKey: ["event-series"] });
-			// 新しいシリーズを選択状態にする（編集中のフォーム）
-			if (editingEvent) {
-				setEditForm({ ...editForm, eventSeriesId: newSeries.id });
-			}
-			setIsSeriesDialogOpen(false);
-			setNewSeriesName("");
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "シリーズの作成に失敗しました",
-			);
-		} finally {
-			setIsSubmitting(false);
-		}
+			},
+			{
+				onSuccess: (newSeries) => {
+					// 新しいシリーズを選択状態にする（編集中のフォーム）
+					if (editingEvent) {
+						setEditForm({ ...editForm, eventSeriesId: newSeries.id });
+					}
+					setIsSeriesDialogOpen(false);
+					setNewSeriesName("");
+				},
+			},
+		);
 	};
 
-	const handleUpdate = async () => {
+	const handleUpdate = () => {
 		if (!editingEvent) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			await eventsApi.update(editingEvent.id, {
-				eventSeriesId: editForm.eventSeriesId,
-				name: editForm.name,
-				edition: editForm.edition,
-				totalDays: editForm.totalDays,
-				venue: editForm.venue,
-				startDate: editForm.startDate,
-				endDate: editForm.endDate,
-			});
-			setEditingEvent(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "更新に失敗しました");
-		} finally {
-			setIsSubmitting(false);
-		}
+		updateMutation.mutate(
+			{
+				id: editingEvent.id,
+				data: {
+					eventSeriesId: editForm.eventSeriesId,
+					name: editForm.name,
+					edition: editForm.edition,
+					totalDays: editForm.totalDays,
+					venue: editForm.venue,
+					startDate: editForm.startDate,
+					endDate: editForm.endDate,
+				},
+			},
+			{
+				onSuccess: () => setEditingEvent(null),
+			},
+		);
 	};
 
-	const handleDelete = async () => {
+	const handleDelete = () => {
 		if (!deleteTarget) return;
-		setIsDeleting(true);
-		try {
-			await eventsApi.delete(deleteTarget.id);
-			setDeleteTarget(null);
-			invalidateQuery();
-		} catch (e) {
-			setMutationError(e instanceof Error ? e.message : "削除に失敗しました");
-		} finally {
-			setIsDeleting(false);
-		}
+		deleteMutation.mutate(deleteTarget.id, {
+			onSuccess: () => setDeleteTarget(null),
+		});
 	};
 
 	// イベントを編集モードで開く（詳細取得）
@@ -240,11 +236,10 @@ function EventsPage() {
 				startDate: eventWithDays.startDate,
 				endDate: eventWithDays.endDate,
 			});
-			setMutationError(null);
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "イベント情報の取得に失敗しました",
-			);
+			updateMutation.reset();
+			deleteMutation.reset();
+		} catch {
+			// Error handling is done through the fetch itself
 		}
 	};
 
@@ -271,53 +266,60 @@ function EventsPage() {
 	// 開催日保存
 	const handleSaveDay = async () => {
 		if (!editingEvent) return;
-		setIsSubmitting(true);
-		setMutationError(null);
-		try {
-			if (editingDay) {
-				// 更新
-				await eventDaysApi.update(editingEvent.id, editingDay.id, {
-					dayNumber: dayForm.dayNumber,
-					date: dayForm.date,
-				});
-			} else {
-				// 新規作成
-				const id = createId.eventDay();
-				await eventDaysApi.create(editingEvent.id, {
-					id,
-					dayNumber: dayForm.dayNumber || 1,
-					date: dayForm.date || "",
-				});
-			}
+		const eventId = editingEvent.id;
+
+		const onSaveSuccess = async () => {
 			setIsDayDialogOpen(false);
 			// イベント詳細を再取得
-			const updated = await eventsApi.get(editingEvent.id);
+			const updated = await eventsApi.get(eventId);
 			setEditingEvent(updated);
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "開催日の保存に失敗しました",
+		};
+
+		if (editingDay) {
+			// 更新
+			updateDayMutation.mutate(
+				{
+					eventId,
+					dayId: editingDay.id,
+					data: {
+						dayNumber: dayForm.dayNumber,
+						date: dayForm.date,
+					},
+				},
+				{ onSuccess: onSaveSuccess },
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else {
+			// 新規作成
+			const id = createId.eventDay();
+			createDayMutation.mutate(
+				{
+					eventId,
+					data: {
+						id,
+						dayNumber: dayForm.dayNumber || 1,
+						date: dayForm.date || "",
+					},
+				},
+				{ onSuccess: onSaveSuccess },
+			);
 		}
 	};
 
 	// 開催日削除
 	const handleDeleteDay = async () => {
 		if (!editingEvent || !deleteDayTarget) return;
-		setIsDeletingDay(true);
-		try {
-			await eventDaysApi.delete(editingEvent.id, deleteDayTarget.id);
-			const updated = await eventsApi.get(editingEvent.id);
-			setEditingEvent(updated);
-			setDeleteDayTarget(null);
-		} catch (e) {
-			setMutationError(
-				e instanceof Error ? e.message : "開催日の削除に失敗しました",
-			);
-		} finally {
-			setIsDeletingDay(false);
-		}
+		const eventId = editingEvent.id;
+
+		deleteDayMutation.mutate(
+			{ eventId, dayId: deleteDayTarget.id },
+			{
+				onSuccess: async () => {
+					const updated = await eventsApi.get(eventId);
+					setEditingEvent(updated);
+					setDeleteDayTarget(null);
+				},
+			},
+		);
 	};
 
 	const handlePageChange = (newPage: number) => {
@@ -344,6 +346,7 @@ function EventsPage() {
 		includeRelations: boolean,
 	) => {
 		setIsExporting(true);
+		setExportError(null);
 		try {
 			await exportApi.events({
 				format,
@@ -352,7 +355,7 @@ function EventsPage() {
 				seriesId: seriesFilter || undefined,
 			});
 		} catch (e) {
-			setMutationError(
+			setExportError(
 				e instanceof Error ? e.message : "エクスポートに失敗しました",
 			);
 		} finally {
@@ -371,8 +374,17 @@ function EventsPage() {
 		return startDate || endDate || "-";
 	};
 
+	const mutationError =
+		deleteMutation.error ||
+		updateMutation.error ||
+		createSeriesMutation.error ||
+		createDayMutation.error ||
+		updateDayMutation.error ||
+		deleteDayMutation.error;
 	const displayError =
-		mutationError || (error instanceof Error ? error.message : null);
+		(mutationError instanceof Error ? mutationError.message : null) ||
+		exportError ||
+		(error instanceof Error ? error.message : null);
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -678,7 +690,7 @@ function EventsPage() {
 					if (!open) {
 						setIsSeriesDialogOpen(false);
 						setNewSeriesName("");
-						setMutationError(null);
+						createSeriesMutation.reset();
 					}
 				}}
 			>
@@ -698,9 +710,11 @@ function EventsPage() {
 								placeholder="例: コミックマーケット"
 							/>
 						</div>
-						{mutationError && (
+						{createSeriesMutation.error && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{createSeriesMutation.error instanceof Error
+									? createSeriesMutation.error.message
+									: "シリーズの作成に失敗しました"}
 							</div>
 						)}
 					</div>
@@ -714,9 +728,9 @@ function EventsPage() {
 						<Button
 							variant="primary"
 							onClick={handleCreateSeries}
-							disabled={isSubmitting || !newSeriesName.trim()}
+							disabled={createSeriesMutation.isPending || !newSeriesName.trim()}
 						>
-							{isSubmitting ? "作成中..." : "作成"}
+							{createSeriesMutation.isPending ? "作成中..." : "作成"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -728,7 +742,10 @@ function EventsPage() {
 				onOpenChange={(open) => {
 					if (!open) {
 						setEditingEvent(null);
-						setMutationError(null);
+						updateMutation.reset();
+						createDayMutation.reset();
+						updateDayMutation.reset();
+						deleteDayMutation.reset();
 					}
 				}}
 			>
@@ -907,9 +924,9 @@ function EventsPage() {
 						<Button
 							variant="primary"
 							onClick={handleUpdate}
-							disabled={isSubmitting}
+							disabled={updateMutation.isPending}
 						>
-							{isSubmitting ? "保存中..." : "保存"}
+							{updateMutation.isPending ? "保存中..." : "保存"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -923,7 +940,8 @@ function EventsPage() {
 						setIsDayDialogOpen(false);
 						setEditingDay(null);
 						setDayForm({});
-						setMutationError(null);
+						createDayMutation.reset();
+						updateDayMutation.reset();
 					}
 				}}
 			>
@@ -966,9 +984,13 @@ function EventsPage() {
 								}
 							/>
 						</div>
-						{mutationError && (
+						{(createDayMutation.error || updateDayMutation.error) && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError}
+								{(createDayMutation.error || updateDayMutation.error) instanceof
+								Error
+									? (createDayMutation.error || updateDayMutation.error)
+											?.message
+									: "開催日の保存に失敗しました"}
 							</div>
 						)}
 					</div>
@@ -979,9 +1001,13 @@ function EventsPage() {
 						<Button
 							variant="primary"
 							onClick={handleSaveDay}
-							disabled={isSubmitting}
+							disabled={
+								createDayMutation.isPending || updateDayMutation.isPending
+							}
 						>
-							{isSubmitting ? "保存中..." : "保存"}
+							{createDayMutation.isPending || updateDayMutation.isPending
+								? "保存中..."
+								: "保存"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -991,7 +1017,10 @@ function EventsPage() {
 			<ConfirmDialog
 				open={!!deleteTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteTarget(null);
+					if (!open) {
+						setDeleteTarget(null);
+						deleteMutation.reset();
+					}
 				}}
 				title="イベントの削除"
 				description={
@@ -1005,21 +1034,24 @@ function EventsPage() {
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDelete}
-				isLoading={isDeleting}
+				isLoading={deleteMutation.isPending}
 			/>
 
 			{/* 開催日削除確認ダイアログ */}
 			<ConfirmDialog
 				open={!!deleteDayTarget}
 				onOpenChange={(open) => {
-					if (!open) setDeleteDayTarget(null);
+					if (!open) {
+						setDeleteDayTarget(null);
+						deleteDayMutation.reset();
+					}
 				}}
 				title="開催日の削除"
 				description={`${deleteDayTarget?.dayNumber}日目（${deleteDayTarget?.date}）を削除しますか？この操作は取り消せません。`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDeleteDay}
-				isLoading={isDeletingDay}
+				isLoading={deleteDayMutation.isPending}
 			/>
 		</div>
 	);

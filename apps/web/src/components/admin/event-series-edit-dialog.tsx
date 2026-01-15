@@ -1,11 +1,9 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createId } from "@thac/db";
 import { useEffect, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
-import {
-	type EventSeries,
-	eventSeriesApi,
-	isConflictError,
-} from "@/lib/api-client";
+import { type EventSeries, isConflictError } from "@/lib/api-client";
+import { eventSeriesMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
 import {
 	Dialog,
@@ -41,20 +39,40 @@ export function EventSeriesEditDialog({
 	onSuccess,
 	defaultSortOrder = 0,
 }: EventSeriesEditDialogProps) {
+	const queryClient = useQueryClient();
 	const [form, setForm] = useState<EventSeriesFormData>({
 		name: "",
 		sortOrder: 0,
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	// 楽観的ロック用: 編集開始時のupdatedAtを記録
 	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
+		null,
+	);
+	// 上書き用のupdatedAt（競合解決時に使用）
+	const [overrideUpdatedAt, setOverrideUpdatedAt] = useState<string | null>(
 		null,
 	);
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<EventSeries>();
 
+	// useMutation hooks
+	const createMutation = useMutation(eventSeriesMutations.create(queryClient));
+	const updateMutation = useMutation({
+		...eventSeriesMutations.update(queryClient),
+		onError: (error: Error) => {
+			// 楽観的ロック競合エラーの場合
+			if (isConflictError<EventSeries>(error)) {
+				setConflict(error.current);
+			}
+		},
+	});
+
+	// ローディング状態とエラー状態
+	const isPending = createMutation.isPending || updateMutation.isPending;
+	const mutationError = createMutation.error || updateMutation.error;
+
 	// ダイアログが開いた時にフォームを初期化
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
 			if (mode === "edit" && eventSeries) {
@@ -70,55 +88,68 @@ export function EventSeriesEditDialog({
 				});
 				setOriginalUpdatedAt(null);
 			}
-			setError(null);
+			setOverrideUpdatedAt(null);
 			clearConflict();
+			// ダイアログを開いた時にmutationのエラー状態をリセット
+			createMutation.reset();
+			updateMutation.reset();
 		}
 	}, [open, mode, eventSeries, defaultSortOrder, clearConflict]);
 
-	const handleSubmit = async (overrideUpdatedAt?: string) => {
+	const handleSubmit = (submitOverrideUpdatedAt?: string) => {
 		if (!form.name.trim()) {
-			setError("名前を入力してください");
 			return;
 		}
 
-		setIsSubmitting(true);
-		setError(null);
-
-		try {
-			if (mode === "create") {
-				const id = createId.eventSeries();
-				await eventSeriesApi.create({
+		if (mode === "create") {
+			const id = createId.eventSeries();
+			createMutation.mutate(
+				{
 					id,
 					name: form.name,
 					sortOrder: form.sortOrder,
-				});
-			} else if (eventSeries) {
-				await eventSeriesApi.update(eventSeries.id, {
-					name: form.name,
-					sortOrder: form.sortOrder,
-					// 楽観的ロック: updatedAtを送信
-					updatedAt: overrideUpdatedAt || originalUpdatedAt || undefined,
-				});
-			}
-			onOpenChange(false);
-			onSuccess?.();
-		} catch (e) {
-			// 楽観的ロック競合エラーの場合
-			if (isConflictError<EventSeries>(e)) {
-				setConflict(e.current);
-				return;
-			}
-			setError(
-				e instanceof Error
-					? e.message
-					: mode === "create"
-						? "作成に失敗しました"
-						: "更新に失敗しました",
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
 			);
-		} finally {
-			setIsSubmitting(false);
+		} else if (eventSeries) {
+			updateMutation.mutate(
+				{
+					id: eventSeries.id,
+					data: {
+						name: form.name,
+						sortOrder: form.sortOrder,
+						// 楽観的ロック: updatedAtを送信
+						updatedAt:
+							submitOverrideUpdatedAt ||
+							overrideUpdatedAt ||
+							originalUpdatedAt ||
+							undefined,
+					},
+				},
+				{
+					onSuccess: () => {
+						onOpenChange(false);
+						onSuccess?.();
+					},
+				},
+			);
 		}
 	};
+
+	// エラーメッセージの取得（競合エラーは除外）
+	const displayError =
+		mutationError && !isConflictError(mutationError)
+			? mutationError instanceof Error
+				? mutationError.message
+				: mode === "create"
+					? "作成に失敗しました"
+					: "更新に失敗しました"
+			: null;
 
 	// 競合ダイアログで「編集を続ける」を選択した場合
 	const handleContinueEditing = (data: EventSeries) => {
@@ -127,6 +158,8 @@ export function EventSeriesEditDialog({
 			sortOrder: data.sortOrder ?? 0,
 		});
 		setOriginalUpdatedAt(data.updatedAt);
+		setOverrideUpdatedAt(null);
+		updateMutation.reset();
 		clearConflict();
 	};
 
@@ -134,8 +167,10 @@ export function EventSeriesEditDialog({
 	const handleOverwrite = () => {
 		if (conflictState.conflictData) {
 			// 最新のupdatedAtで再送信
-			handleSubmit(conflictState.conflictData.updatedAt);
+			setOverrideUpdatedAt(conflictState.conflictData.updatedAt);
+			updateMutation.reset();
 			clearConflict();
+			handleSubmit(conflictState.conflictData.updatedAt);
 		}
 	};
 
@@ -150,9 +185,9 @@ export function EventSeriesEditDialog({
 						<DialogTitle>{title}</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{error && (
+						{displayError && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{error}
+								{displayError}
 							</div>
 						)}
 						<div className="grid gap-2">
@@ -164,7 +199,7 @@ export function EventSeriesEditDialog({
 								value={form.name}
 								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: 博麗神社例大祭"
-								disabled={isSubmitting}
+								disabled={isPending}
 							/>
 						</div>
 						{mode === "edit" && (
@@ -182,7 +217,7 @@ export function EventSeriesEditDialog({
 												: 0,
 										})
 									}
-									disabled={isSubmitting}
+									disabled={isPending}
 								/>
 							</div>
 						)}
@@ -191,16 +226,16 @@ export function EventSeriesEditDialog({
 						<Button
 							variant="ghost"
 							onClick={() => onOpenChange(false)}
-							disabled={isSubmitting}
+							disabled={isPending}
 						>
 							キャンセル
 						</Button>
 						<Button
 							variant="primary"
 							onClick={() => handleSubmit()}
-							disabled={isSubmitting || !form.name.trim()}
+							disabled={isPending || !form.name.trim()}
 						>
-							{isSubmitting
+							{isPending
 								? mode === "create"
 									? "作成中..."
 									: "保存中..."
@@ -220,7 +255,7 @@ export function EventSeriesEditDialog({
 				getDisplayName={(data) => data.name}
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
-				isLoading={isSubmitting}
+				isLoading={isPending}
 			/>
 		</>
 	);
