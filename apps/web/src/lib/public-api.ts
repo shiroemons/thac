@@ -60,9 +60,9 @@ export interface PublicStatsRankings {
 export interface RecentUpdateItem {
 	id: string;
 	title: string;
-	circleName: string;
-	circleId: string;
-	date: string;
+	circleName: string | null;
+	circleId: string | null;
+	date: string | null;
 	type: "new" | "update";
 }
 

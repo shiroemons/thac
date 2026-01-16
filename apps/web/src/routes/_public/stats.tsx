@@ -326,14 +326,18 @@ function RecentUpdatesSection() {
 									</Link>
 								</td>
 								<td className="px-5 py-4">
-									<Link
-										to="/circles/$id"
-										params={{ id: update.circleId }}
-										preload="intent"
-										className="text-base-content/60 hover:text-primary"
-									>
-										{update.circleName}
-									</Link>
+									{update.circleId && update.circleName ? (
+										<Link
+											to="/circles/$id"
+											params={{ id: update.circleId }}
+											preload="intent"
+											className="text-base-content/60 hover:text-primary"
+										>
+											{update.circleName}
+										</Link>
+									) : (
+										<span className="text-base-content/40">-</span>
+									)}
 								</td>
 								<td className="px-5 py-4 text-base-content/60">
 									{update.date}
