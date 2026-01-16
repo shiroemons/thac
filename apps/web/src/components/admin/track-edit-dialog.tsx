@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -12,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
+import { useFormDirty } from "@/hooks/use-form-dirty";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
 	discsApi,
 	eventDaysApi,
@@ -49,6 +52,20 @@ export function TrackEditDialog({
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<Track>();
 
+	// フォーム変更検出フック
+	const formDirty = useFormDirty<Partial<Track> & Record<string, unknown>>();
+
+	// 未保存変更保護フック
+	const {
+		showConfirmDialog,
+		closeConfirmDialog,
+		confirmDiscard,
+		guardedOnOpenChange,
+	} = useUnsavedChangesGuard(onOpenChange, {
+		isDirty: formDirty.isDirty,
+		isOpen: open,
+	});
+
 	// useMutation hook
 	const updateMutation = useMutation(trackMutations.update(queryClient));
 
@@ -60,7 +77,7 @@ export function TrackEditDialog({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open && track) {
-			setEditForm({
+			const initialFormData: Partial<Track> = {
 				name: track.name,
 				nameJa: track.nameJa,
 				nameEn: track.nameEn,
@@ -70,15 +87,26 @@ export function TrackEditDialog({
 				releaseDate: track.releaseDate,
 				eventId: track.eventId,
 				eventDayId: track.eventDayId,
-			});
+			};
+			setEditForm(initialFormData);
 			setSelectedReleaseId(track.releaseId);
 			setSelectedEventId(track.eventId);
 			setOriginalUpdatedAt(track.updatedAt);
+			// フォームの初期状態を記録
+			formDirty.setInitialState(
+				initialFormData as Partial<Track> & Record<string, unknown>,
+			);
 			// ダイアログを開いた時にmutationのエラー状態をリセット
 			updateMutation.reset();
 			clearConflict();
 		}
 	}, [open, track, clearConflict]);
+
+	// フォーム変更を検出
+	// biome-ignore lint/correctness/useExhaustiveDependencies: formDirty.checkDirtyは安定した参照を持つため、意図的に依存配列から除外
+	useEffect(() => {
+		formDirty.checkDirty(editForm as Partial<Track> & Record<string, unknown>);
+	}, [editForm]);
 
 	// 作品一覧取得
 	const { data: releasesData } = useQuery({
@@ -203,6 +231,7 @@ export function TrackEditDialog({
 			},
 			{
 				onSuccess: () => {
+					formDirty.reset();
 					onOpenChange(false);
 					onSuccess?.();
 				},
@@ -258,7 +287,7 @@ export function TrackEditDialog({
 
 	return (
 		<>
-			<Dialog open={open} onOpenChange={onOpenChange}>
+			<Dialog open={open} onOpenChange={guardedOnOpenChange}>
 				<DialogContent className="sm:max-w-[600px]">
 					<DialogHeader>
 						<DialogTitle>トラックの編集</DialogTitle>
@@ -467,7 +496,7 @@ export function TrackEditDialog({
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => onOpenChange(false)}
+							onClick={() => guardedOnOpenChange(false)}
 							disabled={isPending}
 						>
 							キャンセル
@@ -492,6 +521,18 @@ export function TrackEditDialog({
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
 				isLoading={isPending}
+			/>
+
+			{/* 未保存変更確認ダイアログ */}
+			<ConfirmDialog
+				open={showConfirmDialog}
+				onOpenChange={(open) => !open && closeConfirmDialog()}
+				title="変更を破棄しますか？"
+				description="保存されていない変更があります。このまま閉じると変更は失われます。"
+				confirmLabel="破棄"
+				cancelLabel="編集を続ける"
+				variant="warning"
+				onConfirm={confirmDiscard}
 			/>
 		</>
 	);

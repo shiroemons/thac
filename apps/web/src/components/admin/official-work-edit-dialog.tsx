@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
+import { useFormDirty } from "@/hooks/use-form-dirty";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
 	isConflictError,
 	type OfficialWork,
@@ -9,6 +11,7 @@ import {
 } from "@/lib/api-client";
 import { officialWorkMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -85,6 +88,22 @@ export function OfficialWorkEditDialog({
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<OfficialWork>();
 
+	// フォーム変更検出フック
+	const formDirty = useFormDirty<
+		OfficialWorkFormData & Record<string, unknown>
+	>();
+
+	// 未保存変更保護フック
+	const {
+		showConfirmDialog,
+		closeConfirmDialog,
+		confirmDiscard,
+		guardedOnOpenChange,
+	} = useUnsavedChangesGuard(onOpenChange, {
+		isDirty: formDirty.isDirty,
+		isOpen: open,
+	});
+
 	// useMutation hooks
 	const createMutation = useMutation(officialWorkMutations.create(queryClient));
 	const updateMutation = useMutation(officialWorkMutations.update(queryClient));
@@ -153,8 +172,9 @@ export function OfficialWorkEditDialog({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
+			let initialFormState: OfficialWorkFormData;
 			if (mode === "edit" && work) {
-				setForm({
+				initialFormState = {
 					id: work.id,
 					categoryCode: work.categoryCode,
 					name: work.name,
@@ -167,10 +187,11 @@ export function OfficialWorkEditDialog({
 					officialOrganization: work.officialOrganization,
 					position: work.position,
 					notes: work.notes,
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(work.updatedAt);
 			} else {
-				setForm({
+				initialFormState = {
 					id: "",
 					categoryCode: "",
 					name: "",
@@ -183,15 +204,28 @@ export function OfficialWorkEditDialog({
 					officialOrganization: null,
 					position: null,
 					notes: null,
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(null);
 			}
+			// フォームの初期状態を記録
+			formDirty.setInitialState(
+				initialFormState as OfficialWorkFormData & Record<string, unknown>,
+			);
 			// ダイアログを開いた時にmutationのエラー状態をリセット
 			createMutation.reset();
 			updateMutation.reset();
 			clearConflict();
 		}
 	}, [open, mode, work, clearConflict]);
+
+	// フォーム変更を検出
+	// biome-ignore lint/correctness/useExhaustiveDependencies: formDirty.checkDirtyは安定した参照を持つため、意図的に依存配列から除外
+	useEffect(() => {
+		formDirty.checkDirty(
+			form as OfficialWorkFormData & Record<string, unknown>,
+		);
+	}, [form]);
 
 	const handleCategoryChange = (categoryCode: string) => {
 		if (mode === "create") {
@@ -235,6 +269,7 @@ export function OfficialWorkEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -262,6 +297,7 @@ export function OfficialWorkEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -319,7 +355,7 @@ export function OfficialWorkEditDialog({
 
 	return (
 		<>
-			<Dialog open={open} onOpenChange={onOpenChange}>
+			<Dialog open={open} onOpenChange={guardedOnOpenChange}>
 				<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
 					<DialogHeader>
 						<DialogTitle>{title}</DialogTitle>
@@ -496,7 +532,7 @@ export function OfficialWorkEditDialog({
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => onOpenChange(false)}
+							onClick={() => guardedOnOpenChange(false)}
 							disabled={isPending}
 						>
 							キャンセル
@@ -529,6 +565,18 @@ export function OfficialWorkEditDialog({
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
 				isLoading={isPending}
+			/>
+
+			{/* 未保存変更確認ダイアログ */}
+			<ConfirmDialog
+				open={showConfirmDialog}
+				onOpenChange={(open) => !open && closeConfirmDialog()}
+				title="変更を破棄しますか？"
+				description="保存されていない変更があります。このまま閉じると変更は失われます。"
+				confirmLabel="破棄"
+				cancelLabel="編集を続ける"
+				variant="warning"
+				onConfirm={confirmDiscard}
 			/>
 		</>
 	);
