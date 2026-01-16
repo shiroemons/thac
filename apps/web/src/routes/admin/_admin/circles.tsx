@@ -63,7 +63,7 @@ import {
 import { createPageHead } from "@/lib/head";
 import { circleLinkMutations, circleMutations } from "@/lib/mutation-options";
 import { circlesListQueryOptions } from "@/lib/query-options";
-import { getExternalLinkUrl } from "@/lib/utils";
+import { getErrorMessage, getExternalLinkUrl } from "@/lib/utils";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
@@ -1167,14 +1167,13 @@ function CirclesPage() {
 								</Label>
 							</div>
 						</div>
-						{(createLinkMutation.error || updateLinkMutation.error) && (
+						{createLinkMutation.error || updateLinkMutation.error ? (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{
-									(createLinkMutation.error || updateLinkMutation.error)
-										?.message
-								}
+								{getErrorMessage(
+									createLinkMutation.error || updateLinkMutation.error,
+								)}
 							</div>
-						)}
+						) : null}
 					</div>
 					<DialogFooter>
 						<Button variant="ghost" onClick={() => setIsLinkDialogOpen(false)}>
@@ -1213,7 +1212,7 @@ function CirclesPage() {
 						</p>
 						{batchDeleteMutation.error && (
 							<p className="mt-2 text-error text-sm">
-								{batchDeleteMutation.error.message}
+								{getErrorMessage(batchDeleteMutation.error)}
 							</p>
 						)}
 					</div>

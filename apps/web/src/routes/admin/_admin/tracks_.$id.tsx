@@ -72,6 +72,7 @@ import {
 	trackPublicationMutations,
 } from "@/lib/mutation-options";
 import { trackDetailQueryOptions } from "@/lib/query-options";
+import { getErrorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/_admin/tracks_/$id")({
 	loader: ({ context, params }) =>
@@ -1621,7 +1622,7 @@ function TrackDetailPage() {
 					</div>
 					{creditCreateMutation.error && (
 						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{creditCreateMutation.error.message}
+							{getErrorMessage(creditCreateMutation.error)}
 						</div>
 					)}
 					<DialogFooter>
@@ -1728,11 +1729,11 @@ function TrackDetailPage() {
 							</div>
 						</div>
 					</div>
-					{creditUpdateMutation.error && (
+					{creditUpdateMutation.error ? (
 						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{creditUpdateMutation.error.message}
+							{getErrorMessage(creditUpdateMutation.error)}
 						</div>
-					)}
+					) : null}
 					<DialogFooter>
 						<Button variant="ghost" onClick={closeCreditEditDialog}>
 							キャンセル
@@ -1864,18 +1865,19 @@ function TrackDetailPage() {
 							/>
 						</div>
 					</div>
-					{(editingOfficialSong
-						? officialSongUpdateMutation.error
-						: officialSongCreateMutation.error) && (
+					{(
+						editingOfficialSong
+							? officialSongUpdateMutation.error
+							: officialSongCreateMutation.error
+					) ? (
 						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{
-								(editingOfficialSong
+							{getErrorMessage(
+								editingOfficialSong
 									? officialSongUpdateMutation.error
-									: officialSongCreateMutation.error
-								)?.message
-							}
+									: officialSongCreateMutation.error,
+							)}
 						</div>
-					)}
+					) : null}
 					<DialogFooter>
 						<Button variant="ghost" onClick={closeOfficialSongDialog}>
 							キャンセル
@@ -1950,7 +1952,7 @@ function TrackDetailPage() {
 					</div>
 					{derivationCreateMutation.error && (
 						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{derivationCreateMutation.error.message}
+							{getErrorMessage(derivationCreateMutation.error)}
 						</div>
 					)}
 					<DialogFooter>
@@ -2021,18 +2023,19 @@ function TrackDetailPage() {
 							/>
 						</div>
 					</div>
-					{(editingPublication
-						? publicationUpdateMutation.error
-						: publicationCreateMutation.error) && (
+					{(
+						editingPublication
+							? publicationUpdateMutation.error
+							: publicationCreateMutation.error
+					) ? (
 						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{
-								(editingPublication
+							{getErrorMessage(
+								editingPublication
 									? publicationUpdateMutation.error
-									: publicationCreateMutation.error
-								)?.message
-							}
+									: publicationCreateMutation.error,
+							)}
 						</div>
-					)}
+					) : null}
 					<DialogFooter>
 						<Button
 							variant="ghost"
@@ -2115,18 +2118,19 @@ function TrackDetailPage() {
 							<span>主要ISRCとして設定</span>
 						</label>
 					</div>
-					{(editingIsrc
-						? isrcUpdateMutation.error
-						: isrcCreateMutation.error) && (
+					{(
+						editingIsrc
+							? isrcUpdateMutation.error
+							: isrcCreateMutation.error
+					) ? (
 						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-							{
-								(editingIsrc
+							{getErrorMessage(
+								editingIsrc
 									? isrcUpdateMutation.error
-									: isrcCreateMutation.error
-								)?.message
-							}
+									: isrcCreateMutation.error,
+							)}
 						</div>
-					)}
+					) : null}
 					<DialogFooter>
 						<Button
 							variant="ghost"
@@ -2183,7 +2187,7 @@ function TrackDetailPage() {
 					}
 				}}
 				title="クレジットの削除"
-				description={`クレジット「${deleteCreditTarget?.creditName}」を削除しますか？この操作は取り消せません。${creditDeleteMutation.error ? `\n\nエラー: ${creditDeleteMutation.error.message}` : ""}`}
+				description={`クレジット「${deleteCreditTarget?.creditName}」を削除しますか？この操作は取り消せません。${creditDeleteMutation.error ? `\n\nエラー: ${getErrorMessage(creditDeleteMutation.error)}` : ""}`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleCreditDelete}
@@ -2200,7 +2204,7 @@ function TrackDetailPage() {
 					}
 				}}
 				title="原曲紐付けの削除"
-				description={`原曲紐付け「${deleteOfficialSongTarget?.officialSong?.name ?? deleteOfficialSongTarget?.customSongName ?? "不明"}」を削除しますか？この操作は取り消せません。${officialSongDeleteMutation.error ? `\n\nエラー: ${officialSongDeleteMutation.error.message}` : ""}`}
+				description={`原曲紐付け「${deleteOfficialSongTarget?.officialSong?.name ?? deleteOfficialSongTarget?.customSongName ?? "不明"}」を削除しますか？この操作は取り消せません。${officialSongDeleteMutation.error ? `\n\nエラー: ${getErrorMessage(officialSongDeleteMutation.error)}` : ""}`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleOfficialSongDelete}
@@ -2217,7 +2221,7 @@ function TrackDetailPage() {
 					}
 				}}
 				title="派生関係の削除"
-				description={`派生関係「${deleteDerivationTarget?.parentTrack?.name ?? deleteDerivationTarget?.parentTrackId}」を削除しますか？この操作は取り消せません。${derivationDeleteMutation.error ? `\n\nエラー: ${derivationDeleteMutation.error.message}` : ""}`}
+				description={`派生関係「${deleteDerivationTarget?.parentTrack?.name ?? deleteDerivationTarget?.parentTrackId}」を削除しますか？この操作は取り消せません。${derivationDeleteMutation.error ? `\n\nエラー: ${getErrorMessage(derivationDeleteMutation.error)}` : ""}`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleDerivationDelete}
@@ -2234,7 +2238,7 @@ function TrackDetailPage() {
 					}
 				}}
 				title="公開リンクの削除"
-				description={`公開リンク「${deletePublicationTarget?.url}」を削除しますか？この操作は取り消せません。${publicationDeleteMutation.error ? `\n\nエラー: ${publicationDeleteMutation.error.message}` : ""}`}
+				description={`公開リンク「${deletePublicationTarget?.url}」を削除しますか？この操作は取り消せません。${publicationDeleteMutation.error ? `\n\nエラー: ${getErrorMessage(publicationDeleteMutation.error)}` : ""}`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handlePublicationDelete}
@@ -2251,7 +2255,7 @@ function TrackDetailPage() {
 					}
 				}}
 				title="ISRCの削除"
-				description={`ISRC「${deleteIsrcTarget?.isrc}」を削除しますか？この操作は取り消せません。${isrcDeleteMutation.error ? `\n\nエラー: ${isrcDeleteMutation.error.message}` : ""}`}
+				description={`ISRC「${deleteIsrcTarget?.isrc}」を削除しますか？この操作は取り消せません。${isrcDeleteMutation.error ? `\n\nエラー: ${getErrorMessage(isrcDeleteMutation.error)}` : ""}`}
 				confirmLabel="削除する"
 				variant="danger"
 				onConfirm={handleIsrcDelete}

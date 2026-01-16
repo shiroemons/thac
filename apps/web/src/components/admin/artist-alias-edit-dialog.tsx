@@ -211,9 +211,9 @@ export function ArtistAliasEditDialog({
 			updateMutation.mutate(
 				{
 					id: alias.id,
+					artistId: form.artistId,
 					data: {
 						name: form.name,
-						artistId: form.artistId,
 						aliasTypeCode: form.aliasTypeCode,
 						initialScript: form.initialScript,
 						nameInitial: form.nameInitial,

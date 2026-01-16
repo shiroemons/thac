@@ -328,11 +328,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates artistAliases and artistAlias queries", () => {
+		test("update.onSettled invalidates artistAliases and artistAlias queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = artistAliasMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { id: "alias-123", data: {} });
+			callCallback(config, "onSettled", { id: "alias-123", data: {} });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["artistAliases"],
@@ -342,13 +342,13 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates artist queries when artistId is provided", () => {
+		test("update.onSettled invalidates artist queries when artistId is provided", () => {
 			const queryClient = createMockQueryClient();
 			const config = artistAliasMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", {
+			callCallback(config, "onSettled", {
 				id: "alias-123",
-				data: { artistId: "artist-456" },
+				artistId: "artist-456",
 			});
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
@@ -359,9 +359,6 @@ describe("mutation-options", () => {
 			});
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["artist", "artist-456"],
-			});
-			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
-				queryKey: ["artist", "artist-456", "full"],
 			});
 		});
 
@@ -397,11 +394,11 @@ describe("mutation-options", () => {
 			expect(config).toHaveProperty("onSuccess");
 		});
 
-		test("update.onSuccess invalidates circles and specific circle queries", () => {
+		test("update.onSettled invalidates circles and specific circle queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = circleMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { id: "circle-id" });
+			callCallback(config, "onSettled", { id: "circle-id" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["circles"],
@@ -443,11 +440,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates eventSeries and specific event-series queries", () => {
+		test("update.onSettled invalidates eventSeries and specific event-series queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = eventSeriesMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { id: "series-123" });
+			callCallback(config, "onSettled", { id: "series-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledTimes(2);
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
@@ -490,11 +487,11 @@ describe("mutation-options", () => {
 			expect(config).toHaveProperty("onSuccess");
 		});
 
-		test("update.onSuccess invalidates releases and specific release queries", () => {
+		test("update.onSettled invalidates releases and specific release queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = releaseMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { id: "release-id" });
+			callCallback(config, "onSettled", { id: "release-id" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["releases"],
@@ -563,11 +560,11 @@ describe("mutation-options", () => {
 			expect(config).toHaveProperty("onSuccess");
 		});
 
-		test("update.onSuccess invalidates platforms and specific platform queries", () => {
+		test("update.onSettled invalidates platforms and specific platform queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = platformMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { code: "spotify" });
+			callCallback(config, "onSettled", { code: "spotify" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["platforms"],
@@ -598,11 +595,11 @@ describe("mutation-options", () => {
 			expect(config).toHaveProperty("onSuccess");
 		});
 
-		test("update.onSuccess invalidates aliasTypes and specific aliasType queries", () => {
+		test("update.onSettled invalidates aliasTypes and specific aliasType queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = aliasTypeMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { code: "vocal" });
+			callCallback(config, "onSettled", { code: "vocal" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["aliasTypes"],
@@ -633,11 +630,11 @@ describe("mutation-options", () => {
 			expect(config).toHaveProperty("onSuccess");
 		});
 
-		test("update.onSuccess invalidates creditRoles and specific creditRole queries", () => {
+		test("update.onSettled invalidates creditRoles and specific creditRole queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = creditRoleMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { code: "composer" });
+			callCallback(config, "onSettled", { code: "composer" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["creditRoles"],
@@ -668,11 +665,11 @@ describe("mutation-options", () => {
 			expect(config).toHaveProperty("onSuccess");
 		});
 
-		test("update.onSuccess invalidates officialWorkCategories and specific category queries", () => {
+		test("update.onSettled invalidates officialWorkCategories and specific category queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = officialWorkCategoryMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { code: "game" });
+			callCallback(config, "onSettled", { code: "game" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["officialWorkCategories"],
@@ -719,17 +716,14 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates circle queries", () => {
+		test("update.onSettled invalidates circle queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = circleLinkMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { circleId: "circle-123" });
+			callCallback(config, "onSettled", { circleId: "circle-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["circle", "circle-123"],
-			});
-			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
-				queryKey: ["circle", "circle-123", "full"],
 			});
 		});
 
@@ -768,11 +762,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates events and specific event queries", () => {
+		test("update.onSettled invalidates events and specific event queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = eventMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { id: "event-123" });
+			callCallback(config, "onSettled", { id: "event-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["events"],
@@ -814,11 +808,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates event query", () => {
+		test("update.onSettled invalidates event query", () => {
 			const queryClient = createMockQueryClient();
 			const config = eventDayMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { eventId: "event-123" });
+			callCallback(config, "onSettled", { eventId: "event-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["event", "event-123"],
@@ -860,17 +854,14 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates release queries", () => {
+		test("update.onSettled invalidates release queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = discMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { releaseId: "release-123" });
+			callCallback(config, "onSettled", { releaseId: "release-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["release", "release-123"],
-			});
-			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
-				queryKey: ["release", "release-123", "full"],
 			});
 		});
 
@@ -909,11 +900,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates officialWorks and specific work queries", () => {
+		test("update.onSettled invalidates officialWorks and specific work queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = officialWorkMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { id: "work-123" });
+			callCallback(config, "onSettled", { id: "work-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["officialWorks"],
@@ -955,11 +946,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates officialSongs and specific song queries", () => {
+		test("update.onSettled invalidates officialSongs and specific song queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = officialSongMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { id: "song-123" });
+			callCallback(config, "onSettled", { id: "song-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["officialSongs"],
@@ -1004,11 +995,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates release queries", () => {
+		test("update.onSettled invalidates release queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = releaseCircleMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { releaseId: "release-123" });
+			callCallback(config, "onSettled", { releaseId: "release-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["release", "release-123"],
@@ -1056,11 +1047,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates release queries", () => {
+		test("update.onSettled invalidates release queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = releasePublicationMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { releaseId: "release-123" });
+			callCallback(config, "onSettled", { releaseId: "release-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["release", "release-123"],
@@ -1108,11 +1099,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates release queries", () => {
+		test("update.onSettled invalidates release queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = releaseJanCodeMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { releaseId: "release-123" });
+			callCallback(config, "onSettled", { releaseId: "release-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["release", "release-123"],
@@ -1166,11 +1157,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates track and release queries", () => {
+		test("update.onSettled invalidates track and release queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = trackCreditMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", {
+			callCallback(config, "onSettled", {
 				trackId: "track-123",
 				releaseId: "release-123",
 			});
@@ -1230,11 +1221,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates track-official-songs and track queries", () => {
+		test("update.onSettled invalidates track-official-songs and track queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = trackOfficialSongMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { trackId: "track-123" });
+			callCallback(config, "onSettled", { trackId: "track-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["track-official-songs", "track-123"],
@@ -1334,11 +1325,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates track-publications and track queries", () => {
+		test("update.onSettled invalidates track-publications and track queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = trackPublicationMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { trackId: "track-123" });
+			callCallback(config, "onSettled", { trackId: "track-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["track-publications", "track-123"],
@@ -1386,11 +1377,11 @@ describe("mutation-options", () => {
 			});
 		});
 
-		test("update.onSuccess invalidates track-isrcs and track queries", () => {
+		test("update.onSettled invalidates track-isrcs and track queries", () => {
 			const queryClient = createMockQueryClient();
 			const config = trackIsrcMutations.update(queryClient as never);
 
-			callCallback(config, "onSuccess", { trackId: "track-123" });
+			callCallback(config, "onSettled", { trackId: "track-123" });
 
 			expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
 				queryKey: ["track-isrcs", "track-123"],
