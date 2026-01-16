@@ -1,4 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	useInfiniteQuery,
+	useMutation,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
@@ -6,13 +10,13 @@ import { Download, Eye, Home, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ArtistEditDialog } from "@/components/admin/artist-edit-dialog";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
-import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { SortIcon } from "@/components/admin/sort-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { InfiniteScroll } from "@/components/ui/infinite-scroll";
 import {
 	Table,
 	TableBody,
@@ -34,17 +38,12 @@ import {
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 import { artistMutations } from "@/lib/mutation-options";
-import { artistsListQueryOptions } from "@/lib/query-options";
+import { artistsInfiniteQueryOptions } from "@/lib/query-options";
 
-const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/admin/_admin/artists")({
 	head: () => createPageHead("アーティスト"),
-	loader: ({ context }) =>
-		context.queryClient.ensureQueryData(
-			artistsListQueryOptions({ page: DEFAULT_PAGE, limit: DEFAULT_PAGE_SIZE }),
-		),
 	component: ArtistsPage,
 });
 
@@ -72,9 +71,8 @@ const COLUMN_CONFIGS = [
 function ArtistsPage() {
 	const queryClient = useQueryClient();
 
-	// ページネーション・フィルタ状態
-	const [page, setPage] = useState(DEFAULT_PAGE);
-	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+	// フィルタ状態
+	const pageSize = DEFAULT_PAGE_SIZE;
 	const [search, setSearch] = useState("");
 	const [initialScript, setInitialScript] = useState("");
 
@@ -84,7 +82,6 @@ function ArtistsPage() {
 	const { sortBy, sortOrder, handleSort } = useSortableTable({
 		defaultSortBy: "name",
 		defaultSortOrder: "asc",
-		onSortChange: () => setPage(1),
 	});
 
 	// カラム表示設定
@@ -126,11 +123,17 @@ function ArtistsPage() {
 		artistMutations.batchDelete(queryClient),
 	);
 
-	// ensureQueryData + queryOptionsパターン
-	// ローダーでプリフェッチしたデータを自動的に使用
-	const { data, isPending, isFetching, error } = useQuery(
-		artistsListQueryOptions({
-			page,
+	// useInfiniteQuery パターン
+	const {
+		data,
+		isPending,
+		isFetching,
+		isFetchingNextPage,
+		error,
+		fetchNextPage,
+		hasNextPage,
+	} = useInfiniteQuery(
+		artistsInfiniteQueryOptions({
 			limit: pageSize,
 			search: debouncedSearch || undefined,
 			initialScript: initialScript || undefined,
@@ -139,8 +142,8 @@ function ArtistsPage() {
 		}),
 	);
 
-	const artists = data?.data ?? [];
-	const total = data?.total ?? 0;
+	const artists = data?.pages.flatMap((page) => page.data) ?? [];
+	const total = data?.pages[0]?.total ?? 0;
 
 	const handleExport = async (
 		format: ExportFormat,
@@ -196,23 +199,12 @@ function ArtistsPage() {
 		});
 	};
 
-	const handlePageChange = (newPage: number) => {
-		setPage(newPage);
-	};
-
-	const handlePageSizeChange = (newPageSize: number) => {
-		setPageSize(newPageSize);
-		setPage(1);
-	};
-
 	const handleSearchChange = (value: string) => {
 		setSearch(value);
-		setPage(1);
 	};
 
 	const handleInitialScriptChange = (value: string) => {
 		setInitialScript(value);
-		setPage(1);
 	};
 
 	// エラーメッセージの統合
@@ -555,12 +547,12 @@ function ArtistsPage() {
 						</Table>
 
 						<div className="border-base-300 border-t p-4">
-							<DataTablePagination
-								page={page}
-								pageSize={pageSize}
-								total={total}
-								onPageChange={handlePageChange}
-								onPageSizeChange={handlePageSizeChange}
+							<InfiniteScroll
+								onLoadMore={() => fetchNextPage()}
+								isLoading={isFetchingNextPage}
+								hasMore={hasNextPage ?? false}
+								loadedCount={artists.length}
+								totalCount={total}
 							/>
 						</div>
 					</>

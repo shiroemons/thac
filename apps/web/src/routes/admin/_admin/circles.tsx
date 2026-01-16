@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	useInfiniteQuery,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createId } from "@thac/db";
 import { detectInitial } from "@thac/utils";
@@ -17,7 +22,6 @@ import {
 import { useMemo, useState } from "react";
 import { CircleEditDialog } from "@/components/admin/circle-edit-dialog";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
-import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
 import { SortIcon } from "@/components/admin/sort-icon";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +35,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { InfiniteScroll } from "@/components/ui/infinite-scroll";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableGroupedSelect } from "@/components/ui/searchable-grouped-select";
@@ -62,21 +67,16 @@ import {
 import { createPageHead } from "@/lib/head";
 import { circleLinkMutations, circleMutations } from "@/lib/mutation-options";
 import {
-	circlesListQueryOptions,
+	circlesInfiniteQueryOptions,
 	platformGroupedOptionsQueryOptions,
 	platformsListQueryOptions,
 } from "@/lib/query-options";
 import { getErrorMessage, getExternalLinkUrl } from "@/lib/utils";
 
-const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/admin/_admin/circles")({
 	head: () => createPageHead("サークル"),
-	loader: ({ context }) =>
-		context.queryClient.ensureQueryData(
-			circlesListQueryOptions({ page: DEFAULT_PAGE, limit: DEFAULT_PAGE_SIZE }),
-		),
 	component: CirclesPage,
 });
 
@@ -104,8 +104,6 @@ const COLUMN_CONFIGS = [
 function CirclesPage() {
 	const queryClient = useQueryClient();
 
-	const [page, setPage] = useState(DEFAULT_PAGE);
-	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [search, setSearch] = useState("");
 	const [initialScript, setInitialScript] = useState("");
 
@@ -115,7 +113,6 @@ function CirclesPage() {
 	const { sortBy, sortOrder, handleSort } = useSortableTable({
 		defaultSortBy: "name",
 		defaultSortOrder: "asc",
-		onSortChange: () => setPage(1),
 	});
 
 	// カラム表示設定
@@ -230,10 +227,17 @@ function CirclesPage() {
 		return "web_site"; // マッチしなければweb_site
 	};
 
-	const { data, isPending, isFetching, error } = useQuery(
-		circlesListQueryOptions({
-			page,
-			limit: pageSize,
+	const {
+		data,
+		isPending,
+		isFetching,
+		isFetchingNextPage,
+		error,
+		fetchNextPage,
+		hasNextPage,
+	} = useInfiniteQuery(
+		circlesInfiniteQueryOptions({
+			limit: DEFAULT_PAGE_SIZE,
 			search: debouncedSearch || undefined,
 			initialScript: initialScript || undefined,
 			sortBy,
@@ -241,8 +245,8 @@ function CirclesPage() {
 		}),
 	);
 
-	const circles = data?.data ?? [];
-	const total = data?.total ?? 0;
+	const circles = data?.pages.flatMap((page) => page.data) ?? [];
+	const total = data?.pages[0]?.total ?? 0;
 
 	const handleExport = async (
 		format: ExportFormat,
@@ -431,23 +435,12 @@ function CirclesPage() {
 		);
 	};
 
-	const handlePageChange = (newPage: number) => {
-		setPage(newPage);
-	};
-
-	const handlePageSizeChange = (newPageSize: number) => {
-		setPageSize(newPageSize);
-		setPage(1);
-	};
-
 	const handleSearchChange = (value: string) => {
 		setSearch(value);
-		setPage(1);
 	};
 
 	const handleInitialScriptChange = (value: string) => {
 		setInitialScript(value);
-		setPage(1);
 	};
 
 	const displayError =
@@ -777,12 +770,12 @@ function CirclesPage() {
 						</Table>
 
 						<div className="border-base-300 border-t p-4">
-							<DataTablePagination
-								page={page}
-								pageSize={pageSize}
-								total={total}
-								onPageChange={handlePageChange}
-								onPageSizeChange={handlePageSizeChange}
+							<InfiniteScroll
+								onLoadMore={() => fetchNextPage()}
+								isLoading={isFetchingNextPage}
+								hasMore={hasNextPage ?? false}
+								loadedCount={circles.length}
+								totalCount={total}
 							/>
 						</div>
 					</>

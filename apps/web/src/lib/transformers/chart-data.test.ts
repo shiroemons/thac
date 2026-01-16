@@ -340,8 +340,8 @@ describe("chart-data transformers", () => {
 			);
 
 			const workA = result.data.find((d) => d.workId === "work-001");
-			expect(workA?.["曲1"]).toBe(10);
-			expect(workA?.["曲2"]).toBe(15);
+			expect(workA?.曲1).toBe(10);
+			expect(workA?.曲2).toBe(15);
 		});
 	});
 

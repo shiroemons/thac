@@ -1,23 +1,23 @@
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Disc, Music, Users } from "lucide-react";
 import { useRef, useState } from "react";
 import {
 	EmptyState,
-	Pagination,
 	PublicBreadcrumb,
 	TwoStageScriptFilter,
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { InfiniteScroll } from "@/components/ui/infinite-scroll";
 import { SearchInput } from "@/components/ui/search-input";
 import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
 import type { KanaRow } from "@/lib/kana-utils";
-import { publicApi } from "@/lib/public-api";
+import { publicCirclesInfiniteQueryOptions } from "@/lib/public-query-options";
 import {
 	type AlphabetInitial,
 	parseInitialParam,
-	parsePageParam,
 	parseRowParam,
 	parseScriptParam,
 	type ScriptCategory,
@@ -31,7 +31,6 @@ interface CirclesSearchParams {
 	script?: ScriptCategory;
 	initial?: string; // A-Z
 	row?: string; // あ, か, さ...
-	page?: number;
 	view?: ViewMode;
 	search?: string;
 }
@@ -40,32 +39,6 @@ const PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/_public/circles")({
 	head: () => createPageHead("サークル"),
-	loaderDeps: ({ search }) => ({
-		script: search.script,
-		initial: search.initial,
-		row: search.row,
-		page: search.page,
-		search: search.search,
-	}),
-	loader: async ({ deps }) => {
-		const { script, initial, row, page, search } = deps;
-
-		try {
-			const response = await publicApi.circles.list({
-				page: page || 1,
-				limit: PAGE_SIZE,
-				initialScript: script === "all" ? undefined : script,
-				initial: script === "alphabet" ? initial : undefined,
-				row: script === "kana" ? row : undefined,
-				sortBy: "releaseCount",
-				sortOrder: "desc",
-				search: search || undefined,
-			});
-			return { circles: response.data, total: response.total };
-		} catch {
-			return { circles: [], total: 0 };
-		}
-	},
 	component: CirclesPage,
 	validateSearch: (search: Record<string, unknown>): CirclesSearchParams => {
 		const script = parseScriptParam(search.script);
@@ -74,7 +47,6 @@ export const Route = createFileRoute("/_public/circles")({
 			initial:
 				script === "alphabet" ? parseInitialParam(search.initial) : undefined,
 			row: script === "kana" ? parseRowParam(search.row) : undefined,
-			page: parsePageParam(search.page),
 			view:
 				search.view === "grid" || search.view === "list" ? search.view : "list",
 			search: typeof search.search === "string" ? search.search : undefined,
@@ -92,11 +64,9 @@ function CirclesPage() {
 		script = "all",
 		initial,
 		row,
-		page = 1,
 		view = "list",
 		search = "",
 	} = Route.useSearch();
-	const { circles, total } = Route.useLoaderData();
 
 	// 検索入力のローカルステート（IME対応）
 	const [searchInput, setSearchInput] = useState(search);
@@ -107,14 +77,27 @@ function CirclesPage() {
 	const alphabetInitial = initial as AlphabetInitial | undefined;
 	const kanaRow = row as KanaRow | undefined;
 
-	// ページネーション
-	const totalPages = Math.ceil(total / PAGE_SIZE);
+	// 無限スクロールクエリ
+	const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+		useInfiniteQuery(
+			publicCirclesInfiniteQueryOptions({
+				limit: PAGE_SIZE,
+				search: search || undefined,
+				initialScript: scriptCategory === "all" ? undefined : scriptCategory,
+				initial: scriptCategory === "alphabet" ? alphabetInitial : undefined,
+				row: scriptCategory === "kana" ? kanaRow : undefined,
+			}),
+		);
+
+	// ページデータをフラット化
+	const circles = data?.pages.flatMap((page) => page.data) ?? [];
+	const total = data?.pages[0]?.total ?? 0;
 
 	// ナビゲーションハンドラー
 	const handleScriptCategoryChange = (newScript: ScriptCategory) => {
 		navigate({
 			to: "/circles",
-			search: { script: newScript, page: 1, view, search: search || undefined },
+			search: { script: newScript, view, search: search || undefined },
 		});
 	};
 
@@ -124,7 +107,6 @@ function CirclesPage() {
 			search: {
 				script: scriptCategory,
 				initial: newInitial ?? undefined,
-				page: 1,
 				view,
 				search: search || undefined,
 			},
@@ -137,21 +119,6 @@ function CirclesPage() {
 			search: {
 				script: scriptCategory,
 				row: newRow ?? undefined,
-				page: 1,
-				view,
-				search: search || undefined,
-			},
-		});
-	};
-
-	const handlePageChange = (newPage: number) => {
-		navigate({
-			to: "/circles",
-			search: {
-				script: scriptCategory,
-				initial: alphabetInitial,
-				row: kanaRow,
-				page: newPage,
 				view,
 				search: search || undefined,
 			},
@@ -165,7 +132,6 @@ function CirclesPage() {
 				script: scriptCategory,
 				initial: alphabetInitial,
 				row: kanaRow,
-				page,
 				view: newView,
 				search: search || undefined,
 			},
@@ -183,7 +149,6 @@ function CirclesPage() {
 				script: scriptCategory,
 				initial: alphabetInitial,
 				row: kanaRow,
-				page: 1,
 				view,
 				search: value || undefined,
 			},
@@ -205,7 +170,6 @@ function CirclesPage() {
 				script: scriptCategory,
 				initial: alphabetInitial,
 				row: kanaRow,
-				page: 1,
 				view,
 				search: value || undefined,
 			},
@@ -259,8 +223,12 @@ function CirclesPage() {
 				</div>
 			</div>
 
-			{/* サークル一覧 */}
-			{circles.length === 0 ? (
+			{/* 初回ローディング */}
+			{isLoading ? (
+				<div className="flex items-center justify-center py-12">
+					<span className="loading loading-spinner loading-lg" />
+				</div>
+			) : circles.length === 0 ? (
 				<EmptyState
 					type="filter"
 					title="該当するサークルがありません"
@@ -352,12 +320,14 @@ function CirclesPage() {
 				</div>
 			)}
 
-			{/* ページネーション */}
-			{totalPages > 1 && (
-				<Pagination
-					currentPage={page}
-					totalPages={totalPages}
-					onPageChange={handlePageChange}
+			{/* 無限スクロール */}
+			{!isLoading && (
+				<InfiniteScroll
+					onLoadMore={() => fetchNextPage()}
+					isLoading={isFetchingNextPage}
+					hasMore={hasNextPage ?? false}
+					loadedCount={circles.length}
+					totalCount={total}
 				/>
 			)}
 		</div>

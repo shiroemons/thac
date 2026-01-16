@@ -13,7 +13,7 @@
  * // コンポーネント
  * const { data } = useQuery(artistDetailQueryOptions(id))
  */
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { ssrFetch } from "@/functions/ssr-fetcher";
 import type {
 	AliasType,
@@ -102,6 +102,52 @@ export const artistsListQueryOptions = (params: ArtistListParams) => {
 			ssrFetch<PaginatedResponse<Artist>>(
 				`/api/admin/artists?${searchParams.toString()}`,
 			),
+		staleTime: STALE_TIME.SHORT,
+	});
+};
+
+/**
+ * アーティスト無限スクロール用のinfiniteQueryOptions
+ */
+interface ArtistInfiniteParams {
+	limit: number;
+	search?: string;
+	initialScript?: string;
+	sortBy?: string;
+	sortOrder?: "asc" | "desc";
+}
+
+export const artistsInfiniteQueryOptions = (params: ArtistInfiniteParams) => {
+	return infiniteQueryOptions({
+		queryKey: [
+			"artists",
+			"infinite",
+			params.limit,
+			params.search,
+			params.initialScript,
+			params.sortBy,
+			params.sortOrder,
+		],
+		queryFn: ({ pageParam }) => {
+			const searchParams = new URLSearchParams();
+			searchParams.set("page", String(pageParam));
+			searchParams.set("limit", String(params.limit));
+			if (params.search) searchParams.set("search", params.search);
+			if (params.initialScript)
+				searchParams.set("initialScript", params.initialScript);
+			if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+			if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+
+			return ssrFetch<PaginatedResponse<Artist>>(
+				`/api/admin/artists?${searchParams.toString()}`,
+			);
+		},
+		initialPageParam: 1,
+		getNextPageParam: (lastPage) => {
+			const currentPage = lastPage.page;
+			const hasMore = currentPage * lastPage.limit < lastPage.total;
+			return hasMore ? currentPage + 1 : undefined;
+		},
 		staleTime: STALE_TIME.SHORT,
 	});
 };
@@ -262,6 +308,52 @@ export const circlesListQueryOptions = (params: CircleListParams) => {
 			ssrFetch<PaginatedResponse<Circle>>(
 				`/api/admin/circles?${searchParams.toString()}`,
 			),
+		staleTime: STALE_TIME.SHORT,
+	});
+};
+
+/**
+ * サークル無限スクロール用のinfiniteQueryOptions
+ */
+interface CircleInfiniteParams {
+	limit: number;
+	search?: string;
+	initialScript?: string;
+	sortBy?: string;
+	sortOrder?: "asc" | "desc";
+}
+
+export const circlesInfiniteQueryOptions = (params: CircleInfiniteParams) => {
+	return infiniteQueryOptions({
+		queryKey: [
+			"circles",
+			"infinite",
+			params.limit,
+			params.search,
+			params.initialScript,
+			params.sortBy,
+			params.sortOrder,
+		],
+		queryFn: ({ pageParam }) => {
+			const searchParams = new URLSearchParams();
+			searchParams.set("page", String(pageParam));
+			searchParams.set("limit", String(params.limit));
+			if (params.search) searchParams.set("search", params.search);
+			if (params.initialScript)
+				searchParams.set("initialScript", params.initialScript);
+			if (params.sortBy) searchParams.set("sortBy", params.sortBy);
+			if (params.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+
+			return ssrFetch<PaginatedResponse<Circle>>(
+				`/api/admin/circles?${searchParams.toString()}`,
+			);
+		},
+		initialPageParam: 1,
+		getNextPageParam: (lastPage) => {
+			const currentPage = lastPage.page;
+			const hasMore = currentPage * lastPage.limit < lastPage.total;
+			return hasMore ? currentPage + 1 : undefined;
+		},
 		staleTime: STALE_TIME.SHORT,
 	});
 };
