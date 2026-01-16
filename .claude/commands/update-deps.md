@@ -18,25 +18,31 @@ argument-hint: [package-name]
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. アップデート対象の特定                                    │
-│    - 引数あり → 指定パッケージのみ                           │
-│    - 引数なし → bun outdated で全outdatedパッケージを取得    │
+│    - bunx npm-check-updates --workspaces で全体を確認       │
+│    - catalog, apps/*, packages/* を網羅的にチェック         │
 └─────────────────────────────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 2. 各パッケージごとにループ処理                              │
-│    a. バージョン差分を確認                                   │
-│    b. CHANGELOG/Release Notes を取得 (WebFetch)             │
-│    c. 破壊的変更の有無を判定・報告                           │
-│    d. パッケージをアップデート (bun update)                  │
-│    e. 型チェック実行 (bun run check-types)                   │
-│    f. Lint実行 (bun run check)                               │
-│    g. 問題なければコミット                                   │
+│ 2. ユーザーに確認                                            │
+│    - outdated パッケージ一覧を表示                          │
+│    - 全て/マイナーのみ/キャンセル を選択                    │
 └─────────────────────────────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 3. PR作成 (/pr スキルを呼び出し)                             │
+│ 3. 各パッケージごとにループ処理                              │
+│    a. CHANGELOG/Release Notes を取得 (メジャー変更時)       │
+│    b. package.json を直接編集してバージョン更新             │
+│    c. bun install で依存関係を解決                          │
+│    d. 型チェック実行 (bun run check-types)                   │
+│    e. Lint実行 (bun run check)                               │
+│    f. 問題なければコミット                                   │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 4. PR作成 (/pr スキルを呼び出し)                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -44,41 +50,67 @@ argument-hint: [package-name]
 
 ### 1. アップデート対象の特定
 
+以下のコマンドで outdated パッケージを確認:
+
+```bash
+bunx npm-check-updates --workspaces
+```
+
+このコマンドは以下をすべてチェックする:
+- ルート package.json の dependencies/devDependencies
+- ルート package.json の workspaces.catalog
+- apps/* の各 package.json
+- packages/* の各 package.json
+
 引数が指定されている場合:
-- 指定されたパッケージ名のみを対象とする
+- 指定パッケージ名でフィルタリングして処理
 
-引数が指定されていない場合:
-- `bun outdated` を実行して outdated パッケージの一覧を取得
-- ユーザーに一覧を表示し、更新するパッケージを確認
+### 2. ユーザーへの確認
 
-### 2. パッケージごとの処理
+outdated パッケージを表形式で表示:
 
-各パッケージに対して以下を実行:
+| カテゴリ | パッケージ | 現在 | 最新 | 変更種別 |
+|----------|------------|------|------|----------|
+| catalog | pkg-name | 1.0.0 | 2.0.0 | major |
+| apps/web | pkg-name | 1.0.0 | 1.1.0 | minor |
 
-#### a. バージョン差分の確認
-- 現在のバージョンと最新バージョンを表示
-- メジャーバージョンの変更がある場合は警告
+AskUserQuestion で以下を確認:
+- 全てアップデート
+- マイナー/パッチのみ（メジャー変更を除外）
+- キャンセル
 
-#### b. CHANGELOG/Release Notes の取得
-- パッケージのGitHubリポジトリから CHANGELOG または Release Notes を WebFetch で取得
-- 主要な変更点をユーザーに報告
-- 一般的なCHANGELOGのURL:
+### 3. パッケージごとの処理
+
+#### a. CHANGELOG/Release Notes の取得（メジャー変更時のみ）
+- GitHub Releases を WebFetch で取得
+- 破壊的変更がある場合はユーザーに報告
+- URL例:
   - `https://github.com/{owner}/{repo}/releases`
   - `https://github.com/{owner}/{repo}/blob/main/CHANGELOG.md`
 
-#### c. 破壊的変更の判定
-- BREAKING CHANGE、Breaking、major などのキーワードを確認
-- 破壊的変更がある場合:
-  - 変更内容をユーザーに提示
-  - 必要な対応方針を提案
-  - AskUserQuestion で続行するか確認
+#### b. バージョン更新
 
-#### d. アップデートの実行
-```bash
-bun update <package-name>
+**Catalog のパッケージの場合:**
+ルート package.json の `workspaces.catalog` を直接編集:
+```json
+{
+  "workspaces": {
+    "catalog": {
+      "package-name": "新バージョン"
+    }
+  }
+}
 ```
 
-#### e. 検証の実行
+**通常のパッケージの場合:**
+対象の package.json の dependencies/devDependencies を直接編集
+
+#### c. 依存関係の解決
+```bash
+bun install
+```
+
+#### d. 検証
 ```bash
 # 型チェック
 bun run check-types
@@ -87,34 +119,34 @@ bun run check-types
 bun run check
 ```
 
-- エラーが発生した場合:
-  - エラー内容をユーザーに報告
-  - 修正が必要な箇所を特定
-  - AskUserQuestion で続行方法を確認
+エラーが発生した場合:
+- エラー内容をユーザーに報告
+- 修正が必要な箇所を特定
+- AskUserQuestion で続行方法を確認（スキップ/修正/中断）
 
-#### f. コミット
-検証が成功した場合、以下の形式でコミット:
+#### e. コミット
+検証が成功した場合:
 ```
 fix(deps): update <package-name> to v<version>
 ```
 
-### 3. PR作成
+### 4. PR作成
 
-全パッケージのアップデートとコミットが完了したら:
+全パッケージの処理完了後:
 - `/pr` スキルを呼び出してPRを作成
 
 ## 注意事項
 
 - 各パッケージは個別にコミットする（1パッケージ = 1コミット）
-- 破壊的変更がある場合は必ずユーザーに確認を取る
-- 検証に失敗した場合は、そのパッケージのアップデートをスキップするか修正するか選択させる
-- ワークスペースカタログ（bun workspace catalog）を使用している場合、package.json の catalog 設定も確認する
+- メジャーバージョン変更時は必ず CHANGELOG を確認
+- 検証失敗時はスキップするか修正するか選択させる
+- catalog を使用しているパッケージは catalog 側を更新する
 
 ## TodoWrite の活用
 
-処理開始時に TodoWrite で以下のタスクを管理:
+処理開始時に TodoWrite でタスクを管理:
 1. アップデート対象パッケージの特定
-2. 各パッケージのアップデート（パッケージ数分）
+2. 各パッケージのアップデート（パッケージ数分のサブタスク）
 3. PR作成
 
 進捗を随時更新し、ユーザーが状況を把握できるようにする。
