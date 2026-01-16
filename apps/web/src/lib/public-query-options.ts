@@ -2,8 +2,11 @@
  * 公開ページ用 TanStack Query オプション
  * 統計データのプリフェッチとキャッシュ管理に使用
  */
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import {
+	type PaginatedResponse,
+	type PublicArtistItem,
+	type PublicCircleItem,
 	publicApi,
 	type SongStatsResponse,
 	type StackedWorkStatsResponse,
@@ -123,3 +126,102 @@ export const publicSongStatsQueryOptions = (
 		},
 		staleTime: STALE_TIME_PUBLIC.STATS,
 	});
+
+// =============================================================================
+// 無限スクロール用クエリオプション
+// =============================================================================
+
+/** サークル一覧無限スクロール用パラメータ */
+interface PublicCircleInfiniteParams {
+	limit: number;
+	search?: string;
+	initialScript?: string;
+	initial?: string;
+	row?: string;
+}
+
+/**
+ * サークル一覧の無限スクロールクエリオプション
+ * 公開画面でのサークル一覧表示に使用
+ */
+export const publicCirclesInfiniteQueryOptions = (
+	params: PublicCircleInfiniteParams,
+) => {
+	return infiniteQueryOptions({
+		queryKey: [
+			"public",
+			"circles",
+			"infinite",
+			params.limit,
+			params.search,
+			params.initialScript,
+			params.initial,
+			params.row,
+		],
+		queryFn: ({ pageParam }) =>
+			publicApi.circles.list({
+				page: pageParam,
+				limit: params.limit,
+				initialScript: params.initialScript,
+				initial: params.initial,
+				row: params.row,
+				search: params.search,
+				sortBy: "name",
+				sortOrder: "asc",
+			}),
+		initialPageParam: 1,
+		getNextPageParam: (lastPage: PaginatedResponse<PublicCircleItem>) => {
+			const hasMore = lastPage.page * lastPage.limit < lastPage.total;
+			return hasMore ? lastPage.page + 1 : undefined;
+		},
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+};
+
+/** アーティスト一覧無限スクロール用パラメータ */
+interface PublicArtistInfiniteParams {
+	limit: number;
+	search?: string;
+	initialScript?: string;
+	initial?: string;
+	row?: string;
+	role?: string;
+}
+
+/**
+ * アーティスト一覧の無限スクロールクエリオプション
+ * 公開画面でのアーティスト一覧表示に使用
+ */
+export const publicArtistsInfiniteQueryOptions = (
+	params: PublicArtistInfiniteParams,
+) => {
+	return infiniteQueryOptions({
+		queryKey: [
+			"public",
+			"artists",
+			"infinite",
+			params.limit,
+			params.search,
+			params.initialScript,
+			params.initial,
+			params.row,
+			params.role,
+		],
+		queryFn: ({ pageParam }) =>
+			publicApi.artists.list({
+				page: pageParam,
+				limit: params.limit,
+				initialScript: params.initialScript,
+				initial: params.initial,
+				row: params.row,
+				role: params.role,
+				search: params.search,
+			}),
+		initialPageParam: 1,
+		getNextPageParam: (lastPage: PaginatedResponse<PublicArtistItem>) => {
+			const hasMore = lastPage.page * lastPage.limit < lastPage.total;
+			return hasMore ? lastPage.page + 1 : undefined;
+		},
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+};
