@@ -37,6 +37,8 @@ export const CACHE_TTL = {
 	RELEASE_DETAIL: 5 * 60, // 5分
 	TRACK_DETAIL: 5 * 60, // 5分
 	PUBLIC_STATS: 5 * 60, // 5分
+	STATS_RANKINGS: 5 * 60, // 5分
+	STATS_RECENT_UPDATES: 60, // 1分
 } as const;
 
 /**
@@ -254,4 +256,6 @@ export const cacheKeys = {
 	trackDetail: (trackId: string) => `public:tracks:${trackId}`,
 
 	publicStats: () => "public:stats",
+	publicStatsRankings: () => "public:stats:rankings",
+	publicStatsRecentUpdates: () => "public:stats:recent-updates",
 };

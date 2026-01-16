@@ -19,6 +19,10 @@ export type StatsEntityType = "circle" | "artist" | "event";
 export const STALE_TIME_PUBLIC = {
 	/** 統計データ: 1分（頻繁に変わらない） */
 	STATS: 60_000,
+	/** ランキング: 5分 */
+	RANKINGS: 5 * 60_000,
+	/** 最近の更新: 1分 */
+	RECENT_UPDATES: 60_000,
 } as const;
 
 /**
@@ -225,3 +229,29 @@ export const publicArtistsInfiniteQueryOptions = (
 		staleTime: STALE_TIME_PUBLIC.STATS,
 	});
 };
+
+// =============================================================================
+// 統計ランキング・最近の更新用クエリオプション
+// =============================================================================
+
+/**
+ * 統計ランキングのクエリオプション
+ * 人気曲、活発サークル、活発アーティストのランキング
+ */
+export const publicStatsRankingsQueryOptions = () =>
+	queryOptions({
+		queryKey: ["public", "stats", "rankings"],
+		queryFn: () => publicApi.stats.rankings(),
+		staleTime: STALE_TIME_PUBLIC.RANKINGS,
+	});
+
+/**
+ * 最近の更新のクエリオプション
+ * 新着・更新リリースの一覧
+ */
+export const publicRecentUpdatesQueryOptions = () =>
+	queryOptions({
+		queryKey: ["public", "stats", "recent-updates"],
+		queryFn: () => publicApi.stats.recentUpdates(),
+		staleTime: STALE_TIME_PUBLIC.RECENT_UPDATES,
+	});

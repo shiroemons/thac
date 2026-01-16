@@ -39,6 +39,36 @@ export interface PublicStats {
 	circles: number;
 	artists: number;
 	tracks: number;
+	originalSongs: number;
+}
+
+/** ランキング項目 */
+export interface RankingItem {
+	id: string;
+	name: string;
+	count: number;
+}
+
+/** ランキングレスポンス */
+export interface PublicStatsRankings {
+	popularSongs: RankingItem[];
+	activeCircles: RankingItem[];
+	activeArtists: RankingItem[];
+}
+
+/** 最近の更新項目 */
+export interface RecentUpdateItem {
+	id: string;
+	title: string;
+	circleName: string;
+	circleId: string;
+	date: string;
+	type: "new" | "update";
+}
+
+/** 最近の更新レスポンス */
+export interface PublicStatsRecentUpdates {
+	data: RecentUpdateItem[];
 }
 
 /** カテゴリ */
@@ -514,7 +544,14 @@ export interface PublicTrackDetail {
 
 export const publicApi = {
 	/** サイト全体の統計情報を取得 */
-	stats: () => publicFetch<PublicStats>("/api/public/stats"),
+	stats: Object.assign(() => publicFetch<PublicStats>("/api/public/stats"), {
+		/** ランキング */
+		rankings: () =>
+			publicFetch<PublicStatsRankings>("/api/public/stats/rankings"),
+		/** 最近の更新 */
+		recentUpdates: () =>
+			publicFetch<PublicStatsRecentUpdates>("/api/public/stats/recent-updates"),
+	}),
 
 	/** カテゴリマスタ一覧を取得 */
 	categories: () =>
