@@ -46,7 +46,7 @@
 		"@tanstack/react-query-devtools": "^5.91.1",
 		"@tanstack/react-router-devtools": "^1.150.0",
 		"@tanstack/router-cli": "^1.150.0",
-		"@testing-library/dom": "^10.4.0",
+		"@testing-library/dom": "^10.4.1",
 		"@testing-library/react": "^16.2.0",
 		"@thac/config": "workspace:*",
 		"@types/react": "19.2.8",
