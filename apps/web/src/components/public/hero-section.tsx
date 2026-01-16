@@ -9,6 +9,7 @@ const defaultStats: PublicStats = {
 	circles: 0,
 	artists: 0,
 	tracks: 0,
+	originalSongs: 0,
 };
 
 interface HeroSectionProps {

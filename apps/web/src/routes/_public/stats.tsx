@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	BarChart3,
@@ -12,89 +13,34 @@ import {
 	Trophy,
 	Users,
 } from "lucide-react";
+import { Suspense } from "react";
 import { PublicBreadcrumb } from "@/components/public";
+import {
+	RankingsSkeleton,
+	RecentUpdatesSkeleton,
+} from "@/components/public/stats-skeleton";
 import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
+import { publicApi } from "@/lib/public-api";
+import {
+	publicRecentUpdatesQueryOptions,
+	publicStatsRankingsQueryOptions,
+} from "@/lib/public-query-options";
 
 export const Route = createFileRoute("/_public/stats")({
 	head: () => createPageHead("統計"),
+	loader: async ({ context }) => {
+		// 基本統計を await（ブロッキング）
+		const stats = await publicApi.stats();
+
+		// ランキング・更新を prefetchQuery（非ブロッキング）
+		context.queryClient.prefetchQuery(publicStatsRankingsQueryOptions());
+		context.queryClient.prefetchQuery(publicRecentUpdatesQueryOptions());
+
+		return { stats };
+	},
 	component: StatsPage,
 });
-
-// モック統計データ
-const mockStats = {
-	originalSongs: 1234,
-	circles: 456,
-	artists: 890,
-	events: 567,
-	tracks: 12345,
-};
-
-// 人気原曲ランキング
-const popularSongsRanking = [
-	{ id: "un-owen", name: "U.N.オーエンは彼女なのか？", count: 1234 },
-	{ id: "night-of-nights", name: "ナイト・オブ・ナイツ", count: 1123 },
-	{ id: "septette", name: "亡き王女の為のセプテット", count: 987 },
-	{ id: "bad-apple", name: "Bad Apple!! feat. nomico", count: 876 },
-	{ id: "kamisama", name: "神々が恋した幻想郷", count: 765 },
-];
-
-// アクティブサークルランキング
-const activeCirclesRanking = [
-	{ id: "iosys", name: "IOSYS", count: 156 },
-	{ id: "sound-holic", name: "SOUND HOLIC", count: 134 },
-	{ id: "cool-and-create", name: "COOL&CREATE", count: 112 },
-	{ id: "tamusic", name: "TAMusic", count: 98 },
-	{ id: "alstroemeria", name: "Alstroemeria Records", count: 89 },
-];
-
-// アクティブアーティストランキング
-const activeArtistsRanking = [
-	{ id: "zun", name: "ZUN", count: 789 },
-	{ id: "kouki", name: "幽閉サテライト", count: 567 },
-	{ id: "masayoshi", name: "Masayoshi Minoshima", count: 567 },
-	{ id: "tamaonsen", name: "魂音泉", count: 523 },
-	{ id: "arm", name: "ARM", count: 456 },
-];
-
-// 最近の更新
-const recentUpdates = [
-	{
-		id: "release-1",
-		title: "幻想郷アレンジコレクション Vol.15",
-		circleName: "IOSYS",
-		date: "2026-01-02",
-		type: "new" as const,
-	},
-	{
-		id: "release-2",
-		title: "東方ボーカルBEST 2025",
-		circleName: "Alstroemeria Records",
-		date: "2026-01-01",
-		type: "new" as const,
-	},
-	{
-		id: "release-3",
-		title: "紅楼夢リミックス",
-		circleName: "SOUND HOLIC",
-		date: "2025-12-31",
-		type: "update" as const,
-	},
-	{
-		id: "release-4",
-		title: "ナイト・オブ・ナイツ 10th Anniversary",
-		circleName: "COOL&CREATE",
-		date: "2025-12-30",
-		type: "new" as const,
-	},
-	{
-		id: "release-5",
-		title: "東方ピアノコレクション",
-		circleName: "TAMusic",
-		date: "2025-12-29",
-		type: "update" as const,
-	},
-];
 
 interface StatCardProps {
 	icon: LucideIcon;
@@ -160,15 +106,22 @@ interface RankingItemProps {
 
 function RankingItem({ rank, name, count, unit, href }: RankingItemProps) {
 	const getRankStyle = (r: number) => {
+		if (r <= 3) {
+			return ""; // メダル絵文字表示時は背景なし
+		}
+		return "bg-base-content/10 text-base-content/70";
+	};
+
+	const getMedalOrRank = (r: number) => {
 		switch (r) {
 			case 1:
-				return "bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-md";
+				return "🥇";
 			case 2:
-				return "bg-gradient-to-br from-gray-300 to-gray-400 text-white shadow-sm";
+				return "🥈";
 			case 3:
-				return "bg-gradient-to-br from-amber-600 to-amber-700 text-white shadow-sm";
+				return "🥉";
 			default:
-				return "bg-base-content/10 text-base-content/70";
+				return r;
 		}
 	};
 
@@ -181,7 +134,7 @@ function RankingItem({ rank, name, count, unit, href }: RankingItemProps) {
 			<span
 				className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold text-sm ${getRankStyle(rank)}`}
 			>
-				{rank}
+				{getMedalOrRank(rank)}
 			</span>
 			<span className="min-w-0 flex-1 truncate font-medium transition-colors group-hover:text-primary">
 				{name}
@@ -193,7 +146,210 @@ function RankingItem({ rank, name, count, unit, href }: RankingItemProps) {
 	);
 }
 
+// Calculate ranks with ties (1, 1, 3, 4, 4, 6 format)
+function calculateRanks(items: Array<{ count: number }>): number[] {
+	const ranks: number[] = [];
+
+	for (let i = 0; i < items.length; i++) {
+		if (i === 0) {
+			ranks.push(1);
+		} else if (items[i].count === items[i - 1].count) {
+			// Same count as previous - use same rank
+			ranks.push(ranks[i - 1]);
+		} else {
+			// Different count - rank is position + 1
+			ranks.push(i + 1);
+		}
+	}
+
+	return ranks;
+}
+
+function RankingsSection() {
+	const { data: rankings } = useSuspenseQuery(
+		publicStatsRankingsQueryOptions(),
+	);
+
+	const popularSongsRanks = calculateRanks(rankings.popularSongs);
+	const activeCirclesRanks = calculateRanks(rankings.activeCircles);
+	const activeArtistsRanks = calculateRanks(rankings.activeArtists);
+
+	return (
+		<div className="grid gap-6 lg:grid-cols-3">
+			{/* Popular songs ranking */}
+			<section className="glass-card overflow-hidden rounded-2xl">
+				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
+					<div className="flex items-center gap-2">
+						<Trophy className="h-5 w-5 text-yellow-500" aria-hidden="true" />
+						<h2 className="font-bold">原曲アレンジ数</h2>
+					</div>
+					<Link
+						to="/original-songs"
+						preload="intent"
+						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
+					>
+						すべて見る
+						<span className="transition-transform group-hover:translate-x-0.5">
+							→
+						</span>
+					</Link>
+				</div>
+				<div className="divide-y divide-base-content/5 px-2 py-1">
+					{rankings.popularSongs.map((song, index) => (
+						<RankingItem
+							key={song.id}
+							rank={popularSongsRanks[index]}
+							name={song.name}
+							count={song.count}
+							unit="アレンジ"
+							href={`/original-songs/${song.id}`}
+						/>
+					))}
+				</div>
+			</section>
+
+			{/* Active circles ranking */}
+			<section className="glass-card overflow-hidden rounded-2xl">
+				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
+					<div className="flex items-center gap-2">
+						<Crown className="h-5 w-5 text-primary" aria-hidden="true" />
+						<h2 className="font-bold">サークルリリース数</h2>
+					</div>
+					<Link
+						to="/circles"
+						preload="intent"
+						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
+					>
+						すべて見る
+						<span className="transition-transform group-hover:translate-x-0.5">
+							→
+						</span>
+					</Link>
+				</div>
+				<div className="divide-y divide-base-content/5 px-2 py-1">
+					{rankings.activeCircles.map((circle, index) => (
+						<RankingItem
+							key={circle.id}
+							rank={activeCirclesRanks[index]}
+							name={circle.name}
+							count={circle.count}
+							unit="リリース"
+							href={`/circles/${circle.id}`}
+						/>
+					))}
+				</div>
+			</section>
+
+			{/* Active artists ranking */}
+			<section className="glass-card overflow-hidden rounded-2xl">
+				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
+					<div className="flex items-center gap-2">
+						<Sparkles className="h-5 w-5 text-accent" aria-hidden="true" />
+						<h2 className="font-bold">アーティスト楽曲数</h2>
+					</div>
+					<Link
+						to="/artists"
+						preload="intent"
+						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
+					>
+						すべて見る
+						<span className="transition-transform group-hover:translate-x-0.5">
+							→
+						</span>
+					</Link>
+				</div>
+				<div className="divide-y divide-base-content/5 px-2 py-1">
+					{rankings.activeArtists.map((artist, index) => (
+						<RankingItem
+							key={artist.id}
+							rank={activeArtistsRanks[index]}
+							name={artist.name}
+							count={artist.count}
+							unit="曲"
+							href={`/artists/${artist.id}`}
+						/>
+					))}
+				</div>
+			</section>
+		</div>
+	);
+}
+
+function RecentUpdatesSection() {
+	const { data: updates } = useSuspenseQuery(publicRecentUpdatesQueryOptions());
+
+	return (
+		<section className="glass-card overflow-hidden rounded-2xl">
+			<div className="flex items-center justify-between border-base-content/10 border-b p-5">
+				<div className="flex items-center gap-2">
+					<Calendar className="h-5 w-5 text-info" aria-hidden="true" />
+					<h2 className="font-bold">最近の更新</h2>
+				</div>
+			</div>
+			<div className="overflow-x-auto">
+				<table className="w-full">
+					<thead>
+						<tr className="border-base-content/5 border-b text-left text-base-content/50 text-sm">
+							<th className="px-5 py-3 font-medium">状態</th>
+							<th className="px-5 py-3 font-medium">タイトル</th>
+							<th className="px-5 py-3 font-medium">サークル</th>
+							<th className="px-5 py-3 font-medium">日付</th>
+						</tr>
+					</thead>
+					<tbody className="divide-y divide-base-content/5">
+						{updates.data.map((update) => (
+							<tr
+								key={update.id}
+								className="transition-colors hover:bg-base-content/5"
+							>
+								<td className="px-5 py-4">
+									{update.type === "new" ? (
+										<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-primary text-xs">
+											<Sparkles className="h-3 w-3" aria-hidden="true" />
+											NEW
+										</span>
+									) : (
+										<span className="inline-flex items-center gap-1 rounded-full bg-secondary/10 px-2.5 py-1 text-secondary text-xs">
+											<PenLine className="h-3 w-3" aria-hidden="true" />
+											更新
+										</span>
+									)}
+								</td>
+								<td className="px-5 py-4">
+									<Link
+										to="/releases/$id"
+										params={{ id: update.id }}
+										preload="intent"
+										className="font-medium hover:text-primary"
+									>
+										{update.title}
+									</Link>
+								</td>
+								<td className="px-5 py-4">
+									<Link
+										to="/circles/$id"
+										params={{ id: update.circleId }}
+										preload="intent"
+										className="text-base-content/60 hover:text-primary"
+									>
+										{update.circleName}
+									</Link>
+								</td>
+								<td className="px-5 py-4 text-base-content/60">
+									{update.date}
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		</section>
+	);
+}
+
 function StatsPage() {
+	const { stats } = Route.useLoaderData();
+
 	return (
 		<div className="space-y-8">
 			<PublicBreadcrumb items={[{ label: "統計" }]} />
@@ -221,191 +377,50 @@ function StatsPage() {
 				<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
 					<StatCard
 						icon={Music}
-						count={mockStats.originalSongs}
+						count={stats.originalSongs}
 						label="原曲"
 						href="/original-songs"
 						color="text-secondary"
 					/>
 					<StatCard
 						icon={Disc3}
-						count={mockStats.circles}
+						count={stats.circles}
 						label="サークル"
 						href="/circles"
 						color="text-primary"
 					/>
 					<StatCard
 						icon={Users}
-						count={mockStats.artists}
+						count={stats.artists}
 						label="アーティスト"
 						href="/artists"
 						color="text-accent"
 					/>
 					<StatCard
 						icon={Calendar}
-						count={mockStats.events}
+						count={stats.events}
 						label="イベント"
 						href="/events"
 						color="text-info"
 					/>
 					<StatCard
 						icon={Music}
-						count={mockStats.tracks}
+						count={stats.tracks}
 						label="トラック"
-						trend={12}
 						color="text-success"
 					/>
 				</div>
 			</section>
 
-			{/* Ranking sections */}
-			<div className="grid gap-6 lg:grid-cols-3">
-				{/* Popular songs ranking */}
-				<section className="glass-card overflow-hidden rounded-2xl">
-					<div className="flex items-center justify-between border-base-content/10 border-b p-5">
-						<div className="flex items-center gap-2">
-							<Trophy className="h-5 w-5 text-yellow-500" aria-hidden="true" />
-							<h2 className="font-bold">人気原曲</h2>
-						</div>
-						<Link
-							to="/original-songs"
-							preload="intent"
-							className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
-						>
-							すべて見る
-							<span className="transition-transform group-hover:translate-x-0.5">
-								→
-							</span>
-						</Link>
-					</div>
-					<div className="divide-y divide-base-content/5 px-2 py-1">
-						{popularSongsRanking.map((song, index) => (
-							<RankingItem
-								key={song.id}
-								rank={index + 1}
-								name={song.name}
-								count={song.count}
-								unit="アレンジ"
-								href={`/original-songs/${song.id}`}
-							/>
-						))}
-					</div>
-				</section>
+			{/* Ranking sections with Suspense */}
+			<Suspense fallback={<RankingsSkeleton />}>
+				<RankingsSection />
+			</Suspense>
 
-				{/* Active circles ranking */}
-				<section className="glass-card overflow-hidden rounded-2xl">
-					<div className="flex items-center justify-between border-base-content/10 border-b p-5">
-						<div className="flex items-center gap-2">
-							<Crown className="h-5 w-5 text-primary" aria-hidden="true" />
-							<h2 className="font-bold">アクティブサークル</h2>
-						</div>
-						<Link
-							to="/circles"
-							preload="intent"
-							className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
-						>
-							すべて見る
-							<span className="transition-transform group-hover:translate-x-0.5">
-								→
-							</span>
-						</Link>
-					</div>
-					<div className="divide-y divide-base-content/5 px-2 py-1">
-						{activeCirclesRanking.map((circle, index) => (
-							<RankingItem
-								key={circle.id}
-								rank={index + 1}
-								name={circle.name}
-								count={circle.count}
-								unit="リリース"
-								href={`/circles/${circle.id}`}
-							/>
-						))}
-					</div>
-				</section>
-
-				{/* Active artists ranking */}
-				<section className="glass-card overflow-hidden rounded-2xl">
-					<div className="flex items-center justify-between border-base-content/10 border-b p-5">
-						<div className="flex items-center gap-2">
-							<Sparkles className="h-5 w-5 text-accent" aria-hidden="true" />
-							<h2 className="font-bold">アクティブアーティスト</h2>
-						</div>
-						<Link
-							to="/artists"
-							preload="intent"
-							className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
-						>
-							すべて見る
-							<span className="transition-transform group-hover:translate-x-0.5">
-								→
-							</span>
-						</Link>
-					</div>
-					<div className="divide-y divide-base-content/5 px-2 py-1">
-						{activeArtistsRanking.map((artist, index) => (
-							<RankingItem
-								key={artist.id}
-								rank={index + 1}
-								name={artist.name}
-								count={artist.count}
-								unit="曲"
-								href={`/artists/${artist.id}`}
-							/>
-						))}
-					</div>
-				</section>
-			</div>
-
-			{/* Recent updates */}
-			<section className="glass-card overflow-hidden rounded-2xl">
-				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
-					<div className="flex items-center gap-2">
-						<Calendar className="h-5 w-5 text-info" aria-hidden="true" />
-						<h2 className="font-bold">最近の更新</h2>
-					</div>
-				</div>
-				<div className="overflow-x-auto">
-					<table className="w-full">
-						<thead>
-							<tr className="border-base-content/5 border-b text-left text-base-content/50 text-sm">
-								<th className="px-5 py-3 font-medium">状態</th>
-								<th className="px-5 py-3 font-medium">タイトル</th>
-								<th className="px-5 py-3 font-medium">サークル</th>
-								<th className="px-5 py-3 font-medium">日付</th>
-							</tr>
-						</thead>
-						<tbody className="divide-y divide-base-content/5">
-							{recentUpdates.map((update) => (
-								<tr
-									key={update.id}
-									className="transition-colors hover:bg-base-content/5"
-								>
-									<td className="px-5 py-4">
-										{update.type === "new" ? (
-											<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-primary text-xs">
-												<Sparkles className="h-3 w-3" aria-hidden="true" />
-												NEW
-											</span>
-										) : (
-											<span className="inline-flex items-center gap-1 rounded-full bg-secondary/10 px-2.5 py-1 text-secondary text-xs">
-												<PenLine className="h-3 w-3" aria-hidden="true" />
-												更新
-											</span>
-										)}
-									</td>
-									<td className="px-5 py-4 font-medium">{update.title}</td>
-									<td className="px-5 py-4 text-base-content/60">
-										{update.circleName}
-									</td>
-									<td className="px-5 py-4 text-base-content/60">
-										{update.date}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
-			</section>
+			{/* Recent updates with Suspense */}
+			<Suspense fallback={<RecentUpdatesSkeleton />}>
+				<RecentUpdatesSection />
+			</Suspense>
 		</div>
 	);
 }
