@@ -131,6 +131,52 @@ make db-setup-local  # DBセットアップ（push + seed）
 
 エラーがある場合、コミットがブロックされます。
 
+## CI/CD
+
+### GitHub Actions
+
+| ワークフロー | トリガー | 説明 |
+|-------------|---------|------|
+| CI | Push/PR to main | Lint、型チェック、テストを実行 |
+| Update Lockfile | PR (package.json変更時) | Renovate PRの`bun.lock`を自動更新 |
+
+### Renovate
+
+依存関係の自動更新にRenovateを使用しています。
+
+```mermaid
+flowchart TD
+    A[Renovate PR作成] --> B[Update Lockfile ワークフロー]
+    B --> C[bun.lock 自動更新 & コミット]
+    C --> D[PR close/reopen]
+    D --> E[CI ワークフロー実行]
+    E --> F{CI成功?}
+    F -->|Yes| G[Automerge]
+    F -->|No| H[修正が必要]
+```
+
+> **Note**: Renovate GitHub AppはBunのロックファイル更新をサポートしていないため、
+> GitHub Actionsワークフローで自動更新しています。
+
+### 依存関係の更新後
+
+Renovate PRがマージされた後、ローカル環境を更新する手順：
+
+```bash
+# 1. 最新のコードを取得
+git pull
+
+# 2. ローカルの依存関係を更新
+bun install
+
+# 3. Dockerコンテナの依存関係を更新（ボリューム共有のため通常は不要）
+docker compose exec web bun install
+docker compose exec server bun install
+```
+
+> **Note**: Docker環境はホストの`node_modules`をボリュームマウントしているため、
+> ローカルで`bun install`を実行すればコンテナにも反映されます。
+
 ## 開発ワークフロー（cc-sdd）
 
 本プロジェクトはSpec-Driven Development（仕様駆動開発）を採用しています。
