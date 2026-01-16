@@ -30,6 +30,7 @@ import type {
 	CircleWithLinks,
 	CreditRole,
 	Event,
+	EventDay,
 	EventSeries,
 	EventSeriesWithEvents,
 	EventWithDays,
@@ -355,6 +356,67 @@ export const eventDetailQueryOptions = (id: string) =>
 		staleTime: STALE_TIME.SHORT,
 	});
 
+/** セレクトオプション型 */
+export interface SelectOption {
+	value: string;
+	label: string;
+}
+
+/**
+ * イベント選択オプションのqueryOptions（select変換付き）
+ * リリース編集ダイアログなどで使用
+ */
+export const eventSelectOptionsQueryOptions = () =>
+	queryOptions({
+		queryKey: ["events", "selectOptions"],
+		queryFn: () =>
+			ssrFetch<PaginatedResponse<Event>>("/api/admin/events?limit=500"),
+		staleTime: STALE_TIME.LONG,
+		select: (data): SelectOption[] =>
+			data.data.map((e) => ({
+				value: e.id,
+				label: e.seriesName ? `【${e.seriesName}】${e.name}` : e.name,
+			})),
+	});
+
+/**
+ * イベント日一覧のqueryOptions（生データ）
+ * 特定イベントのイベント日を取得
+ */
+export const eventDaysQueryOptions = (eventId: string | null) =>
+	queryOptions({
+		queryKey: ["events", eventId, "days"],
+		queryFn: () =>
+			eventId
+				? ssrFetch<EventDay[]>(`/api/admin/events/${eventId}/days`)
+				: Promise.resolve([]),
+		staleTime: STALE_TIME.LONG,
+		enabled: !!eventId,
+	});
+
+/**
+ * イベント日選択オプションのqueryOptions（select変換付き）
+ * 特定イベントのイベント日をセレクトオプションに変換
+ * 同じqueryKeyを使用してキャッシュを共有
+ */
+export const eventDaySelectOptionsQueryOptions = (eventId: string | null) =>
+	queryOptions({
+		queryKey: ["events", eventId, "days"],
+		queryFn: () =>
+			eventId
+				? ssrFetch<EventDay[]>(`/api/admin/events/${eventId}/days`)
+				: Promise.resolve([]),
+		staleTime: STALE_TIME.LONG,
+		enabled: !!eventId,
+		select: (days): SelectOption[] => {
+			const hasMultipleDays = days.length > 1;
+			return days.map((d) => ({
+				value: d.id,
+				label: hasMultipleDays ? `${d.dayNumber}日目（${d.date}）` : d.date,
+			}));
+		},
+	});
+
 // ===== イベントシリーズ =====
 
 interface EventSeriesListParams {
@@ -637,6 +699,62 @@ export const platformDetailQueryOptions = (code: string) =>
 		queryKey: ["platform", code],
 		queryFn: () => ssrFetch<Platform>(`/api/admin/master/platforms/${code}`),
 		staleTime: STALE_TIME.MEDIUM,
+	});
+
+/** グループ化されたセレクトオプション型 */
+export interface GroupedSelectOptions {
+	label: string;
+	options: SelectOption[];
+}
+
+/** プラットフォームカテゴリのラベル */
+const PLATFORM_CATEGORY_LABELS: Record<string, string> = {
+	streaming: "ストリーミング",
+	download: "ダウンロード",
+	video: "動画",
+	shop: "ショップ",
+	other: "その他",
+};
+
+/**
+ * プラットフォームグループ選択オプションのqueryOptions（select変換付き）
+ * サークル管理でのプラットフォーム選択に使用
+ */
+export const platformGroupedOptionsQueryOptions = () =>
+	queryOptions({
+		queryKey: ["platforms", "grouped"],
+		queryFn: () =>
+			ssrFetch<PaginatedResponse<Platform>>(
+				"/api/admin/master/platforms?limit=100",
+			),
+		staleTime: STALE_TIME.MEDIUM,
+		select: (data): GroupedSelectOptions[] => {
+			const categoryOrder = ["streaming", "download", "video", "shop", "other"];
+
+			const groups: Record<string, Platform[]> = {};
+			for (const p of data.data) {
+				const category = p.category || "other";
+				if (!groups[category]) groups[category] = [];
+				groups[category].push(p);
+			}
+
+			return Object.keys(groups)
+				.sort((a, b) => {
+					const aIndex = categoryOrder.indexOf(a);
+					const bIndex = categoryOrder.indexOf(b);
+					if (aIndex === -1 && bIndex === -1) return a.localeCompare(b, "ja");
+					if (aIndex === -1) return 1;
+					if (bIndex === -1) return -1;
+					return aIndex - bIndex;
+				})
+				.map((category) => ({
+					label: PLATFORM_CATEGORY_LABELS[category] || "その他",
+					options: groups[category].map((p) => ({
+						value: p.code,
+						label: p.name,
+					})),
+				}));
+		},
 	});
 
 // ===== マスターデータ: 名義種別 =====
