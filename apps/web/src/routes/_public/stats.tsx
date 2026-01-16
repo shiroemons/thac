@@ -181,7 +181,7 @@ function RankingsSection() {
 				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
 					<div className="flex items-center gap-2">
 						<Trophy className="h-5 w-5 text-yellow-500" aria-hidden="true" />
-						<h2 className="font-bold">人気原曲</h2>
+						<h2 className="font-bold">原曲アレンジ数</h2>
 					</div>
 					<Link
 						to="/original-songs"
@@ -213,7 +213,7 @@ function RankingsSection() {
 				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
 					<div className="flex items-center gap-2">
 						<Crown className="h-5 w-5 text-primary" aria-hidden="true" />
-						<h2 className="font-bold">アクティブサークル</h2>
+						<h2 className="font-bold">サークルリリース数</h2>
 					</div>
 					<Link
 						to="/circles"
@@ -245,7 +245,7 @@ function RankingsSection() {
 				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
 					<div className="flex items-center gap-2">
 						<Sparkles className="h-5 w-5 text-accent" aria-hidden="true" />
-						<h2 className="font-bold">アクティブアーティスト</h2>
+						<h2 className="font-bold">アーティスト楽曲数</h2>
 					</div>
 					<Link
 						to="/artists"
