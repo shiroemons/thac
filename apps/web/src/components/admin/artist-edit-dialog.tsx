@@ -3,6 +3,8 @@ import { createId } from "@thac/db";
 import { detectInitial } from "@thac/utils";
 import { useEffect, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
+import { useFormDirty } from "@/hooks/use-form-dirty";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
 	type Artist,
 	type InitialScript,
@@ -10,6 +12,7 @@ import {
 } from "@/lib/api-client";
 import { artistMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -64,6 +67,20 @@ export function ArtistEditDialog({
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<Artist>();
 
+	// フォーム変更検出フック
+	const formDirty = useFormDirty<ArtistFormData & Record<string, unknown>>();
+
+	// 未保存変更保護フック
+	const {
+		showConfirmDialog,
+		closeConfirmDialog,
+		confirmDiscard,
+		guardedOnOpenChange,
+	} = useUnsavedChangesGuard(onOpenChange, {
+		isDirty: formDirty.isDirty,
+		isOpen: open,
+	});
+
 	// useMutation hooks
 	const createMutation = useMutation(artistMutations.create(queryClient));
 	const updateMutation = useMutation(artistMutations.update(queryClient));
@@ -76,8 +93,9 @@ export function ArtistEditDialog({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
+			let initialFormState: ArtistFormData;
 			if (mode === "edit" && artist) {
-				setForm({
+				initialFormState = {
 					name: artist.name,
 					nameJa: artist.nameJa,
 					nameEn: artist.nameEn,
@@ -85,10 +103,11 @@ export function ArtistEditDialog({
 					notes: artist.notes,
 					initialScript: artist.initialScript,
 					nameInitial: artist.nameInitial,
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(artist.updatedAt);
 			} else {
-				setForm({
+				initialFormState = {
 					name: "",
 					nameJa: null,
 					nameEn: null,
@@ -96,15 +115,26 @@ export function ArtistEditDialog({
 					notes: null,
 					initialScript: "latin",
 					nameInitial: null,
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(null);
 			}
+			// フォームの初期状態を記録
+			formDirty.setInitialState(
+				initialFormState as ArtistFormData & Record<string, unknown>,
+			);
 			// ダイアログを開いた時にmutationのエラー状態をリセット
 			createMutation.reset();
 			updateMutation.reset();
 			clearConflict();
 		}
 	}, [open, mode, artist, clearConflict]);
+
+	// フォーム変更を検出
+	// biome-ignore lint/correctness/useExhaustiveDependencies: formDirty.checkDirtyは安定した参照を持つため、意図的に依存配列から除外
+	useEffect(() => {
+		formDirty.checkDirty(form as ArtistFormData & Record<string, unknown>);
+	}, [form]);
 
 	const handleNameChange = (name: string) => {
 		const initial = detectInitial(name);
@@ -147,6 +177,7 @@ export function ArtistEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -170,6 +201,7 @@ export function ArtistEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -222,7 +254,7 @@ export function ArtistEditDialog({
 
 	return (
 		<>
-			<Dialog open={open} onOpenChange={onOpenChange}>
+			<Dialog open={open} onOpenChange={guardedOnOpenChange}>
 				<DialogContent className="sm:max-w-[500px]">
 					<DialogHeader>
 						<DialogTitle>{title}</DialogTitle>
@@ -300,7 +332,7 @@ export function ArtistEditDialog({
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => onOpenChange(false)}
+							onClick={() => guardedOnOpenChange(false)}
 							disabled={isPending}
 						>
 							キャンセル
@@ -331,6 +363,18 @@ export function ArtistEditDialog({
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
 				isLoading={isPending}
+			/>
+
+			{/* 未保存変更確認ダイアログ */}
+			<ConfirmDialog
+				open={showConfirmDialog}
+				onOpenChange={(open) => !open && closeConfirmDialog()}
+				title="変更を破棄しますか？"
+				description="保存されていない変更があります。このまま閉じると変更は失われます。"
+				confirmLabel="破棄"
+				cancelLabel="編集を続ける"
+				variant="warning"
+				onConfirm={confirmDiscard}
 			/>
 		</>
 	);

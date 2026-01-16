@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -14,6 +15,8 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
+import { useFormDirty } from "@/hooks/use-form-dirty";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
 	eventDaysApi,
 	eventsApi,
@@ -30,6 +33,18 @@ import { ConflictDialog } from "./conflict-dialog";
 const RELEASE_TYPE_OPTIONS = Object.entries(RELEASE_TYPE_LABELS).map(
 	([value, label]) => ({ value, label }),
 );
+
+// フォームデータの型定義
+interface ReleaseFormData {
+	name: string | undefined;
+	nameJa: string | null | undefined;
+	nameEn: string | null | undefined;
+	releaseDate: string | null | undefined;
+	releaseType: ReleaseType | null | undefined;
+	eventId: string | null | undefined;
+	eventDayId: string | null | undefined;
+	notes: string | null | undefined;
+}
 
 interface ReleaseEditDialogProps {
 	open: boolean;
@@ -54,6 +69,20 @@ export function ReleaseEditDialog({
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<Release>();
 
+	// フォーム変更検出フック
+	const formDirty = useFormDirty<ReleaseFormData & Record<string, unknown>>();
+
+	// 未保存変更保護フック
+	const {
+		showConfirmDialog,
+		closeConfirmDialog,
+		confirmDiscard,
+		guardedOnOpenChange,
+	} = useUnsavedChangesGuard(onOpenChange, {
+		isDirty: formDirty.isDirty,
+		isOpen: open,
+	});
+
 	// useMutation hook
 	const updateMutation = useMutation(releaseMutations.update(queryClient));
 
@@ -65,7 +94,7 @@ export function ReleaseEditDialog({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open && release) {
-			setEditForm({
+			const initialFormData: ReleaseFormData = {
 				name: release.name,
 				nameJa: release.nameJa,
 				nameEn: release.nameEn,
@@ -74,9 +103,14 @@ export function ReleaseEditDialog({
 				eventId: release.eventId,
 				eventDayId: release.eventDayId,
 				notes: release.notes,
-			});
+			};
+			setEditForm(initialFormData);
 			setSelectedEventId(release.eventId);
 			setOriginalUpdatedAt(release.updatedAt);
+			// フォームの初期状態を記録
+			formDirty.setInitialState(
+				initialFormData as ReleaseFormData & Record<string, unknown>,
+			);
 			updateMutation.reset();
 			clearConflict();
 		}
@@ -142,6 +176,12 @@ export function ReleaseEditDialog({
 		}));
 	}, [eventDaysData]);
 
+	// フォーム変更を検出
+	// biome-ignore lint/correctness/useExhaustiveDependencies: formDirty.checkDirtyは安定した参照を持つため、意図的に依存配列から除外
+	useEffect(() => {
+		formDirty.checkDirty(editForm as ReleaseFormData & Record<string, unknown>);
+	}, [editForm]);
+
 	// 保存
 	const handleSave = (overrideUpdatedAt?: string) => {
 		updateMutation.mutate(
@@ -162,6 +202,7 @@ export function ReleaseEditDialog({
 			},
 			{
 				onSuccess: () => {
+					formDirty.reset();
 					onOpenChange(false);
 					onSuccess?.();
 				},
@@ -203,7 +244,7 @@ export function ReleaseEditDialog({
 
 	return (
 		<>
-			<Dialog open={open} onOpenChange={onOpenChange}>
+			<Dialog open={open} onOpenChange={guardedOnOpenChange}>
 				<DialogContent className="sm:max-w-[600px]">
 					<DialogHeader>
 						<DialogTitle>リリースの編集</DialogTitle>
@@ -347,7 +388,7 @@ export function ReleaseEditDialog({
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => onOpenChange(false)}
+							onClick={() => guardedOnOpenChange(false)}
 							disabled={isSubmitting}
 						>
 							キャンセル
@@ -372,6 +413,18 @@ export function ReleaseEditDialog({
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
 				isLoading={isSubmitting}
+			/>
+
+			{/* 未保存変更確認ダイアログ */}
+			<ConfirmDialog
+				open={showConfirmDialog}
+				onOpenChange={(open) => !open && closeConfirmDialog()}
+				title="変更を破棄しますか？"
+				description="保存されていない変更があります。このまま閉じると変更は失われます。"
+				confirmLabel="破棄"
+				cancelLabel="編集を続ける"
+				variant="warning"
+				onConfirm={confirmDiscard}
 			/>
 		</>
 	);

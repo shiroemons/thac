@@ -1,9 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
+import { useFormDirty } from "@/hooks/use-form-dirty";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import { isConflictError, type Platform } from "@/lib/api-client";
 import { platformMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -67,6 +70,20 @@ export function PlatformEditDialog({
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<Platform>();
 
+	// フォーム変更検出フック
+	const formDirty = useFormDirty<PlatformFormData & Record<string, unknown>>();
+
+	// 未保存変更保護フック
+	const {
+		showConfirmDialog,
+		closeConfirmDialog,
+		confirmDiscard,
+		guardedOnOpenChange,
+	} = useUnsavedChangesGuard(onOpenChange, {
+		isDirty: formDirty.isDirty,
+		isOpen: open,
+	});
+
 	// useMutation hooks
 	const createMutation = useMutation(platformMutations.create(queryClient));
 	const updateMutation = useMutation({
@@ -87,23 +104,30 @@ export function PlatformEditDialog({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
+			let initialFormState: PlatformFormData;
 			if (mode === "edit" && platform) {
-				setForm({
+				initialFormState = {
 					code: platform.code,
 					name: platform.name,
 					category: platform.category ?? "",
 					urlPattern: platform.urlPattern ?? "",
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(platform.updatedAt);
 			} else {
-				setForm({
+				initialFormState = {
 					code: "",
 					name: "",
 					category: "",
 					urlPattern: "",
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(null);
 			}
+			// フォームの初期状態を記録
+			formDirty.setInitialState(
+				initialFormState as PlatformFormData & Record<string, unknown>,
+			);
 			setOverrideUpdatedAt(null);
 			clearConflict();
 			// ダイアログを開いた時にmutationのエラー状態をリセット
@@ -111,6 +135,12 @@ export function PlatformEditDialog({
 			updateMutation.reset();
 		}
 	}, [open, mode, platform, clearConflict]);
+
+	// フォーム変更を検出
+	// biome-ignore lint/correctness/useExhaustiveDependencies: formDirty.checkDirtyは安定した参照を持つため、意図的に依存配列から除外
+	useEffect(() => {
+		formDirty.checkDirty(form as PlatformFormData & Record<string, unknown>);
+	}, [form]);
 
 	const handleSubmit = (submitOverrideUpdatedAt?: string) => {
 		if (!form.code.trim()) {
@@ -134,6 +164,7 @@ export function PlatformEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -157,6 +188,7 @@ export function PlatformEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -205,7 +237,7 @@ export function PlatformEditDialog({
 
 	return (
 		<>
-			<Dialog open={open} onOpenChange={onOpenChange}>
+			<Dialog open={open} onOpenChange={guardedOnOpenChange}>
 				<DialogContent className="sm:max-w-[500px]">
 					<DialogHeader>
 						<DialogTitle>{title}</DialogTitle>
@@ -281,7 +313,7 @@ export function PlatformEditDialog({
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => onOpenChange(false)}
+							onClick={() => guardedOnOpenChange(false)}
 							disabled={isPending}
 						>
 							キャンセル
@@ -317,6 +349,18 @@ export function PlatformEditDialog({
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
 				isLoading={isPending}
+			/>
+
+			{/* 未保存変更確認ダイアログ */}
+			<ConfirmDialog
+				open={showConfirmDialog}
+				onOpenChange={(open) => !open && closeConfirmDialog()}
+				title="変更を破棄しますか？"
+				description="保存されていない変更があります。このまま閉じると変更は失われます。"
+				confirmLabel="破棄"
+				cancelLabel="編集を続ける"
+				variant="warning"
+				onConfirm={confirmDiscard}
 			/>
 		</>
 	);

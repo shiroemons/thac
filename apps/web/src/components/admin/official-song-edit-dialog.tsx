@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
+import { useFormDirty } from "@/hooks/use-form-dirty";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
 	isConflictError,
 	type OfficialSong,
@@ -10,6 +12,7 @@ import {
 } from "@/lib/api-client";
 import { officialSongMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -74,6 +77,22 @@ export function OfficialSongEditDialog({
 	);
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<OfficialSong>();
+
+	// フォーム変更検出フック
+	const formDirty = useFormDirty<
+		OfficialSongFormData & Record<string, unknown>
+	>();
+
+	// 未保存変更保護フック
+	const {
+		showConfirmDialog,
+		closeConfirmDialog,
+		confirmDiscard,
+		guardedOnOpenChange,
+	} = useUnsavedChangesGuard(onOpenChange, {
+		isDirty: formDirty.isDirty,
+		isOpen: open,
+	});
 
 	// useMutation hooks
 	const createMutation = useMutation(officialSongMutations.create(queryClient));
@@ -182,8 +201,9 @@ export function OfficialSongEditDialog({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
+			let initialFormState: OfficialSongFormData;
 			if (mode === "edit" && song) {
-				setForm({
+				initialFormState = {
 					id: song.id,
 					officialWorkId: song.officialWorkId,
 					trackNumber: song.trackNumber,
@@ -195,10 +215,11 @@ export function OfficialSongEditDialog({
 					isOriginal: song.isOriginal,
 					sourceSongId: song.sourceSongId,
 					notes: song.notes,
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(song.updatedAt);
 			} else {
-				setForm({
+				initialFormState = {
 					id: "",
 					officialWorkId: null,
 					trackNumber: null,
@@ -210,15 +231,28 @@ export function OfficialSongEditDialog({
 					isOriginal: true,
 					sourceSongId: null,
 					notes: null,
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(null);
 			}
+			// フォームの初期状態を記録
+			formDirty.setInitialState(
+				initialFormState as OfficialSongFormData & Record<string, unknown>,
+			);
 			// ダイアログを開いた時にmutationのエラー状態をリセット
 			createMutation.reset();
 			updateMutation.reset();
 			clearConflict();
 		}
 	}, [open, mode, song, clearConflict]);
+
+	// フォーム変更を検出
+	// biome-ignore lint/correctness/useExhaustiveDependencies: formDirty.checkDirtyは安定した参照を持つため、意図的に依存配列から除外
+	useEffect(() => {
+		formDirty.checkDirty(
+			form as OfficialSongFormData & Record<string, unknown>,
+		);
+	}, [form]);
 
 	const handleWorkChange = (workId: string | null) => {
 		if (mode === "create" && workId) {
@@ -260,6 +294,7 @@ export function OfficialSongEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -286,6 +321,7 @@ export function OfficialSongEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -342,7 +378,7 @@ export function OfficialSongEditDialog({
 
 	return (
 		<>
-			<Dialog open={open} onOpenChange={onOpenChange}>
+			<Dialog open={open} onOpenChange={guardedOnOpenChange}>
 				<DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
 					<DialogHeader>
 						<DialogTitle>{title}</DialogTitle>
@@ -512,7 +548,7 @@ export function OfficialSongEditDialog({
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => onOpenChange(false)}
+							onClick={() => guardedOnOpenChange(false)}
 							disabled={isPending}
 						>
 							キャンセル
@@ -543,6 +579,18 @@ export function OfficialSongEditDialog({
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
 				isLoading={isPending}
+			/>
+
+			{/* 未保存変更確認ダイアログ */}
+			<ConfirmDialog
+				open={showConfirmDialog}
+				onOpenChange={(open) => !open && closeConfirmDialog()}
+				title="変更を破棄しますか？"
+				description="保存されていない変更があります。このまま閉じると変更は失われます。"
+				confirmLabel="破棄"
+				cancelLabel="編集を続ける"
+				variant="warning"
+				onConfirm={confirmDiscard}
 			/>
 		</>
 	);

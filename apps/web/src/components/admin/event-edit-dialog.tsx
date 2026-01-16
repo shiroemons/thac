@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createId } from "@thac/db";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
+import { useFormDirty } from "@/hooks/use-form-dirty";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
 	type Event,
 	type EventWithDays,
@@ -11,6 +13,7 @@ import {
 import { suggestFromEventName } from "@/lib/event-name-parser";
 import { eventMutations, eventSeriesMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -64,6 +67,20 @@ export function EventEditDialog({
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<Event>();
 
+	// フォーム変更検出フック
+	const formDirty = useFormDirty<EventFormData & Record<string, unknown>>();
+
+	// 未保存変更保護フック
+	const {
+		showConfirmDialog,
+		closeConfirmDialog,
+		confirmDiscard,
+		guardedOnOpenChange,
+	} = useUnsavedChangesGuard(onOpenChange, {
+		isDirty: formDirty.isDirty,
+		isOpen: open,
+	});
+
 	// シリーズ新規作成用
 	const [isSeriesDialogOpen, setIsSeriesDialogOpen] = useState(false);
 	const [newSeriesName, setNewSeriesName] = useState("");
@@ -106,27 +123,34 @@ export function EventEditDialog({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
+			let initialFormState: EventFormData;
 			if (mode === "edit" && event) {
-				setForm({
+				initialFormState = {
 					name: event.name,
 					eventSeriesId: event.eventSeriesId,
 					edition: event.edition,
 					venue: event.venue,
 					startDate: event.startDate,
 					endDate: event.endDate,
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(event.updatedAt);
 			} else {
-				setForm({
+				initialFormState = {
 					name: "",
 					eventSeriesId: null,
 					edition: null,
 					venue: null,
 					startDate: null,
 					endDate: null,
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(null);
 			}
+			// フォームの初期状態を記録
+			formDirty.setInitialState(
+				initialFormState as EventFormData & Record<string, unknown>,
+			);
 			// ダイアログを開いた時にmutationのエラー状態をリセット
 			createMutation.reset();
 			updateMutation.reset();
@@ -134,6 +158,12 @@ export function EventEditDialog({
 			clearConflict();
 		}
 	}, [open, mode, event, clearConflict]);
+
+	// フォーム変更を検出
+	// biome-ignore lint/correctness/useExhaustiveDependencies: formDirty.checkDirtyは安定した参照を持つため、意図的に依存配列から除外
+	useEffect(() => {
+		formDirty.checkDirty(form as EventFormData & Record<string, unknown>);
+	}, [form]);
 
 	const handleNameChange = (name: string) => {
 		const suggestion = suggest(name);
@@ -188,6 +218,7 @@ export function EventEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -210,6 +241,7 @@ export function EventEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -261,7 +293,7 @@ export function EventEditDialog({
 
 	return (
 		<>
-			<Dialog open={open} onOpenChange={onOpenChange}>
+			<Dialog open={open} onOpenChange={guardedOnOpenChange}>
 				<DialogContent className="sm:max-w-[500px]">
 					<DialogHeader>
 						<DialogTitle>{title}</DialogTitle>
@@ -372,7 +404,7 @@ export function EventEditDialog({
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => onOpenChange(false)}
+							onClick={() => guardedOnOpenChange(false)}
 							disabled={isPending}
 						>
 							キャンセル
@@ -442,6 +474,18 @@ export function EventEditDialog({
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
 				isLoading={isPending}
+			/>
+
+			{/* 未保存変更確認ダイアログ */}
+			<ConfirmDialog
+				open={showConfirmDialog}
+				onOpenChange={(open) => !open && closeConfirmDialog()}
+				title="変更を破棄しますか？"
+				description="保存されていない変更があります。このまま閉じると変更は失われます。"
+				confirmLabel="破棄"
+				cancelLabel="編集を続ける"
+				variant="warning"
+				onConfirm={confirmDiscard}
 			/>
 		</>
 	);

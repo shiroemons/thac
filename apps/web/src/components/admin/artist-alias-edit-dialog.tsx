@@ -3,6 +3,8 @@ import { createId } from "@thac/db";
 import { detectInitial } from "@thac/utils";
 import { useEffect, useMemo, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
+import { useFormDirty } from "@/hooks/use-form-dirty";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
 	type Artist,
 	type ArtistAlias,
@@ -13,6 +15,7 @@ import {
 } from "@/lib/api-client";
 import { artistAliasMutations, artistMutations } from "@/lib/mutation-options";
 import { Button } from "../ui/button";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import {
 	Dialog,
 	DialogContent,
@@ -71,6 +74,22 @@ export function ArtistAliasEditDialog({
 	const { conflictState, setConflict, clearConflict } =
 		useConflictHandler<ArtistAlias>();
 
+	// フォーム変更検出フック
+	const formDirty = useFormDirty<
+		ArtistAliasFormData & Record<string, unknown>
+	>();
+
+	// 未保存変更保護フック
+	const {
+		showConfirmDialog,
+		closeConfirmDialog,
+		confirmDiscard,
+		guardedOnOpenChange,
+	} = useUnsavedChangesGuard(onOpenChange, {
+		isDirty: formDirty.isDirty,
+		isOpen: open,
+	});
+
 	// アーティスト作成用ネストダイアログ
 	const [isArtistCreateDialogOpen, setIsArtistCreateDialogOpen] =
 		useState(false);
@@ -116,8 +135,9 @@ export function ArtistAliasEditDialog({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: mutation.resetは毎回新しい参照を返す可能性があるため、意図的に依存配列から除外
 	useEffect(() => {
 		if (open) {
+			let initialFormState: ArtistAliasFormData;
 			if (mode === "edit" && alias) {
-				setForm({
+				initialFormState = {
 					name: alias.name,
 					artistId: alias.artistId,
 					aliasTypeCode: alias.aliasTypeCode,
@@ -125,10 +145,11 @@ export function ArtistAliasEditDialog({
 					nameInitial: alias.nameInitial,
 					periodFrom: alias.periodFrom,
 					periodTo: alias.periodTo,
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(alias.updatedAt);
 			} else {
-				setForm({
+				initialFormState = {
 					name: "",
 					artistId: defaultArtistId || "",
 					aliasTypeCode: "main",
@@ -136,9 +157,14 @@ export function ArtistAliasEditDialog({
 					nameInitial: null,
 					periodFrom: null,
 					periodTo: null,
-				});
+				};
+				setForm(initialFormState);
 				setOriginalUpdatedAt(null);
 			}
+			// フォームの初期状態を記録
+			formDirty.setInitialState(
+				initialFormState as ArtistAliasFormData & Record<string, unknown>,
+			);
 			// ダイアログを開いた時にmutationのエラー状態をリセット
 			createMutation.reset();
 			updateMutation.reset();
@@ -146,6 +172,12 @@ export function ArtistAliasEditDialog({
 			clearConflict();
 		}
 	}, [open, mode, alias, defaultArtistId, clearConflict]);
+
+	// フォーム変更を検出
+	// biome-ignore lint/correctness/useExhaustiveDependencies: formDirty.checkDirtyは安定した参照を持つため、意図的に依存配列から除外
+	useEffect(() => {
+		formDirty.checkDirty(form as ArtistAliasFormData & Record<string, unknown>);
+	}, [form]);
 
 	const handleNameChange = (name: string) => {
 		const initial = detectInitial(name);
@@ -202,6 +234,7 @@ export function ArtistAliasEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -225,6 +258,7 @@ export function ArtistAliasEditDialog({
 				},
 				{
 					onSuccess: () => {
+						formDirty.reset();
 						onOpenChange(false);
 						onSuccess?.();
 					},
@@ -278,7 +312,7 @@ export function ArtistAliasEditDialog({
 
 	return (
 		<>
-			<Dialog open={open} onOpenChange={onOpenChange}>
+			<Dialog open={open} onOpenChange={guardedOnOpenChange}>
 				<DialogContent className="sm:max-w-[500px]">
 					<DialogHeader>
 						<DialogTitle>{title}</DialogTitle>
@@ -375,7 +409,7 @@ export function ArtistAliasEditDialog({
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => onOpenChange(false)}
+							onClick={() => guardedOnOpenChange(false)}
 							disabled={isPending}
 						>
 							キャンセル
@@ -500,6 +534,18 @@ export function ArtistAliasEditDialog({
 				onOverwrite={handleOverwrite}
 				onContinueEditing={handleContinueEditing}
 				isLoading={isPending}
+			/>
+
+			{/* 未保存変更確認ダイアログ */}
+			<ConfirmDialog
+				open={showConfirmDialog}
+				onOpenChange={(open) => !open && closeConfirmDialog()}
+				title="変更を破棄しますか？"
+				description="保存されていない変更があります。このまま閉じると変更は失われます。"
+				confirmLabel="破棄"
+				cancelLabel="編集を続ける"
+				variant="warning"
+				onConfirm={confirmDiscard}
 			/>
 		</>
 	);
