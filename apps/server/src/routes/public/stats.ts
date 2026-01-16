@@ -225,8 +225,8 @@ statsRouter.get("/recent-updates", async (c) => {
 			data: recentReleasesResult.map((row) => ({
 				id: row.id,
 				title: row.title,
-				circleName: row.circleName,
-				circleId: row.circleId,
+				circleName: row.circleName ?? null,
+				circleId: row.circleId ?? null,
 				date: row.updatedAt?.toISOString() ?? null,
 				type:
 					row.createdAt?.getTime() === row.updatedAt?.getTime()
