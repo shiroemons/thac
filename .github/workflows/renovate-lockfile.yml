@@ -2,6 +2,7 @@ name: Update Lockfile
 
 on:
   pull_request:
+    types: [opened]
     branches: [main]
     paths:
       - 'package.json'
