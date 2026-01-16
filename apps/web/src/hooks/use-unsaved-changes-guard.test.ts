@@ -4,12 +4,17 @@
  * 未保存変更がある場合のダイアログ閉じる操作を保護するカスタムフックをテストする。
  */
 
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
 
-// useBlocker をモックしてテストから除外
+// shouldBlockFn をキャプチャするための変数
+let capturedShouldBlockFn: (() => boolean) | null = null;
+
+// useBlocker をモックして shouldBlockFn をキャプチャ
 mock.module("@tanstack/react-router", () => ({
-	useBlocker: mock(() => {}),
+	useBlocker: mock((options: { shouldBlockFn: () => boolean }) => {
+		capturedShouldBlockFn = options.shouldBlockFn;
+	}),
 }));
 
 // モック後にインポート
@@ -243,6 +248,96 @@ describe("useUnsavedChangesGuard", () => {
 
 			expect(onOpenChange).toHaveBeenCalledWith(true);
 			expect(result.current.showConfirmDialog).toBe(false);
+		});
+	});
+
+	describe("useBlocker の shouldBlockFn", () => {
+		// window.confirm のモック用
+		let originalConfirm: typeof window.confirm;
+
+		beforeEach(() => {
+			originalConfirm = window.confirm;
+			capturedShouldBlockFn = null;
+		});
+
+		afterEach(() => {
+			window.confirm = originalConfirm;
+		});
+
+		test("isOpen=false の場合は false を返す（ブロックしない）", () => {
+			const onOpenChange = mock(() => {});
+			renderHook(() =>
+				useUnsavedChangesGuard(onOpenChange, {
+					isDirty: true,
+					isOpen: false,
+				}),
+			);
+
+			expect(capturedShouldBlockFn).not.toBeNull();
+			expect(capturedShouldBlockFn!()).toBe(false);
+		});
+
+		test("isDirty=false の場合は false を返す（ブロックしない）", () => {
+			const onOpenChange = mock(() => {});
+			renderHook(() =>
+				useUnsavedChangesGuard(onOpenChange, {
+					isDirty: false,
+					isOpen: true,
+				}),
+			);
+
+			expect(capturedShouldBlockFn).not.toBeNull();
+			expect(capturedShouldBlockFn!()).toBe(false);
+		});
+
+		test("allowClose=true の場合は false を返す（ブロックしない）", () => {
+			const onOpenChange = mock(() => {});
+			renderHook(() =>
+				useUnsavedChangesGuard(onOpenChange, {
+					isDirty: true,
+					isOpen: true,
+					allowClose: true,
+				}),
+			);
+
+			expect(capturedShouldBlockFn).not.toBeNull();
+			expect(capturedShouldBlockFn!()).toBe(false);
+		});
+
+		test("isDirty=true, isOpen=true で window.confirm が true なら false を返す（ブロックしない）", () => {
+			window.confirm = mock(() => true);
+
+			const onOpenChange = mock(() => {});
+			renderHook(() =>
+				useUnsavedChangesGuard(onOpenChange, {
+					isDirty: true,
+					isOpen: true,
+				}),
+			);
+
+			expect(capturedShouldBlockFn).not.toBeNull();
+			expect(capturedShouldBlockFn!()).toBe(false);
+			expect(window.confirm).toHaveBeenCalledWith(
+				"変更が保存されていません。このページを離れますか？",
+			);
+		});
+
+		test("isDirty=true, isOpen=true で window.confirm が false なら true を返す（ブロックする）", () => {
+			window.confirm = mock(() => false);
+
+			const onOpenChange = mock(() => {});
+			renderHook(() =>
+				useUnsavedChangesGuard(onOpenChange, {
+					isDirty: true,
+					isOpen: true,
+				}),
+			);
+
+			expect(capturedShouldBlockFn).not.toBeNull();
+			expect(capturedShouldBlockFn!()).toBe(true);
+			expect(window.confirm).toHaveBeenCalledWith(
+				"変更が保存されていません。このページを離れますか？",
+			);
 		});
 	});
 });
