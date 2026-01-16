@@ -49,7 +49,7 @@
 		"@testing-library/dom": "^10.4.0",
 		"@testing-library/react": "^16.2.0",
 		"@thac/config": "workspace:*",
-		"@types/react": "19.2.7",
+		"@types/react": "19.2.8",
 		"@types/react-dom": "19.2.3",
 		"@typescript-eslint/parser": "^8.51.0",
 		"@vitejs/plugin-react": "^5.0.4",
