@@ -2,7 +2,7 @@ name: Update Lockfile
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize]
     branches: [main]
     paths:
       - 'package.json'
@@ -14,22 +14,42 @@ permissions:
 
 jobs:
   update-lockfile:
-    if: startsWith(github.head_ref, 'renovate/')
+    # Renovate PRのみ対象
+    if: |
+      startsWith(github.head_ref, 'renovate/') &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    env:
+      HEAD_REF: ${{ github.head_ref }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 2
+
+      - name: Check if last commit is from github-actions[bot]
+        id: check-author
+        run: |
+          LAST_AUTHOR=$(git log -1 --format='%an')
+          echo "Last commit author: $LAST_AUTHOR"
+          if [ "$LAST_AUTHOR" = "github-actions[bot]" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
 
       - uses: oven-sh/setup-bun@v2
+        if: steps.check-author.outputs.skip != 'true'
         with:
           bun-version: "1.3.6"
 
       - name: Update lockfile
+        if: steps.check-author.outputs.skip != 'true'
         run: bun install --no-frozen-lockfile
 
       - name: Commit and push changes
+        if: steps.check-author.outputs.skip != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
