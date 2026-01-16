@@ -274,7 +274,7 @@ describe("useUnsavedChangesGuard", () => {
 			);
 
 			expect(capturedShouldBlockFn).not.toBeNull();
-			expect(capturedShouldBlockFn!()).toBe(false);
+			expect(capturedShouldBlockFn?.()).toBe(false);
 		});
 
 		test("isDirty=false の場合は false を返す（ブロックしない）", () => {
@@ -287,7 +287,7 @@ describe("useUnsavedChangesGuard", () => {
 			);
 
 			expect(capturedShouldBlockFn).not.toBeNull();
-			expect(capturedShouldBlockFn!()).toBe(false);
+			expect(capturedShouldBlockFn?.()).toBe(false);
 		});
 
 		test("allowClose=true の場合は false を返す（ブロックしない）", () => {
@@ -301,7 +301,7 @@ describe("useUnsavedChangesGuard", () => {
 			);
 
 			expect(capturedShouldBlockFn).not.toBeNull();
-			expect(capturedShouldBlockFn!()).toBe(false);
+			expect(capturedShouldBlockFn?.()).toBe(false);
 		});
 
 		test("isDirty=true, isOpen=true で window.confirm が true なら false を返す（ブロックしない）", () => {
@@ -316,7 +316,7 @@ describe("useUnsavedChangesGuard", () => {
 			);
 
 			expect(capturedShouldBlockFn).not.toBeNull();
-			expect(capturedShouldBlockFn!()).toBe(false);
+			expect(capturedShouldBlockFn?.()).toBe(false);
 			expect(window.confirm).toHaveBeenCalledWith(
 				"変更が保存されていません。このページを離れますか？",
 			);
@@ -334,7 +334,7 @@ describe("useUnsavedChangesGuard", () => {
 			);
 
 			expect(capturedShouldBlockFn).not.toBeNull();
-			expect(capturedShouldBlockFn!()).toBe(true);
+			expect(capturedShouldBlockFn?.()).toBe(true);
 			expect(window.confirm).toHaveBeenCalledWith(
 				"変更が保存されていません。このページを離れますか？",
 			);
