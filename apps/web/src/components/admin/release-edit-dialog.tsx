@@ -23,6 +23,7 @@ import {
 	type ReleaseType,
 } from "@/lib/api-client";
 import { releaseMutations } from "@/lib/mutation-options";
+import { getErrorMessage } from "@/lib/utils";
 import { ConflictDialog } from "./conflict-dialog";
 
 // 作品タイプのオプション
@@ -208,11 +209,11 @@ export function ReleaseEditDialog({
 						<DialogTitle>リリースの編集</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{mutationError && !isConflictError(mutationError) && (
+						{mutationError && !isConflictError(mutationError) ? (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{mutationError.message}
+								{getErrorMessage(mutationError)}
 							</div>
-						)}
+						) : null}
 						<div className="grid gap-4">
 							<div className="grid gap-2">
 								<Label htmlFor="release-name">

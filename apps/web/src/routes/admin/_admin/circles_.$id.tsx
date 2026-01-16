@@ -53,6 +53,7 @@ import {
 import { createCircleDetailHead } from "@/lib/head";
 import { circleLinkMutations, circleMutations } from "@/lib/mutation-options";
 import { circleFullQueryOptions } from "@/lib/query-options";
+import { getErrorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/_admin/circles_/$id")({
 	loader: ({ context, params }) =>
@@ -706,14 +707,13 @@ function CircleDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{(linkCreateMutation.error || linkUpdateMutation.error) && (
+						{linkCreateMutation.error || linkUpdateMutation.error ? (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{
-									(linkCreateMutation.error || linkUpdateMutation.error)
-										?.message
-								}
+								{getErrorMessage(
+									linkCreateMutation.error || linkUpdateMutation.error,
+								)}
 							</div>
-						)}
+						) : null}
 
 						<div className="grid gap-2">
 							<Label>
@@ -836,7 +836,7 @@ function CircleDetailPage() {
 						</p>
 						{deleteMutation.error && (
 							<p className="mt-2 text-error text-sm">
-								{deleteMutation.error.message}
+								{getErrorMessage(deleteMutation.error)}
 							</p>
 						)}
 					</div>
@@ -869,7 +869,7 @@ function CircleDetailPage() {
 						</p>
 						{linkDeleteMutation.error && (
 							<p className="mt-2 text-error text-sm">
-								{linkDeleteMutation.error.message}
+								{getErrorMessage(linkDeleteMutation.error)}
 							</p>
 						)}
 					</div>

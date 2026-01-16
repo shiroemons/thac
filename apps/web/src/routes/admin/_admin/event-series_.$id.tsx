@@ -28,6 +28,7 @@ import type { EventSeries } from "@/lib/api-client";
 import { createEventSeriesDetailHead } from "@/lib/head";
 import { eventSeriesMutations } from "@/lib/mutation-options";
 import { eventSeriesDetailQueryOptions } from "@/lib/query-options";
+import { getErrorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/_admin/event-series_/$id")({
 	loader: ({ context, params }) =>
@@ -262,13 +263,11 @@ function EventSeriesDetailPage() {
 							/>
 						</div>
 					</div>
-					{updateMutation.error && (
+					{updateMutation.error ? (
 						<div className="mb-4 text-error text-sm">
-							{updateMutation.error instanceof Error
-								? updateMutation.error.message
-								: "更新に失敗しました"}
+							{getErrorMessage(updateMutation.error, "更新に失敗しました")}
 						</div>
-					)}
+					) : null}
 					<DialogFooter>
 						<Button
 							variant="outline"

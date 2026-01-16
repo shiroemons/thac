@@ -58,6 +58,7 @@ import {
 	eventSeriesMutations,
 } from "@/lib/mutation-options";
 import { eventsListQueryOptions } from "@/lib/query-options";
+import { getErrorMessage } from "@/lib/utils";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
@@ -984,15 +985,14 @@ function EventsPage() {
 								}
 							/>
 						</div>
-						{(createDayMutation.error || updateDayMutation.error) && (
+						{createDayMutation.error || updateDayMutation.error ? (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{(createDayMutation.error || updateDayMutation.error) instanceof
-								Error
-									? (createDayMutation.error || updateDayMutation.error)
-											?.message
-									: "開催日の保存に失敗しました"}
+								{getErrorMessage(
+									createDayMutation.error || updateDayMutation.error,
+									"開催日の保存に失敗しました",
+								)}
 							</div>
-						)}
+						) : null}
 					</div>
 					<DialogFooter>
 						<Button variant="ghost" onClick={() => setIsDayDialogOpen(false)}>

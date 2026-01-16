@@ -72,6 +72,7 @@ import {
 	trackMutations,
 } from "@/lib/mutation-options";
 import { releaseFullQueryOptions } from "@/lib/query-options";
+import { getErrorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/_admin/releases_/$id")({
 	loader: ({ context, params }) =>
@@ -1623,12 +1624,13 @@ function ReleaseDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{(discCreateMutation.error || discUpdateMutation.error) && (
+						{discCreateMutation.error || discUpdateMutation.error ? (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{discCreateMutation.error?.message ||
-									discUpdateMutation.error?.message}
+								{getErrorMessage(
+									discCreateMutation.error || discUpdateMutation.error,
+								)}
 							</div>
-						)}
+						) : null}
 						<div className="grid gap-2">
 							<Label>
 								ディスク番号 <span className="text-error">*</span>
@@ -1697,7 +1699,7 @@ function ReleaseDetailPage() {
 					<div className="grid gap-4 py-4">
 						{circleAddMutation.error && (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{circleAddMutation.error.message}
+								{getErrorMessage(circleAddMutation.error)}
 							</div>
 						)}
 						<div className="grid gap-2">
@@ -1766,12 +1768,13 @@ function ReleaseDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{(trackCreateMutation.error || trackUpdateMutation.error) && (
+						{trackCreateMutation.error || trackUpdateMutation.error ? (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{trackCreateMutation.error?.message ||
-									trackUpdateMutation.error?.message}
+								{getErrorMessage(
+									trackCreateMutation.error || trackUpdateMutation.error,
+								)}
 							</div>
-						)}
+						) : null}
 						<div className="grid gap-2">
 							<Label>
 								トラック名 <span className="text-error">*</span>
@@ -2018,12 +2021,13 @@ function ReleaseDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{(creditCreateMutation.error || creditUpdateMutation.error) && (
+						{creditCreateMutation.error || creditUpdateMutation.error ? (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{creditCreateMutation.error?.message ||
-									creditUpdateMutation.error?.message}
+								{getErrorMessage(
+									creditCreateMutation.error || creditUpdateMutation.error,
+								)}
 							</div>
-						)}
+						) : null}
 
 						<div className="grid gap-2">
 							<Label>
@@ -2168,13 +2172,15 @@ function ReleaseDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{(publicationCreateMutation.error ||
-							publicationUpdateMutation.error) && (
+						{publicationCreateMutation.error ||
+						publicationUpdateMutation.error ? (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{publicationCreateMutation.error?.message ||
-									publicationUpdateMutation.error?.message}
+								{getErrorMessage(
+									publicationCreateMutation.error ||
+										publicationUpdateMutation.error,
+								)}
 							</div>
-						)}
+						) : null}
 
 						<div className="grid gap-2">
 							<Label>
@@ -2261,12 +2267,13 @@ function ReleaseDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{(janCodeCreateMutation.error || janCodeUpdateMutation.error) && (
+						{janCodeCreateMutation.error || janCodeUpdateMutation.error ? (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{janCodeCreateMutation.error?.message ||
-									janCodeUpdateMutation.error?.message}
+								{getErrorMessage(
+									janCodeCreateMutation.error || janCodeUpdateMutation.error,
+								)}
 							</div>
-						)}
+						) : null}
 
 						<div className="grid gap-2">
 							<Label>
@@ -2414,7 +2421,7 @@ function ReleaseDetailPage() {
 						</p>
 						{discDeleteMutation.error && (
 							<p className="mt-2 text-error text-sm">
-								{discDeleteMutation.error.message}
+								{getErrorMessage(discDeleteMutation.error)}
 							</p>
 						)}
 					</div>
@@ -2446,7 +2453,7 @@ function ReleaseDetailPage() {
 						</p>
 						{circleRemoveMutation.error && (
 							<p className="mt-2 text-error text-sm">
-								{circleRemoveMutation.error.message}
+								{getErrorMessage(circleRemoveMutation.error)}
 							</p>
 						)}
 					</div>
@@ -2475,7 +2482,7 @@ function ReleaseDetailPage() {
 						</p>
 						{trackDeleteMutation.error && (
 							<p className="mt-2 text-error text-sm">
-								{trackDeleteMutation.error.message}
+								{getErrorMessage(trackDeleteMutation.error)}
 							</p>
 						)}
 					</div>
@@ -2504,7 +2511,7 @@ function ReleaseDetailPage() {
 						</p>
 						{creditDeleteMutation.error && (
 							<p className="mt-2 text-error text-sm">
-								{creditDeleteMutation.error.message}
+								{getErrorMessage(creditDeleteMutation.error)}
 							</p>
 						)}
 					</div>
@@ -2533,7 +2540,7 @@ function ReleaseDetailPage() {
 						</p>
 						{publicationDeleteMutation.error && (
 							<p className="mt-2 text-error text-sm">
-								{publicationDeleteMutation.error.message}
+								{getErrorMessage(publicationDeleteMutation.error)}
 							</p>
 						)}
 					</div>
@@ -2562,7 +2569,7 @@ function ReleaseDetailPage() {
 						</p>
 						{janCodeDeleteMutation.error && (
 							<p className="mt-2 text-error text-sm">
-								{janCodeDeleteMutation.error.message}
+								{getErrorMessage(janCodeDeleteMutation.error)}
 							</p>
 						)}
 					</div>

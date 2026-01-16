@@ -30,6 +30,7 @@ import type { EventDay } from "@/lib/api-client";
 import { createEventDetailHead } from "@/lib/head";
 import { eventDayMutations, eventMutations } from "@/lib/mutation-options";
 import { eventDetailQueryOptions } from "@/lib/query-options";
+import { getErrorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/_admin/events_/$id")({
 	loader: ({ context, params }) =>
@@ -364,11 +365,13 @@ function EventDetailPage() {
 						</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						{(dayCreateMutation.error || dayUpdateMutation.error) && (
+						{dayCreateMutation.error || dayUpdateMutation.error ? (
 							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
-								{(dayCreateMutation.error || dayUpdateMutation.error)?.message}
+								{getErrorMessage(
+									dayCreateMutation.error || dayUpdateMutation.error,
+								)}
 							</div>
-						)}
+						) : null}
 						<div className="grid gap-2">
 							<Label>
 								日目 <span className="text-error">*</span>
@@ -447,7 +450,7 @@ function EventDetailPage() {
 						</p>
 						{deleteMutation.error && (
 							<p className="mt-2 text-error text-sm">
-								{deleteMutation.error.message}
+								{getErrorMessage(deleteMutation.error)}
 							</p>
 						)}
 					</div>
@@ -476,7 +479,7 @@ function EventDetailPage() {
 						</p>
 						{dayDeleteMutation.error && (
 							<p className="mt-2 text-error text-sm">
-								{dayDeleteMutation.error.message}
+								{getErrorMessage(dayDeleteMutation.error)}
 							</p>
 						)}
 					</div>
