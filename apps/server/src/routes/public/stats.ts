@@ -114,6 +114,7 @@ statsRouter.get("/rankings", async (c) => {
 		const [popularSongsResult, activeCirclesResult, activeArtistsResult] =
 			await Promise.all([
 				// 人気楽曲: track_official_songsをofficial_song_idでグループ化し、カウントで降順ソート
+				// officialWorkId "0799"（その他）を除外
 				db
 					.select({
 						id: officialSongs.id,
@@ -125,7 +126,13 @@ statsRouter.get("/rankings", async (c) => {
 						officialSongs,
 						eq(trackOfficialSongs.officialSongId, officialSongs.id),
 					)
-					.where(isNotNull(trackOfficialSongs.officialSongId))
+					.where(
+						and(
+							isNotNull(trackOfficialSongs.officialSongId),
+							isNotNull(officialSongs.officialWorkId),
+							ne(officialSongs.officialWorkId, "0799"),
+						),
+					)
 					.groupBy(officialSongs.id)
 					.orderBy(desc(count(trackOfficialSongs.trackId)))
 					.limit(5),

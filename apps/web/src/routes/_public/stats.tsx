@@ -106,15 +106,22 @@ interface RankingItemProps {
 
 function RankingItem({ rank, name, count, unit, href }: RankingItemProps) {
 	const getRankStyle = (r: number) => {
+		if (r <= 3) {
+			return ""; // メダル絵文字表示時は背景なし
+		}
+		return "bg-base-content/10 text-base-content/70";
+	};
+
+	const getMedalOrRank = (r: number) => {
 		switch (r) {
 			case 1:
-				return "bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-md";
+				return "🥇";
 			case 2:
-				return "bg-gradient-to-br from-gray-300 to-gray-400 text-white shadow-sm";
+				return "🥈";
 			case 3:
-				return "bg-gradient-to-br from-amber-600 to-amber-700 text-white shadow-sm";
+				return "🥉";
 			default:
-				return "bg-base-content/10 text-base-content/70";
+				return r;
 		}
 	};
 
@@ -127,7 +134,7 @@ function RankingItem({ rank, name, count, unit, href }: RankingItemProps) {
 			<span
 				className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold text-sm ${getRankStyle(rank)}`}
 			>
-				{rank}
+				{getMedalOrRank(rank)}
 			</span>
 			<span className="min-w-0 flex-1 truncate font-medium transition-colors group-hover:text-primary">
 				{name}
@@ -139,10 +146,33 @@ function RankingItem({ rank, name, count, unit, href }: RankingItemProps) {
 	);
 }
 
+// Calculate ranks with ties (1, 1, 3, 4, 4, 6 format)
+function calculateRanks(items: Array<{ count: number }>): number[] {
+	const ranks: number[] = [];
+
+	for (let i = 0; i < items.length; i++) {
+		if (i === 0) {
+			ranks.push(1);
+		} else if (items[i].count === items[i - 1].count) {
+			// Same count as previous - use same rank
+			ranks.push(ranks[i - 1]);
+		} else {
+			// Different count - rank is position + 1
+			ranks.push(i + 1);
+		}
+	}
+
+	return ranks;
+}
+
 function RankingsSection() {
 	const { data: rankings } = useSuspenseQuery(
 		publicStatsRankingsQueryOptions(),
 	);
+
+	const popularSongsRanks = calculateRanks(rankings.popularSongs);
+	const activeCirclesRanks = calculateRanks(rankings.activeCircles);
+	const activeArtistsRanks = calculateRanks(rankings.activeArtists);
 
 	return (
 		<div className="grid gap-6 lg:grid-cols-3">
@@ -168,7 +198,7 @@ function RankingsSection() {
 					{rankings.popularSongs.map((song, index) => (
 						<RankingItem
 							key={song.id}
-							rank={index + 1}
+							rank={popularSongsRanks[index]}
 							name={song.name}
 							count={song.count}
 							unit="アレンジ"
@@ -200,7 +230,7 @@ function RankingsSection() {
 					{rankings.activeCircles.map((circle, index) => (
 						<RankingItem
 							key={circle.id}
-							rank={index + 1}
+							rank={activeCirclesRanks[index]}
 							name={circle.name}
 							count={circle.count}
 							unit="リリース"
@@ -232,7 +262,7 @@ function RankingsSection() {
 					{rankings.activeArtists.map((artist, index) => (
 						<RankingItem
 							key={artist.id}
-							rank={index + 1}
+							rank={activeArtistsRanks[index]}
 							name={artist.name}
 							count={artist.count}
 							unit="曲"
