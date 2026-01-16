@@ -27,6 +27,14 @@ import {
 	publicWorkStatsStackedQueryOptions,
 	type StatsEntityType,
 } from "@/lib/public-query-options";
+import {
+	type ChartData,
+	type ChartOrientation,
+	type SortOrder,
+	transformSimpleDataForNivo,
+	transformSongsDataForNivo,
+	transformStackedDataForNivo,
+} from "@/lib/transformers/chart-data";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { WorkStatsSkeleton } from "./work-stats-skeleton";
@@ -38,34 +46,6 @@ const ResponsiveBar = lazy(() =>
 
 // StatsEntityTypeはpublic-query-options.tsから再エクスポート
 export type { StatsEntityType } from "@/lib/public-query-options";
-
-// チャート用の色パレット（区別しやすい8色）
-const CHART_COLORS = [
-	"#3b82f6", // blue
-	"#ef4444", // red
-	"#22c55e", // green
-	"#f59e0b", // amber
-	"#8b5cf6", // violet
-	"#ec4899", // pink
-	"#06b6d4", // cyan
-	"#f97316", // orange
-];
-
-// 文字列からハッシュ値を生成（項目ベースの色割り当て用）
-function hashString(str: string): number {
-	let hash = 0;
-	for (let i = 0; i < str.length; i++) {
-		hash = (hash << 5) - hash + str.charCodeAt(i);
-		hash |= 0;
-	}
-	return Math.abs(hash);
-}
-
-// 項目IDから一貫した色を取得
-function getColorForItem(id: string): string {
-	const index = hashString(id) % CHART_COLORS.length;
-	return CHART_COLORS[index];
-}
 
 // 積み上げバーの総計を表示するカスタムレイヤー
 function TotalsLayer({
@@ -223,135 +203,8 @@ function useIsMobile(): boolean {
 	return isMobile;
 }
 
-type SortOrder = "count-desc" | "count-asc" | "id";
-type ChartOrientation = "horizontal" | "vertical";
-
 const SORT_ORDER_STORAGE_KEY = "work-stats-sort-order";
 const ORIENTATION_STORAGE_KEY = "work-stats-chart-orientation";
-
-// Nivo用データ形式に変換（積み上げモード）
-function transformStackedDataForNivo(
-	stackedData: StackedWorkStat[],
-	sortOrder: SortOrder,
-	orientation: ChartOrientation,
-): { data: BarDatum[]; keys: string[]; colors: Record<string, string> } {
-	if (stackedData.length === 0) {
-		return { data: [], keys: [], colors: {} };
-	}
-
-	// ソート
-	// 横グラフ: 配列の最初が下に表示されるため、視覚的な順序を逆にする
-	// 縦グラフ: 配列の最初が左に表示されるため、通常の順序
-	let sorted: StackedWorkStat[];
-	if (orientation === "horizontal") {
-		if (sortOrder === "id") {
-			sorted = [...stackedData].sort((a, b) => b.id.localeCompare(a.id));
-		} else if (sortOrder === "count-asc") {
-			sorted = [...stackedData].sort(
-				(a, b) => b.totalTrackCount - a.totalTrackCount,
-			);
-		} else {
-			sorted = [...stackedData].sort(
-				(a, b) => a.totalTrackCount - b.totalTrackCount,
-			);
-		}
-	} else {
-		// 縦グラフ: 通常の順序
-		if (sortOrder === "id") {
-			sorted = [...stackedData].sort((a, b) => a.id.localeCompare(b.id));
-		} else if (sortOrder === "count-asc") {
-			sorted = [...stackedData].sort(
-				(a, b) => a.totalTrackCount - b.totalTrackCount,
-			);
-		} else {
-			sorted = [...stackedData].sort(
-				(a, b) => b.totalTrackCount - a.totalTrackCount,
-			);
-		}
-	}
-
-	// 各ワーク内の曲をID順にソート
-	for (const work of sorted) {
-		work.songs.sort((a, b) => a.id.localeCompare(b.id));
-	}
-
-	// 全曲のユニークキーを収集（ID順でソート済み）
-	const songKeysMap = new Map<string, { id: string; name: string }>();
-	const colors: Record<string, string> = {};
-	for (const work of sorted) {
-		for (const song of work.songs) {
-			const key = song.name ?? "不明";
-			if (!songKeysMap.has(key)) {
-				songKeysMap.set(key, { id: song.id, name: key });
-			}
-			if (!colors[key]) {
-				colors[key] = getColorForItem(song.id);
-			}
-		}
-	}
-	// ID順でキーをソート
-	const keys = Array.from(songKeysMap.values())
-		.sort((a, b) => a.id.localeCompare(b.id))
-		.map((item) => item.name);
-
-	// Nivo BarDatum形式に変換（totalTrackCountを含める）
-	const data: BarDatum[] = sorted.map((work) => {
-		const datum: BarDatum = {
-			workId: work.id,
-			workName: work.shortName ?? work.name ?? "不明",
-			totalTrackCount: work.totalTrackCount,
-		};
-		for (const song of work.songs) {
-			const key = song.name ?? "不明";
-			datum[key] = song.trackCount;
-		}
-		return datum;
-	});
-
-	return { data, keys, colors };
-}
-
-// Nivo用データ形式に変換（単純モード）
-function transformSimpleDataForNivo(
-	data: WorkStat[],
-	sortOrder: SortOrder,
-	orientation: ChartOrientation,
-): { data: BarDatum[]; keys: string[] } {
-	if (data.length === 0) {
-		return { data: [], keys: [] };
-	}
-
-	// ソート
-	// 横グラフ: 配列の最初が下に表示されるため、視覚的な順序を逆にする
-	// 縦グラフ: 配列の最初が左に表示されるため、通常の順序
-	let sorted: WorkStat[];
-	if (orientation === "horizontal") {
-		if (sortOrder === "id") {
-			sorted = [...data].sort((a, b) => b.id.localeCompare(a.id));
-		} else if (sortOrder === "count-asc") {
-			sorted = [...data].sort((a, b) => b.trackCount - a.trackCount);
-		} else {
-			sorted = [...data].sort((a, b) => a.trackCount - b.trackCount);
-		}
-	} else {
-		// 縦グラフ: 通常の順序
-		if (sortOrder === "id") {
-			sorted = [...data].sort((a, b) => a.id.localeCompare(b.id));
-		} else if (sortOrder === "count-asc") {
-			sorted = [...data].sort((a, b) => a.trackCount - b.trackCount);
-		} else {
-			sorted = [...data].sort((a, b) => b.trackCount - a.trackCount);
-		}
-	}
-
-	const nivoData: BarDatum[] = sorted.map((w) => ({
-		workId: w.id,
-		workName: w.shortName ?? w.name ?? "不明",
-		trackCount: w.trackCount,
-	}));
-
-	return { data: nivoData, keys: ["trackCount"] };
-}
 
 interface WorkStatsSectionProps {
 	entityType: StatsEntityType;
@@ -396,41 +249,80 @@ export function WorkStatsSection({
 	// 実際に使う表示モード（モバイルは常に単純）
 	const effectiveIsStacked = isMobile ? false : isStacked;
 
-	// TanStack Query: 積み上げデータ（デスクトップ用）
+	// selectでチャートデータに変換（useCallbackでメモ化）
+	const selectStackedChartData = useCallback(
+		(response: { works: StackedWorkStat[] } | undefined): ChartData | null =>
+			response?.works && response.works.length > 0
+				? transformStackedDataForNivo(
+						response.works,
+						sortOrder,
+						effectiveOrientation,
+					)
+				: null,
+		[sortOrder, effectiveOrientation],
+	);
+
+	const selectSimpleChartData = useCallback(
+		(response: { works: WorkStat[] } | undefined): ChartData | null =>
+			response?.works && response.works.length > 0
+				? transformSimpleDataForNivo(
+						response.works,
+						sortOrder,
+						effectiveOrientation,
+					)
+				: null,
+		[sortOrder, effectiveOrientation],
+	);
+
+	const selectSongsChartData = useCallback(
+		(
+			response:
+				| { songs: { id: string; name: string | null; trackCount: number }[] }
+				| undefined,
+		): ChartData | null =>
+			response?.songs && response.songs.length > 0
+				? transformSongsDataForNivo(
+						response.songs,
+						sortOrder,
+						effectiveOrientation,
+					)
+				: null,
+		[sortOrder, effectiveOrientation],
+	);
+
+	// TanStack Query: 積み上げチャートデータ（デスクトップ用、selectで変換）
 	const {
-		data: stackedResponse,
+		data: stackedChartData,
 		isPending: isStackedPending,
 		error: stackedError,
 	} = useQuery({
 		...publicWorkStatsStackedQueryOptions(entityType, entityId),
-		enabled: !isMobile, // モバイルでは取得しない
+		enabled: !isMobile,
+		select: selectStackedChartData,
 	});
 
-	// TanStack Query: シンプルデータ（モバイル or シンプルモード用）
+	// TanStack Query: シンプルチャートデータ（モバイル or シンプルモード用、selectで変換）
 	const {
-		data: simpleResponse,
+		data: simpleChartData,
 		isPending: isSimplePending,
 		error: simpleError,
 	} = useQuery({
 		...publicWorkStatsSimpleQueryOptions(entityType, entityId),
-		enabled: isMobile || !isStacked, // モバイル or シンプルモード選択時
+		enabled: isMobile || !isStacked,
+		select: selectSimpleChartData,
 	});
 
-	// TanStack Query: ドリルダウン用原曲データ
-	const { data: songsResponse, isFetching: isSongsFetching } = useQuery({
+	// TanStack Query: ドリルダウン用原曲チャートデータ（selectで変換）
+	const { data: songsChartData, isFetching: isSongsFetching } = useQuery({
 		...publicSongStatsQueryOptions(entityType, entityId, selectedWorkId ?? ""),
-		enabled: !!selectedWorkId, // workId選択時のみ取得
+		enabled: !!selectedWorkId,
+		select: selectSongsChartData,
 	});
-
-	// データの派生
-	const stackedData: StackedWorkStat[] = stackedResponse?.works ?? [];
-	const worksData: WorkStat[] = simpleResponse?.works ?? [];
-	const songsData = songsResponse?.songs ?? [];
 
 	// ローディング・エラー状態の判定
 	const isInitialLoading = effectiveIsStacked
-		? isStackedPending && stackedData.length === 0
-		: isSimplePending && worksData.length === 0;
+		? isStackedPending && !stackedChartData
+		: isSimplePending && !simpleChartData;
 	const isUpdating = isSongsFetching;
 	const error =
 		stackedError || simpleError ? "統計データの取得に失敗しました" : null;
@@ -520,87 +412,30 @@ export function WorkStatsSection({
 		[isDarkMode],
 	);
 
-	// チャートデータ計算
-	const chartData = useMemo(() => {
+	// チャートデータ選択（selectで変換済みのデータから条件分岐で選択）
+	const chartData = useMemo((): ChartData | null => {
 		// ドリルダウン表示中
-		if (selectedWorkId && songsData.length > 0) {
-			// ソート
-			// 横グラフ: 配列の最初が下に表示されるため、視覚的な順序を逆にする
-			// 縦グラフ: 配列の最初が左に表示されるため、通常の順序
-			let sorted: typeof songsData;
-			if (effectiveOrientation === "horizontal") {
-				if (sortOrder === "id") {
-					sorted = [...songsData].sort((a, b) => b.id.localeCompare(a.id));
-				} else if (sortOrder === "count-asc") {
-					sorted = [...songsData].sort((a, b) => b.trackCount - a.trackCount);
-				} else {
-					sorted = [...songsData].sort((a, b) => a.trackCount - b.trackCount);
-				}
-			} else {
-				// 縦グラフ: 通常の順序
-				if (sortOrder === "id") {
-					sorted = [...songsData].sort((a, b) => a.id.localeCompare(b.id));
-				} else if (sortOrder === "count-asc") {
-					sorted = [...songsData].sort((a, b) => a.trackCount - b.trackCount);
-				} else {
-					sorted = [...songsData].sort((a, b) => b.trackCount - a.trackCount);
-				}
-			}
-			return {
-				data: sorted.map((s) => ({
-					songId: s.id,
-					songName: s.name ?? "不明",
-					trackCount: s.trackCount,
-				})),
-				keys: ["trackCount"],
-				indexBy: "songName",
-				colors: ["#3b82f6"],
-				isStacked: false,
-			};
+		if (selectedWorkId && songsChartData) {
+			return songsChartData;
 		}
 
 		// 積み上げモード
-		if (effectiveIsStacked && stackedData.length > 0) {
-			const { data, keys, colors } = transformStackedDataForNivo(
-				stackedData,
-				sortOrder,
-				effectiveOrientation,
-			);
-			return {
-				data,
-				keys,
-				indexBy: "workName",
-				colors: (bar: { id: string | number }) =>
-					colors[String(bar.id)] || "#3b82f6",
-				isStacked: true,
-			};
+		if (effectiveIsStacked && stackedChartData) {
+			return stackedChartData;
 		}
 
 		// 単純モード
-		if (!effectiveIsStacked && worksData.length > 0) {
-			const { data, keys } = transformSimpleDataForNivo(
-				worksData,
-				sortOrder,
-				effectiveOrientation,
-			);
-			return {
-				data,
-				keys,
-				indexBy: "workName",
-				colors: ["#3b82f6"],
-				isStacked: false,
-			};
+		if (!effectiveIsStacked && simpleChartData) {
+			return simpleChartData;
 		}
 
 		return null;
 	}, [
-		effectiveIsStacked,
-		stackedData,
-		worksData,
-		songsData,
 		selectedWorkId,
-		sortOrder,
-		effectiveOrientation,
+		songsChartData,
+		effectiveIsStacked,
+		stackedChartData,
+		simpleChartData,
 	]);
 
 	// 初回ローディング

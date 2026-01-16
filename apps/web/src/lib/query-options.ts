@@ -30,6 +30,7 @@ import type {
 	CircleWithLinks,
 	CreditRole,
 	Event,
+	EventDay,
 	EventSeries,
 	EventSeriesWithEvents,
 	EventWithDays,
@@ -44,6 +45,11 @@ import type {
 	TrackDetail,
 	TrackWithCreditCount,
 } from "@/lib/api-client";
+import {
+	transformEventDaysToSelectOptions,
+	transformEventsToSelectOptions,
+	transformPlatformsToGroupedOptions,
+} from "./select-helpers";
 
 /**
  * staleTime定数
@@ -355,6 +361,55 @@ export const eventDetailQueryOptions = (id: string) =>
 		staleTime: STALE_TIME.SHORT,
 	});
 
+/** セレクトオプション型 */
+// SelectOption, GroupedSelectOptions 型は select-helpers.ts からエクスポート
+export type { GroupedSelectOptions, SelectOption } from "./select-helpers";
+
+/**
+ * イベント選択オプションのqueryOptions（select変換付き）
+ * リリース編集ダイアログなどで使用
+ */
+export const eventSelectOptionsQueryOptions = () =>
+	queryOptions({
+		queryKey: ["events", "selectOptions"],
+		queryFn: () =>
+			ssrFetch<PaginatedResponse<Event>>("/api/admin/events?limit=500"),
+		staleTime: STALE_TIME.LONG,
+		select: transformEventsToSelectOptions,
+	});
+
+/**
+ * イベント日一覧のqueryOptions（生データ）
+ * 特定イベントのイベント日を取得
+ */
+export const eventDaysQueryOptions = (eventId: string | null) =>
+	queryOptions({
+		queryKey: ["events", eventId, "days"],
+		queryFn: () =>
+			eventId
+				? ssrFetch<EventDay[]>(`/api/admin/events/${eventId}/days`)
+				: Promise.resolve([]),
+		staleTime: STALE_TIME.LONG,
+		enabled: !!eventId,
+	});
+
+/**
+ * イベント日選択オプションのqueryOptions（select変換付き）
+ * 特定イベントのイベント日をセレクトオプションに変換
+ * 同じqueryKeyを使用してキャッシュを共有
+ */
+export const eventDaySelectOptionsQueryOptions = (eventId: string | null) =>
+	queryOptions({
+		queryKey: ["events", eventId, "days"],
+		queryFn: () =>
+			eventId
+				? ssrFetch<EventDay[]>(`/api/admin/events/${eventId}/days`)
+				: Promise.resolve([]),
+		staleTime: STALE_TIME.LONG,
+		enabled: !!eventId,
+		select: transformEventDaysToSelectOptions,
+	});
+
 // ===== イベントシリーズ =====
 
 interface EventSeriesListParams {
@@ -637,6 +692,21 @@ export const platformDetailQueryOptions = (code: string) =>
 		queryKey: ["platform", code],
 		queryFn: () => ssrFetch<Platform>(`/api/admin/master/platforms/${code}`),
 		staleTime: STALE_TIME.MEDIUM,
+	});
+
+/**
+ * プラットフォームグループ選択オプションのqueryOptions（select変換付き）
+ * サークル管理でのプラットフォーム選択に使用
+ */
+export const platformGroupedOptionsQueryOptions = () =>
+	queryOptions({
+		queryKey: ["platforms", "grouped"],
+		queryFn: () =>
+			ssrFetch<PaginatedResponse<Platform>>(
+				"/api/admin/master/platforms?limit=100",
+			),
+		staleTime: STALE_TIME.MEDIUM,
+		select: transformPlatformsToGroupedOptions,
 	});
 
 // ===== マスターデータ: 名義種別 =====

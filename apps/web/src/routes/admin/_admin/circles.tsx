@@ -58,11 +58,14 @@ import {
 	INITIAL_SCRIPT_BADGE_VARIANTS,
 	INITIAL_SCRIPT_LABELS,
 	type InitialScript,
-	platformsApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
 import { circleLinkMutations, circleMutations } from "@/lib/mutation-options";
-import { circlesListQueryOptions } from "@/lib/query-options";
+import {
+	circlesListQueryOptions,
+	platformGroupedOptionsQueryOptions,
+	platformsListQueryOptions,
+} from "@/lib/query-options";
 import { getErrorMessage, getExternalLinkUrl } from "@/lib/utils";
 
 const DEFAULT_PAGE = 1;
@@ -191,51 +194,16 @@ function CirclesPage() {
 		updateLinkMutation.error ||
 		deleteLinkMutation.error;
 
-	// プラットフォーム一覧取得
-	const { data: platformsData } = useQuery({
-		queryKey: ["platforms", "all"],
-		queryFn: () => platformsApi.list({ limit: 100 }),
-		staleTime: 60_000,
-	});
+	// プラットフォーム一覧取得（生データ：URLパターンマッチに使用）
+	const { data: platformsData } = useQuery(
+		platformsListQueryOptions({ limit: 100 }),
+	);
 	const platforms = platformsData?.data ?? [];
 
-	// プラットフォームカテゴリの日本語ラベル
-	const PLATFORM_CATEGORY_LABELS: Record<string, string> = {
-		streaming: "ストリーミング",
-		download: "ダウンロード",
-		video: "動画",
-		shop: "ショップ",
-		other: "その他",
-	};
-
-	// プラットフォームをカテゴリでグルーピング
-	const groupedPlatforms = useMemo(() => {
-		const groups: Record<string, typeof platforms> = {};
-		for (const p of platforms) {
-			const category = p.category || "other";
-			if (!groups[category]) {
-				groups[category] = [];
-			}
-			groups[category].push(p);
-		}
-		// カテゴリの表示順を定義
-		const categoryOrder = ["streaming", "download", "video", "shop", "other"];
-		const sortedCategories = Object.keys(groups).sort((a, b) => {
-			const aIndex = categoryOrder.indexOf(a);
-			const bIndex = categoryOrder.indexOf(b);
-			if (aIndex === -1 && bIndex === -1) return a.localeCompare(b, "ja");
-			if (aIndex === -1) return 1;
-			if (bIndex === -1) return -1;
-			return aIndex - bIndex;
-		});
-		return sortedCategories.map((category) => ({
-			label: PLATFORM_CATEGORY_LABELS[category] || "その他",
-			options: groups[category].map((p) => ({
-				value: p.code,
-				label: p.name,
-			})),
-		}));
-	}, [platforms]);
+	// プラットフォームをカテゴリでグルーピング（selectで変換済み）
+	const { data: groupedPlatforms = [] } = useQuery(
+		platformGroupedOptionsQueryOptions(),
+	);
 
 	// URLからプラットフォームを推測する関数
 	const detectPlatformFromUrl = (url: string): string => {

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -18,14 +18,17 @@ import { useConflictHandler } from "@/hooks/use-conflict-handler";
 import { useFormDirty } from "@/hooks/use-form-dirty";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
-	eventDaysApi,
-	eventsApi,
 	isConflictError,
 	RELEASE_TYPE_LABELS,
 	type Release,
 	type ReleaseType,
 } from "@/lib/api-client";
 import { releaseMutations } from "@/lib/mutation-options";
+import {
+	eventDaySelectOptionsQueryOptions,
+	eventDaysQueryOptions,
+	eventSelectOptionsQueryOptions,
+} from "@/lib/query-options";
 import { getErrorMessage } from "@/lib/utils";
 import { ConflictDialog } from "./conflict-dialog";
 
@@ -116,22 +119,21 @@ export function ReleaseEditDialog({
 		}
 	}, [open, release, clearConflict]);
 
-	// イベント一覧取得
-	const { data: eventsData } = useQuery({
-		queryKey: ["events"],
-		queryFn: () => eventsApi.list({ limit: 500 }),
-		staleTime: 300_000,
+	// イベント選択オプション取得（selectで変換済み）
+	const { data: eventOptions = [] } = useQuery({
+		...eventSelectOptionsQueryOptions(),
 		enabled: open,
 	});
 
-	// イベント日一覧取得
+	// イベント日一覧取得（生データ：自動設定と日付取得に使用）
 	const { data: eventDaysData } = useQuery({
-		queryKey: ["events", selectedEventId, "days"],
-		queryFn: () =>
-			selectedEventId
-				? eventDaysApi.list(selectedEventId)
-				: Promise.resolve([]),
-		staleTime: 300_000,
+		...eventDaysQueryOptions(selectedEventId),
+		enabled: open && !!selectedEventId,
+	});
+
+	// イベント日選択オプション取得（selectで変換済み）
+	const { data: eventDayOptions = [] } = useQuery({
+		...eventDaySelectOptionsQueryOptions(selectedEventId),
 		enabled: open && !!selectedEventId,
 	});
 
@@ -156,25 +158,6 @@ export function ReleaseEditDialog({
 			}
 		}
 	}, [selectedEventId, eventDaysData]);
-
-	// イベントオプション
-	const eventOptions = useMemo(() => {
-		const events = eventsData?.data ?? [];
-		return events.map((e) => ({
-			value: e.id,
-			label: e.seriesName ? `【${e.seriesName}】${e.name}` : e.name,
-		}));
-	}, [eventsData?.data]);
-
-	// イベント日オプション
-	const eventDayOptions = useMemo(() => {
-		const days = eventDaysData ?? [];
-		const hasMultipleDays = days.length > 1;
-		return days.map((d) => ({
-			value: d.id,
-			label: hasMultipleDays ? `${d.dayNumber}日目（${d.date}）` : d.date,
-		}));
-	}, [eventDaysData]);
 
 	// フォーム変更を検出
 	// biome-ignore lint/correctness/useExhaustiveDependencies: formDirty.checkDirtyは安定した参照を持つため、意図的に依存配列から除外
