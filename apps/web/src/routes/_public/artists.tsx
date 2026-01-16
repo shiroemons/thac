@@ -1,23 +1,23 @@
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Music, Users } from "lucide-react";
 import { useRef, useState } from "react";
 import {
 	EmptyState,
-	Pagination,
 	PublicBreadcrumb,
 	TwoStageScriptFilter,
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { InfiniteScroll } from "@/components/ui/infinite-scroll";
 import { SearchInput } from "@/components/ui/search-input";
 import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
 import type { KanaRow } from "@/lib/kana-utils";
-import { publicApi } from "@/lib/public-api";
+import { publicArtistsInfiniteQueryOptions } from "@/lib/public-query-options";
 import {
 	type AlphabetInitial,
 	parseInitialParam,
-	parsePageParam,
 	parseRowParam,
 	parseScriptParam,
 	type ScriptCategory,
@@ -71,7 +71,6 @@ interface ArtistsSearchParams {
 	initial?: string; // A-Z
 	row?: string; // あ, か, さ...
 	role?: RoleType;
-	page?: number;
 	view?: ViewMode;
 	search?: string;
 }
@@ -80,32 +79,6 @@ const PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/_public/artists")({
 	head: () => createPageHead("アーティスト"),
-	loaderDeps: ({ search }) => ({
-		script: search.script,
-		initial: search.initial,
-		row: search.row,
-		role: search.role,
-		page: search.page,
-		search: search.search,
-	}),
-	loader: async ({ deps }) => {
-		const { script, initial, row, role, page, search } = deps;
-
-		try {
-			const response = await publicApi.artists.list({
-				page: page || 1,
-				limit: PAGE_SIZE,
-				initialScript: script === "all" ? undefined : script,
-				initial: script === "alphabet" ? initial : undefined,
-				row: script === "kana" ? row : undefined,
-				role: role === "all" ? undefined : role,
-				search: search || undefined,
-			});
-			return { artists: response.data, total: response.total };
-		} catch {
-			return { artists: [], total: 0 };
-		}
-	},
 	component: ArtistsPage,
 	validateSearch: (search: Record<string, unknown>): ArtistsSearchParams => {
 		const script = parseScriptParam(search.script);
@@ -115,7 +88,6 @@ export const Route = createFileRoute("/_public/artists")({
 				script === "alphabet" ? parseInitialParam(search.initial) : undefined,
 			row: script === "kana" ? parseRowParam(search.row) : undefined,
 			role: parseRoleParam(search.role),
-			page: parsePageParam(search.page),
 			view:
 				search.view === "grid" || search.view === "list" ? search.view : "list",
 			search: typeof search.search === "string" ? search.search : undefined,
@@ -134,11 +106,9 @@ function ArtistsPage() {
 		initial,
 		row,
 		role = "all",
-		page = 1,
 		view = "list",
 		search = "",
 	} = Route.useSearch();
-	const { artists, total } = Route.useLoaderData();
 
 	// 検索入力のローカルステート（IME対応）
 	const [searchInput, setSearchInput] = useState(search);
@@ -150,8 +120,22 @@ function ArtistsPage() {
 	const kanaRow = row as KanaRow | undefined;
 	const roleFilter = role as RoleType;
 
-	// ページネーション
-	const totalPages = Math.ceil(total / PAGE_SIZE);
+	// 無限スクロールクエリ
+	const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+		useInfiniteQuery(
+			publicArtistsInfiniteQueryOptions({
+				limit: PAGE_SIZE,
+				search: search || undefined,
+				initialScript: scriptCategory === "all" ? undefined : scriptCategory,
+				initial: scriptCategory === "alphabet" ? alphabetInitial : undefined,
+				row: scriptCategory === "kana" ? kanaRow : undefined,
+				role: roleFilter === "all" ? undefined : roleFilter,
+			}),
+		);
+
+	// ページデータをフラット化
+	const artists = data?.pages.flatMap((page) => page.data) ?? [];
+	const total = data?.pages[0]?.total ?? 0;
 
 	// ナビゲーションハンドラー
 	const handleScriptCategoryChange = (newScript: ScriptCategory) => {
@@ -160,7 +144,6 @@ function ArtistsPage() {
 			search: {
 				script: newScript,
 				role: roleFilter,
-				page: 1,
 				view,
 				search: search || undefined,
 			},
@@ -174,7 +157,6 @@ function ArtistsPage() {
 				script: scriptCategory,
 				initial: newInitial ?? undefined,
 				role: roleFilter,
-				page: 1,
 				view,
 				search: search || undefined,
 			},
@@ -188,7 +170,6 @@ function ArtistsPage() {
 				script: scriptCategory,
 				row: newRow ?? undefined,
 				role: roleFilter,
-				page: 1,
 				view,
 				search: search || undefined,
 			},
@@ -203,22 +184,6 @@ function ArtistsPage() {
 				initial: alphabetInitial,
 				row: kanaRow,
 				role: newRole,
-				page: 1,
-				view,
-				search: search || undefined,
-			},
-		});
-	};
-
-	const handlePageChange = (newPage: number) => {
-		navigate({
-			to: "/artists",
-			search: {
-				script: scriptCategory,
-				initial: alphabetInitial,
-				row: kanaRow,
-				role: roleFilter,
-				page: newPage,
 				view,
 				search: search || undefined,
 			},
@@ -233,7 +198,6 @@ function ArtistsPage() {
 				initial: alphabetInitial,
 				row: kanaRow,
 				role: roleFilter,
-				page,
 				view: newView,
 				search: search || undefined,
 			},
@@ -252,7 +216,6 @@ function ArtistsPage() {
 				initial: alphabetInitial,
 				row: kanaRow,
 				role: roleFilter,
-				page: 1,
 				view,
 				search: value || undefined,
 			},
@@ -275,7 +238,6 @@ function ArtistsPage() {
 				initial: alphabetInitial,
 				row: kanaRow,
 				role: roleFilter,
-				page: 1,
 				view,
 				search: value || undefined,
 			},
@@ -349,8 +311,12 @@ function ArtistsPage() {
 				</div>
 			</div>
 
-			{/* アーティスト一覧 */}
-			{artists.length === 0 ? (
+			{/* 初回ローディング */}
+			{isLoading ? (
+				<div className="flex items-center justify-center py-12">
+					<span className="loading loading-spinner loading-lg" />
+				</div>
+			) : artists.length === 0 ? (
 				<EmptyState
 					type="filter"
 					title="該当するアーティストがありません"
@@ -461,12 +427,14 @@ function ArtistsPage() {
 				</div>
 			)}
 
-			{/* ページネーション */}
-			{totalPages > 1 && (
-				<Pagination
-					currentPage={page}
-					totalPages={totalPages}
-					onPageChange={handlePageChange}
+			{/* 無限スクロール */}
+			{!isLoading && (
+				<InfiniteScroll
+					onLoadMore={() => fetchNextPage()}
+					isLoading={isFetchingNextPage}
+					hasMore={hasNextPage ?? false}
+					loadedCount={artists.length}
+					totalCount={total}
 				/>
 			)}
 		</div>

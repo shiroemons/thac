@@ -43,7 +43,7 @@ const SCRIPT_CATEGORY_MAP: Record<string, string[]> = {
 	alphabet: ["latin"],
 	kana: ["hiragana", "katakana"],
 	kanji: ["kanji"],
-	other: ["digit", "symbol", "other"],
+	symbol: ["digit", "symbol", "other"],
 };
 
 // かな行のパターン
