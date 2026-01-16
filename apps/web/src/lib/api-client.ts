@@ -38,11 +38,11 @@ const getApiBaseUrl = () => {
 		return (
 			process.env.SERVER_URL ||
 			import.meta.env.VITE_SERVER_URL ||
-			"http://localhost:3000"
+			"http://localhost:3001"
 		);
 	}
 	// クライアントサイド
-	return import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+	return import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -2294,7 +2294,7 @@ export interface ReleaseJanCode {
 
 const getApiBaseUrlForExport = () => {
 	// クライアントサイドのみで使用（ダウンロード処理）
-	return import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+	return import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 };
 
 async function downloadExport(endpoint: string): Promise<void> {

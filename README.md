@@ -52,8 +52,8 @@ make dev
 make up
 ```
 
-- Web: http://localhost:3001
-- API: http://localhost:3000
+- Web: http://localhost:3000
+- API: http://localhost:3001
 
 ### 初回セットアップ
 

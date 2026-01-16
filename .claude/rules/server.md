@@ -6,7 +6,7 @@ paths: apps/server/**
 
 ## 概要
 
-Bun上で動作するHono APIサーバー（http://localhost:3000）
+Bun上で動作するHono APIサーバー（http://localhost:3001）
 
 ## 依存パッケージ
 

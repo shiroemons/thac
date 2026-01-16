@@ -50,10 +50,10 @@ const getApiBaseUrl = () => {
 		return (
 			process.env.SERVER_URL ||
 			import.meta.env.VITE_SERVER_URL ||
-			"http://localhost:3000"
+			"http://localhost:3001"
 		);
 	}
-	return import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+	return import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 };
 
 // SSR時にCookieを転送してAPIを呼び出す汎用サーバー関数

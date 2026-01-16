@@ -6,7 +6,7 @@ paths: apps/web/**
 
 ## 概要
 
-TanStack Start（SSR）ベースのReactフロントエンド（http://localhost:3001）
+TanStack Start（SSR）ベースのReactフロントエンド（http://localhost:3000）
 
 ## 技術スタック
 

@@ -10,8 +10,8 @@ bun install
 bun run dev
 
 # 個別アプリの起動
-bun run dev:web      # Webアプリ http://localhost:3001
-bun run dev:server   # APIサーバー http://localhost:3000
+bun run dev:web      # Webアプリ http://localhost:3000
+bun run dev:server   # APIサーバー http://localhost:3001
 
 # 全アプリのビルド
 bun run build

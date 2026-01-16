@@ -44,11 +44,11 @@ build: ## 本番用イメージをビルド
 	docker build -t thac .
 
 run: ## 本番用コンテナを実行（要: 環境変数設定）
-	docker run -p 3000:3000 -p 3001:3001 \
+	docker run -p 3001:3001 -p 3000:3000 \
 		-e DATABASE_URL=$${DATABASE_URL} \
 		-e BETTER_AUTH_SECRET=$${BETTER_AUTH_SECRET} \
-		-e BETTER_AUTH_URL=$${BETTER_AUTH_URL:-http://localhost:3000} \
-		-e CORS_ORIGIN=$${CORS_ORIGIN:-http://localhost:3001} \
+		-e BETTER_AUTH_URL=$${BETTER_AUTH_URL:-http://localhost:3001} \
+		-e CORS_ORIGIN=$${CORS_ORIGIN:-http://localhost:3000} \
 		thac
 
 # =============================================================================

@@ -8,7 +8,7 @@
 		"lint:markuplint": "markuplint \"src/**/*.tsx\"",
 		"build": "vite build",
 		"serve": "vite preview",
-		"dev": "vite dev --port=3001",
+		"dev": "vite dev --port=3000",
 		"test": "bun test"
 	},
 	"dependencies": {

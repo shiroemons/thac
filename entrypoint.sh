@@ -2,12 +2,12 @@
 set -e
 
 # Start Hono API server in background
-echo "Starting API server on port 3000..."
+echo "Starting API server on port 3001..."
 bun run /app/apps/server/dist/index.js &
 SERVER_PID=$!
 
 # Start TanStack Start SSR server in background
-echo "Starting Web server on port 3001..."
+echo "Starting Web server on port 3000..."
 bun run /app/apps/web/dist/server/server.js &
 WEB_PID=$!
 
