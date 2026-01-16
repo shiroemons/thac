@@ -46,10 +46,10 @@ RUN chmod +x entrypoint.sh
 # Run as non-root user for security
 USER bun
 
-EXPOSE 3000 3001
+EXPOSE 3001 3000
 
 # Health check for both services
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD bun -e "await fetch('http://localhost:3000').catch(() => process.exit(1))" || exit 1
+    CMD bun -e "await fetch('http://localhost:3001').catch(() => process.exit(1))" || exit 1
 
 ENTRYPOINT ["./entrypoint.sh"]
