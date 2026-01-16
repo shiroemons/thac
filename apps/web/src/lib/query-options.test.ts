@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import type {
 	Event,
 	EventDay,
@@ -6,23 +6,16 @@ import type {
 	Platform,
 } from "./api-client";
 import {
-	eventDaySelectOptionsQueryOptions,
-	eventDaysQueryOptions,
-	eventSelectOptionsQueryOptions,
 	type GroupedSelectOptions,
-	platformGroupedOptionsQueryOptions,
 	type SelectOption,
-} from "./query-options";
+	transformEventDaysToSelectOptions,
+	transformEventsToSelectOptions,
+	transformPlatformsToGroupedOptions,
+} from "./select-helpers";
 
-describe("query-options select functions", () => {
-	describe("eventSelectOptionsQueryOptions", () => {
-		it("正しいqueryKeyを持つ", () => {
-			const options = eventSelectOptionsQueryOptions();
-			expect(options.queryKey).toEqual(["events", "selectOptions"]);
-		});
-
-		it("selectでイベントをセレクトオプションに変換する", () => {
-			const options = eventSelectOptionsQueryOptions();
+describe("select-helpers", () => {
+	describe("transformEventsToSelectOptions", () => {
+		it("イベントをセレクトオプションに変換する", () => {
 			const mockResponse: PaginatedResponse<Event> = {
 				data: [
 					{
@@ -57,7 +50,8 @@ describe("query-options select functions", () => {
 				limit: 500,
 			};
 
-			const result = options.select?.(mockResponse) as SelectOption[];
+			const result: SelectOption[] =
+				transformEventsToSelectOptions(mockResponse);
 
 			expect(result).toHaveLength(2);
 			expect(result[0]).toEqual({ value: "event-001", label: "イベントA" });
@@ -68,7 +62,6 @@ describe("query-options select functions", () => {
 		});
 
 		it("seriesNameがある場合はラベルに含める", () => {
-			const options = eventSelectOptionsQueryOptions();
 			const mockResponse: PaginatedResponse<Event> = {
 				data: [
 					{
@@ -90,47 +83,15 @@ describe("query-options select functions", () => {
 				limit: 500,
 			};
 
-			const result = options.select?.(mockResponse) as SelectOption[];
+			const result: SelectOption[] =
+				transformEventsToSelectOptions(mockResponse);
 
 			expect(result[0].label).toBe("【シリーズ名】イベント名");
 		});
 	});
 
-	describe("eventDaysQueryOptions", () => {
-		it("eventIdがnullの場合はenabledがfalseになる", () => {
-			const options = eventDaysQueryOptions(null);
-			expect(options.enabled).toBe(false);
-		});
-
-		it("eventIdがある場合はenabledがtrueになる", () => {
-			const options = eventDaysQueryOptions("event-001");
-			expect(options.enabled).toBe(true);
-		});
-
-		it("正しいqueryKeyを持つ", () => {
-			const options = eventDaysQueryOptions("event-001");
-			expect(options.queryKey).toEqual(["events", "event-001", "days"]);
-		});
-	});
-
-	describe("eventDaySelectOptionsQueryOptions", () => {
-		it("eventIdがnullの場合はenabledがfalseになる", () => {
-			const options = eventDaySelectOptionsQueryOptions(null);
-			expect(options.enabled).toBe(false);
-		});
-
-		it("eventIdがある場合はenabledがtrueになる", () => {
-			const options = eventDaySelectOptionsQueryOptions("event-001");
-			expect(options.enabled).toBe(true);
-		});
-
-		it("正しいqueryKeyを持つ（eventDaysQueryOptionsと同じ）", () => {
-			const options = eventDaySelectOptionsQueryOptions("event-001");
-			expect(options.queryKey).toEqual(["events", "event-001", "days"]);
-		});
-
-		it("selectでイベント日をセレクトオプションに変換する（1日のみ）", () => {
-			const options = eventDaySelectOptionsQueryOptions("event-001");
+	describe("transformEventDaysToSelectOptions", () => {
+		it("イベント日をセレクトオプションに変換する（1日のみ）", () => {
 			const mockDays: EventDay[] = [
 				{
 					id: "day-001",
@@ -142,15 +103,15 @@ describe("query-options select functions", () => {
 				},
 			];
 
-			const result = options.select?.(mockDays) as SelectOption[];
+			const result: SelectOption[] =
+				transformEventDaysToSelectOptions(mockDays);
 
 			expect(result).toHaveLength(1);
 			// 1日のみの場合は日付のみ
 			expect(result[0]).toEqual({ value: "day-001", label: "2024-05-01" });
 		});
 
-		it("selectでイベント日をセレクトオプションに変換する（複数日）", () => {
-			const options = eventDaySelectOptionsQueryOptions("event-001");
+		it("イベント日をセレクトオプションに変換する（複数日）", () => {
 			const mockDays: EventDay[] = [
 				{
 					id: "day-001",
@@ -170,7 +131,8 @@ describe("query-options select functions", () => {
 				},
 			];
 
-			const result = options.select?.(mockDays) as SelectOption[];
+			const result: SelectOption[] =
+				transformEventDaysToSelectOptions(mockDays);
 
 			expect(result).toHaveLength(2);
 			// 複数日の場合は日数と日付
@@ -185,14 +147,8 @@ describe("query-options select functions", () => {
 		});
 	});
 
-	describe("platformGroupedOptionsQueryOptions", () => {
-		it("正しいqueryKeyを持つ", () => {
-			const options = platformGroupedOptionsQueryOptions();
-			expect(options.queryKey).toEqual(["platforms", "grouped"]);
-		});
-
-		it("selectでプラットフォームをカテゴリ別にグルーピングする", () => {
-			const options = platformGroupedOptionsQueryOptions();
+	describe("transformPlatformsToGroupedOptions", () => {
+		it("プラットフォームをカテゴリ別にグルーピングする", () => {
 			const mockResponse: PaginatedResponse<Platform> = {
 				data: [
 					{
@@ -228,7 +184,8 @@ describe("query-options select functions", () => {
 				limit: 100,
 			};
 
-			const result = options.select?.(mockResponse) as GroupedSelectOptions[];
+			const result: GroupedSelectOptions[] =
+				transformPlatformsToGroupedOptions(mockResponse);
 
 			// カテゴリ順: streaming, download, video, shop, other
 			expect(result).toHaveLength(3);
@@ -250,7 +207,6 @@ describe("query-options select functions", () => {
 		});
 
 		it("カテゴリがnullの場合はotherとして扱う", () => {
-			const options = platformGroupedOptionsQueryOptions();
 			const mockResponse: PaginatedResponse<Platform> = {
 				data: [
 					{
@@ -268,14 +224,14 @@ describe("query-options select functions", () => {
 				limit: 100,
 			};
 
-			const result = options.select?.(mockResponse) as GroupedSelectOptions[];
+			const result: GroupedSelectOptions[] =
+				transformPlatformsToGroupedOptions(mockResponse);
 
 			expect(result).toHaveLength(1);
 			expect(result[0].label).toBe("その他");
 		});
 
 		it("定義されていないカテゴリは「その他」ラベルになる", () => {
-			const options = platformGroupedOptionsQueryOptions();
 			const mockResponse: PaginatedResponse<Platform> = {
 				data: [
 					{
@@ -293,14 +249,14 @@ describe("query-options select functions", () => {
 				limit: 100,
 			};
 
-			const result = options.select?.(mockResponse) as GroupedSelectOptions[];
+			const result: GroupedSelectOptions[] =
+				transformPlatformsToGroupedOptions(mockResponse);
 
 			expect(result).toHaveLength(1);
 			expect(result[0].label).toBe("その他");
 		});
 
 		it("カテゴリの順序が正しい", () => {
-			const options = platformGroupedOptionsQueryOptions();
 			const mockResponse: PaginatedResponse<Platform> = {
 				data: [
 					{
@@ -354,7 +310,8 @@ describe("query-options select functions", () => {
 				limit: 100,
 			};
 
-			const result = options.select?.(mockResponse) as GroupedSelectOptions[];
+			const result: GroupedSelectOptions[] =
+				transformPlatformsToGroupedOptions(mockResponse);
 
 			// 期待される順序: streaming, download, video, shop, other
 			expect(result.map((g) => g.label)).toEqual([

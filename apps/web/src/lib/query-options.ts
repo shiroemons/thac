@@ -45,6 +45,11 @@ import type {
 	TrackDetail,
 	TrackWithCreditCount,
 } from "@/lib/api-client";
+import {
+	transformEventDaysToSelectOptions,
+	transformEventsToSelectOptions,
+	transformPlatformsToGroupedOptions,
+} from "./select-helpers";
 
 /**
  * staleTime定数
@@ -357,10 +362,8 @@ export const eventDetailQueryOptions = (id: string) =>
 	});
 
 /** セレクトオプション型 */
-export interface SelectOption {
-	value: string;
-	label: string;
-}
+// SelectOption, GroupedSelectOptions 型は select-helpers.ts からエクスポート
+export type { GroupedSelectOptions, SelectOption } from "./select-helpers";
 
 /**
  * イベント選択オプションのqueryOptions（select変換付き）
@@ -372,11 +375,7 @@ export const eventSelectOptionsQueryOptions = () =>
 		queryFn: () =>
 			ssrFetch<PaginatedResponse<Event>>("/api/admin/events?limit=500"),
 		staleTime: STALE_TIME.LONG,
-		select: (data): SelectOption[] =>
-			data.data.map((e) => ({
-				value: e.id,
-				label: e.seriesName ? `【${e.seriesName}】${e.name}` : e.name,
-			})),
+		select: transformEventsToSelectOptions,
 	});
 
 /**
@@ -408,13 +407,7 @@ export const eventDaySelectOptionsQueryOptions = (eventId: string | null) =>
 				: Promise.resolve([]),
 		staleTime: STALE_TIME.LONG,
 		enabled: !!eventId,
-		select: (days): SelectOption[] => {
-			const hasMultipleDays = days.length > 1;
-			return days.map((d) => ({
-				value: d.id,
-				label: hasMultipleDays ? `${d.dayNumber}日目（${d.date}）` : d.date,
-			}));
-		},
+		select: transformEventDaysToSelectOptions,
 	});
 
 // ===== イベントシリーズ =====
@@ -701,21 +694,6 @@ export const platformDetailQueryOptions = (code: string) =>
 		staleTime: STALE_TIME.MEDIUM,
 	});
 
-/** グループ化されたセレクトオプション型 */
-export interface GroupedSelectOptions {
-	label: string;
-	options: SelectOption[];
-}
-
-/** プラットフォームカテゴリのラベル */
-const PLATFORM_CATEGORY_LABELS: Record<string, string> = {
-	streaming: "ストリーミング",
-	download: "ダウンロード",
-	video: "動画",
-	shop: "ショップ",
-	other: "その他",
-};
-
 /**
  * プラットフォームグループ選択オプションのqueryOptions（select変換付き）
  * サークル管理でのプラットフォーム選択に使用
@@ -728,33 +706,7 @@ export const platformGroupedOptionsQueryOptions = () =>
 				"/api/admin/master/platforms?limit=100",
 			),
 		staleTime: STALE_TIME.MEDIUM,
-		select: (data): GroupedSelectOptions[] => {
-			const categoryOrder = ["streaming", "download", "video", "shop", "other"];
-
-			const groups: Record<string, Platform[]> = {};
-			for (const p of data.data) {
-				const category = p.category || "other";
-				if (!groups[category]) groups[category] = [];
-				groups[category].push(p);
-			}
-
-			return Object.keys(groups)
-				.sort((a, b) => {
-					const aIndex = categoryOrder.indexOf(a);
-					const bIndex = categoryOrder.indexOf(b);
-					if (aIndex === -1 && bIndex === -1) return a.localeCompare(b, "ja");
-					if (aIndex === -1) return 1;
-					if (bIndex === -1) return -1;
-					return aIndex - bIndex;
-				})
-				.map((category) => ({
-					label: PLATFORM_CATEGORY_LABELS[category] || "その他",
-					options: groups[category].map((p) => ({
-						value: p.code,
-						label: p.name,
-					})),
-				}));
-		},
+		select: transformPlatformsToGroupedOptions,
 	});
 
 // ===== マスターデータ: 名義種別 =====
