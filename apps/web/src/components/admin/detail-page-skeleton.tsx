@@ -49,7 +49,7 @@ function DetailPageSkeleton({
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-4">
 						{/* 戻るボタン */}
-						<Skeleton className="h-8 w-8 rounded" />
+						<Skeleton className="h-8 w-8 rounded-md" />
 						{/* タイトル */}
 						<Skeleton className="h-8 w-48" />
 						{/* バッジ */}

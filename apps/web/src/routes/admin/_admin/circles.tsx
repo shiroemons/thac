@@ -940,7 +940,7 @@ function CirclesPage() {
 									{editingCircle.links.map((link) => (
 										<div
 											key={link.id}
-											className="flex items-center justify-between rounded border border-base-300 p-2"
+											className="flex items-center justify-between rounded-md border border-base-300 p-4"
 										>
 											<div className="flex items-center gap-2">
 												<Badge variant="secondary">

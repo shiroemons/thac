@@ -179,8 +179,8 @@ export function OfficialLinksCard({
 				</div>
 				<div className="p-4">
 					<div className="animate-pulse space-y-2">
-						<div className="h-8 rounded bg-base-300" />
-						<div className="h-8 rounded bg-base-300" />
+						<div className="h-8 rounded-md bg-base-300" />
+						<div className="h-8 rounded-md bg-base-300" />
 					</div>
 				</div>
 			</Card>
