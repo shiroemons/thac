@@ -1,7 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
 	Calendar,
-	Circle,
 	Database,
 	Disc,
 	Disc3,
@@ -15,7 +14,9 @@ import {
 	UserRound,
 	UserRoundPen,
 	Users,
+	UsersRound,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface NavItem {
 	to: string;
@@ -93,7 +94,7 @@ const navItems: NavEntry[] = [
 	},
 	{
 		label: "アーティスト・サークル",
-		icon: Users,
+		icon: UsersRound,
 		items: [
 			{
 				to: "/admin/artists",
@@ -108,7 +109,7 @@ const navItems: NavEntry[] = [
 			{
 				to: "/admin/circles",
 				label: "サークル",
-				icon: Circle,
+				icon: Users,
 			},
 		],
 	},
@@ -148,6 +149,11 @@ interface AdminSidebarProps {
 export function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 	const location = useLocation();
 
+	const activeItemClasses =
+		"border-l-3 border-primary bg-primary/10 text-primary font-medium";
+	const inactiveItemClasses =
+		"border-l-3 border-transparent hover:bg-base-content/5";
+
 	const isActive = (path: string) => {
 		if (path === "/admin") {
 			return location.pathname === "/admin";
@@ -160,57 +166,66 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 	};
 
 	return (
-		<aside className="min-h-full w-64 bg-base-200">
-			<div className="p-4">
+		<aside className="flex min-h-full w-64 flex-col bg-base-200">
+			<div className="border-base-300 border-b px-4 py-5">
 				<span className="font-bold text-xl">管理画面</span>
 			</div>
-			<ul className="menu w-full p-4 pt-0">
-				{navItems.map((entry) =>
-					isNavGroup(entry) ? (
-						<li key={entry.label} className="w-full">
-							<details open={isGroupActive(entry)} className="w-full">
-								<summary className="w-full">
-									<entry.icon className="size-5" />
-									<span className="flex-1 text-left">{entry.label}</span>
-								</summary>
-								<ul>
-									{entry.items.map(({ to, label, icon: Icon }) => (
-										<li key={to}>
-											<Link
-												to={to}
-												onClick={onNavigate}
-												className={
-													isActive(to)
-														? "active bg-base-content/10 font-medium"
-														: ""
-												}
-											>
-												<Icon className="size-4" />
-												{label}
-											</Link>
-										</li>
-									))}
-								</ul>
-							</details>
-						</li>
-					) : (
-						<li key={entry.to}>
-							<Link
-								to={entry.to}
-								onClick={onNavigate}
-								className={
-									isActive(entry.to)
-										? "active bg-base-content/10 font-medium"
-										: ""
-								}
-							>
-								<entry.icon className="size-5" />
-								{entry.label}
-							</Link>
-						</li>
-					),
-				)}
-			</ul>
+			<nav className="flex-1 overflow-y-auto">
+				<ul className="menu gap-1 p-4">
+					{navItems.map((entry) =>
+						isNavGroup(entry) ? (
+							<li key={entry.label}>
+								<details open={isGroupActive(entry)}>
+									<summary
+										className={cn(
+											"gap-3 rounded-lg py-2.5",
+											isGroupActive(entry) && "font-medium text-primary",
+										)}
+									>
+										<entry.icon className="size-[18px]" />
+										<span className="flex-1">{entry.label}</span>
+									</summary>
+									<ul className="mt-1 ml-2 space-y-0.5 border-base-300 border-l">
+										{entry.items.map(({ to, label, icon: Icon }) => (
+											<li key={to}>
+												<Link
+													to={to}
+													onClick={onNavigate}
+													className={cn(
+														"gap-2 rounded-lg py-2 pl-4",
+														isActive(to)
+															? activeItemClasses
+															: inactiveItemClasses,
+													)}
+												>
+													<Icon className="size-[18px]" />
+													{label}
+												</Link>
+											</li>
+										))}
+									</ul>
+								</details>
+							</li>
+						) : (
+							<li key={entry.to}>
+								<Link
+									to={entry.to}
+									onClick={onNavigate}
+									className={cn(
+										"gap-3 rounded-lg py-2.5",
+										isActive(entry.to)
+											? activeItemClasses
+											: inactiveItemClasses,
+									)}
+								>
+									<entry.icon className="size-[18px]" />
+									{entry.label}
+								</Link>
+							</li>
+						),
+					)}
+				</ul>
+			</nav>
 		</aside>
 	);
 }

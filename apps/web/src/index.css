@@ -68,3 +68,19 @@
 .scrollbar-hide::-webkit-scrollbar {
 	display: none;
 }
+
+/* Sidebar animations */
+.menu details > ul {
+	animation: sidebarSlideDown 200ms ease-out;
+}
+
+@keyframes sidebarSlideDown {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
