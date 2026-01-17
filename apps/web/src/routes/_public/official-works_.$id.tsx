@@ -9,6 +9,7 @@ import {
 	TrendingUp,
 } from "lucide-react";
 import { ExternalLink, PublicBreadcrumb } from "@/components/public";
+import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { formatNumber } from "@/lib/format";
 import { createPublicOfficialWorkHead } from "@/lib/head";
 import { type PublicWorkDetail, publicApi } from "@/lib/public-api";
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_public/official-works_/$id")({
 		}
 	},
 	head: ({ loaderData }) => createPublicOfficialWorkHead(loaderData?.work),
+	headers: () => CACHE_HEADERS.PUBLIC_DETAIL,
 	component: OfficialWorkDetailPage,
 });
 

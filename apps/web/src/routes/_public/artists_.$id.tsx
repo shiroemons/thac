@@ -10,6 +10,7 @@ import {
 	WorkStatsSection,
 	WorkStatsSkeleton,
 } from "@/components/public";
+import { CACHE_HEADERS } from "@/lib/cache-headers";
 import {
 	type ArtistDetailTab,
 	parseArtistDetailTab,
@@ -51,6 +52,7 @@ export const Route = createFileRoute("/_public/artists_/$id")({
 		}
 	},
 	head: ({ loaderData }) => createPublicArtistHead(loaderData?.artist),
+	headers: () => CACHE_HEADERS.PUBLIC_DETAIL,
 	component: ArtistDetailPage,
 });
 

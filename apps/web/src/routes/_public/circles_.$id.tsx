@@ -12,6 +12,7 @@ import {
 	WorkStatsSection,
 	WorkStatsSkeleton,
 } from "@/components/public";
+import { CACHE_HEADERS } from "@/lib/cache-headers";
 import {
 	type CircleDetailTab,
 	parseCircleDetailTab,
@@ -57,6 +58,7 @@ export const Route = createFileRoute("/_public/circles_/$id")({
 		}
 	},
 	head: ({ loaderData }) => createPublicCircleHead(loaderData?.circle),
+	headers: () => CACHE_HEADERS.PUBLIC_DETAIL,
 	component: CircleDetailPage,
 });
 
