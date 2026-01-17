@@ -279,27 +279,31 @@ function OriginalSongDetailPage() {
 										</td>
 										<td className="hidden md:table-cell">
 											<div className="flex flex-wrap gap-1">
-												{track.artists.map((artist) => (
-													<Link
-														key={artist.id}
-														to="/artists/$id"
-														params={{ id: artist.id }}
-														preload="intent"
-														className="inline-flex items-center gap-1 hover:text-primary"
-													>
-														<Users className="size-3" />
-														<span>{artist.creditName}</span>
-														{artist.roles.length > 0 && (
-															<span className="text-base-content/60 text-xs">
-																(
-																{artist.roles
-																	.map((r) => roleNames[r] || r)
-																	.join("/")}
-																)
-															</span>
-														)}
-													</Link>
-												))}
+												{track.artists.map((artist) => {
+													const linkId =
+														artist.artistAliasId ?? `${artist.id}__main__`;
+													return (
+														<Link
+															key={linkId}
+															to="/artists/$id"
+															params={{ id: linkId }}
+															preload="intent"
+															className="inline-flex items-center gap-1 hover:text-primary"
+														>
+															<Users className="size-3" />
+															<span>{artist.creditName}</span>
+															{artist.roles.length > 0 && (
+																<span className="text-base-content/60 text-xs">
+																	(
+																	{artist.roles
+																		.map((r) => roleNames[r] || r)
+																		.join("/")}
+																	)
+																</span>
+															)}
+														</Link>
+													);
+												})}
 											</div>
 										</td>
 										<td className="hidden text-base-content/70 sm:table-cell">

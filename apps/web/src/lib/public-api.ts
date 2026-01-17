@@ -181,6 +181,7 @@ export interface PublicArrangeTrack {
 	}>;
 	artists: Array<{
 		id: string;
+		artistAliasId: string | null;
 		creditName: string;
 		roles: string[];
 	}>;
