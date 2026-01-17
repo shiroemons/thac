@@ -453,6 +453,7 @@ originalSongsRouter.get("/:id/tracks", async (c) => {
 				.select({
 					trackId: trackCredits.trackId,
 					artistId: artists.id,
+					artistAliasId: trackCredits.artistAliasId,
 					creditName: trackCredits.creditName,
 					roleCode: trackCreditRoles.roleCode,
 					roleName: creditRoles.label,
@@ -488,7 +489,12 @@ originalSongsRouter.get("/:id/tracks", async (c) => {
 		// クレジットをトラックIDでグルーピング（ロールをまとめる）
 		const creditsByTrack = new Map<
 			string,
-			Array<{ id: string; creditName: string; roles: string[] }>
+			Array<{
+				id: string;
+				artistAliasId: string | null;
+				creditName: string;
+				roles: string[];
+			}>
 		>();
 		for (const cr of creditsData) {
 			const key = cr.trackId;
@@ -496,7 +502,9 @@ originalSongsRouter.get("/:id/tracks", async (c) => {
 			if (!creditsByTrack.has(key)) {
 				creditsByTrack.set(key, existing);
 			}
-			const artist = existing.find((a) => a.id === cr.artistId);
+			const artist = existing.find(
+				(a) => a.id === cr.artistId && a.artistAliasId === cr.artistAliasId,
+			);
 			if (artist) {
 				if (cr.roleName && !artist.roles.includes(cr.roleName)) {
 					artist.roles.push(cr.roleName);
@@ -504,6 +512,7 @@ originalSongsRouter.get("/:id/tracks", async (c) => {
 			} else {
 				existing.push({
 					id: cr.artistId,
+					artistAliasId: cr.artistAliasId ?? `${cr.artistId}__main__`,
 					creditName: cr.creditName,
 					roles: cr.roleName ? [cr.roleName] : [],
 				});

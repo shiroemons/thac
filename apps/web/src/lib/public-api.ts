@@ -181,6 +181,7 @@ export interface PublicArrangeTrack {
 	}>;
 	artists: Array<{
 		id: string;
+		artistAliasId: string;
 		creditName: string;
 		roles: string[];
 	}>;
@@ -252,6 +253,7 @@ export interface PublicCircleTrack {
 	trackNumber: number;
 	artists: Array<{
 		id: string;
+		artistAliasId: string;
 		creditName: string;
 		roles: string[];
 	}>;
@@ -417,7 +419,7 @@ export interface PublicReleaseDetail {
 		nameEn: string | null;
 		credits: Array<{
 			artistId: string;
-			artistAliasId: string | null;
+			artistAliasId: string;
 			creditName: string;
 			aliasName: string | null;
 			artistName: string | null;
@@ -494,6 +496,7 @@ export interface PublicTrackDetail {
 	trackNumber: number;
 	credits: Array<{
 		artistId: string;
+		artistAliasId: string;
 		creditName: string;
 		roles: Array<{ roleCode: string; roleName: string | null }>;
 	}>;

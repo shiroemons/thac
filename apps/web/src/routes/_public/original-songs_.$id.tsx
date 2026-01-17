@@ -281,9 +281,9 @@ function OriginalSongDetailPage() {
 											<div className="flex flex-wrap gap-1">
 												{track.artists.map((artist) => (
 													<Link
-														key={artist.id}
+														key={artist.artistAliasId}
 														to="/artists/$id"
-														params={{ id: artist.id }}
+														params={{ id: artist.artistAliasId }}
 														preload="intent"
 														className="inline-flex items-center gap-1 hover:text-primary"
 													>

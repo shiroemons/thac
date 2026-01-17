@@ -15,6 +15,7 @@ import {
 	officialWorks,
 	releaseCircles,
 	releases,
+	sql,
 	trackCredits,
 	trackOfficialSongs,
 } from "@thac/db";
@@ -150,16 +151,40 @@ statsRouter.get("/rankings", async (c) => {
 					.orderBy(desc(countDistinct(releaseCircles.releaseId)))
 					.limit(5),
 
-				// アクティブアーティスト: track_creditsをartist_idでグループ化し、トラック数で降順ソート
+				// アクティブアーティスト（名義単位）: track_creditsを名義単位でグループ化し、トラック数で降順ソート
+				// artistAliasIdがnullの場合はメイン名義、存在する場合は別名義として扱う
 				db
 					.select({
-						id: artists.id,
-						name: artists.name,
+						id: sql<string>`CASE
+							WHEN ${trackCredits.artistAliasId} IS NULL
+							THEN ${trackCredits.artistId} || '__main__'
+							ELSE ${trackCredits.artistAliasId}
+						END`,
+						name: sql<string>`CASE
+							WHEN ${trackCredits.artistAliasId} IS NULL
+							THEN ${artists.name}
+							ELSE ${artistAliases.name}
+						END`,
 						count: countDistinct(trackCredits.trackId),
 					})
 					.from(trackCredits)
 					.innerJoin(artists, eq(trackCredits.artistId, artists.id))
-					.groupBy(artists.id)
+					.leftJoin(
+						artistAliases,
+						eq(trackCredits.artistAliasId, artistAliases.id),
+					)
+					.groupBy(
+						sql`CASE
+							WHEN ${trackCredits.artistAliasId} IS NULL
+							THEN ${trackCredits.artistId} || '__main__'
+							ELSE ${trackCredits.artistAliasId}
+						END`,
+						sql`CASE
+							WHEN ${trackCredits.artistAliasId} IS NULL
+							THEN ${artists.name}
+							ELSE ${artistAliases.name}
+						END`,
+					)
 					.orderBy(desc(countDistinct(trackCredits.trackId)))
 					.limit(5),
 			]);
@@ -176,7 +201,7 @@ statsRouter.get("/rankings", async (c) => {
 				count: row.count,
 			})),
 			activeArtists: activeArtistsResult.map((row) => ({
-				id: row.id,
+				id: row.id, // クエリで既に正しいID形式（メイン名義: {artistId}__main__、別名義: artistAliasId）
 				name: row.name,
 				count: row.count,
 			})),

@@ -170,13 +170,13 @@ function TrackDetailPage() {
 										</p>
 										<div className="flex flex-wrap gap-x-2 gap-y-1">
 											{credits.map((credit, idx) => (
-												<span key={credit.artistId}>
+												<span key={credit.artistAliasId}>
 													{idx > 0 && (
 														<span className="text-base-content/40"> / </span>
 													)}
 													<Link
 														to="/artists/$id"
-														params={{ id: credit.artistId }}
+														params={{ id: credit.artistAliasId }}
 														preload="intent"
 														className="hover:text-primary"
 													>
