@@ -32,7 +32,7 @@ interface StatCardProps {
 
 function StatCard({ title, value, icon, href, isLoading }: StatCardProps) {
 	const content = (
-		<div className="flex items-center gap-3 p-3">
+		<div className="flex items-center gap-4 p-4">
 			<div className="text-base-content/50">{icon}</div>
 			<div>
 				{isLoading ? (
@@ -42,7 +42,7 @@ function StatCard({ title, value, icon, href, isLoading }: StatCardProps) {
 						{value?.toLocaleString()}
 					</div>
 				)}
-				<div className="text-base-content/70 text-xs">{title}</div>
+				<div className="text-base-content/70 text-sm">{title}</div>
 			</div>
 		</div>
 	);
@@ -188,7 +188,7 @@ function AdminDashboard() {
 					<h2 className="mb-2 font-medium text-base text-base-content/80">
 						ユーザー
 					</h2>
-					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						<StatCard
 							title="ユーザー"
 							value={data?.users}
@@ -203,7 +203,7 @@ function AdminDashboard() {
 					<h2 className="mb-2 font-medium text-base text-base-content/80">
 						マスタ管理
 					</h2>
-					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						{masterStats.map((stat) => (
 							<StatCard
 								key={stat.title}
@@ -222,7 +222,7 @@ function AdminDashboard() {
 					<h2 className="mb-2 font-medium text-base text-base-content/80">
 						公式管理
 					</h2>
-					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						{officialStats.map((stat) => (
 							<StatCard
 								key={stat.title}
@@ -241,7 +241,7 @@ function AdminDashboard() {
 					<h2 className="mb-2 font-medium text-base text-base-content/80">
 						アーティスト・サークル
 					</h2>
-					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						{artistCircleStats.map((stat) => (
 							<StatCard
 								key={stat.title}
@@ -260,7 +260,7 @@ function AdminDashboard() {
 					<h2 className="mb-2 font-medium text-base text-base-content/80">
 						イベント管理
 					</h2>
-					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						{eventStats.map((stat) => (
 							<StatCard
 								key={stat.title}
@@ -279,7 +279,7 @@ function AdminDashboard() {
 					<h2 className="mb-2 font-medium text-base text-base-content/80">
 						作品管理
 					</h2>
-					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						{releaseStats.map((stat) => (
 							<StatCard
 								key={stat.title}

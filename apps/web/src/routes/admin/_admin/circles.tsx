@@ -489,32 +489,32 @@ function CirclesPage() {
 							? [
 									{
 										label: `選択中の${selectedCount}件を削除`,
-										icon: <Trash2 className="mr-2 h-4 w-4" />,
+										icon: <Trash2 className="h-4 w-4" />,
 										onClick: () => setIsBatchDeleteDialogOpen(true),
 									},
 								]
 							: []),
 						{
 							label: "TSVでエクスポート",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("tsv", false),
 							disabled: isExporting,
 						},
 						{
 							label: "JSONでエクスポート",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("json", false),
 							disabled: isExporting,
 						},
 						{
 							label: "TSV（関連データ含む）",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("tsv", true),
 							disabled: isExporting,
 						},
 						{
 							label: "JSON（関連データ含む）",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("json", true),
 							disabled: isExporting,
 						},
@@ -533,7 +533,7 @@ function CirclesPage() {
 				</DataTableActionBar>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}
@@ -669,7 +669,7 @@ function CirclesPage() {
 												/>
 											</TableCell>
 											{isVisible("id") && (
-												<TableCell className="font-mono text-base-content/50 text-xs">
+												<TableCell className="font-mono text-base-content/50 text-sm">
 													{circle.id}
 												</TableCell>
 											)}
@@ -739,7 +739,7 @@ function CirclesPage() {
 													<Link
 														to="/admin/circles/$id"
 														params={{ id: circle.id }}
-														className="btn btn-ghost btn-xs"
+														className="btn btn-ghost btn-sm"
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">詳細</span>
@@ -929,9 +929,10 @@ function CirclesPage() {
 									type="button"
 									variant="outline"
 									size="sm"
+									className="gap-1"
 									onClick={handleOpenAddLinkDialog}
 								>
-									<Plus className="mr-1 h-4 w-4" />
+									<Plus className="h-4 w-4" />
 									追加
 								</Button>
 							</div>
@@ -940,7 +941,7 @@ function CirclesPage() {
 									{editingCircle.links.map((link) => (
 										<div
 											key={link.id}
-											className="flex items-center justify-between rounded border border-base-300 p-2"
+											className="flex items-center justify-between rounded-lg border border-base-300 p-4"
 										>
 											<div className="flex items-center gap-2">
 												<Badge variant="secondary">
@@ -955,7 +956,7 @@ function CirclesPage() {
 													{link.url.length > 40
 														? `${link.url.slice(0, 40)}...`
 														: link.url}
-													<ExternalLink className="h-3 w-3" />
+													<ExternalLink className="h-4 w-4" />
 												</a>
 												{link.isPrimary && (
 													<Badge className="bg-primary text-primary-content">
@@ -1129,7 +1130,7 @@ function CirclesPage() {
 							</div>
 						</div>
 						{createLinkMutation.error || updateLinkMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									createLinkMutation.error || updateLinkMutation.error,
 								)}

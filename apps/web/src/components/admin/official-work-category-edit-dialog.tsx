@@ -176,7 +176,7 @@ export function OfficialWorkCategoryEditDialog({
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{displayError && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{displayError}
 							</div>
 						)}
@@ -193,7 +193,7 @@ export function OfficialWorkCategoryEditDialog({
 								autoComplete="off"
 							/>
 							{mode === "edit" && (
-								<p className="text-muted-foreground text-xs">
+								<p className="text-muted-foreground text-sm">
 									コードは変更できません
 								</p>
 							)}

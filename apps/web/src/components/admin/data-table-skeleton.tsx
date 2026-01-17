@@ -25,8 +25,8 @@ function DataTableSkeleton({
 		>
 			{/* Action Bar Skeleton */}
 			{showActionBar && (
-				<div className="flex items-center justify-between gap-3 p-4">
-					<div className="flex items-center gap-3">
+				<div className="flex items-center justify-between gap-4 p-4">
+					<div className="flex items-center gap-4">
 						<Skeleton className="h-8 w-64" />
 						<Skeleton className="h-8 w-40" />
 					</div>
@@ -37,7 +37,7 @@ function DataTableSkeleton({
 			{/* Table Skeleton */}
 			<div className="overflow-hidden">
 				{/* Header */}
-				<div className="flex gap-4 border-base-300 border-b bg-base-200/50 px-4 py-3">
+				<div className="flex gap-4 border-base-300 border-b bg-base-200/50 px-4 py-4">
 					{Array.from({ length: columns }).map((_, i) => (
 						// biome-ignore lint/suspicious/noArrayIndexKey: Skeleton placeholder
 						<Skeleton key={i} className="h-4 flex-1" />

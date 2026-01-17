@@ -49,18 +49,18 @@ export function AdminErrorBoundary({ error }: ErrorComponentProps) {
 				<div className="flex gap-4">
 					<button
 						type="button"
-						className="btn btn-primary"
+						className="btn btn-primary gap-1"
 						onClick={() => router.invalidate()}
 					>
-						<RefreshCw className="mr-2 h-4 w-4" />
+						<RefreshCw className="h-4 w-4" />
 						再試行
 					</button>
 					<button
 						type="button"
-						className="btn btn-outline"
+						className="btn btn-outline gap-1"
 						onClick={() => router.navigate({ to: "/admin" })}
 					>
-						<LayoutDashboard className="mr-2 h-4 w-4" />
+						<LayoutDashboard className="h-4 w-4" />
 						ダッシュボードへ
 					</button>
 				</div>
@@ -79,18 +79,18 @@ export function AdminErrorBoundary({ error }: ErrorComponentProps) {
 			<div className="flex gap-4">
 				<button
 					type="button"
-					className="btn btn-primary"
+					className="btn btn-primary gap-1"
 					onClick={() => router.invalidate()}
 				>
-					<RefreshCw className="mr-2 h-4 w-4" />
+					<RefreshCw className="h-4 w-4" />
 					再試行
 				</button>
 				<button
 					type="button"
-					className="btn btn-outline"
+					className="btn btn-outline gap-1"
 					onClick={() => router.navigate({ to: "/admin" })}
 				>
-					<LayoutDashboard className="mr-2 h-4 w-4" />
+					<LayoutDashboard className="h-4 w-4" />
 					ダッシュボードへ
 				</button>
 			</div>

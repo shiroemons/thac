@@ -135,8 +135,8 @@ function ArtistAliasDetailPage() {
 				<div className="alert alert-error">
 					<span>名義が見つかりません</span>
 				</div>
-				<Link to="/admin/artist-aliases" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link to="/admin/artist-aliases" className="btn btn-ghost mt-4 gap-1">
+					<ArrowLeft className="h-4 w-4" />
 					名義一覧に戻る
 				</Link>
 			</div>
@@ -175,25 +175,26 @@ function ArtistAliasDetailPage() {
 					<Button
 						variant="outline"
 						size="sm"
+						className="gap-1"
 						onClick={() => setIsEditDialogOpen(true)}
 					>
-						<Pencil className="mr-2 h-4 w-4" />
+						<Pencil className="h-4 w-4" />
 						編集
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="text-error hover:bg-error hover:text-error-content"
+						className="gap-1 text-error hover:bg-error hover:text-error-content"
 						onClick={() => setIsDeleteDialogOpen(true)}
 					>
-						<Trash2 className="mr-2 h-4 w-4" />
+						<Trash2 className="h-4 w-4" />
 						削除
 					</Button>
 				</div>
 			</div>
 
 			{/* 基本情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 
@@ -260,7 +261,7 @@ function ArtistAliasDetailPage() {
 			</div>
 
 			{/* 統計情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">統計情報</h2>
 
@@ -278,20 +279,14 @@ function ArtistAliasDetailPage() {
 									<Label className="text-base-content/70">参加トラック数</Label>
 									<p className="font-bold text-2xl">
 										{tracksData.totalUniqueTrackCount}
-										<span className="font-normal text-base-content/70 text-sm">
-											{" "}
-											曲
-										</span>
+										<span className="text-base-content/70 text-sm"> 曲</span>
 									</p>
 								</div>
 								<div className="rounded-lg bg-base-200/50 p-4">
 									<Label className="text-base-content/70">参加リリース数</Label>
 									<p className="font-bold text-2xl">
 										{tracksData.statistics.releaseCount}
-										<span className="font-normal text-base-content/70 text-sm">
-											{" "}
-											作品
-										</span>
+										<span className="text-base-content/70 text-sm"> 作品</span>
 									</p>
 								</div>
 								<div className="rounded-lg bg-base-200/50 p-4">
@@ -330,7 +325,7 @@ function ArtistAliasDetailPage() {
 			</div>
 
 			{/* 参加サークルカード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
 						<Users className="h-4 w-4" />
@@ -394,7 +389,7 @@ function ArtistAliasDetailPage() {
 			</div>
 
 			{/* 関連楽曲カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
 						<Music className="h-4 w-4" />

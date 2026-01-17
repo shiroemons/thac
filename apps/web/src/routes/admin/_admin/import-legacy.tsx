@@ -330,7 +330,7 @@ function LegacyImportPage() {
 			</div>
 
 			{/* ステップコンテンツ */}
-			<div className="card border border-base-300 bg-base-100 shadow-sm">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					{step === "upload" && (
 						<UploadStep
@@ -629,7 +629,7 @@ function MappingStep({
 			</div>
 
 			{/* 統計 */}
-			<div className="stats w-full border border-base-300 shadow-sm">
+			<div className="stats w-full border border-base-300">
 				<div className="stat">
 					<div className="stat-title">レコード数</div>
 					<div className="stat-value text-2xl">{records.length}</div>
@@ -702,7 +702,7 @@ function SongMappingRow({
 	};
 
 	return (
-		<div className="flex items-center gap-4 rounded-lg border border-base-300 bg-base-100 p-3">
+		<div className="flex items-center gap-4 rounded-lg border border-base-300 bg-base-100 p-4">
 			<div className="flex-1">
 				<div className="flex items-center gap-2">
 					<Music className="h-4 w-4 text-base-content/40" />
@@ -779,7 +779,10 @@ function EventRegistrationStep({
 						</p>
 					</div>
 					{existingEventsWithDays.map((event) => (
-						<div key={event.eventId} className="card bg-base-200 p-4 shadow-sm">
+						<div
+							key={event.eventId}
+							className="card border border-base-300 bg-base-200 p-4"
+						>
 							<h4 className="mb-3 font-medium">{event.eventName}</h4>
 							<div className="flex flex-wrap gap-4">
 								{event.eventDays.map((day) => (
@@ -1127,7 +1130,7 @@ function ImportingStep({
 
 			{/* エンティティ別進捗 */}
 			{entityProgress && (
-				<div className="stats stats-vertical lg:stats-horizontal w-full border border-base-300 shadow-sm">
+				<div className="stats stats-vertical lg:stats-horizontal w-full border border-base-300">
 					{(
 						Object.entries(entityLabels) as [keyof EntityProgressMap, string][]
 					).map(([key, label]) => {
@@ -1180,7 +1183,7 @@ function ImportingStep({
 						return (
 							<li
 								key={s}
-								className={`flex items-center justify-between rounded p-2 text-sm ${
+								className={`flex items-center justify-between rounded-lg p-4 text-sm ${
 									isCurrent
 										? "bg-primary/10 text-primary"
 										: stageCompleted

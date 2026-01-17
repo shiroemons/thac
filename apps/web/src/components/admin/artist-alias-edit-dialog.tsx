@@ -319,7 +319,7 @@ export function ArtistAliasEditDialog({
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{displayError && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{displayError}
 							</div>
 						)}
@@ -343,7 +343,7 @@ export function ArtistAliasEditDialog({
 								<Button
 									variant="ghost"
 									size="sm"
-									className="h-auto p-0 text-primary text-xs hover:underline"
+									className="h-auto p-0 text-primary text-sm hover:underline"
 									onClick={() => setIsArtistCreateDialogOpen(true)}
 									disabled={isPending}
 								>

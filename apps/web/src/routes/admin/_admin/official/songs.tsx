@@ -268,30 +268,30 @@ function OfficialSongsPage() {
 					secondaryActions={[
 						{
 							label: "インポート",
-							icon: <Upload className="mr-2 h-4 w-4" />,
+							icon: <Upload className="h-4 w-4" />,
 							onClick: () => setIsImportDialogOpen(true),
 						},
 						{
 							label: "TSVでエクスポート",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("tsv", false),
 							disabled: isExporting,
 						},
 						{
 							label: "JSONでエクスポート",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("json", false),
 							disabled: isExporting,
 						},
 						{
 							label: "TSV（関連データ含む）",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("tsv", true),
 							disabled: isExporting,
 						},
 						{
 							label: "JSON（関連データ含む）",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("json", true),
 							disabled: isExporting,
 						},
@@ -308,7 +308,7 @@ function OfficialSongsPage() {
 				</DataTableActionBar>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}

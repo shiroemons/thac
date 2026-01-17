@@ -300,7 +300,7 @@ function ArtistAliasesPage() {
 							? [
 									{
 										label: `選択中の${selectedCount}件を削除`,
-										icon: <Trash2 className="mr-2 h-4 w-4" />,
+										icon: <Trash2 className="h-4 w-4" />,
 										onClick: () => setIsBatchDeleteDialogOpen(true),
 									},
 								]
@@ -329,7 +329,7 @@ function ArtistAliasesPage() {
 				</DataTableActionBar>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}
@@ -460,7 +460,7 @@ function ArtistAliasesPage() {
 												/>
 											</TableCell>
 											{isVisible("id") && (
-												<TableCell className="font-mono text-base-content/50 text-xs">
+												<TableCell className="font-mono text-base-content/50 text-sm">
 													{alias.id}
 												</TableCell>
 											)}
@@ -545,7 +545,7 @@ function ArtistAliasesPage() {
 													<Link
 														to="/admin/artist-aliases/$id"
 														params={{ id: alias.id }}
-														className="btn btn-ghost btn-xs"
+														className="btn btn-ghost btn-sm"
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">詳細</span>

@@ -427,25 +427,25 @@ function EventsPage() {
 					secondaryActions={[
 						{
 							label: "TSVでエクスポート",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("tsv", false),
 							disabled: isExporting,
 						},
 						{
 							label: "JSONでエクスポート",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("json", false),
 							disabled: isExporting,
 						},
 						{
 							label: "TSV（関連データ含む）",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("tsv", true),
 							disabled: isExporting,
 						},
 						{
 							label: "JSON（関連データ含む）",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("json", true),
 							disabled: isExporting,
 						},
@@ -453,7 +453,7 @@ function EventsPage() {
 				/>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}
@@ -574,7 +574,7 @@ function EventsPage() {
 									events.map((event) => (
 										<TableRow key={event.id}>
 											{isVisible("id") && (
-												<TableCell className="font-mono text-base-content/50 text-xs">
+												<TableCell className="font-mono text-base-content/50 text-sm">
 													{event.id}
 												</TableCell>
 											)}
@@ -633,7 +633,7 @@ function EventsPage() {
 													<Link
 														to="/admin/events/$id"
 														params={{ id: event.id }}
-														className="btn btn-ghost btn-xs"
+														className="btn btn-ghost btn-sm"
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">詳細</span>
@@ -712,7 +712,7 @@ function EventsPage() {
 							/>
 						</div>
 						{createSeriesMutation.error && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{createSeriesMutation.error instanceof Error
 									? createSeriesMutation.error.message
 									: "シリーズの作成に失敗しました"}
@@ -773,7 +773,7 @@ function EventsPage() {
 								<Button
 									variant="ghost"
 									size="sm"
-									className="h-auto p-0 text-primary text-xs hover:underline"
+									className="h-auto p-0 text-primary text-sm hover:underline"
 									onClick={() => setIsSeriesDialogOpen(true)}
 								>
 									+ 新規シリーズ作成
@@ -874,9 +874,10 @@ function EventsPage() {
 									type="button"
 									variant="outline"
 									size="sm"
+									className="gap-1"
 									onClick={handleOpenAddDayDialog}
 								>
-									<Plus className="mr-1 h-4 w-4" />
+									<Plus className="h-4 w-4" />
 									追加
 								</Button>
 							</div>
@@ -885,7 +886,7 @@ function EventsPage() {
 									{editingEvent.days.map((day) => (
 										<div
 											key={day.id}
-											className="flex items-center justify-between rounded border border-base-300 p-2"
+											className="flex items-center justify-between rounded-lg border border-base-300 p-4"
 										>
 											<div className="flex items-center gap-2">
 												<Badge variant="primary">{day.dayNumber}日目</Badge>
@@ -986,7 +987,7 @@ function EventsPage() {
 							/>
 						</div>
 						{createDayMutation.error || updateDayMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									createDayMutation.error || updateDayMutation.error,
 									"開催日の保存に失敗しました",

@@ -133,7 +133,7 @@ export function OfficialLinkDialog({
 
 				<div className="grid gap-4 py-4">
 					{error && (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+						<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 							{error}
 						</div>
 					)}

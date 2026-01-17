@@ -76,12 +76,12 @@ function DataTableActionBar({
 		<div
 			data-slot="data-table-action-bar"
 			className={cn(
-				"mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+				"mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
 				className,
 			)}
 			{...props}
 		>
-			<div className="flex flex-1 items-center gap-3">
+			<div className="flex flex-1 items-center gap-4">
 				{onSearchChange && (
 					<SearchInput
 						id="table-search"

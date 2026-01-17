@@ -198,7 +198,7 @@ function EventSeriesPage() {
 					secondaryActions={[
 						{
 							label: reorderMutation.isPending ? "整理中..." : "順序を整理",
-							icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
+							icon: <ArrowUpDown className="h-4 w-4" />,
 							onClick: handleReorder,
 							disabled: reorderMutation.isPending || seriesList.length === 0,
 						},
@@ -206,7 +206,7 @@ function EventSeriesPage() {
 				/>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}
@@ -282,7 +282,7 @@ function EventSeriesPage() {
 											/>
 										</TableCell>
 										{isVisible("id") && (
-											<TableCell className="font-mono text-base-content/50 text-xs">
+											<TableCell className="font-mono text-base-content/50 text-sm">
 												{series.id}
 											</TableCell>
 										)}
@@ -318,7 +318,7 @@ function EventSeriesPage() {
 												<Link
 													to="/admin/event-series/$id"
 													params={{ id: series.id }}
-													className="btn btn-ghost btn-xs"
+													className="btn btn-ghost btn-sm"
 												>
 													<Eye className="h-4 w-4" />
 													<span className="sr-only">詳細</span>

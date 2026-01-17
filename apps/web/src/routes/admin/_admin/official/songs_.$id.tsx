@@ -53,8 +53,8 @@ function OfficialSongDetailPage() {
 				<div className="alert alert-error">
 					<span>公式楽曲が見つかりません</span>
 				</div>
-				<Link to="/admin/official/songs" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link to="/admin/official/songs" className="btn btn-ghost mt-4 gap-1">
+					<ArrowLeft className="h-4 w-4" />
 					公式楽曲一覧に戻る
 				</Link>
 			</div>
@@ -94,15 +94,16 @@ function OfficialSongDetailPage() {
 				<Button
 					variant="outline"
 					size="sm"
+					className="gap-1"
 					onClick={() => setIsEditDialogOpen(true)}
 				>
-					<Pencil className="mr-2 h-4 w-4" />
+					<Pencil className="h-4 w-4" />
 					編集
 				</Button>
 			</div>
 
 			{/* 基本情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 

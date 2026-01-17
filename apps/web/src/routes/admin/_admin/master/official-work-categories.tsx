@@ -249,20 +249,20 @@ function OfficialWorkCategoriesPage() {
 					secondaryActions={[
 						{
 							label: reorderMutation.isPending ? "整理中..." : "順序を整理",
-							icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
+							icon: <ArrowUpDown className="h-4 w-4" />,
 							onClick: handleReorder,
 							disabled: reorderMutation.isPending || items.length === 0,
 						},
 						{
 							label: "インポート",
-							icon: <Upload className="mr-2 h-4 w-4" />,
+							icon: <Upload className="h-4 w-4" />,
 							onClick: () => setIsImportDialogOpen(true),
 						},
 					]}
 				/>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}
@@ -361,7 +361,7 @@ function OfficialWorkCategoriesPage() {
 													<Link
 														to="/admin/master/official-work-categories/$code"
 														params={{ code: c.code }}
-														className="btn btn-ghost btn-xs"
+														className="btn btn-ghost btn-sm"
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">詳細</span>

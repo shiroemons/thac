@@ -918,8 +918,8 @@ function ReleaseDetailPage() {
 				<div className="alert alert-error">
 					<span>作品が見つかりません</span>
 				</div>
-				<Link to="/admin/releases" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link to="/admin/releases" className="btn btn-ghost mt-4 gap-1">
+					<ArrowLeft className="h-4 w-4" />
 					作品一覧に戻る
 				</Link>
 			</div>
@@ -964,9 +964,10 @@ function ReleaseDetailPage() {
 				<Button
 					variant="outline"
 					size="sm"
+					className="gap-1"
 					onClick={() => setIsEditDialogOpen(true)}
 				>
-					<Pencil className="mr-2 h-4 w-4" />
+					<Pencil className="h-4 w-4" />
 					編集
 				</Button>
 			</div>
@@ -1059,9 +1060,10 @@ function ReleaseDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
+							className="gap-1"
 							onClick={() => openDiscDialog()}
 						>
-							<Plus className="mr-2 h-4 w-4" />
+							<Plus className="h-4 w-4" />
 							ディスク追加
 						</Button>
 					</div>
@@ -1123,8 +1125,13 @@ function ReleaseDetailPage() {
 							<Users className="h-4 w-4" />
 							関連サークル
 						</h2>
-						<Button variant="outline" size="sm" onClick={openCircleDialog}>
-							<Plus className="mr-2 h-4 w-4" />
+						<Button
+							variant="outline"
+							size="sm"
+							className="gap-1"
+							onClick={openCircleDialog}
+						>
+							<Plus className="h-4 w-4" />
 							サークル追加
 						</Button>
 					</div>
@@ -1212,9 +1219,10 @@ function ReleaseDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
+							className="gap-1"
 							onClick={() => openPublicationDialog()}
 						>
-							<Plus className="mr-2 h-4 w-4" />
+							<Plus className="h-4 w-4" />
 							リンク追加
 						</Button>
 					</div>
@@ -1294,9 +1302,10 @@ function ReleaseDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
+							className="gap-1"
 							onClick={() => openJanCodeDialog()}
 						>
-							<Plus className="mr-2 h-4 w-4" />
+							<Plus className="h-4 w-4" />
 							JANコード追加
 						</Button>
 					</div>
@@ -1367,9 +1376,10 @@ function ReleaseDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
+							className="gap-1"
 							onClick={() => openTrackDialog()}
 						>
-							<Plus className="mr-2 h-4 w-4" />
+							<Plus className="h-4 w-4" />
 							トラック追加
 						</Button>
 					</div>
@@ -1625,7 +1635,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{discCreateMutation.error || discUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									discCreateMutation.error || discUpdateMutation.error,
 								)}
@@ -1698,7 +1708,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{circleAddMutation.error && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(circleAddMutation.error)}
 							</div>
 						)}
@@ -1769,7 +1779,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{trackCreateMutation.error || trackUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									trackCreateMutation.error || trackUpdateMutation.error,
 								)}
@@ -1908,9 +1918,10 @@ function ReleaseDetailPage() {
 							<Button
 								variant="outline"
 								size="sm"
+								className="gap-1"
 								onClick={() => openCreditEditDialog()}
 							>
-								<Plus className="mr-2 h-4 w-4" />
+								<Plus className="h-4 w-4" />
 								クレジット追加
 							</Button>
 						</div>
@@ -1942,7 +1953,7 @@ function ReleaseDetailPage() {
 														<div>
 															<p className="font-medium">{credit.creditName}</p>
 															{credit.artistAlias && (
-																<p className="text-base-content/70 text-xs">
+																<p className="text-base-content/70 text-sm">
 																	名義
 																</p>
 															)}
@@ -2022,7 +2033,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{creditCreateMutation.error || creditUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									creditCreateMutation.error || creditUpdateMutation.error,
 								)}
@@ -2046,7 +2057,7 @@ function ReleaseDetailPage() {
 								clearable={false}
 							/>
 							{creditForm.artistId && (
-								<p className="text-base-content/70 text-xs">
+								<p className="text-base-content/70 text-sm">
 									アーティスト:{" "}
 									{artistsData?.data.find((a) => a.id === creditForm.artistId)
 										?.name ?? "-"}{" "}
@@ -2073,7 +2084,7 @@ function ReleaseDetailPage() {
 								}
 								placeholder="盤面に表示される名前"
 							/>
-							<p className="text-base-content/70 text-xs">
+							<p className="text-base-content/70 text-sm">
 								アーティスト名義から自動入力されます。必要に応じて編集してください。
 							</p>
 						</div>
@@ -2098,7 +2109,7 @@ function ReleaseDetailPage() {
 
 						<div className="grid gap-2">
 							<Label>役割</Label>
-							<div className="flex flex-wrap gap-2 rounded-md border border-base-300 p-3">
+							<div className="flex flex-wrap gap-2 rounded-lg border border-base-300 p-4">
 								{creditRolesData?.data.map((role) => (
 									<label
 										key={role.code}
@@ -2123,7 +2134,7 @@ function ReleaseDetailPage() {
 									</span>
 								)}
 							</div>
-							<p className="text-base-content/70 text-xs">
+							<p className="text-base-content/70 text-sm">
 								選択した順序で役割が表示されます。
 							</p>
 						</div>
@@ -2174,7 +2185,7 @@ function ReleaseDetailPage() {
 					<div className="grid gap-4 py-4">
 						{publicationCreateMutation.error ||
 						publicationUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									publicationCreateMutation.error ||
 										publicationUpdateMutation.error,
@@ -2268,7 +2279,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{janCodeCreateMutation.error || janCodeUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									janCodeCreateMutation.error || janCodeUpdateMutation.error,
 								)}
@@ -2292,7 +2303,7 @@ function ReleaseDetailPage() {
 								disabled={!!editingJanCode}
 								className="font-mono"
 							/>
-							<p className="text-base-content/70 text-xs">
+							<p className="text-base-content/70 text-sm">
 								8桁または13桁の数字（編集時は変更不可）
 							</p>
 						</div>

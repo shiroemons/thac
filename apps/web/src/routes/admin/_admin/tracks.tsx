@@ -345,32 +345,32 @@ function TracksPage() {
 							? [
 									{
 										label: `選択中の${selectedCount}件を削除`,
-										icon: <Trash2 className="mr-2 h-4 w-4" />,
+										icon: <Trash2 className="h-4 w-4" />,
 										onClick: () => setIsBatchDeleteDialogOpen(true),
 									},
 								]
 							: []),
 						{
 							label: "TSVでエクスポート",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("tsv", false),
 							disabled: isExporting,
 						},
 						{
 							label: "JSONでエクスポート",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("json", false),
 							disabled: isExporting,
 						},
 						{
 							label: "TSV（関連データ含む）",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("tsv", true),
 							disabled: isExporting,
 						},
 						{
 							label: "JSON（関連データ含む）",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("json", true),
 							disabled: isExporting,
 						},
@@ -400,7 +400,7 @@ function TracksPage() {
 				</DataTableActionBar>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}
@@ -558,7 +558,7 @@ function TracksPage() {
 												/>
 											</TableCell>
 											{isVisible("id") && (
-												<TableCell className="font-mono text-base-content/50 text-xs">
+												<TableCell className="font-mono text-base-content/50 text-sm">
 													{track.id}
 												</TableCell>
 											)}
@@ -659,7 +659,7 @@ function TracksPage() {
 													<Link
 														to="/admin/tracks/$id"
 														params={{ id: track.id }}
-														className="btn btn-ghost btn-xs"
+														className="btn btn-ghost btn-sm"
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">トラック詳細</span>
@@ -800,7 +800,7 @@ function TracksPage() {
 							/>
 						</div>
 						{createMutation.error && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{createMutation.error instanceof Error
 									? createMutation.error.message
 									: "作成に失敗しました"}

@@ -149,8 +149,8 @@ function ArtistDetailPage() {
 				<div className="alert alert-error">
 					<span>アーティストが見つかりません</span>
 				</div>
-				<Link to="/admin/artists" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link to="/admin/artists" className="btn btn-ghost mt-4 gap-1">
+					<ArrowLeft className="h-4 w-4" />
 					アーティスト一覧に戻る
 				</Link>
 			</div>
@@ -206,25 +206,26 @@ function ArtistDetailPage() {
 					<Button
 						variant="outline"
 						size="sm"
+						className="gap-1"
 						onClick={() => setIsEditDialogOpen(true)}
 					>
-						<Pencil className="mr-2 h-4 w-4" />
+						<Pencil className="h-4 w-4" />
 						編集
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="text-error hover:bg-error hover:text-error-content"
+						className="gap-1 text-error hover:bg-error hover:text-error-content"
 						onClick={() => setIsDeleteDialogOpen(true)}
 					>
-						<Trash2 className="mr-2 h-4 w-4" />
+						<Trash2 className="h-4 w-4" />
 						削除
 					</Button>
 				</div>
 			</div>
 
 			{/* 基本情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 
@@ -268,7 +269,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 別名義一覧カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
@@ -277,8 +278,13 @@ function ArtistDetailPage() {
 								<Badge variant="secondary">{artist.aliases.length}件</Badge>
 							)}
 						</h2>
-						<Button variant="primary" size="sm" onClick={handleCreateAlias}>
-							<Plus className="mr-1 h-4 w-4" />
+						<Button
+							variant="primary"
+							size="sm"
+							className="gap-1"
+							onClick={handleCreateAlias}
+						>
+							<Plus className="h-4 w-4" />
 							別名義追加
 						</Button>
 					</div>
@@ -353,7 +359,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 統計情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">統計情報</h2>
 
@@ -371,20 +377,14 @@ function ArtistDetailPage() {
 									<Label className="text-base-content/70">参加トラック数</Label>
 									<p className="font-bold text-2xl">
 										{tracksData.totalUniqueTrackCount}
-										<span className="font-normal text-base-content/70 text-sm">
-											{" "}
-											曲
-										</span>
+										<span className="text-base-content/70 text-sm"> 曲</span>
 									</p>
 								</div>
 								<div className="rounded-lg bg-base-200/50 p-4">
 									<Label className="text-base-content/70">参加リリース数</Label>
 									<p className="font-bold text-2xl">
 										{tracksData.statistics.releaseCount}
-										<span className="font-normal text-base-content/70 text-sm">
-											{" "}
-											作品
-										</span>
+										<span className="text-base-content/70 text-sm"> 作品</span>
 									</p>
 								</div>
 								<div className="rounded-lg bg-base-200/50 p-4">
@@ -423,7 +423,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 参加サークルカード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
 						<Users className="h-4 w-4" />
@@ -487,7 +487,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 関連楽曲カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
 						<Music className="h-4 w-4" />

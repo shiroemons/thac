@@ -251,8 +251,8 @@ function CircleDetailPage() {
 				<div className="alert alert-error">
 					<span>サークルが見つかりません</span>
 				</div>
-				<Link to="/admin/circles" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link to="/admin/circles" className="btn btn-ghost mt-4 gap-1">
+					<ArrowLeft className="h-4 w-4" />
 					サークル一覧に戻る
 				</Link>
 			</div>
@@ -291,25 +291,26 @@ function CircleDetailPage() {
 					<Button
 						variant="outline"
 						size="sm"
+						className="gap-1"
 						onClick={() => setIsEditDialogOpen(true)}
 					>
-						<Pencil className="mr-2 h-4 w-4" />
+						<Pencil className="h-4 w-4" />
 						編集
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="text-error hover:bg-error hover:text-error-content"
+						className="gap-1 text-error hover:bg-error hover:text-error-content"
 						onClick={() => setIsDeleteDialogOpen(true)}
 					>
-						<Trash2 className="mr-2 h-4 w-4" />
+						<Trash2 className="h-4 w-4" />
 						削除
 					</Button>
 				</div>
 			</div>
 
 			{/* 基本情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 
@@ -353,7 +354,7 @@ function CircleDetailPage() {
 			</div>
 
 			{/* 外部リンク一覧カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
@@ -363,9 +364,10 @@ function CircleDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
+							className="gap-1"
 							onClick={() => openLinkDialog()}
 						>
-							<Plus className="mr-2 h-4 w-4" />
+							<Plus className="h-4 w-4" />
 							リンク追加
 						</Button>
 					</div>
@@ -402,7 +404,7 @@ function CircleDetailPage() {
 													{link.url.length > 40
 														? `${link.url.substring(0, 40)}...`
 														: link.url}
-													<ExternalLink className="h-3 w-3" />
+													<ExternalLink className="h-4 w-4" />
 												</a>
 											</TableCell>
 											<TableCell>
@@ -450,7 +452,7 @@ function CircleDetailPage() {
 			</div>
 
 			{/* 統計情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
 						<BarChart3 className="h-4 w-4" />
@@ -469,20 +471,14 @@ function CircleDetailPage() {
 								<Label className="text-base-content/70">参加作品数</Label>
 								<p className="font-bold text-2xl">
 									{artistsData.statistics.releaseCount}
-									<span className="font-normal text-base-content/70 text-sm">
-										{" "}
-										作品
-									</span>
+									<span className="text-base-content/70 text-sm"> 作品</span>
 								</p>
 							</div>
 							<div className="rounded-lg bg-base-200/50 p-4">
 								<Label className="text-base-content/70">トラック総数</Label>
 								<p className="font-bold text-2xl">
 									{artistsData.statistics.totalTrackCount}
-									<span className="font-normal text-base-content/70 text-sm">
-										{" "}
-										曲
-									</span>
+									<span className="text-base-content/70 text-sm"> 曲</span>
 								</p>
 							</div>
 							<div className="rounded-lg bg-base-200/50 p-4">
@@ -491,10 +487,7 @@ function CircleDetailPage() {
 								</Label>
 								<p className="font-bold text-2xl">
 									{artistsData.statistics.totalArtistCount}
-									<span className="font-normal text-base-content/70 text-sm">
-										{" "}
-										名
-									</span>
+									<span className="text-base-content/70 text-sm"> 名</span>
 								</p>
 							</div>
 							<div className="rounded-lg bg-base-200/50 p-4">
@@ -514,7 +507,7 @@ function CircleDetailPage() {
 			</div>
 
 			{/* 参加アーティストカード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
 						<Users className="h-4 w-4" />
@@ -614,7 +607,7 @@ function CircleDetailPage() {
 			</div>
 
 			{/* 参加形態別リリース一覧カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">参加作品一覧</h2>
 
@@ -708,7 +701,7 @@ function CircleDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{linkCreateMutation.error || linkUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									linkCreateMutation.error || linkUpdateMutation.error,
 								)}

@@ -170,7 +170,7 @@ export function OfficialLinksCard({
 
 	if (isLoading) {
 		return (
-			<Card className="card-bordered">
+			<Card className="border border-base-300">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h3 className="flex items-center gap-2 font-semibold text-lg">
 						<ExternalLink className="h-4 w-4" />
@@ -179,8 +179,8 @@ export function OfficialLinksCard({
 				</div>
 				<div className="p-4">
 					<div className="animate-pulse space-y-2">
-						<div className="h-8 rounded bg-base-300" />
-						<div className="h-8 rounded bg-base-300" />
+						<div className="h-8 rounded-lg bg-base-300" />
+						<div className="h-8 rounded-lg bg-base-300" />
 					</div>
 				</div>
 			</Card>
@@ -189,14 +189,19 @@ export function OfficialLinksCard({
 
 	return (
 		<>
-			<Card className="card-bordered">
+			<Card className="border border-base-300">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h3 className="flex items-center gap-2 font-semibold text-lg">
 						<ExternalLink className="h-4 w-4" />
 						外部リンク
 					</h3>
-					<Button variant="outline" size="sm" onClick={openCreateDialog}>
-						<Plus className="mr-1 h-4 w-4" />
+					<Button
+						variant="outline"
+						size="sm"
+						className="gap-1"
+						onClick={openCreateDialog}
+					>
+						<Plus className="h-4 w-4" />
 						追加
 					</Button>
 				</div>
@@ -223,16 +228,16 @@ export function OfficialLinksCard({
 											<div className="flex gap-1">
 												<Button
 													variant="ghost"
-													size="xs"
+													size="sm"
 													disabled={index === 0 || reorderMutation.isPending}
 													onClick={() => handleMoveUp(index)}
 													title="上へ移動"
 												>
-													<ArrowUp className="h-3 w-3" />
+													<ArrowUp className="h-4 w-4" />
 												</Button>
 												<Button
 													variant="ghost"
-													size="xs"
+													size="sm"
 													disabled={
 														index === sortedLinks.length - 1 ||
 														reorderMutation.isPending
@@ -240,7 +245,7 @@ export function OfficialLinksCard({
 													onClick={() => handleMoveDown(index)}
 													title="下へ移動"
 												>
-													<ArrowDown className="h-3 w-3" />
+													<ArrowDown className="h-4 w-4" />
 												</Button>
 											</div>
 										</TableCell>
@@ -257,28 +262,28 @@ export function OfficialLinksCard({
 												<span className="max-w-[300px] truncate">
 													{link.url}
 												</span>
-												<ExternalLink className="h-3 w-3 flex-shrink-0" />
+												<ExternalLink className="h-4 w-4 flex-shrink-0" />
 											</a>
 										</TableCell>
 										<TableCell>
 											<div className="flex gap-1">
 												<Button
 													variant="ghost"
-													size="xs"
+													size="sm"
 													onClick={() => openEditDialog(link)}
 													title="編集"
 												>
-													<Pencil className="h-3 w-3" />
+													<Pencil className="h-4 w-4" />
 												</Button>
 												<Button
 													variant="ghost"
-													size="xs"
+													size="sm"
 													onClick={() => handleDelete(link.id)}
 													disabled={isDeleting === link.id}
 													title="削除"
 													className="text-error"
 												>
-													<Trash2 className="h-3 w-3" />
+													<Trash2 className="h-4 w-4" />
 												</Button>
 											</div>
 										</TableCell>

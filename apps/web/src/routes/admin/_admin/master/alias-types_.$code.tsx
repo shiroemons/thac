@@ -52,8 +52,11 @@ function AliasTypeDetailPage() {
 				<div className="alert alert-error">
 					<span>名義種別が見つかりません</span>
 				</div>
-				<Link to="/admin/master/alias-types" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link
+					to="/admin/master/alias-types"
+					className="btn btn-ghost mt-4 gap-1"
+				>
+					<ArrowLeft className="h-4 w-4" />
 					名義種別一覧に戻る
 				</Link>
 			</div>
@@ -89,18 +92,19 @@ function AliasTypeDetailPage() {
 					<Button
 						variant="outline"
 						size="sm"
+						className="gap-1"
 						onClick={() => setIsEditDialogOpen(true)}
 					>
-						<Pencil className="mr-2 h-4 w-4" />
+						<Pencil className="h-4 w-4" />
 						編集
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="text-error hover:text-error"
+						className="gap-1 text-error hover:text-error"
 						onClick={() => setIsDeleteDialogOpen(true)}
 					>
-						<Trash2 className="mr-2 h-4 w-4" />
+						<Trash2 className="h-4 w-4" />
 						削除
 					</Button>
 				</div>
@@ -117,7 +121,7 @@ function AliasTypeDetailPage() {
 			)}
 
 			{/* 基本情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 

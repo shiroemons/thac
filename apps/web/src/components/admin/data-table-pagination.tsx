@@ -74,7 +74,7 @@ function DataTablePagination({
 		<div
 			data-slot="data-table-pagination"
 			className={cn(
-				"mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row",
+				"mt-4 flex flex-col items-center justify-between gap-4 sm:flex-row",
 				className,
 			)}
 			{...props}
