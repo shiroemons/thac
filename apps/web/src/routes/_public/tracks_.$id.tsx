@@ -229,7 +229,7 @@ function TrackDetailPage() {
 											) : (
 												<span className="font-medium">{os.songName}</span>
 											)}
-											<span className="text-base-content/50 text-sm">
+											<span className="text-base-content/60 text-sm">
 												（{os.workName}）
 											</span>
 										</div>
@@ -286,7 +286,7 @@ function TrackDetailPage() {
 									>
 										{derivation.parentTrackName}
 									</Link>
-									<span className="text-base-content/50 text-sm">
+									<span className="text-base-content/60 text-sm">
 										（{derivation.parentReleaseName}）
 									</span>
 								</li>

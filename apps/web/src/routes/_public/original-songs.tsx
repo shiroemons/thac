@@ -255,7 +255,7 @@ function OriginalSongsPage() {
 					作品を選択して楽曲を表示
 				</h2>
 				{works.length === 0 ? (
-					<p className="text-base-content/50">
+					<p className="text-base-content/60">
 						選択したカテゴリに作品がありません
 					</p>
 				) : (
@@ -333,7 +333,7 @@ function WorkAccordion({
 		// データなし、または未取得
 		if (!songs || songs.length === 0) {
 			return (
-				<p className="pt-2 text-base-content/50">楽曲データがありません</p>
+				<p className="pt-2 text-base-content/60">楽曲データがありません</p>
 			);
 		}
 

@@ -290,7 +290,7 @@ function OriginalSongDetailPage() {
 														<Users className="size-3" />
 														<span>{artist.creditName}</span>
 														{artist.roles.length > 0 && (
-															<span className="text-base-content/50 text-xs">
+															<span className="text-base-content/60 text-xs">
 																(
 																{artist.roles
 																	.map((r) => roleNames[r] || r)

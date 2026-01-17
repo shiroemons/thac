@@ -56,7 +56,7 @@ export function EmptyState({
 			<h3 className="mt-4 font-medium text-base-content/70 text-lg">
 				{displayTitle}
 			</h3>
-			<p className="mt-2 text-base-content/50 text-sm">{displayDescription}</p>
+			<p className="mt-2 text-base-content/60 text-sm">{displayDescription}</p>
 			{action && <div className="mt-4">{action}</div>}
 		</Card>
 	);

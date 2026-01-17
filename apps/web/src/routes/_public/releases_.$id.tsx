@@ -330,7 +330,7 @@ function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 													{displayName}
 												</Link>
 												{credit.roles.length > 0 && (
-													<span className="text-base-content/50 text-xs">
+													<span className="text-base-content/60 text-xs">
 														(
 														{credit.roles
 															.map((r) => r.roleName ?? r.roleCode)
@@ -342,7 +342,7 @@ function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 										);
 									})}
 									{track.credits.length > 3 && (
-										<span className="text-base-content/50 text-xs">
+										<span className="text-base-content/60 text-xs">
 											他{track.credits.length - 3}名
 										</span>
 									)}
@@ -369,7 +369,7 @@ function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 											</span>
 										))}
 										{track.officialSongs.length > 2 && (
-											<span className="text-base-content/50 text-xs">
+											<span className="text-base-content/60 text-xs">
 												他{track.officialSongs.length - 2}曲
 											</span>
 										)}

@@ -239,7 +239,7 @@ function OfficialWorkDetailPage() {
 									.sort((a, b) => (a.trackNumber ?? 0) - (b.trackNumber ?? 0))
 									.map((song) => (
 										<tr key={song.id} className="hover:bg-base-200/50">
-											<td className="text-base-content/50">
+											<td className="text-base-content/60">
 												{song.trackNumber != null
 													? song.trackNumber.toString().padStart(2, "0")
 													: "-"}

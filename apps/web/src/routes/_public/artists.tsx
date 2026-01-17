@@ -330,7 +330,7 @@ function ArtistsPage() {
 							to="/artists/$id"
 							params={{ id: artist.id }}
 							preload="intent"
-							className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+							className="card bg-base-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 						>
 							<div className="card-body p-4">
 								<div className="flex items-center gap-3">
@@ -342,7 +342,7 @@ function ArtistsPage() {
 											{artist.name}
 										</h3>
 										{artist.name !== artist.artistName && (
-											<p className="truncate text-base-content/50 text-sm">
+											<p className="truncate text-base-content/60 text-sm">
 												{artist.artistName}
 											</p>
 										)}
@@ -398,7 +398,7 @@ function ArtistsPage() {
 											<div>
 												<span className="font-medium">{artist.name}</span>
 												{artist.name !== artist.artistName && (
-													<div className="text-base-content/50 text-xs">
+													<div className="text-base-content/60 text-xs">
 														{artist.artistName}
 													</div>
 												)}

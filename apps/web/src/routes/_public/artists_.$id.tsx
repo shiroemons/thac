@@ -372,7 +372,7 @@ function ArtistDetailPage() {
 															to="/circles/$id"
 															params={{ id: circle.id }}
 															preload="intent"
-															className="text-base-content/50 text-xs hover:text-primary"
+															className="text-base-content/60 text-xs hover:text-primary"
 														>
 															{circle.name}
 														</Link>

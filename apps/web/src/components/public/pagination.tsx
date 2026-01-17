@@ -103,7 +103,7 @@ export function Pagination({
 					disabled={currentPage === 1}
 					aria-label="最初のページへ"
 				>
-					<ChevronsLeft className="h-4 w-4" />
+					<ChevronsLeft className="size-4" />
 				</button>
 
 				{/* 前のページへ */}
@@ -114,7 +114,7 @@ export function Pagination({
 					disabled={currentPage === 1}
 					aria-label="前のページへ"
 				>
-					<ChevronLeft className="h-4 w-4" />
+					<ChevronLeft className="size-4" />
 				</button>
 
 				{/* ページ番号 */}
@@ -154,7 +154,7 @@ export function Pagination({
 					disabled={currentPage === totalPages}
 					aria-label="次のページへ"
 				>
-					<ChevronRight className="h-4 w-4" />
+					<ChevronRight className="size-4" />
 				</button>
 
 				{/* 最後のページへ */}
@@ -165,7 +165,7 @@ export function Pagination({
 					disabled={currentPage === totalPages}
 					aria-label="最後のページへ"
 				>
-					<ChevronsRight className="h-4 w-4" />
+					<ChevronsRight className="size-4" />
 				</button>
 			</div>
 		</div>

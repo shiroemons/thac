@@ -90,9 +90,9 @@ export function NavigationSection() {
 
 							<div className="flex items-start gap-4">
 								<div
-									className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.color} text-white transition-transform duration-300 group-hover:scale-110`}
+									className={`flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.color} text-white transition-transform duration-300 group-hover:scale-110`}
 								>
-									<item.icon className="h-6 w-6" aria-hidden="true" />
+									<item.icon className="size-6" aria-hidden="true" />
 								</div>
 								<div className="min-w-0 flex-1">
 									<h3 className="mb-1 font-bold text-lg">{item.title}</h3>
@@ -101,7 +101,7 @@ export function NavigationSection() {
 									</p>
 								</div>
 								<ArrowRight
-									className="h-5 w-5 shrink-0 text-base-content/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary"
+									className="size-5 shrink-0 text-base-content/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary"
 									aria-hidden="true"
 								/>
 							</div>

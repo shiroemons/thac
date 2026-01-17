@@ -67,13 +67,13 @@ function StatCard({
 		<div className="glass-card group flex flex-col gap-3 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
 			<div className="flex items-center justify-between">
 				<div
-					className={`flex h-11 w-11 items-center justify-center rounded-xl ${bgColor} ${color} transition-transform duration-300 group-hover:scale-110`}
+					className={`flex size-11 items-center justify-center rounded-xl ${bgColor} ${color} transition-transform duration-300 group-hover:scale-110`}
 				>
-					<Icon className="h-5 w-5" aria-hidden="true" />
+					<Icon className="size-5" aria-hidden="true" />
 				</div>
 				{trend !== undefined && (
 					<div className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-success text-xs">
-						<TrendingUp className="h-3 w-3" aria-hidden="true" />
+						<TrendingUp className="size-3" aria-hidden="true" />
 						<span>+{trend}%</span>
 					</div>
 				)}
@@ -134,7 +134,7 @@ function RankingItem({ rank, name, count, unit, href }: RankingItemProps) {
 			className="group flex items-center gap-3 rounded-xl p-3 transition-all duration-300 hover:bg-base-content/5"
 		>
 			<span
-				className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold text-sm ${getRankStyle(rank)}`}
+				className={`flex size-8 items-center justify-center rounded-lg font-bold text-sm ${getRankStyle(rank)}`}
 			>
 				{getMedalOrRank(rank)}
 			</span>
@@ -182,7 +182,7 @@ function RankingsSection() {
 			<section className="glass-card overflow-hidden rounded-2xl">
 				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
 					<div className="flex items-center gap-2">
-						<Trophy className="h-5 w-5 text-yellow-500" aria-hidden="true" />
+						<Trophy className="size-5 text-yellow-500" aria-hidden="true" />
 						<h2 className="font-bold">原曲アレンジ数</h2>
 					</div>
 					<Link
@@ -214,7 +214,7 @@ function RankingsSection() {
 			<section className="glass-card overflow-hidden rounded-2xl">
 				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
 					<div className="flex items-center gap-2">
-						<Crown className="h-5 w-5 text-primary" aria-hidden="true" />
+						<Crown className="size-5 text-primary" aria-hidden="true" />
 						<h2 className="font-bold">サークルリリース数</h2>
 					</div>
 					<Link
@@ -246,7 +246,7 @@ function RankingsSection() {
 			<section className="glass-card overflow-hidden rounded-2xl">
 				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
 					<div className="flex items-center gap-2">
-						<Sparkles className="h-5 w-5 text-accent" aria-hidden="true" />
+						<Sparkles className="size-5 text-accent" aria-hidden="true" />
 						<h2 className="font-bold">アーティスト楽曲数</h2>
 					</div>
 					<Link
@@ -284,14 +284,14 @@ function RecentUpdatesSection() {
 		<section className="glass-card overflow-hidden rounded-2xl">
 			<div className="flex items-center justify-between border-base-content/10 border-b p-5">
 				<div className="flex items-center gap-2">
-					<Calendar className="h-5 w-5 text-info" aria-hidden="true" />
+					<Calendar className="size-5 text-info" aria-hidden="true" />
 					<h2 className="font-bold">最近の更新</h2>
 				</div>
 			</div>
 			<div className="overflow-x-auto">
 				<table className="w-full">
 					<thead>
-						<tr className="border-base-content/5 border-b text-left text-base-content/50 text-sm">
+						<tr className="border-base-content/5 border-b text-left text-base-content/60 text-sm">
 							<th className="px-5 py-3 font-medium">状態</th>
 							<th className="px-5 py-3 font-medium">タイトル</th>
 							<th className="px-5 py-3 font-medium">サークル</th>
@@ -307,12 +307,12 @@ function RecentUpdatesSection() {
 								<td className="px-5 py-4">
 									{update.type === "new" ? (
 										<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-primary text-xs">
-											<Sparkles className="h-3 w-3" aria-hidden="true" />
+											<Sparkles className="size-3" aria-hidden="true" />
 											NEW
 										</span>
 									) : (
 										<span className="inline-flex items-center gap-1 rounded-full bg-secondary/10 px-2.5 py-1 text-secondary text-xs">
-											<PenLine className="h-3 w-3" aria-hidden="true" />
+											<PenLine className="size-3" aria-hidden="true" />
 											更新
 										</span>
 									)}
@@ -364,8 +364,8 @@ function StatsPage() {
 			<div className="glass-card relative overflow-hidden rounded-2xl p-6 md:p-8">
 				<div className="gradient-mesh absolute inset-0" />
 				<div className="relative flex items-center gap-4">
-					<div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-						<BarChart3 className="h-7 w-7" aria-hidden="true" />
+					<div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+						<BarChart3 className="size-7" aria-hidden="true" />
 					</div>
 					<div>
 						<h1 className="font-bold text-2xl md:text-3xl">

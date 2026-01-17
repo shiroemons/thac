@@ -62,7 +62,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
 					variant="primary"
 					className="mb-6 inline-flex items-center gap-2 bg-primary/10 px-4 py-2 text-primary"
 				>
-					<Sparkles className="h-4 w-4" aria-hidden="true" />
+					<Sparkles className="size-4" aria-hidden="true" />
 					<span>東方アレンジ楽曲データベース</span>
 				</Badge>
 
@@ -77,7 +77,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
 					Touhou Arrangement Chronicle
 				</p>
 
-				<p className="mx-auto mb-10 max-w-2xl text-base text-base-content/50 md:text-lg">
+				<p className="mx-auto mb-10 max-w-2xl text-base text-base-content/60 md:text-lg">
 					東方Projectの二次創作楽曲を網羅したデータベース。
 					<br className="hidden sm:block" />
 					原曲、サークル、アーティスト情報を検索できます。
@@ -90,8 +90,8 @@ export function HeroSection({ stats }: HeroSectionProps) {
 						preload="render"
 						className="group flex w-full items-center gap-4 rounded-2xl border-2 border-primary/30 bg-base-100 px-6 py-5 shadow-xl transition-all duration-300 hover:border-primary hover:shadow-2xl"
 					>
-						<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-content transition-transform group-hover:scale-110">
-							<Search className="h-6 w-6" aria-hidden="true" />
+						<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-content transition-transform group-hover:scale-110">
+							<Search className="size-6" aria-hidden="true" />
 						</div>
 						<span className="flex-1 text-left text-base-content/70 text-lg transition-colors group-hover:text-base-content">
 							アーティスト、曲名、サークル名で検索...
@@ -103,14 +103,14 @@ export function HeroSection({ stats }: HeroSectionProps) {
 				</div>
 
 				{/* Stats with links */}
-				<div className="mt-12 flex flex-wrap items-center justify-center gap-4 text-base-content/50 text-sm md:gap-6">
+				<div className="mt-12 flex flex-wrap items-center justify-center gap-4 text-base-content/60 text-sm md:gap-6">
 					<StatLink
 						href="/events"
 						count={displayStats.events}
 						label="イベント"
 						icon={
 							<Calendar
-								className="h-4 w-4 text-primary group-hover:text-primary"
+								className="size-4 text-primary group-hover:text-primary"
 								aria-hidden="true"
 							/>
 						}
@@ -122,7 +122,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
 						label="サークル"
 						icon={
 							<Users
-								className="h-4 w-4 text-primary group-hover:text-primary"
+								className="size-4 text-primary group-hover:text-primary"
 								aria-hidden="true"
 							/>
 						}
@@ -134,7 +134,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
 						label="アーティスト"
 						icon={
 							<Users
-								className="h-4 w-4 text-primary group-hover:text-primary"
+								className="size-4 text-primary group-hover:text-primary"
 								aria-hidden="true"
 							/>
 						}
@@ -146,7 +146,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
 						label="トラック"
 						icon={
 							<Disc3
-								className="h-4 w-4 text-primary group-hover:text-primary"
+								className="size-4 text-primary group-hover:text-primary"
 								aria-hidden="true"
 							/>
 						}

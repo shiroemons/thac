@@ -301,7 +301,7 @@ function EventsPage() {
 											>
 												<div className="flex items-center gap-4">
 													<span className="font-medium">{event.name}</span>
-													<span className="flex items-center gap-1 text-base-content/50 text-sm">
+													<span className="flex items-center gap-1 text-base-content/60 text-sm">
 														<Calendar className="size-4" aria-hidden="true" />
 														{formatDateRange(event.startDate, event.endDate)}
 													</span>

@@ -342,7 +342,7 @@ function CircleDetailPage() {
 							{releases.map((release) => (
 								<div
 									key={release.id}
-									className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+									className="card bg-base-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 								>
 									<div className="card-body p-4">
 										<Link
@@ -375,7 +375,7 @@ function CircleDetailPage() {
 													release.participationType}
 											</span>
 										</div>
-										<div className="mt-2 flex items-center gap-4 text-base-content/50 text-sm">
+										<div className="mt-2 flex items-center gap-4 text-base-content/60 text-sm">
 											{release.releaseDate && (
 												<span className="flex items-center gap-1">
 													<Calendar className="size-3" />
@@ -541,7 +541,7 @@ function CircleDetailPage() {
 														>
 															<Users className="size-3" />
 															<span>{artist.creditName}</span>
-															<span className="text-base-content/50 text-xs">
+															<span className="text-base-content/60 text-xs">
 																(
 																{artist.roles
 																	.map((r) => roleNames[r] || r)
