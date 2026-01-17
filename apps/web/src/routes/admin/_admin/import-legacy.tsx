@@ -1183,7 +1183,7 @@ function ImportingStep({
 						return (
 							<li
 								key={s}
-								className={`flex items-center justify-between rounded-md p-4 text-sm ${
+								className={`flex items-center justify-between rounded-lg p-4 text-sm ${
 									isCurrent
 										? "bg-primary/10 text-primary"
 										: stageCompleted

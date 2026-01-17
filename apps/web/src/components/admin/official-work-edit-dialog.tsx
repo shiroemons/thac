@@ -362,7 +362,7 @@ export function OfficialWorkEditDialog({
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{displayError && (
-							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{displayError}
 							</div>
 						)}

@@ -659,7 +659,7 @@ function TracksPage() {
 													<Link
 														to="/admin/tracks/$id"
 														params={{ id: track.id }}
-														className="btn btn-ghost btn-xs"
+														className="btn btn-ghost btn-sm"
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">トラック詳細</span>
@@ -800,7 +800,7 @@ function TracksPage() {
 							/>
 						</div>
 						{createMutation.error && (
-							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{createMutation.error instanceof Error
 									? createMutation.error.message
 									: "作成に失敗しました"}

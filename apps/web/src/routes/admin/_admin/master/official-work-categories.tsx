@@ -361,7 +361,7 @@ function OfficialWorkCategoriesPage() {
 													<Link
 														to="/admin/master/official-work-categories/$code"
 														params={{ code: c.code }}
-														className="btn btn-ghost btn-xs"
+														className="btn btn-ghost btn-sm"
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">詳細</span>

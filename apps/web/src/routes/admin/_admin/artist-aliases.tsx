@@ -545,7 +545,7 @@ function ArtistAliasesPage() {
 													<Link
 														to="/admin/artist-aliases/$id"
 														params={{ id: alias.id }}
-														className="btn btn-ghost btn-xs"
+														className="btn btn-ghost btn-sm"
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">詳細</span>

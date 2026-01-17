@@ -739,7 +739,7 @@ function CirclesPage() {
 													<Link
 														to="/admin/circles/$id"
 														params={{ id: circle.id }}
-														className="btn btn-ghost btn-xs"
+														className="btn btn-ghost btn-sm"
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">詳細</span>
@@ -941,7 +941,7 @@ function CirclesPage() {
 									{editingCircle.links.map((link) => (
 										<div
 											key={link.id}
-											className="flex items-center justify-between rounded-md border border-base-300 p-4"
+											className="flex items-center justify-between rounded-lg border border-base-300 p-4"
 										>
 											<div className="flex items-center gap-2">
 												<Badge variant="secondary">
@@ -1130,7 +1130,7 @@ function CirclesPage() {
 							</div>
 						</div>
 						{createLinkMutation.error || updateLinkMutation.error ? (
-							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									createLinkMutation.error || updateLinkMutation.error,
 								)}

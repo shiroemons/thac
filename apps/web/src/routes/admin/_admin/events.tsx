@@ -633,7 +633,7 @@ function EventsPage() {
 													<Link
 														to="/admin/events/$id"
 														params={{ id: event.id }}
-														className="btn btn-ghost btn-xs"
+														className="btn btn-ghost btn-sm"
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">詳細</span>
@@ -712,7 +712,7 @@ function EventsPage() {
 							/>
 						</div>
 						{createSeriesMutation.error && (
-							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{createSeriesMutation.error instanceof Error
 									? createSeriesMutation.error.message
 									: "シリーズの作成に失敗しました"}
@@ -886,7 +886,7 @@ function EventsPage() {
 									{editingEvent.days.map((day) => (
 										<div
 											key={day.id}
-											className="flex items-center justify-between rounded-md border border-base-300 p-4"
+											className="flex items-center justify-between rounded-lg border border-base-300 p-4"
 										>
 											<div className="flex items-center gap-2">
 												<Badge variant="primary">{day.dayNumber}日目</Badge>
@@ -987,7 +987,7 @@ function EventsPage() {
 							/>
 						</div>
 						{createDayMutation.error || updateDayMutation.error ? (
-							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									createDayMutation.error || updateDayMutation.error,
 									"開催日の保存に失敗しました",

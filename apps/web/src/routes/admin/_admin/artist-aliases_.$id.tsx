@@ -279,20 +279,14 @@ function ArtistAliasDetailPage() {
 									<Label className="text-base-content/70">参加トラック数</Label>
 									<p className="font-bold text-2xl">
 										{tracksData.totalUniqueTrackCount}
-										<span className="font-normal text-base-content/70 text-sm">
-											{" "}
-											曲
-										</span>
+										<span className="text-base-content/70 text-sm"> 曲</span>
 									</p>
 								</div>
 								<div className="rounded-lg bg-base-200/50 p-4">
 									<Label className="text-base-content/70">参加リリース数</Label>
 									<p className="font-bold text-2xl">
 										{tracksData.statistics.releaseCount}
-										<span className="font-normal text-base-content/70 text-sm">
-											{" "}
-											作品
-										</span>
+										<span className="text-base-content/70 text-sm"> 作品</span>
 									</p>
 								</div>
 								<div className="rounded-lg bg-base-200/50 p-4">

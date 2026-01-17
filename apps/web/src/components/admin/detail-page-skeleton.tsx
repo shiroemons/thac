@@ -49,7 +49,7 @@ function DetailPageSkeleton({
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-4">
 						{/* 戻るボタン */}
-						<Skeleton className="h-8 w-8 rounded-md" />
+						<Skeleton className="h-8 w-8 rounded-lg" />
 						{/* タイトル */}
 						<Skeleton className="h-8 w-48" />
 						{/* バッジ */}
@@ -79,7 +79,7 @@ function DetailPageSkeleton({
 									{/* ラベル */}
 									<Skeleton className="mb-1 h-4 w-20" />
 									{/* 値 */}
-									<Skeleton className="h-5 w-40" />
+									<Skeleton className="h-4 w-40" />
 								</div>
 							))}
 						</div>

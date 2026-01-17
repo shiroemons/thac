@@ -58,7 +58,7 @@ const categoryColors: Record<string, string> = {
 	video: "bg-red-500",
 	download: "bg-green-500",
 	shop: "bg-purple-500",
-	other: "bg-gray-500",
+	other: "bg-base-content/50",
 };
 
 const categoryLabels: Record<string, string> = {
@@ -454,7 +454,7 @@ function PlatformsPage() {
 													{p.category ? (
 														<Badge
 															variant="secondary"
-															className={`${categoryColors[p.category] || "bg-gray-500"} text-white`}
+															className={`${categoryColors[p.category] || "bg-base-content/50"} text-white`}
 														>
 															{categoryLabels[p.category] || p.category}
 														</Badge>
@@ -495,7 +495,7 @@ function PlatformsPage() {
 													<Link
 														to="/admin/master/platforms/$code"
 														params={{ code: p.code }}
-														className="btn btn-ghost btn-xs"
+														className="btn btn-ghost btn-sm"
 													>
 														<Eye className="h-4 w-4" />
 														<span className="sr-only">詳細</span>

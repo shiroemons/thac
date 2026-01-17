@@ -471,20 +471,14 @@ function CircleDetailPage() {
 								<Label className="text-base-content/70">参加作品数</Label>
 								<p className="font-bold text-2xl">
 									{artistsData.statistics.releaseCount}
-									<span className="font-normal text-base-content/70 text-sm">
-										{" "}
-										作品
-									</span>
+									<span className="text-base-content/70 text-sm"> 作品</span>
 								</p>
 							</div>
 							<div className="rounded-lg bg-base-200/50 p-4">
 								<Label className="text-base-content/70">トラック総数</Label>
 								<p className="font-bold text-2xl">
 									{artistsData.statistics.totalTrackCount}
-									<span className="font-normal text-base-content/70 text-sm">
-										{" "}
-										曲
-									</span>
+									<span className="text-base-content/70 text-sm"> 曲</span>
 								</p>
 							</div>
 							<div className="rounded-lg bg-base-200/50 p-4">
@@ -493,10 +487,7 @@ function CircleDetailPage() {
 								</Label>
 								<p className="font-bold text-2xl">
 									{artistsData.statistics.totalArtistCount}
-									<span className="font-normal text-base-content/70 text-sm">
-										{" "}
-										名
-									</span>
+									<span className="text-base-content/70 text-sm"> 名</span>
 								</p>
 							</div>
 							<div className="rounded-lg bg-base-200/50 p-4">
@@ -710,7 +701,7 @@ function CircleDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{linkCreateMutation.error || linkUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									linkCreateMutation.error || linkUpdateMutation.error,
 								)}
