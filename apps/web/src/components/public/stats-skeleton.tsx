@@ -3,13 +3,18 @@
  * Suspense境界のfallbackとして使用
  */
 
+// 静的配列を定義（インデックスキー問題を回避）
+const SKELETON_ITEMS_5 = [0, 1, 2, 3, 4] as const;
+
 /** 統計カードのスケルトン（5枚分） */
 export function StatCardsSkeleton() {
 	return (
 		<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-			{[...Array(5)].map((_, i) => (
-				// biome-ignore lint/suspicious/noArrayIndexKey: スケルトン要素は静的で並べ替えが発生しないため
-				<div key={i} className="glass-card flex flex-col gap-3 rounded-2xl p-5">
+			{SKELETON_ITEMS_5.map((i) => (
+				<div
+					key={i}
+					className="glass-card flex flex-col gap-3 rounded-2xl p-5 shadow-sm"
+				>
 					<div className="flex items-center justify-between">
 						<div className="h-11 w-11 animate-pulse rounded-xl bg-base-content/10" />
 					</div>
@@ -26,7 +31,7 @@ export function StatCardsSkeleton() {
 /** ランキングセクションのスケルトン（1セクション分） */
 export function RankingSectionSkeleton() {
 	return (
-		<div className="glass-card overflow-hidden rounded-2xl">
+		<div className="glass-card overflow-hidden rounded-2xl shadow-sm">
 			{/* Header */}
 			<div className="flex items-center justify-between border-base-content/10 border-b p-5">
 				<div className="flex items-center gap-2">
@@ -37,8 +42,7 @@ export function RankingSectionSkeleton() {
 			</div>
 			{/* Items */}
 			<div className="divide-y divide-base-content/5 px-2 py-1">
-				{[...Array(5)].map((_, i) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: スケルトン要素は静的で並べ替えが発生しないため
+				{SKELETON_ITEMS_5.map((i) => (
 					<div key={i} className="flex items-center gap-3 p-3">
 						<div className="h-8 w-8 animate-pulse rounded-lg bg-base-content/10" />
 						<div className="h-4 flex-1 animate-pulse rounded bg-base-content/10" />
@@ -64,7 +68,7 @@ export function RankingsSkeleton() {
 /** 最近の更新テーブルのスケルトン */
 export function RecentUpdatesSkeleton() {
 	return (
-		<div className="glass-card overflow-hidden rounded-2xl">
+		<div className="glass-card overflow-hidden rounded-2xl shadow-sm">
 			{/* Header */}
 			<div className="flex items-center justify-between border-base-content/10 border-b p-5">
 				<div className="flex items-center gap-2">
@@ -76,7 +80,7 @@ export function RecentUpdatesSkeleton() {
 			<div className="overflow-x-auto">
 				<table className="w-full">
 					<thead>
-						<tr className="border-base-content/5 border-b text-left text-base-content/50 text-sm">
+						<tr className="border-base-content/5 border-b text-left text-base-content/60 text-sm">
 							<th className="px-5 py-3 font-medium">状態</th>
 							<th className="px-5 py-3 font-medium">タイトル</th>
 							<th className="px-5 py-3 font-medium">サークル</th>
@@ -84,8 +88,7 @@ export function RecentUpdatesSkeleton() {
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-base-content/5">
-						{[...Array(5)].map((_, i) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: スケルトン要素は静的で並べ替えが発生しないため
+						{SKELETON_ITEMS_5.map((i) => (
 							<tr key={i}>
 								<td className="px-5 py-4">
 									<div className="h-6 w-14 animate-pulse rounded-full bg-base-content/10" />

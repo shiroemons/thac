@@ -32,7 +32,7 @@ export function EntityCard({
 						<img src={image} alt={title} className="size-full object-cover" />
 					</figure>
 				)}
-				<div className="card-body p-4">
+				<div className="card-body p-5">
 					<h3 className="card-title text-base">{title}</h3>
 					{subtitle && (
 						<p className="text-base-content/70 text-sm">{subtitle}</p>

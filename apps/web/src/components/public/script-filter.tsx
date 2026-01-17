@@ -55,7 +55,7 @@ export function AlphabetSubFilter({ value, onChange }: AlphabetSubFilterProps) {
 			<div className="flex flex-wrap gap-1">
 				<button
 					type="button"
-					className={`btn btn-xs ${value === null ? "btn-secondary" : "btn-ghost"}`}
+					className={`btn btn-xs ${value === null ? "btn-primary" : "btn-ghost"}`}
 					onClick={() => onChange(null)}
 					aria-pressed={value === null}
 				>
@@ -65,7 +65,7 @@ export function AlphabetSubFilter({ value, onChange }: AlphabetSubFilterProps) {
 					<button
 						key={initial}
 						type="button"
-						className={`btn btn-xs min-w-8 ${value === initial ? "btn-secondary" : "btn-ghost"}`}
+						className={`btn btn-xs min-w-8 ${value === initial ? "btn-primary" : "btn-ghost"}`}
 						onClick={() => onChange(initial)}
 						aria-pressed={value === initial}
 					>
@@ -93,7 +93,7 @@ export function KanaSubFilter({ value, onChange }: KanaSubFilterProps) {
 			<div className="flex flex-wrap gap-1">
 				<button
 					type="button"
-					className={`btn btn-xs ${value === null ? "btn-secondary" : "btn-ghost"}`}
+					className={`btn btn-xs ${value === null ? "btn-primary" : "btn-ghost"}`}
 					onClick={() => onChange(null)}
 					aria-pressed={value === null}
 				>
@@ -103,7 +103,7 @@ export function KanaSubFilter({ value, onChange }: KanaSubFilterProps) {
 					<button
 						key={row}
 						type="button"
-						className={`btn btn-xs ${value === row ? "btn-secondary" : "btn-ghost"}`}
+						className={`btn btn-xs ${value === row ? "btn-primary" : "btn-ghost"}`}
 						onClick={() => onChange(row)}
 						aria-pressed={value === row}
 					>

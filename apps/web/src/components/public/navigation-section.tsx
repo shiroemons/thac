@@ -81,7 +81,7 @@ export function NavigationSection() {
 							key={item.href}
 							to={item.href}
 							preload="render"
-							className="glass-card group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:ring-2 hover:ring-primary/10"
+							className="glass-card group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 						>
 							{/* Gradient accent */}
 							<div
@@ -101,7 +101,7 @@ export function NavigationSection() {
 									</p>
 								</div>
 								<ArrowRight
-									className="size-5 shrink-0 text-base-content/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary"
+									className="size-5 shrink-0 text-base-content/60 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary"
 									aria-hidden="true"
 								/>
 							</div>

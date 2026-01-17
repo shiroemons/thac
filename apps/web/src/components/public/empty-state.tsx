@@ -51,8 +51,8 @@ export function EmptyState({
 	const displayDescription = description ?? config.description;
 
 	return (
-		<Card className="p-8 text-center">
-			<Icon className="mx-auto size-12 text-base-content/30" />
+		<Card className="p-8 text-center shadow-sm">
+			<Icon className="mx-auto size-12 text-base-content/60" />
 			<h3 className="mt-4 font-medium text-base-content/70 text-lg">
 				{displayTitle}
 			</h3>

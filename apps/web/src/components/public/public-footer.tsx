@@ -9,12 +9,12 @@ export function PublicFooter() {
 					<Link to="/about" preload="render" className="link link-hover">
 						About
 					</Link>
-					<span className="text-base-content/30">|</span>
+					<span className="text-base-content/60">|</span>
 					<Link to="/privacy" preload="render" className="link link-hover">
 						Privacy
 					</Link>
-					<span className="text-base-content/30">|</span>
-					<span className="text-base-content/50">Terms</span>
+					<span className="text-base-content/60">|</span>
+					<span className="text-base-content/60">Terms</span>
 				</nav>
 			</div>
 			<div className="text-base-content/70">

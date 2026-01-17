@@ -92,7 +92,7 @@ function ReleaseCard({ release }: { release: Release }) {
 						</div>
 					</div>
 				</div>
-				<div className="p-4">
+				<div className="p-5">
 					<h3 className="mb-1 truncate font-semibold text-sm transition-colors group-hover:text-primary">
 						{release.title}
 					</h3>

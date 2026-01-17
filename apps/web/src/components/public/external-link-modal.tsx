@@ -65,7 +65,7 @@ export function ExternalLinkModal({
 				<div className="rounded-lg bg-base-200 p-4">
 					<p className="text-base-content/70 text-sm">移動先</p>
 					<p className="break-all font-mono text-sm">{domain}</p>
-					<p className="mt-2 break-all font-mono text-base-content/50 text-xs">
+					<p className="mt-2 break-all font-mono text-base-content/60 text-xs">
 						{url}
 					</p>
 				</div>
