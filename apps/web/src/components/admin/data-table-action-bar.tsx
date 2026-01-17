@@ -76,7 +76,7 @@ function DataTableActionBar({
 		<div
 			data-slot="data-table-action-bar"
 			className={cn(
-				"mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+				"mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
 				className,
 			)}
 			{...props}

@@ -25,8 +25,8 @@ function DataTableSkeleton({
 		>
 			{/* Action Bar Skeleton */}
 			{showActionBar && (
-				<div className="flex items-center justify-between gap-3 p-4">
-					<div className="flex items-center gap-3">
+				<div className="flex items-center justify-between gap-4 p-4">
+					<div className="flex items-center gap-4">
 						<Skeleton className="h-8 w-64" />
 						<Skeleton className="h-8 w-40" />
 					</div>

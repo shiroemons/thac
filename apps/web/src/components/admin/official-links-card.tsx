@@ -170,7 +170,7 @@ export function OfficialLinksCard({
 
 	if (isLoading) {
 		return (
-			<Card className="card-bordered">
+			<Card className="border border-base-300">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h3 className="flex items-center gap-2 font-semibold text-lg">
 						<ExternalLink className="h-4 w-4" />
@@ -189,7 +189,7 @@ export function OfficialLinksCard({
 
 	return (
 		<>
-			<Card className="card-bordered">
+			<Card className="border border-base-300">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h3 className="flex items-center gap-2 font-semibold text-lg">
 						<ExternalLink className="h-4 w-4" />

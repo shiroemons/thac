@@ -955,7 +955,7 @@ function CirclesPage() {
 													{link.url.length > 40
 														? `${link.url.slice(0, 40)}...`
 														: link.url}
-													<ExternalLink className="h-3 w-3" />
+													<ExternalLink className="h-4 w-4" />
 												</a>
 												{link.isPrimary && (
 													<Badge className="bg-primary text-primary-content">
