@@ -253,6 +253,7 @@ export interface PublicCircleTrack {
 	trackNumber: number;
 	artists: Array<{
 		id: string;
+		artistAliasId: string | null;
 		creditName: string;
 		roles: string[];
 	}>;

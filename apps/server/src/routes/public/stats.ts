@@ -176,7 +176,7 @@ statsRouter.get("/rankings", async (c) => {
 				count: row.count,
 			})),
 			activeArtists: activeArtistsResult.map((row) => ({
-				id: row.id,
+				id: `${row.id}__main__`, // メイン名義IDとして返す
 				name: row.name,
 				count: row.count,
 			})),
