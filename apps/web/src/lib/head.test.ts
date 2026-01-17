@@ -300,16 +300,19 @@ const mockTrack: PublicTrackDetail = {
 	credits: [
 		{
 			artistId: "a1",
+			artistAliasId: null,
 			creditName: "Artist1",
 			roles: [{ roleCode: "arrange", roleName: "編曲" }],
 		},
 		{
 			artistId: "a2",
+			artistAliasId: null,
 			creditName: "Artist2",
 			roles: [{ roleCode: "vocal", roleName: "Vo" }],
 		},
 		{
 			artistId: "a3",
+			artistAliasId: null,
 			creditName: "Artist3",
 			roles: [{ roleCode: "lyric", roleName: "作詞" }],
 		},
@@ -353,6 +356,7 @@ const mockTrackSingleCredit: PublicTrackDetail = {
 	credits: [
 		{
 			artistId: "a1",
+			artistAliasId: null,
 			creditName: "Artist1",
 			roles: [
 				{ roleCode: "arrange", roleName: "編曲" },

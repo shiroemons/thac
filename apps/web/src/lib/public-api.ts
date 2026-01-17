@@ -495,6 +495,7 @@ export interface PublicTrackDetail {
 	trackNumber: number;
 	credits: Array<{
 		artistId: string;
+		artistAliasId: string | null;
 		creditName: string;
 		roles: Array<{ roleCode: string; roleName: string | null }>;
 	}>;

@@ -169,21 +169,25 @@ function TrackDetailPage() {
 											{roleNames[roleCode] ?? roleCode}
 										</p>
 										<div className="flex flex-wrap gap-x-2 gap-y-1">
-											{credits.map((credit, idx) => (
-												<span key={credit.artistId}>
-													{idx > 0 && (
-														<span className="text-base-content/40"> / </span>
-													)}
-													<Link
-														to="/artists/$id"
-														params={{ id: credit.artistId }}
-														preload="intent"
-														className="hover:text-primary"
-													>
-														{credit.creditName}
-													</Link>
-												</span>
-											))}
+											{credits.map((credit, idx) => {
+												const linkId =
+													credit.artistAliasId ?? `${credit.artistId}__main__`;
+												return (
+													<span key={linkId}>
+														{idx > 0 && (
+															<span className="text-base-content/40"> / </span>
+														)}
+														<Link
+															to="/artists/$id"
+															params={{ id: linkId }}
+															preload="intent"
+															className="hover:text-primary"
+														>
+															{credit.creditName}
+														</Link>
+													</span>
+												);
+											})}
 										</div>
 									</div>
 								),
