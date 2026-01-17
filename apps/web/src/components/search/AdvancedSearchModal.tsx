@@ -109,7 +109,7 @@ export const AdvancedSearchModal = forwardRef<
 		<dialog ref={dialogRef} className="modal modal-bottom sm:modal-middle">
 			<div className="modal-box flex max-h-[90vh] max-w-4xl flex-col p-0">
 				{/* ヘッダー */}
-				<div className="flex items-center justify-between border-base-300 border-b px-4 py-3">
+				<div className="flex items-center justify-between border-base-300 border-b px-6 py-4">
 					<h3 className="font-bold text-lg">詳細検索</h3>
 					<button
 						type="button"
@@ -123,7 +123,7 @@ export const AdvancedSearchModal = forwardRef<
 
 				{/* フィルターチップエリア */}
 				{chips.length > 0 && (
-					<div className="border-base-300 border-b px-4 py-3">
+					<div className="border-base-300 border-b px-6 py-4">
 						<FilterChips
 							chips={chips}
 							onRemove={handleRemoveChip}
@@ -277,17 +277,31 @@ export const AdvancedSearchModal = forwardRef<
 				</div>
 
 				{/* フッター（アクション） */}
-				<div className="modal-action mt-0 border-base-300 border-t px-4 py-3">
-					<button type="button" onClick={handleClose} className="btn btn-ghost">
-						閉じる
-					</button>
+				<div className="modal-action mt-0 justify-between border-base-300 border-t px-6 py-4">
 					<button
 						type="button"
-						onClick={handleSearch}
-						className="btn btn-primary"
+						onClick={handleClearAll}
+						className="btn btn-ghost btn-sm text-base-content/70"
+						disabled={chips.length === 0}
 					>
-						検索
+						リセット
 					</button>
+					<div className="flex gap-2">
+						<button
+							type="button"
+							onClick={handleClose}
+							className="btn btn-ghost"
+						>
+							閉じる
+						</button>
+						<button
+							type="button"
+							onClick={handleSearch}
+							className="btn btn-primary"
+						>
+							検索
+						</button>
+					</div>
 				</div>
 			</div>
 
