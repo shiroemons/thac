@@ -24,7 +24,7 @@ function ColumnVisibilityToggle({
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button variant="outline" size="md" className="gap-1.5">
+				<Button variant="outline" size="md" className="gap-1">
 					<Settings2 className="h-4 w-4" />
 					表示列
 				</Button>

@@ -171,21 +171,21 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 				<span className="font-bold text-xl">管理画面</span>
 			</div>
 			<nav className="flex-1 overflow-y-auto">
-				<ul className="menu gap-1 p-4">
+				<ul className="menu gap-2 p-4">
 					{navItems.map((entry) =>
 						isNavGroup(entry) ? (
 							<li key={entry.label}>
 								<details open={isGroupActive(entry)}>
 									<summary
 										className={cn(
-											"gap-3 rounded-lg py-2.5",
+											"gap-2 rounded-lg py-2.5",
 											isGroupActive(entry) && "font-medium text-primary",
 										)}
 									>
-										<entry.icon className="size-[18px]" />
+										<entry.icon className="h-4 w-4" />
 										<span className="flex-1">{entry.label}</span>
 									</summary>
-									<ul className="mt-1 ml-2 space-y-0.5 border-base-300 border-l">
+									<ul className="mt-2 ml-2 space-y-2 border-base-300 border-l">
 										{entry.items.map(({ to, label, icon: Icon }) => (
 											<li key={to}>
 												<Link
@@ -198,7 +198,7 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 															: inactiveItemClasses,
 													)}
 												>
-													<Icon className="size-[18px]" />
+													<Icon className="h-4 w-4" />
 													{label}
 												</Link>
 											</li>
@@ -212,13 +212,13 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 									to={entry.to}
 									onClick={onNavigate}
 									className={cn(
-										"gap-3 rounded-lg py-2.5",
+										"gap-2 rounded-lg py-2.5",
 										isActive(entry.to)
 											? activeItemClasses
 											: inactiveItemClasses,
 									)}
 								>
-									<entry.icon className="size-[18px]" />
+									<entry.icon className="h-4 w-4" />
 									{entry.label}
 								</Link>
 							</li>
