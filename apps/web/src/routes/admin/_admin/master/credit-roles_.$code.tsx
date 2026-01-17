@@ -121,19 +121,19 @@ function CreditRoleDetailPage() {
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div>
-							<Label className="text-base-content/60">コード</Label>
+							<Label className="text-base-content/70">コード</Label>
 							<p className="font-mono">{creditRole.code}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">ラベル</Label>
+							<Label className="text-base-content/70">ラベル</Label>
 							<p className="font-medium">{creditRole.label}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">表示順序</Label>
+							<Label className="text-base-content/70">表示順序</Label>
 							<p>{creditRole.sortOrder ?? "-"}</p>
 						</div>
 						<div className="md:col-span-2">
-							<Label className="text-base-content/60">説明</Label>
+							<Label className="text-base-content/70">説明</Label>
 							<p>{creditRole.description || "-"}</p>
 						</div>
 					</div>

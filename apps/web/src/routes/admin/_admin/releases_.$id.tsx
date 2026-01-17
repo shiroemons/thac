@@ -972,25 +972,25 @@ function ReleaseDetailPage() {
 			</div>
 
 			{/* 基本情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div>
-							<Label className="text-base-content/60">作品名</Label>
+							<Label className="text-base-content/70">作品名</Label>
 							<p>{release.name}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">日本語名</Label>
+							<Label className="text-base-content/70">日本語名</Label>
 							<p>{release.nameJa || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">英語名</Label>
+							<Label className="text-base-content/70">英語名</Label>
 							<p>{release.nameEn || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">タイプ</Label>
+							<Label className="text-base-content/70">タイプ</Label>
 							<p>
 								{release.releaseType
 									? RELEASE_TYPE_LABELS[release.releaseType]
@@ -998,7 +998,7 @@ function ReleaseDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">発売日</Label>
+							<Label className="text-base-content/70">発売日</Label>
 							<p>
 								{release.releaseDate
 									? format(new Date(release.releaseDate), "yyyy年M月d日", {
@@ -1008,14 +1008,14 @@ function ReleaseDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">発売年/月/日</Label>
+							<Label className="text-base-content/70">発売年/月/日</Label>
 							<p>
 								{release.releaseYear ?? "-"} / {release.releaseMonth ?? "-"} /{" "}
 								{release.releaseDay ?? "-"}
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">イベント</Label>
+							<Label className="text-base-content/70">イベント</Label>
 							<p>
 								{release.eventId ? (
 									<Link
@@ -1032,7 +1032,7 @@ function ReleaseDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">イベント日</Label>
+							<Label className="text-base-content/70">イベント日</Label>
 							<p>
 								{release.eventDayId
 									? eventDayOptions.find((d) => d.value === release.eventDayId)
@@ -1041,7 +1041,7 @@ function ReleaseDetailPage() {
 							</p>
 						</div>
 						<div className="md:col-span-2">
-							<Label className="text-base-content/60">メモ</Label>
+							<Label className="text-base-content/70">メモ</Label>
 							<p className="whitespace-pre-wrap">{release.notes || "-"}</p>
 						</div>
 					</div>
@@ -1049,11 +1049,11 @@ function ReleaseDetailPage() {
 			</div>
 
 			{/* ディスク一覧カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
-							<Disc3 className="h-5 w-5" />
+							<Disc3 className="h-4 w-4" />
 							ディスク一覧
 						</h2>
 						<Button
@@ -1067,7 +1067,7 @@ function ReleaseDetailPage() {
 					</div>
 
 					{release.discs.length === 0 ? (
-						<p className="text-base-content/60">ディスクが登録されていません</p>
+						<p className="text-base-content/70">ディスクが登録されていません</p>
 					) : (
 						<div className="overflow-x-auto">
 							<table className="table">
@@ -1116,11 +1116,11 @@ function ReleaseDetailPage() {
 			</div>
 
 			{/* サークル関連付けカード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
-							<Users className="h-5 w-5" />
+							<Users className="h-4 w-4" />
 							関連サークル
 						</h2>
 						<Button variant="outline" size="sm" onClick={openCircleDialog}>
@@ -1130,7 +1130,7 @@ function ReleaseDetailPage() {
 					</div>
 
 					{releaseCircles.length === 0 ? (
-						<p className="text-base-content/60">
+						<p className="text-base-content/70">
 							サークルが関連付けられていません
 						</p>
 					) : (
@@ -1202,11 +1202,11 @@ function ReleaseDetailPage() {
 			</div>
 
 			{/* 公開リンクカード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
-							<ExternalLink className="h-5 w-5" />
+							<ExternalLink className="h-4 w-4" />
 							公開リンク
 						</h2>
 						<Button
@@ -1220,7 +1220,7 @@ function ReleaseDetailPage() {
 					</div>
 
 					{publications.length === 0 ? (
-						<p className="text-base-content/60">
+						<p className="text-base-content/70">
 							公開リンクが登録されていません
 						</p>
 					) : (
@@ -1284,11 +1284,11 @@ function ReleaseDetailPage() {
 			</div>
 
 			{/* JANコードカード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
-							<Barcode className="h-5 w-5" />
+							<Barcode className="h-4 w-4" />
 							JANコード
 						</h2>
 						<Button
@@ -1302,7 +1302,7 @@ function ReleaseDetailPage() {
 					</div>
 
 					{janCodes.length === 0 ? (
-						<p className="text-base-content/60">
+						<p className="text-base-content/70">
 							JANコードが登録されていません
 						</p>
 					) : (
@@ -1357,11 +1357,11 @@ function ReleaseDetailPage() {
 			</div>
 
 			{/* トラック一覧カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
-							<Music className="h-5 w-5" />
+							<Music className="h-4 w-4" />
 							トラック一覧
 						</h2>
 						<Button
@@ -1375,7 +1375,7 @@ function ReleaseDetailPage() {
 					</div>
 
 					{tracks.length === 0 ? (
-						<p className="text-base-content/60">トラックが登録されていません</p>
+						<p className="text-base-content/70">トラックが登録されていません</p>
 					) : (
 						<div className="space-y-6">
 							{/* ディスクごとにグループ化 */}
@@ -1451,7 +1451,7 @@ function ReleaseDetailPage() {
 																			{track.name}
 																		</Link>
 																		{track.nameJa && (
-																			<p className="text-base-content/60 text-sm">
+																			<p className="text-base-content/70 text-sm">
 																				{track.nameJa}
 																			</p>
 																		)}
@@ -1566,7 +1566,7 @@ function ReleaseDetailPage() {
 																		{track.name}
 																	</Link>
 																	{track.nameJa && (
-																		<p className="text-base-content/60 text-sm">
+																		<p className="text-base-content/70 text-sm">
 																			{track.nameJa}
 																		</p>
 																	)}
@@ -1902,7 +1902,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="py-4">
 						<div className="mb-4 flex items-center justify-between">
-							<span className="text-base-content/60 text-sm">
+							<span className="text-base-content/70 text-sm">
 								{credits.length}件のクレジット
 							</span>
 							<Button
@@ -1916,7 +1916,7 @@ function ReleaseDetailPage() {
 						</div>
 
 						{credits.length === 0 ? (
-							<p className="py-8 text-center text-base-content/60">
+							<p className="py-8 text-center text-base-content/70">
 								クレジットが登録されていません
 							</p>
 						) : (
@@ -1942,7 +1942,7 @@ function ReleaseDetailPage() {
 														<div>
 															<p className="font-medium">{credit.creditName}</p>
 															{credit.artistAlias && (
-																<p className="text-base-content/60 text-xs">
+																<p className="text-base-content/70 text-xs">
 																	名義
 																</p>
 															)}
@@ -2046,7 +2046,7 @@ function ReleaseDetailPage() {
 								clearable={false}
 							/>
 							{creditForm.artistId && (
-								<p className="text-base-content/60 text-xs">
+								<p className="text-base-content/70 text-xs">
 									アーティスト:{" "}
 									{artistsData?.data.find((a) => a.id === creditForm.artistId)
 										?.name ?? "-"}{" "}
@@ -2073,7 +2073,7 @@ function ReleaseDetailPage() {
 								}
 								placeholder="盤面に表示される名前"
 							/>
-							<p className="text-base-content/60 text-xs">
+							<p className="text-base-content/70 text-xs">
 								アーティスト名義から自動入力されます。必要に応じて編集してください。
 							</p>
 						</div>
@@ -2123,7 +2123,7 @@ function ReleaseDetailPage() {
 									</span>
 								)}
 							</div>
-							<p className="text-base-content/60 text-xs">
+							<p className="text-base-content/70 text-xs">
 								選択した順序で役割が表示されます。
 							</p>
 						</div>
@@ -2292,7 +2292,7 @@ function ReleaseDetailPage() {
 								disabled={!!editingJanCode}
 								className="font-mono"
 							/>
-							<p className="text-base-content/60 text-xs">
+							<p className="text-base-content/70 text-xs">
 								8桁または13桁の数字（編集時は変更不可）
 							</p>
 						</div>

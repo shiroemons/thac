@@ -134,19 +134,19 @@ function OfficialWorkCategoryDetailPage() {
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div>
-							<Label className="text-base-content/60">コード</Label>
+							<Label className="text-base-content/70">コード</Label>
 							<p className="font-mono">{category.code}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">名前</Label>
+							<Label className="text-base-content/70">名前</Label>
 							<p className="font-medium">{category.name}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">表示順序</Label>
+							<Label className="text-base-content/70">表示順序</Label>
 							<p>{category.sortOrder ?? "-"}</p>
 						</div>
 						<div className="md:col-span-2">
-							<Label className="text-base-content/60">説明</Label>
+							<Label className="text-base-content/70">説明</Label>
 							<p>{category.description || "-"}</p>
 						</div>
 					</div>

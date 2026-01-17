@@ -138,31 +138,31 @@ function OfficialWorkDetailPage() {
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div>
-							<Label className="text-base-content/60">ID</Label>
+							<Label className="text-base-content/70">ID</Label>
 							<p className="font-mono text-sm">{work.id}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">名前</Label>
+							<Label className="text-base-content/70">名前</Label>
 							<p>{work.name}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">日本語名</Label>
+							<Label className="text-base-content/70">日本語名</Label>
 							<p>{work.nameJa || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">英語名</Label>
+							<Label className="text-base-content/70">英語名</Label>
 							<p>{work.nameEn || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">短縮名</Label>
+							<Label className="text-base-content/70">短縮名</Label>
 							<p>{work.shortNameJa || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">短縮名（英語）</Label>
+							<Label className="text-base-content/70">短縮名（英語）</Label>
 							<p>{work.shortNameEn || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">カテゴリ</Label>
+							<Label className="text-base-content/70">カテゴリ</Label>
 							<p>
 								{work.categoryCode ? (
 									<Badge variant={getCategoryColor(work.categoryCode)}>
@@ -174,11 +174,11 @@ function OfficialWorkDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">シリーズ番号</Label>
+							<Label className="text-base-content/70">シリーズ番号</Label>
 							<p>{work.numberInSeries ?? "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">発売日</Label>
+							<Label className="text-base-content/70">発売日</Label>
 							<p>
 								{work.releaseDate
 									? format(new Date(work.releaseDate), "yyyy年M月d日", {
@@ -188,15 +188,15 @@ function OfficialWorkDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">発行元</Label>
+							<Label className="text-base-content/70">発行元</Label>
 							<p>{work.officialOrganization || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">表示順</Label>
+							<Label className="text-base-content/70">表示順</Label>
 							<p>{work.position ?? "-"}</p>
 						</div>
 						<div className="md:col-span-2">
-							<Label className="text-base-content/60">備考</Label>
+							<Label className="text-base-content/70">備考</Label>
 							<p className="whitespace-pre-wrap">{work.notes || "-"}</p>
 						</div>
 					</div>
@@ -211,14 +211,14 @@ function OfficialWorkDetailPage() {
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
-							<Music className="h-5 w-5" />
+							<Music className="h-4 w-4" />
 							関連楽曲
 							<Badge variant="ghost">{songs.length}曲</Badge>
 						</h2>
 					</div>
 
 					{songs.length === 0 ? (
-						<p className="text-base-content/60">楽曲が登録されていません</p>
+						<p className="text-base-content/70">楽曲が登録されていません</p>
 					) : (
 						<div className="overflow-x-auto">
 							<table className="table">

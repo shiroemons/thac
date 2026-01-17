@@ -199,11 +199,11 @@ function ArtistAliasDetailPage() {
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div>
-							<Label className="text-base-content/60">名義名</Label>
+							<Label className="text-base-content/70">名義名</Label>
 							<p className="font-medium">{alias.name}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">アーティスト</Label>
+							<Label className="text-base-content/70">アーティスト</Label>
 							<p>
 								{alias.artistName ? (
 									<Link
@@ -219,7 +219,7 @@ function ArtistAliasDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">名義種別</Label>
+							<Label className="text-base-content/70">名義種別</Label>
 							<p>
 								{alias.aliasTypeCode ? (
 									<Badge
@@ -234,7 +234,7 @@ function ArtistAliasDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">文字種</Label>
+							<Label className="text-base-content/70">文字種</Label>
 							<p>
 								<Badge
 									variant={INITIAL_SCRIPT_BADGE_VARIANTS[alias.initialScript]}
@@ -244,11 +244,11 @@ function ArtistAliasDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">頭文字</Label>
+							<Label className="text-base-content/70">頭文字</Label>
 							<p className="font-mono">{alias.nameInitial || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">使用期間</Label>
+							<Label className="text-base-content/70">使用期間</Label>
 							<p>
 								{alias.periodFrom || alias.periodTo
 									? `${alias.periodFrom || "?"} 〜 ${alias.periodTo || "現在"}`
@@ -269,33 +269,33 @@ function ArtistAliasDetailPage() {
 							<span className="loading loading-spinner loading-md" />
 						</div>
 					) : !tracksData ? (
-						<p className="text-base-content/60">統計情報を取得できません</p>
+						<p className="text-base-content/70">統計情報を取得できません</p>
 					) : (
 						<div className="space-y-4">
 							{/* 基本統計 */}
 							<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 								<div className="rounded-lg bg-base-200/50 p-4">
-									<Label className="text-base-content/60">参加トラック数</Label>
+									<Label className="text-base-content/70">参加トラック数</Label>
 									<p className="font-bold text-2xl">
 										{tracksData.totalUniqueTrackCount}
-										<span className="font-normal text-base-content/60 text-sm">
+										<span className="font-normal text-base-content/70 text-sm">
 											{" "}
 											曲
 										</span>
 									</p>
 								</div>
 								<div className="rounded-lg bg-base-200/50 p-4">
-									<Label className="text-base-content/60">参加リリース数</Label>
+									<Label className="text-base-content/70">参加リリース数</Label>
 									<p className="font-bold text-2xl">
 										{tracksData.statistics.releaseCount}
-										<span className="font-normal text-base-content/60 text-sm">
+										<span className="font-normal text-base-content/70 text-sm">
 											{" "}
 											作品
 										</span>
 									</p>
 								</div>
 								<div className="rounded-lg bg-base-200/50 p-4">
-									<Label className="text-base-content/60">活動期間</Label>
+									<Label className="text-base-content/70">活動期間</Label>
 									<p className="font-medium">
 										{tracksData.statistics.earliestReleaseDate &&
 										tracksData.statistics.latestReleaseDate
@@ -333,7 +333,7 @@ function ArtistAliasDetailPage() {
 			<div className="card bg-base-100 shadow-xl">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
-						<Users className="h-5 w-5" />
+						<Users className="h-4 w-4" />
 						<h2 className="card-title">参加サークル</h2>
 						{circlesData && circlesData.length > 0 && (
 							<Badge variant="secondary">{circlesData.length}件</Badge>
@@ -345,7 +345,7 @@ function ArtistAliasDetailPage() {
 							<span className="loading loading-spinner loading-md" />
 						</div>
 					) : !circlesData || circlesData.length === 0 ? (
-						<p className="text-base-content/60">参加サークルがありません</p>
+						<p className="text-base-content/70">参加サークルがありません</p>
 					) : (
 						<div className="overflow-x-auto">
 							<Table zebra>
@@ -397,7 +397,7 @@ function ArtistAliasDetailPage() {
 			<div className="card bg-base-100 shadow-xl">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
-						<Music className="h-5 w-5" />
+						<Music className="h-4 w-4" />
 						<h2 className="card-title">関連楽曲</h2>
 						{tracksData && (
 							<Badge variant="secondary">
@@ -411,7 +411,7 @@ function ArtistAliasDetailPage() {
 							<span className="loading loading-spinner loading-md" />
 						</div>
 					) : !tracksData || tracksData.totalUniqueTrackCount === 0 ? (
-						<p className="text-base-content/60">関連する楽曲がありません</p>
+						<p className="text-base-content/70">関連する楽曲がありません</p>
 					) : (
 						<div className="space-y-4">
 							<div className="overflow-x-auto">
@@ -458,7 +458,7 @@ function ArtistAliasDetailPage() {
 															{track.name}
 														</Link>
 														{track.nameJa && track.nameJa !== track.name && (
-															<span className="ml-2 text-base-content/60 text-sm">
+															<span className="ml-2 text-base-content/70 text-sm">
 																({track.nameJa})
 															</span>
 														)}
@@ -478,7 +478,7 @@ function ArtistAliasDetailPage() {
 							{/* ページネーション */}
 							{tracksData.tracks.length > tracksPageSize && (
 								<div className="flex items-center justify-between">
-									<p className="text-base-content/60 text-sm">
+									<p className="text-base-content/70 text-sm">
 										全{tracksData.tracks.length}件中{" "}
 										{(tracksPage - 1) * tracksPageSize + 1}〜
 										{Math.min(

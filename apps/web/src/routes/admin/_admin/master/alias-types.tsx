@@ -212,7 +212,7 @@ function AliasTypesPage() {
 			{/* ヘッダー */}
 			<h1 className="font-bold text-2xl">名義種別管理</h1>
 
-			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<div className="rounded-lg border border-base-300 bg-base-100">
 				<DataTableActionBar
 					className="border-base-300 border-b p-4"
 					searchPlaceholder="ラベルまたはコードで検索..."

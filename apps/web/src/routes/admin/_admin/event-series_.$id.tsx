@@ -177,11 +177,11 @@ function EventSeriesDetailPage() {
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div>
-							<Label className="text-base-content/60">名前</Label>
+							<Label className="text-base-content/70">名前</Label>
 							<p className="font-medium">{series.name}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">表示順序</Label>
+							<Label className="text-base-content/70">表示順序</Label>
 							<p>{series.sortOrder ?? "-"}</p>
 						</div>
 					</div>
@@ -194,7 +194,7 @@ function EventSeriesDetailPage() {
 					<h2 className="card-title">所属イベント一覧</h2>
 
 					{sortedEvents.length === 0 ? (
-						<p className="text-base-content/60">イベントが登録されていません</p>
+						<p className="text-base-content/70">イベントが登録されていません</p>
 					) : (
 						<div className="overflow-x-auto">
 							<Table zebra>
