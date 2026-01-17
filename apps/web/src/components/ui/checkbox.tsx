@@ -33,7 +33,7 @@ function Checkbox({
 			ref={ref}
 			type="checkbox"
 			data-slot="checkbox"
-			className={cn("checkbox", className)}
+			className={cn("checkbox focus-ring", className)}
 			onChange={handleChange}
 			{...props}
 		/>

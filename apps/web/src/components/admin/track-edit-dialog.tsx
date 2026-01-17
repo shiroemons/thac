@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
@@ -292,7 +293,7 @@ export function TrackEditDialog({
 					<DialogHeader>
 						<DialogTitle>トラックの編集</DialogTitle>
 					</DialogHeader>
-					<div className="grid gap-4 py-4">
+					<DialogBody className="grid gap-4 py-4">
 						{displayError && (
 							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{displayError}
@@ -492,7 +493,7 @@ export function TrackEditDialog({
 								</p>
 							)}
 						</div>
-					</div>
+					</DialogBody>
 					<DialogFooter>
 						<Button
 							variant="ghost"

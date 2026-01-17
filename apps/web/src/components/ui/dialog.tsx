@@ -5,6 +5,7 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useId,
 	useRef,
 	useState,
 } from "react";
@@ -16,6 +17,7 @@ interface DialogContextValue {
 	open: boolean;
 	setOpen: (open: boolean) => void;
 	dialogRef: React.RefObject<HTMLDialogElement | null>;
+	titleId: string;
 }
 
 const DialogContext = createContext<DialogContextValue | undefined>(undefined);
@@ -37,6 +39,7 @@ interface DialogProps {
 function Dialog({ open: controlledOpen, onOpenChange, children }: DialogProps) {
 	const [internalOpen, setInternalOpen] = useState(false);
 	const dialogRef = useRef<HTMLDialogElement>(null);
+	const titleId = useId();
 
 	const isControlled = controlledOpen !== undefined;
 	const open = isControlled ? controlledOpen : internalOpen;
@@ -52,7 +55,7 @@ function Dialog({ open: controlledOpen, onOpenChange, children }: DialogProps) {
 	);
 
 	return (
-		<DialogContext.Provider value={{ open, setOpen, dialogRef }}>
+		<DialogContext.Provider value={{ open, setOpen, dialogRef, titleId }}>
 			{children}
 		</DialogContext.Provider>
 	);
@@ -103,7 +106,7 @@ function DialogContent({
 	showCloseButton = true,
 	...props
 }: DialogContentProps) {
-	const { open, setOpen, dialogRef } = useDialogContext();
+	const { open, setOpen, dialogRef, titleId } = useDialogContext();
 
 	useEffect(() => {
 		const dialog = dialogRef.current;
@@ -136,9 +139,14 @@ function DialogContent({
 			ref={dialogRef}
 			data-slot="dialog-content"
 			className="modal"
+			aria-labelledby={titleId}
+			aria-modal="true"
 			onClick={handleBackdropClick}
 		>
-			<div className={cn("modal-box", className)} {...props}>
+			<div
+				className={cn("modal-box flex max-h-[90vh] flex-col", className)}
+				{...props}
+			>
 				{children}
 				{showCloseButton && (
 					<button
@@ -162,7 +170,17 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
 	return (
 		<div
 			data-slot="dialog-header"
-			className={cn("mb-4", className)}
+			className={cn("mb-4 shrink-0", className)}
+			{...props}
+		/>
+	);
+}
+
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+	return (
+		<div
+			data-slot="dialog-body"
+			className={cn("flex-1 overflow-y-auto", className)}
 			{...props}
 		/>
 	);
@@ -172,15 +190,20 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
 	return (
 		<div
 			data-slot="dialog-footer"
-			className={cn("modal-action mt-4", className)}
+			className={cn(
+				"modal-action sticky bottom-0 mt-4 border-base-300 border-t bg-base-100 pt-4",
+				className,
+			)}
 			{...props}
 		/>
 	);
 }
 
 function DialogTitle({ className, ...props }: React.ComponentProps<"h3">) {
+	const { titleId } = useDialogContext();
 	return (
 		<h3
+			id={titleId}
 			data-slot="dialog-title"
 			className={cn("font-bold text-lg", className)}
 			{...props}
@@ -218,6 +241,7 @@ function DialogClose({ children, ...props }: React.ComponentProps<"button">) {
 
 export {
 	Dialog,
+	DialogBody,
 	DialogClose,
 	DialogContent,
 	DialogDescription,

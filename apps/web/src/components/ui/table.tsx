@@ -6,6 +6,16 @@ interface TableProps extends React.ComponentProps<"table"> {
 	zebra?: boolean;
 }
 
+interface TableHeadProps extends React.ComponentProps<"th"> {
+	sticky?: "left" | "right";
+	sortable?: boolean;
+	sorted?: "asc" | "desc" | false;
+}
+
+interface TableCellProps extends React.ComponentProps<"td"> {
+	sticky?: "left" | "right";
+}
+
 function Table({ className, zebra = false, ...props }: TableProps) {
 	return (
 		<div data-slot="table-container" className="w-full overflow-x-auto">
@@ -44,18 +54,54 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 	);
 }
 
-function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+function TableHead({
+	className,
+	sticky,
+	sortable,
+	sorted,
+	...props
+}: TableHeadProps) {
+	const ariaSort =
+		sorted === "asc"
+			? "ascending"
+			: sorted === "desc"
+				? "descending"
+				: sorted === false
+					? "none"
+					: undefined;
+
 	return (
 		<th
 			data-slot="table-head"
-			className={cn("font-semibold text-base-content", className)}
+			scope="col"
+			aria-sort={ariaSort}
+			className={cn(
+				"font-semibold text-base-content",
+				sticky === "left" &&
+					"sticky left-0 bg-base-100 shadow-[2px_0_4px_rgba(0,0,0,0.1)]",
+				sticky === "right" &&
+					"sticky right-0 bg-base-100 shadow-[-2px_0_4px_rgba(0,0,0,0.1)]",
+				className,
+			)}
 			{...props}
 		/>
 	);
 }
 
-function TableCell({ className, ...props }: React.ComponentProps<"td">) {
-	return <td data-slot="table-cell" className={cn(className)} {...props} />;
+function TableCell({ className, sticky, ...props }: TableCellProps) {
+	return (
+		<td
+			data-slot="table-cell"
+			className={cn(
+				sticky === "left" &&
+					"sticky left-0 bg-base-100 shadow-[2px_0_4px_rgba(0,0,0,0.1)]",
+				sticky === "right" &&
+					"sticky right-0 bg-base-100 shadow-[-2px_0_4px_rgba(0,0,0,0.1)]",
+				className,
+			)}
+			{...props}
+		/>
+	);
 }
 
 function TableCaption({

@@ -8,6 +8,7 @@ import { Button } from "../ui/button";
 import { ConfirmDialog } from "../ui/confirm-dialog";
 import {
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
@@ -167,7 +168,7 @@ export function CreditRoleEditDialog({
 					<DialogHeader>
 						<DialogTitle>{title}</DialogTitle>
 					</DialogHeader>
-					<div className="grid gap-4 py-4">
+					<DialogBody className="grid gap-4 py-4">
 						{displayError && (
 							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{displayError}
@@ -215,7 +216,7 @@ export function CreditRoleEditDialog({
 								disabled={isPending}
 							/>
 						</div>
-					</div>
+					</DialogBody>
 					<DialogFooter>
 						<Button
 							variant="ghost"

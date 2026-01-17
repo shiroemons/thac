@@ -2,12 +2,23 @@ import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+interface InputProps extends React.ComponentProps<"input"> {
+	error?: boolean;
+	errorId?: string;
+}
+
+function Input({ className, type, error, errorId, ...props }: InputProps) {
 	return (
 		<input
 			type={type}
 			data-slot="input"
-			className={cn("input input-bordered w-full", className)}
+			aria-invalid={error || undefined}
+			aria-describedby={errorId || undefined}
+			className={cn(
+				"input input-bordered w-full",
+				error && "input-error",
+				className,
+			)}
 			{...props}
 		/>
 	);

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
@@ -232,7 +233,7 @@ export function ReleaseEditDialog({
 					<DialogHeader>
 						<DialogTitle>リリースの編集</DialogTitle>
 					</DialogHeader>
-					<div className="grid gap-4 py-4">
+					<DialogBody className="grid gap-4 py-4">
 						{mutationError && !isConflictError(mutationError) ? (
 							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(mutationError)}
@@ -367,7 +368,7 @@ export function ReleaseEditDialog({
 								/>
 							</div>
 						</div>
-					</div>
+					</DialogBody>
 					<DialogFooter>
 						<Button
 							variant="ghost"

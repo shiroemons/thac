@@ -60,7 +60,7 @@ function Button({
 		return (
 			<span
 				className={cn(
-					"btn",
+					"btn focus-ring",
 					variantClasses[variant],
 					sizeClasses[size],
 					className,
@@ -76,7 +76,7 @@ function Button({
 			type="button"
 			data-slot="button"
 			className={cn(
-				"btn",
+				"btn focus-ring",
 				variantClasses[variant],
 				sizeClasses[size],
 				className,
