@@ -42,7 +42,7 @@ function StatCard({ title, value, icon, href, isLoading }: StatCardProps) {
 						{value?.toLocaleString()}
 					</div>
 				)}
-				<div className="text-base-content/60 text-xs">{title}</div>
+				<div className="text-base-content/70 text-xs">{title}</div>
 			</div>
 		</div>
 	);
@@ -76,13 +76,13 @@ function AdminDashboard() {
 		{
 			title: "公式作品",
 			value: data?.officialWorks,
-			icon: <Disc className="h-5 w-5" />,
+			icon: <Disc className="h-4 w-4" />,
 			href: "/admin/official/works" as const,
 		},
 		{
 			title: "公式楽曲",
 			value: data?.officialSongs,
-			icon: <Music className="h-5 w-5" />,
+			icon: <Music className="h-4 w-4" />,
 			href: "/admin/official/songs" as const,
 		},
 	];
@@ -91,19 +91,19 @@ function AdminDashboard() {
 		{
 			title: "アーティスト",
 			value: data?.artists,
-			icon: <UserPen className="h-5 w-5" />,
+			icon: <UserPen className="h-4 w-4" />,
 			href: "/admin/artists" as const,
 		},
 		{
 			title: "アーティスト名義",
 			value: data?.artistAliases,
-			icon: <Users className="h-5 w-5" />,
+			icon: <Users className="h-4 w-4" />,
 			href: "/admin/artist-aliases" as const,
 		},
 		{
 			title: "サークル",
 			value: data?.circles,
-			icon: <CircleUser className="h-5 w-5" />,
+			icon: <CircleUser className="h-4 w-4" />,
 			href: "/admin/circles" as const,
 		},
 	];
@@ -112,13 +112,13 @@ function AdminDashboard() {
 		{
 			title: "イベントシリーズ",
 			value: data?.eventSeries,
-			icon: <Layers className="h-5 w-5" />,
+			icon: <Layers className="h-4 w-4" />,
 			href: "/admin/event-series" as const,
 		},
 		{
 			title: "イベント",
 			value: data?.events,
-			icon: <Calendar className="h-5 w-5" />,
+			icon: <Calendar className="h-4 w-4" />,
 			href: "/admin/events" as const,
 		},
 	];
@@ -127,13 +127,13 @@ function AdminDashboard() {
 		{
 			title: "作品",
 			value: data?.releases,
-			icon: <Disc3 className="h-5 w-5" />,
+			icon: <Disc3 className="h-4 w-4" />,
 			href: "/admin/releases" as const,
 		},
 		{
 			title: "トラック",
 			value: data?.tracks,
-			icon: <Music className="h-5 w-5" />,
+			icon: <Music className="h-4 w-4" />,
 			href: "/admin/tracks" as const,
 		},
 	];
@@ -142,25 +142,25 @@ function AdminDashboard() {
 		{
 			title: "プラットフォーム",
 			value: data?.platforms,
-			icon: <MonitorSmartphone className="h-5 w-5" />,
+			icon: <MonitorSmartphone className="h-4 w-4" />,
 			href: "/admin/master/platforms" as const,
 		},
 		{
 			title: "名義種別",
 			value: data?.aliasTypes,
-			icon: <Users className="h-5 w-5" />,
+			icon: <Users className="h-4 w-4" />,
 			href: "/admin/master/alias-types" as const,
 		},
 		{
 			title: "クレジット役割",
 			value: data?.creditRoles,
-			icon: <UserCog className="h-5 w-5" />,
+			icon: <UserCog className="h-4 w-4" />,
 			href: "/admin/master/credit-roles" as const,
 		},
 		{
 			title: "公式作品カテゴリ",
 			value: data?.officialWorkCategories,
-			icon: <FolderOpen className="h-5 w-5" />,
+			icon: <FolderOpen className="h-4 w-4" />,
 			href: "/admin/master/official-work-categories" as const,
 		},
 	];
@@ -192,7 +192,7 @@ function AdminDashboard() {
 						<StatCard
 							title="ユーザー"
 							value={data?.users}
-							icon={<Users className="h-5 w-5" />}
+							icon={<Users className="h-4 w-4" />}
 							isLoading={isLoading}
 						/>
 					</div>

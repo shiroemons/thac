@@ -131,23 +131,23 @@ function PlatformDetailPage() {
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div>
-							<Label className="text-base-content/60">コード</Label>
+							<Label className="text-base-content/70">コード</Label>
 							<p className="font-mono">{platform.code}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">名前</Label>
+							<Label className="text-base-content/70">名前</Label>
 							<p className="font-medium">{platform.name}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">カテゴリ</Label>
+							<Label className="text-base-content/70">カテゴリ</Label>
 							<p>{platform.category || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">表示順序</Label>
+							<Label className="text-base-content/70">表示順序</Label>
 							<p>{platform.sortOrder ?? "-"}</p>
 						</div>
 						<div className="md:col-span-2">
-							<Label className="text-base-content/60">URLパターン</Label>
+							<Label className="text-base-content/70">URLパターン</Label>
 							<p className="font-mono text-sm">{platform.urlPattern || "-"}</p>
 						</div>
 					</div>

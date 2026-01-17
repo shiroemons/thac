@@ -315,23 +315,23 @@ function CircleDetailPage() {
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div>
-							<Label className="text-base-content/60">名前</Label>
+							<Label className="text-base-content/70">名前</Label>
 							<p className="font-medium">{circle.name}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">日本語名</Label>
+							<Label className="text-base-content/70">日本語名</Label>
 							<p>{circle.nameJa || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">英語名</Label>
+							<Label className="text-base-content/70">英語名</Label>
 							<p>{circle.nameEn || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">ソート用名</Label>
+							<Label className="text-base-content/70">ソート用名</Label>
 							<p>{circle.sortName || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">文字種</Label>
+							<Label className="text-base-content/70">文字種</Label>
 							<p>
 								<Badge
 									variant={INITIAL_SCRIPT_BADGE_VARIANTS[circle.initialScript]}
@@ -341,11 +341,11 @@ function CircleDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">頭文字</Label>
+							<Label className="text-base-content/70">頭文字</Label>
 							<p className="font-mono">{circle.nameInitial || "-"}</p>
 						</div>
 						<div className="md:col-span-2">
-							<Label className="text-base-content/60">備考</Label>
+							<Label className="text-base-content/70">備考</Label>
 							<p className="whitespace-pre-wrap">{circle.notes || "-"}</p>
 						</div>
 					</div>
@@ -357,7 +357,7 @@ function CircleDetailPage() {
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
-							<ExternalLink className="h-5 w-5" />
+							<ExternalLink className="h-4 w-4" />
 							外部リンク一覧
 						</h2>
 						<Button
@@ -371,7 +371,7 @@ function CircleDetailPage() {
 					</div>
 
 					{circle.links.length === 0 ? (
-						<p className="text-base-content/60">
+						<p className="text-base-content/70">
 							外部リンクが登録されていません
 						</p>
 					) : (
@@ -453,7 +453,7 @@ function CircleDetailPage() {
 			<div className="card bg-base-100 shadow-xl">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
-						<BarChart3 className="h-5 w-5" />
+						<BarChart3 className="h-4 w-4" />
 						<h2 className="card-title">統計情報</h2>
 					</div>
 
@@ -462,43 +462,43 @@ function CircleDetailPage() {
 							<span className="loading loading-spinner loading-md" />
 						</div>
 					) : !artistsData ? (
-						<p className="text-base-content/60">統計情報を取得できません</p>
+						<p className="text-base-content/70">統計情報を取得できません</p>
 					) : (
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-4">
 							<div className="rounded-lg bg-base-200/50 p-4">
-								<Label className="text-base-content/60">参加作品数</Label>
+								<Label className="text-base-content/70">参加作品数</Label>
 								<p className="font-bold text-2xl">
 									{artistsData.statistics.releaseCount}
-									<span className="font-normal text-base-content/60 text-sm">
+									<span className="font-normal text-base-content/70 text-sm">
 										{" "}
 										作品
 									</span>
 								</p>
 							</div>
 							<div className="rounded-lg bg-base-200/50 p-4">
-								<Label className="text-base-content/60">トラック総数</Label>
+								<Label className="text-base-content/70">トラック総数</Label>
 								<p className="font-bold text-2xl">
 									{artistsData.statistics.totalTrackCount}
-									<span className="font-normal text-base-content/60 text-sm">
+									<span className="font-normal text-base-content/70 text-sm">
 										{" "}
 										曲
 									</span>
 								</p>
 							</div>
 							<div className="rounded-lg bg-base-200/50 p-4">
-								<Label className="text-base-content/60">
+								<Label className="text-base-content/70">
 									参加アーティスト数
 								</Label>
 								<p className="font-bold text-2xl">
 									{artistsData.statistics.totalArtistCount}
-									<span className="font-normal text-base-content/60 text-sm">
+									<span className="font-normal text-base-content/70 text-sm">
 										{" "}
 										名
 									</span>
 								</p>
 							</div>
 							<div className="rounded-lg bg-base-200/50 p-4">
-								<Label className="text-base-content/60">活動期間</Label>
+								<Label className="text-base-content/70">活動期間</Label>
 								<p className="font-medium">
 									{artistsData.statistics.earliestReleaseDate &&
 									artistsData.statistics.latestReleaseDate
@@ -517,7 +517,7 @@ function CircleDetailPage() {
 			<div className="card bg-base-100 shadow-xl">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
-						<Users className="h-5 w-5" />
+						<Users className="h-4 w-4" />
 						<h2 className="card-title">参加アーティスト</h2>
 						{artistsData && artistsData.artists.length > 0 && (
 							<Badge variant="secondary">{artistsData.artists.length}名</Badge>
@@ -529,7 +529,7 @@ function CircleDetailPage() {
 							<span className="loading loading-spinner loading-md" />
 						</div>
 					) : !artistsData || artistsData.artists.length === 0 ? (
-						<p className="text-base-content/60">参加アーティストがいません</p>
+						<p className="text-base-content/70">参加アーティストがいません</p>
 					) : (
 						<div className="space-y-4">
 							<div className="overflow-x-auto">
@@ -591,7 +591,7 @@ function CircleDetailPage() {
 									>
 										前へ
 									</Button>
-									<span className="text-base-content/60 text-sm">
+									<span className="text-base-content/70 text-sm">
 										{artistsPage} /{" "}
 										{Math.ceil(artistsData.artists.length / artistsPageSize)}
 									</span>
@@ -619,7 +619,7 @@ function CircleDetailPage() {
 					<h2 className="card-title">参加作品一覧</h2>
 
 					{!releasesByType || releasesByType.length === 0 ? (
-						<p className="text-base-content/60">参加作品が登録されていません</p>
+						<p className="text-base-content/70">参加作品が登録されていません</p>
 					) : (
 						<div className="space-y-6">
 							{releasesByType.map((group) => (
@@ -632,7 +632,7 @@ function CircleDetailPage() {
 										>
 											{PARTICIPATION_TYPE_LABELS[group.participationType]}
 										</Badge>
-										<span className="text-base-content/60 text-sm">
+										<span className="text-base-content/70 text-sm">
 											({group.releases.length}件)
 										</span>
 									</div>

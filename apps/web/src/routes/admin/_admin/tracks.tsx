@@ -324,7 +324,7 @@ function TracksPage() {
 			{/* ヘッダー */}
 			<h1 className="font-bold text-2xl">トラック管理</h1>
 
-			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<div className="rounded-lg border border-base-300 bg-base-100">
 				<DataTableActionBar
 					className="border-base-300 border-b p-4"
 					searchPlaceholder="トラック名で検索..."
@@ -567,7 +567,7 @@ function TracksPage() {
 													<div>
 														<p>{track.name}</p>
 														{track.nameJa && (
-															<p className="text-base-content/60 text-sm">
+															<p className="text-base-content/70 text-sm">
 																{track.nameJa}
 															</p>
 														)}

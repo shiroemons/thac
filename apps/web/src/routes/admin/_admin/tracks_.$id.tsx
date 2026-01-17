@@ -941,7 +941,7 @@ function TrackDetailPage() {
 			{/* mutation エラーは各ダイアログ内で表示 */}
 
 			{/* トラック情報カード */}
-			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<div className="rounded-lg border border-base-300 bg-base-100">
 				<div className="border-base-300 border-b p-4">
 					<div className="flex items-center justify-between">
 						<h2 className="font-bold text-xl">{track.name}</h2>
@@ -960,19 +960,19 @@ function TrackDetailPage() {
 					<div className="grid gap-4">
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 							<div>
-								<p className="text-base-content/60 text-sm">トラック名</p>
+								<p className="text-base-content/70 text-sm">トラック名</p>
 								<p>{track.name}</p>
 							</div>
 							<div>
-								<p className="text-base-content/60 text-sm">トラック番号</p>
+								<p className="text-base-content/70 text-sm">トラック番号</p>
 								<p>{track.trackNumber}</p>
 							</div>
 							<div>
-								<p className="text-base-content/60 text-sm">日本語名</p>
+								<p className="text-base-content/70 text-sm">日本語名</p>
 								<p>{track.nameJa || "-"}</p>
 							</div>
 							<div>
-								<p className="text-base-content/60 text-sm">英語名</p>
+								<p className="text-base-content/70 text-sm">英語名</p>
 								<p>{track.nameEn || "-"}</p>
 							</div>
 						</div>
@@ -980,7 +980,7 @@ function TrackDetailPage() {
 						<div className="border-base-300 border-t pt-4">
 							<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 								<div>
-									<p className="text-base-content/60 text-sm">作品</p>
+									<p className="text-base-content/70 text-sm">作品</p>
 									{track.release ? (
 										<Link
 											to="/admin/releases/$id"
@@ -994,7 +994,7 @@ function TrackDetailPage() {
 									)}
 								</div>
 								<div>
-									<p className="text-base-content/60 text-sm">ディスク</p>
+									<p className="text-base-content/70 text-sm">ディスク</p>
 									<p>
 										{track.disc
 											? `Disc ${track.disc.discNumber}${track.disc.discName ? ` - ${track.disc.discName}` : ""}`
@@ -1002,7 +1002,7 @@ function TrackDetailPage() {
 									</p>
 								</div>
 								<div>
-									<p className="text-base-content/60 text-sm">イベント</p>
+									<p className="text-base-content/70 text-sm">イベント</p>
 									{track.eventId && track.eventName ? (
 										<Link
 											to="/admin/events/$id"
@@ -1016,7 +1016,7 @@ function TrackDetailPage() {
 									)}
 								</div>
 								<div>
-									<p className="text-base-content/60 text-sm">イベント日</p>
+									<p className="text-base-content/70 text-sm">イベント日</p>
 									<p>
 										{track.eventDayDate
 											? `${track.eventDayDate}${track.eventDayNumber ? ` (Day ${track.eventDayNumber})` : ""}`
@@ -1028,7 +1028,7 @@ function TrackDetailPage() {
 						<div className="border-base-300 border-t pt-4">
 							<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 								<div>
-									<p className="text-base-content/60 text-sm">
+									<p className="text-base-content/70 text-sm">
 										リリース年/月/日
 									</p>
 									<p>
@@ -1038,7 +1038,7 @@ function TrackDetailPage() {
 									</p>
 								</div>
 								<div>
-									<p className="text-base-content/60 text-sm">作成日時</p>
+									<p className="text-base-content/70 text-sm">作成日時</p>
 									<p className="text-sm">
 										{format(new Date(track.createdAt), "yyyy/MM/dd HH:mm:ss", {
 											locale: ja,
@@ -1046,7 +1046,7 @@ function TrackDetailPage() {
 									</p>
 								</div>
 								<div>
-									<p className="text-base-content/60 text-sm">更新日時</p>
+									<p className="text-base-content/70 text-sm">更新日時</p>
 									<p className="text-sm">
 										{format(new Date(track.updatedAt), "yyyy/MM/dd HH:mm:ss", {
 											locale: ja,
@@ -1057,7 +1057,7 @@ function TrackDetailPage() {
 						</div>
 
 						<div className="border-base-300 border-t pt-4">
-							<p className="text-base-content/60 text-sm">ID</p>
+							<p className="text-base-content/70 text-sm">ID</p>
 							<p className="font-mono text-xs">{track.id}</p>
 						</div>
 					</div>
@@ -1066,7 +1066,7 @@ function TrackDetailPage() {
 
 			{/* ロール別サマリー */}
 			{track.credits.length > 0 && (
-				<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
+				<div className="mt-6 rounded-lg border border-base-300 bg-base-100">
 					<div className="border-base-300 border-b p-4">
 						<h2 className="font-bold text-lg">役割別担当者</h2>
 					</div>
@@ -1116,7 +1116,7 @@ function TrackDetailPage() {
 			)}
 
 			{/* クレジット一覧 */}
-			<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<div className="mt-6 rounded-lg border border-base-300 bg-base-100">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h2 className="font-bold text-lg">クレジット</h2>
 					<Button variant="outline" size="sm" onClick={openCreditDialog}>
@@ -1220,10 +1220,10 @@ function TrackDetailPage() {
 			</div>
 
 			{/* 原曲紐付け一覧 */}
-			<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<div className="mt-6 rounded-lg border border-base-300 bg-base-100">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h2 className="font-bold text-lg">
-						<Music className="mr-2 inline-block h-5 w-5" />
+						<Music className="mr-2 inline-block h-4 w-4" />
 						原曲紐付け
 					</h2>
 					<Button variant="outline" size="sm" onClick={openOfficialSongDialog}>
@@ -1315,10 +1315,10 @@ function TrackDetailPage() {
 			</div>
 
 			{/* 派生関係一覧 */}
-			<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<div className="mt-6 rounded-lg border border-base-300 bg-base-100">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h2 className="font-bold text-lg">
-						<GitFork className="mr-2 inline-block h-5 w-5" />
+						<GitFork className="mr-2 inline-block h-4 w-4" />
 						派生関係
 					</h2>
 					<Button variant="outline" size="sm" onClick={openDerivationDialog}>
@@ -1353,7 +1353,7 @@ function TrackDetailPage() {
 												>
 													{derivation.parentTrack.name}
 													{derivation.parentTrack.releaseName && (
-														<span className="ml-1 text-base-content/60 text-sm">
+														<span className="ml-1 text-base-content/70 text-sm">
 															（{derivation.parentTrack.releaseName}）
 														</span>
 													)}
@@ -1383,10 +1383,10 @@ function TrackDetailPage() {
 			</div>
 
 			{/* 公開リンク一覧 */}
-			<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<div className="mt-6 rounded-lg border border-base-300 bg-base-100">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h2 className="font-bold text-lg">
-						<ExternalLink className="mr-2 inline-block h-5 w-5" />
+						<ExternalLink className="mr-2 inline-block h-4 w-4" />
 						公開リンク
 					</h2>
 					<Button variant="outline" size="sm" onClick={openPublicationDialog}>
@@ -1452,7 +1452,7 @@ function TrackDetailPage() {
 			</div>
 
 			{/* ISRC一覧 */}
-			<div className="mt-6 rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<div className="mt-6 rounded-lg border border-base-300 bg-base-100">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h2 className="font-bold text-lg">ISRC</h2>
 					<Button variant="outline" size="sm" onClick={openIsrcDialog}>
@@ -1562,7 +1562,7 @@ function TrackDetailPage() {
 								clearable={true}
 							/>
 							{creditForm.artistId && (
-								<p className="text-base-content/60 text-xs">
+								<p className="text-base-content/70 text-xs">
 									アーティスト:{" "}
 									{artistsData?.data.find((a) => a.id === creditForm.artistId)
 										?.name ?? "-"}{" "}
@@ -1671,7 +1671,7 @@ function TrackDetailPage() {
 								clearable={true}
 							/>
 							{creditForm.artistId && (
-								<p className="text-base-content/60 text-xs">
+								<p className="text-base-content/70 text-xs">
 									アーティスト:{" "}
 									{artistsData?.data.find((a) => a.id === creditForm.artistId)
 										?.name ?? "-"}{" "}
@@ -2101,7 +2101,7 @@ function TrackDetailPage() {
 									maxLength={12}
 									className="font-mono"
 								/>
-								<p className="text-base-content/60 text-xs">
+								<p className="text-base-content/70 text-xs">
 									12桁：国コード(2) + 登録者コード(3) + 年(2) + コード(5)
 								</p>
 							</div>

@@ -464,7 +464,7 @@ function CirclesPage() {
 			{/* ヘッダー */}
 			<h1 className="font-bold text-2xl">サークル管理</h1>
 
-			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<div className="rounded-lg border border-base-300 bg-base-100">
 				<DataTableActionBar
 					className="border-base-300 border-b p-4"
 					searchPlaceholder="名前で検索..."

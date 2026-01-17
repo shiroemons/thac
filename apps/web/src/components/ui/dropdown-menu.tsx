@@ -202,7 +202,7 @@ function DropdownMenuItem({
 			tabIndex={disabled ? -1 : 0}
 			onClick={handleClick}
 			className={cn(
-				"flex cursor-pointer items-center rounded-lg px-3 py-2 text-sm hover:bg-base-200 focus:bg-base-200 focus:outline-none",
+				"flex cursor-pointer items-center rounded-box px-3 py-2 text-sm hover:bg-base-200 focus:bg-base-200 focus:outline-none",
 				inset && "pl-8",
 				disabled && "cursor-not-allowed opacity-50",
 				className,

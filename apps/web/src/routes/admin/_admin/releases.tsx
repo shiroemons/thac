@@ -392,7 +392,7 @@ function ReleasesPage() {
 			{/* ヘッダー */}
 			<h1 className="font-bold text-2xl">作品管理</h1>
 
-			<div className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
+			<div className="rounded-lg border border-base-300 bg-base-100">
 				<DataTableActionBar
 					className="border-base-300 border-b p-4"
 					searchPlaceholder="作品名で検索..."
@@ -754,7 +754,7 @@ function ReleasesPage() {
 							<Label htmlFor="create-name">
 								作品名 <span className="text-error">*</span>
 							</Label>
-							<p className="text-base-content/60 text-xs">
+							<p className="text-base-content/70 text-xs">
 								アルバム名、シングル名、EP名などを入力してください
 							</p>
 							<Input

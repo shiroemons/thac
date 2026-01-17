@@ -225,11 +225,11 @@ function EventDetailPage() {
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div>
-							<Label className="text-base-content/60">名前</Label>
+							<Label className="text-base-content/70">名前</Label>
 							<p className="font-medium">{event.name}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">イベントシリーズ</Label>
+							<Label className="text-base-content/70">イベントシリーズ</Label>
 							<p>
 								{event.eventSeriesId && event.seriesName ? (
 									<Link
@@ -245,15 +245,15 @@ function EventDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">回次</Label>
+							<Label className="text-base-content/70">回次</Label>
 							<p>{event.edition != null ? `第${event.edition}回` : "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">開催日数</Label>
+							<Label className="text-base-content/70">開催日数</Label>
 							<p>{event.totalDays != null ? `${event.totalDays}日間` : "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">開始日</Label>
+							<Label className="text-base-content/70">開始日</Label>
 							<p>
 								{event.startDate
 									? format(new Date(event.startDate), "yyyy年M月d日", {
@@ -263,7 +263,7 @@ function EventDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">終了日</Label>
+							<Label className="text-base-content/70">終了日</Label>
 							<p>
 								{event.endDate
 									? format(new Date(event.endDate), "yyyy年M月d日", {
@@ -273,7 +273,7 @@ function EventDetailPage() {
 							</p>
 						</div>
 						<div className="md:col-span-2">
-							<Label className="text-base-content/60">会場</Label>
+							<Label className="text-base-content/70">会場</Label>
 							<p>{event.venue || "-"}</p>
 						</div>
 					</div>
@@ -285,7 +285,7 @@ function EventDetailPage() {
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
-							<Calendar className="h-5 w-5" />
+							<Calendar className="h-4 w-4" />
 							開催日一覧
 						</h2>
 						<Button variant="outline" size="sm" onClick={() => openDayDialog()}>
@@ -295,7 +295,7 @@ function EventDetailPage() {
 					</div>
 
 					{sortedDays.length === 0 ? (
-						<p className="text-base-content/60">開催日が登録されていません</p>
+						<p className="text-base-content/70">開催日が登録されていません</p>
 					) : (
 						<div className="overflow-x-auto">
 							<Table zebra>

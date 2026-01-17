@@ -108,11 +108,11 @@ function OfficialSongDetailPage() {
 
 					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div>
-							<Label className="text-base-content/60">ID</Label>
+							<Label className="text-base-content/70">ID</Label>
 							<p className="font-mono text-sm">{song.id}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">作品</Label>
+							<Label className="text-base-content/70">作品</Label>
 							<p>
 								{song.workName && song.officialWorkId ? (
 									<Link
@@ -128,31 +128,31 @@ function OfficialSongDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">トラック番号</Label>
+							<Label className="text-base-content/70">トラック番号</Label>
 							<p>{song.trackNumber ?? "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">名前</Label>
+							<Label className="text-base-content/70">名前</Label>
 							<p>{song.name}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">日本語名</Label>
+							<Label className="text-base-content/70">日本語名</Label>
 							<p>{song.nameJa || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">英語名</Label>
+							<Label className="text-base-content/70">英語名</Label>
 							<p>{song.nameEn || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">作曲者名</Label>
+							<Label className="text-base-content/70">作曲者名</Label>
 							<p>{song.composerName || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">編曲者名</Label>
+							<Label className="text-base-content/70">編曲者名</Label>
 							<p>{song.arrangerName || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">オリジナル</Label>
+							<Label className="text-base-content/70">オリジナル</Label>
 							<p>
 								{song.isOriginal ? (
 									<Badge variant="outline">はい</Badge>
@@ -163,7 +163,7 @@ function OfficialSongDetailPage() {
 						</div>
 						{!song.isOriginal && (
 							<div>
-								<Label className="text-base-content/60">原曲</Label>
+								<Label className="text-base-content/70">原曲</Label>
 								<p>
 									{song.sourceSongId ? (
 										<Link
@@ -180,11 +180,11 @@ function OfficialSongDetailPage() {
 							</div>
 						)}
 						<div className="md:col-span-2">
-							<Label className="text-base-content/60">備考</Label>
+							<Label className="text-base-content/70">備考</Label>
 							<p className="whitespace-pre-wrap">{song.notes || "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">作成日時</Label>
+							<Label className="text-base-content/70">作成日時</Label>
 							<p>
 								{format(new Date(song.createdAt), "yyyy年M月d日 HH:mm:ss", {
 									locale: ja,
@@ -192,7 +192,7 @@ function OfficialSongDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/60">更新日時</Label>
+							<Label className="text-base-content/70">更新日時</Label>
 							<p>
 								{format(new Date(song.updatedAt), "yyyy年M月d日 HH:mm:ss", {
 									locale: ja,

@@ -294,7 +294,7 @@ function LegacyImportPage() {
 
 			{/* ヘッダー */}
 			<h1 className="font-bold text-2xl">レガシーCSVインポート</h1>
-			<p className="text-base-content/60">
+			<p className="text-base-content/70">
 				旧システムのCSVデータをインポートします
 			</p>
 
@@ -464,7 +464,7 @@ function UploadStep({ onUpload, isLoading, errors }: UploadStepProps) {
 		<div className="space-y-6">
 			<div className="text-center">
 				<h3 className="font-semibold text-lg">CSVファイルをアップロード</h3>
-				<p className="text-base-content/60 text-sm">
+				<p className="text-base-content/70 text-sm">
 					旧システムからエクスポートしたCSVファイルをドラッグ&ドロップまたは選択してください
 				</p>
 			</div>
@@ -491,7 +491,7 @@ function UploadStep({ onUpload, isLoading, errors }: UploadStepProps) {
 				) : (
 					<>
 						<FileUp className="mx-auto h-12 w-12 text-base-content/40" />
-						<p className="mt-4 text-base-content/60">
+						<p className="mt-4 text-base-content/70">
 							ここにCSVファイルをドロップ
 						</p>
 						<p className="text-base-content/40 text-sm">または</p>
@@ -512,7 +512,7 @@ function UploadStep({ onUpload, isLoading, errors }: UploadStepProps) {
 			{/* エラー表示 */}
 			{errors.length > 0 && (
 				<div className="alert alert-error">
-					<AlertCircle className="h-5 w-5" />
+					<AlertCircle className="h-4 w-4" />
 					<div>
 						<h4 className="font-semibold">パースエラー</h4>
 						<ul className="list-disc pl-4 text-sm">
@@ -623,7 +623,7 @@ function MappingStep({
 		<div className="space-y-6">
 			<div className="text-center">
 				<h3 className="font-semibold text-lg">原曲マッピング</h3>
-				<p className="text-base-content/60 text-sm">
+				<p className="text-base-content/70 text-sm">
 					CSVの原曲名を公式楽曲データベースにマッピングしてください
 				</p>
 			</div>
@@ -774,7 +774,7 @@ function EventRegistrationStep({
 				<div className="space-y-4">
 					<div className="text-center">
 						<h3 className="font-semibold text-lg">イベント日の選択</h3>
-						<p className="text-base-content/60 text-sm">
+						<p className="text-base-content/70 text-sm">
 							以下のイベントは複数日開催されています。リリースを紐付ける日を選択してください
 						</p>
 					</div>
@@ -798,7 +798,7 @@ function EventRegistrationStep({
 										<span>
 											{day.dayNumber}日目
 											{day.eventDate && (
-												<span className="ml-1 text-base-content/60 text-sm">
+												<span className="ml-1 text-base-content/70 text-sm">
 													({day.eventDate})
 												</span>
 											)}
@@ -816,7 +816,7 @@ function EventRegistrationStep({
 				<div className="space-y-4">
 					<div className="text-center">
 						<h3 className="font-semibold text-lg">新規イベント登録</h3>
-						<p className="text-base-content/60 text-sm">
+						<p className="text-base-content/70 text-sm">
 							以下のイベントはデータベースに存在しないため、情報を入力してください
 						</p>
 					</div>
@@ -891,7 +891,7 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 		<div className="card border border-base-300 bg-base-100">
 			<div className="card-body">
 				<div className="flex items-center gap-2">
-					<Calendar className="h-5 w-5 text-primary" />
+					<Calendar className="h-4 w-4 text-primary" />
 					<h4 className="card-title text-lg">{event.name}</h4>
 					{event.edition && (
 						<span className="badge badge-primary">第{event.edition}回</span>
@@ -1013,39 +1013,39 @@ function ImportingStep({
 	> = {
 		preparing: {
 			label: "準備中",
-			icon: <Loader2 className="h-5 w-5 animate-spin" />,
+			icon: <Loader2 className="h-4 w-4 animate-spin" />,
 		},
 		events: {
 			label: "イベント",
-			icon: <Calendar className="h-5 w-5" />,
+			icon: <Calendar className="h-4 w-4" />,
 		},
 		circles: {
 			label: "サークル",
-			icon: <CheckCircle className="h-5 w-5" />,
+			icon: <CheckCircle className="h-4 w-4" />,
 		},
 		artists: {
 			label: "アーティスト",
-			icon: <CheckCircle className="h-5 w-5" />,
+			icon: <CheckCircle className="h-4 w-4" />,
 		},
 		releases: {
 			label: "作品",
-			icon: <CheckCircle className="h-5 w-5" />,
+			icon: <CheckCircle className="h-4 w-4" />,
 		},
 		tracks: {
 			label: "トラック",
-			icon: <Music className="h-5 w-5" />,
+			icon: <Music className="h-4 w-4" />,
 		},
 		credits: {
 			label: "クレジット",
-			icon: <CheckCircle className="h-5 w-5" />,
+			icon: <CheckCircle className="h-4 w-4" />,
 		},
 		links: {
 			label: "原曲紐付け",
-			icon: <CheckCircle className="h-5 w-5" />,
+			icon: <CheckCircle className="h-4 w-4" />,
 		},
 		complete: {
 			label: "完了",
-			icon: <CheckCircle className="h-5 w-5 text-success" />,
+			icon: <CheckCircle className="h-4 w-4 text-success" />,
 		},
 	};
 
@@ -1102,7 +1102,7 @@ function ImportingStep({
 				<h3 className="mt-4 font-semibold text-lg">
 					{isComplete ? "インポート完了" : "インポート実行中"}
 				</h3>
-				<p className="text-base-content/60 text-sm">
+				<p className="text-base-content/70 text-sm">
 					{isComplete
 						? "結果画面に移動します..."
 						: "データベースにレコードを登録しています。しばらくお待ちください..."}
@@ -1291,7 +1291,7 @@ function ResultStep({ result, onReset }: ResultStepProps) {
 			{/* エラー詳細 */}
 			{result.errors.length > 0 && (
 				<div className="alert alert-warning">
-					<AlertCircle className="h-5 w-5" />
+					<AlertCircle className="h-4 w-4" />
 					<div>
 						<h4 className="font-semibold">警告</h4>
 						<ul className="list-disc pl-4 text-sm">

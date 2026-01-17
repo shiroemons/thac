@@ -68,7 +68,7 @@ function ConflictDialog<T>({
 				<DialogHeader>
 					<div className="flex items-center gap-3">
 						<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-warning/10">
-							<AlertTriangle className="h-5 w-5 text-warning" />
+							<AlertTriangle className="h-4 w-4 text-warning" />
 						</div>
 						<DialogTitle>編集の競合が発生しました</DialogTitle>
 					</div>
