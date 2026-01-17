@@ -483,7 +483,7 @@ function SearchPage() {
 								className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
 									isActive
 										? "bg-primary text-primary-content shadow-md"
-										: "bg-base-100 shadow-sm hover:ring-2 hover:ring-primary/20"
+										: "bg-base-100 shadow-sm hover:ring-2 hover:ring-primary/10"
 								}`}
 								aria-pressed={isActive}
 							>
