@@ -1,6 +1,6 @@
 ---
 description: ライブラリアップデートスキル。依存関係を安全にアップデートし、個別コミット後にPRを作成する。
-allowed-tools: Bash, Read, WebFetch, Glob, Grep, TodoWrite, AskUserQuestion, Skill
+allowed-tools: Bash, Read, WebFetch, Glob, Grep, TodoWrite, AskUserQuestion, Skill, Task
 argument-hint: [package-name]
 ---
 
@@ -8,52 +8,71 @@ argument-hint: [package-name]
 
 ライブラリの依存関係を安全にアップデートし、PRを作成する。
 
-## 処理フロー
+## オーケストレーターの役割
+
+**重要**: あなたはオーケストレーターとして動作する。直接実装を行わず、Task subagent に委託すること。
+
+### オーケストレーターが担当すること
+- ブランチ作成の指示（Phase 0）
+- outdated パッケージ特定の指示（Phase 1）
+- ユーザー確認（AskUserQuestion）
+- Task subagent の起動と結果収集
+- エラー集約とユーザーへの報告
+- /pr スキルの呼び出し（Phase 4）
+
+### オーケストレーターが担当しないこと（Task subagent に委託）
+- CHANGELOG/Release Notes の取得（Phase 2 - 並列実行）
+- 各パッケージの更新・インストール・検証・コミット（Phase 3 - 直列実行）
+
+## 処理フロー（ハイブリッド並列-直列パターン）
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ /update-deps [@tanstack/react-router]                       │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ /update-deps [@tanstack/react-router]                           │
+└─────────────────────────────────────────────────────────────────┘
                            │
                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 0. 専用ブランチの作成                                        │
-│    - feat/update-deps-YYYYMMDD ブランチを作成               │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ Phase 0-1: Sequential (Orchestrator)                            │
+│   - ブランチ作成                                                 │
+│   - outdated パッケージ特定                                      │
+│   - ユーザー確認                                                 │
+└─────────────────────────────────────────────────────────────────┘
                            │
                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 1. アップデート対象の特定                                    │
-│    - bunx npm-check-updates --workspaces で全体を確認       │
-│    - 関連パッケージをグループ化（@tanstack/* 等）           │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ Phase 2: Parallel (Task subagents)                              │
+│   - CHANGELOG/Release Notes 取得（安全に並列化可能）            │
+│   ┌─────────┐ ┌─────────┐ ┌─────────┐                          │
+│   │ Task A  │ │ Task B  │ │ Task C  │  ...                     │
+│   │CHANGELOG│ │CHANGELOG│ │CHANGELOG│                          │
+│   └─────────┘ └─────────┘ └─────────┘                          │
+└─────────────────────────────────────────────────────────────────┘
                            │
                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 2. ユーザーに確認                                            │
-│    - outdated パッケージ一覧を表示                          │
-│    - 全て/マイナーのみ/キャンセル を選択                    │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ Phase 3: Sequential (Task subagents, one at a time)             │
+│   - 各パッケージグループの更新・検証・コミット                   │
+│   - Git競合回避のため直列実行                                    │
+│                                                                  │
+│   Task 1: @tanstack/* → Update → Install → Verify → Commit     │
+│                              ↓                                   │
+│   Task 2: drizzle-*  → Update → Install → Verify → Commit      │
+│                              ↓                                   │
+│   Task 3: zod        → Update → Install → Verify → Commit      │
+└─────────────────────────────────────────────────────────────────┘
                            │
                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 3. 各パッケージ（グループ）ごとにループ処理                  │
-│    a. CHANGELOG/Release Notes を取得 (メジャー変更時)       │
-│    b. package.json を直接編集してバージョン更新             │
-│    c. bun install で依存関係を解決                          │
-│    d. 検証: 型チェック → テスト → Lint → ビルド            │
-│    e. 問題なければコミット（lockfile含む）                  │
-└─────────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 4. PR作成 (/pr スキルを呼び出し)                             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ Phase 4: Sequential (Orchestrator)                              │
+│   - 結果集約・エラー処理                                         │
+│   - /pr スキル呼び出し                                           │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## 手順
 
-### 0. 専用ブランチの作成
+### Phase 0. 専用ブランチの作成（Orchestrator）
 
 main ブランチで直接作業せず、専用ブランチを作成:
 
@@ -61,7 +80,7 @@ main ブランチで直接作業せず、専用ブランチを作成:
 git checkout -b feat/update-deps-$(date +%Y%m%d)
 ```
 
-### 1. アップデート対象の特定
+### Phase 1. アップデート対象の特定（Orchestrator）
 
 以下のコマンドで outdated パッケージを確認:
 
@@ -87,7 +106,7 @@ bunx npm-check-updates --workspaces
 引数が指定されている場合:
 - 指定パッケージ名でフィルタリングして処理
 
-### 2. ユーザーへの確認
+#### ユーザーへの確認
 
 outdated パッケージを表形式で表示:
 
@@ -101,75 +120,161 @@ AskUserQuestion で以下を確認:
 - マイナー/パッチのみ（メジャー変更を除外）
 - キャンセル
 
-### 3. パッケージごとの処理
+### Phase 2. CHANGELOG 取得（Task subagents - 並列実行）
 
-#### a. CHANGELOG/Release Notes の取得（メジャー変更時のみ）
-- GitHub Releases を WebFetch で取得
-- 破壊的変更がある場合はユーザーに報告
-- URL例:
-  - `https://github.com/{owner}/{repo}/releases`
-  - `https://github.com/{owner}/{repo}/blob/main/CHANGELOG.md`
+メジャーバージョン変更があるパッケージについて、**複数の Task subagent を並列で起動**して CHANGELOG を取得する。
 
-#### b. バージョン更新
+#### Task Prompt Template（CHANGELOG 取得用）
 
-**Catalog のパッケージの場合:**
-ルート package.json の `workspaces.catalog` を直接編集:
+```
+パッケージ「{package_name}」のバージョン {current_version} から {target_version} への変更内容を調査してください。
+
+## 調査手順
+1. 以下の URL から Release Notes または CHANGELOG を取得:
+   - GitHub Releases: https://github.com/{owner}/{repo}/releases
+   - CHANGELOG.md: https://github.com/{owner}/{repo}/blob/main/CHANGELOG.md
+
+2. 以下の情報を抽出:
+   - 破壊的変更（Breaking Changes）
+   - 主要な新機能
+   - 非推奨になった機能
+   - マイグレーション手順（ある場合）
+
+## 出力形式
+以下の形式で結果を返してください:
+
+### {package_name} v{current_version} → v{target_version}
+
+**破壊的変更:**
+- (変更内容、なければ「なし」)
+
+**主要な変更:**
+- (変更内容の箇条書き)
+
+**マイグレーション必要:** はい/いいえ
+**マイグレーション手順:** (ある場合のみ)
+```
+
+#### 並列起動の例
+
+```
+# 単一メッセージ内で複数の Task tool を呼び出す
+Task(subagent_type="general-purpose", description="changelog @tanstack/router", prompt="...")
+Task(subagent_type="general-purpose", description="changelog drizzle-orm", prompt="...")
+Task(subagent_type="general-purpose", description="changelog zod", prompt="...")
+```
+
+### Phase 3. パッケージ更新（Task subagents - 直列実行）
+
+**Git 競合と bun.lockb 競合を回避するため、各パッケージグループは1つずつ順番に処理する。**
+
+#### Task Prompt Template（パッケージ更新用）
+
+```
+パッケージ「{package_name_or_group}」を v{target_version} にアップデートしてください。
+
+## 更新対象
+- パッケージ: {package_list}
+- 現在のバージョン: {current_versions}
+- 目標バージョン: {target_versions}
+- 更新場所: {catalog または package.json のパス}
+
+## 処理手順
+
+### 1. バージョン更新
+{catalog の場合}
+ルート package.json の `workspaces.catalog` を編集:
 ```json
-{
-  "workspaces": {
-    "catalog": {
-      "package-name": "新バージョン"
-    }
-  }
+"catalog": {
+  "{package_name}": "{target_version}"
 }
 ```
 
-**通常のパッケージの場合:**
-対象の package.json の dependencies/devDependencies を直接編集
+{通常の場合}
+対象の package.json の dependencies/devDependencies を編集
 
-#### c. 依存関係の解決
+### 2. 依存関係のインストール
 ```bash
 bun install
 ```
 
-#### d. 検証（全て成功するまで次に進まない）
-
+### 3. 検証（全て成功すること）
 ```bash
-# 1. 型チェック
-bun run check-types
-
-# 2. テスト実行
-bun run test
-
-# 3. Lint・フォーマット
-bun run check
-
-# 4. ビルド検証
-bun run build
+bun run check-types  # 型チェック
+bun run test         # テスト実行（存在する場合）
+bun run check        # Lint・フォーマット
+bun run build        # ビルド検証
 ```
 
-エラーが発生した場合:
-- エラー内容をユーザーに報告
-- 修正が必要な箇所を特定
-- AskUserQuestion で続行方法を確認（スキップ/修正/中断）
-
-#### e. コミット
-
-検証が成功した場合、**lockfile (bun.lockb) を含めて**コミット:
-
+### 4. コミット
 ```bash
 git add package.json bun.lockb [変更されたpackage.json]
-git commit -m "fix(deps): update <package-name> to v<version>"
+git commit -m "fix(deps): update {package_name_or_group} to v{target_version}"
 ```
 
-グループ化されたパッケージの場合:
-```
-fix(deps): update @tanstack/* packages
+グループの場合: `fix(deps): update @tanstack/* packages`
+
+## 結果報告
+
+以下の形式で結果を報告してください:
+
+**ステータス:** SUCCESS / FAILED
+**パッケージ:** {package_name_or_group}
+**バージョン:** {current_version} → {target_version}
+**検証結果:**
+- 型チェック: PASS/FAIL
+- テスト: PASS/FAIL/SKIP
+- Lint: PASS/FAIL
+- ビルド: PASS/FAIL
+**コミットハッシュ:** {hash} (成功時のみ)
+**エラー詳細:** (失敗時のみ)
 ```
 
-### 4. PR作成
+#### 直列実行の実装
 
-全パッケージの処理完了後:
+```
+# 1つ目のパッケージを更新
+result1 = Task(subagent_type="general-purpose", description="update @tanstack/*", prompt="...")
+
+# result1 の結果を確認してから次へ
+if result1.status == "FAILED":
+    # ユーザーに確認: スキップ/再試行/中断
+
+# 2つ目のパッケージを更新
+result2 = Task(subagent_type="general-purpose", description="update drizzle-*", prompt="...")
+
+# 以下同様...
+```
+
+### Phase 4. 結果集約と PR 作成（Orchestrator）
+
+#### 結果集約レポート
+
+全パッケージの処理完了後、以下の形式で結果を表示:
+
+```
+## アップデート結果サマリー
+
+| パッケージ | バージョン | ステータス |
+|------------|------------|------------|
+| @tanstack/* | 1.0.0 → 2.0.0 | ✅ SUCCESS |
+| drizzle-* | 0.30.0 → 0.31.0 | ✅ SUCCESS |
+| zod | 3.22.0 → 3.23.0 | ❌ FAILED |
+
+### 失敗したパッケージ
+- **zod**: 型エラー (src/utils/validation.ts:15)
+```
+
+#### エラーハンドリング
+
+検証失敗時は AskUserQuestion で以下を確認:
+- **スキップ**: このパッケージをスキップして次へ進む
+- **再試行**: 手動修正後に再度検証を実行
+- **中断**: 処理を中断（既にコミット済みの変更は保持）
+
+#### PR 作成
+
+成功したパッケージが1つ以上ある場合:
 - `/pr` スキルを呼び出してPRを作成
 
 ## 注意事項
@@ -182,6 +287,7 @@ fix(deps): update @tanstack/* packages
 - **lockfile を必ずコミットに含める** - bun.lockb を忘れない
 - **検証失敗時はスキップするか修正するか選択させる**
 - **catalog を使用しているパッケージは catalog 側を更新する**
+- **CHANGELOG 取得は並列実行可能だが、パッケージ更新は直列実行必須**
 
 ## ロールバック
 
@@ -201,7 +307,10 @@ git branch -D feat/update-deps-YYYYMMDD
 処理開始時に TodoWrite でタスクを管理:
 1. 専用ブランチの作成
 2. アップデート対象パッケージの特定
-3. 各パッケージのアップデート（パッケージ/グループ数分のサブタスク）
-4. PR作成
+3. ユーザー確認
+4. CHANGELOG 取得（並列 Task）
+5. 各パッケージのアップデート（直列 Task、パッケージ/グループ数分のサブタスク）
+6. 結果集約
+7. PR作成
 
 進捗を随時更新し、ユーザーが状況を把握できるようにする。
