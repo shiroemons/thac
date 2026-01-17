@@ -10,19 +10,24 @@ import { describe, expect, it } from "bun:test";
 describe("InfiniteScroll", () => {
 	// コンポーネントの期待する表示内容
 	const expectedContent = {
-		loadingText: "読み込み中...",
-		allLoadedText: "すべて表示しました",
+		idleHintText: "スクロールして続きを読み込む",
+		noMoreDataText: "これ以上データがありません",
 		countFormat: (loaded: number, total: number) =>
 			`${loaded} / ${total} 件を表示中`,
+		scrollToTopLabel: "トップへ戻る",
 	};
 
 	describe("表示テキスト", () => {
-		it("ローディング時のテキストが正しい", () => {
-			expect(expectedContent.loadingText).toBe("読み込み中...");
+		it("待機時のヒントテキストが正しい", () => {
+			expect(expectedContent.idleHintText).toBe("スクロールして続きを読み込む");
 		});
 
 		it("全件表示時のテキストが正しい", () => {
-			expect(expectedContent.allLoadedText).toBe("すべて表示しました");
+			expect(expectedContent.noMoreDataText).toBe("これ以上データがありません");
+		});
+
+		it("トップへ戻るボタンのラベルが正しい", () => {
+			expect(expectedContent.scrollToTopLabel).toBe("トップへ戻る");
 		});
 	});
 
@@ -59,9 +64,9 @@ describe("InfiniteScroll", () => {
 		};
 
 		/**
-		 * 「すべて表示しました」メッセージを表示すべきかどうかのロジック
+		 * 「これ以上データがありません」メッセージを表示すべきかどうかのロジック
 		 */
-		const shouldShowAllLoadedMessage = (hasMore: boolean): boolean => {
+		const shouldShowNoMoreDataMessage = (hasMore: boolean): boolean => {
 			return !hasMore;
 		};
 
@@ -75,12 +80,43 @@ describe("InfiniteScroll", () => {
 
 		it("hasMore=trueの場合はローディングエリアを表示", () => {
 			expect(shouldShowLoadingArea(true)).toBe(true);
-			expect(shouldShowAllLoadedMessage(true)).toBe(false);
+			expect(shouldShowNoMoreDataMessage(true)).toBe(false);
 		});
 
-		it("hasMore=falseの場合は「すべて表示しました」を表示", () => {
+		it("hasMore=falseの場合は「これ以上データがありません」を表示", () => {
 			expect(shouldShowLoadingArea(false)).toBe(false);
-			expect(shouldShowAllLoadedMessage(false)).toBe(true);
+			expect(shouldShowNoMoreDataMessage(false)).toBe(true);
+		});
+	});
+
+	describe("トップへ戻るボタン表示ロジック", () => {
+		const DEFAULT_THRESHOLD = 400;
+
+		/**
+		 * トップへ戻るボタンを表示すべきかどうかのロジック
+		 */
+		const shouldShowScrollTopButton = (
+			scrollY: number,
+			threshold: number = DEFAULT_THRESHOLD,
+		): boolean => {
+			return scrollY > threshold;
+		};
+
+		it("スクロール位置がしきい値を超えた場合はボタンを表示", () => {
+			expect(shouldShowScrollTopButton(401)).toBe(true);
+			expect(shouldShowScrollTopButton(500)).toBe(true);
+			expect(shouldShowScrollTopButton(1000)).toBe(true);
+		});
+
+		it("スクロール位置がしきい値以下の場合はボタンを非表示", () => {
+			expect(shouldShowScrollTopButton(0)).toBe(false);
+			expect(shouldShowScrollTopButton(400)).toBe(false);
+			expect(shouldShowScrollTopButton(399)).toBe(false);
+		});
+
+		it("カスタムしきい値で正しく動作する", () => {
+			expect(shouldShowScrollTopButton(100, 200)).toBe(false);
+			expect(shouldShowScrollTopButton(201, 200)).toBe(true);
 		});
 	});
 

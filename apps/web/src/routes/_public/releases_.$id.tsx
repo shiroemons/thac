@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Calendar, Disc3, Music, Users } from "lucide-react";
+import { Calendar, Disc, Disc3, Music, Users } from "lucide-react";
 import { useMemo } from "react";
 import {
 	EmptyState,
@@ -109,83 +109,101 @@ function ReleaseDetailPage() {
 				]}
 			/>
 
-			{/* ヘッダー */}
-			<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
-				<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-					<div className="space-y-3">
-						{/* リリースタイプバッジとタイトル */}
-						<div className="flex flex-wrap items-center gap-2">
-							{release.releaseType && (
-								<span
-									className={`badge ${releaseTypeBadgeColors[release.releaseType] ?? "badge-ghost"}`}
-								>
-									{releaseTypeNames[release.releaseType] ?? release.releaseType}
-								</span>
-							)}
-							<h1 className="font-bold text-2xl sm:text-3xl">{release.name}</h1>
+			{/* ヘッダー - グラデーション背景 */}
+			<div className="gradient-release overflow-hidden rounded-2xl shadow-sm transition-shadow duration-300 hover:shadow-lg">
+				<div className="glass-card-light rounded-2xl p-6">
+					<div className="flex flex-col gap-6 sm:flex-row">
+						{/* ジャケット画像エリア（プレースホルダー） */}
+						<div className="group relative mx-auto flex size-40 shrink-0 items-center justify-center rounded-2xl bg-base-200/70 transition-all duration-300 hover:ring-2 hover:ring-primary/10 sm:mx-0 sm:size-48">
+							<Disc className="size-16 text-primary/60 transition-transform duration-300 group-hover:scale-110 sm:size-20" />
+							{/* オーバーレイ効果 */}
+							<div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-base-content/5 to-transparent" />
 						</div>
 
-						{/* サークル一覧 */}
-						{release.circles.length > 0 && (
-							<div className="flex flex-wrap items-center gap-2">
-								{release.circles
-									.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-									.map((circle, idx) => (
-										<CircleBadge
-											key={`${circle.circleId}-${idx}`}
-											circle={circle}
-										/>
-									))}
+						{/* リリース情報 */}
+						<div className="flex flex-1 flex-col justify-center space-y-4">
+							{/* リリースタイプバッジとタイトル */}
+							<div className="space-y-2">
+								{release.releaseType && (
+									<span
+										className={`badge ${releaseTypeBadgeColors[release.releaseType] ?? "badge-ghost"}`}
+									>
+										{releaseTypeNames[release.releaseType] ??
+											release.releaseType}
+									</span>
+								)}
+								<h1 className="font-bold text-2xl sm:text-3xl">
+									{release.name}
+								</h1>
 							</div>
-						)}
 
-						{/* イベント・発売日 */}
-						<div className="flex flex-wrap items-center gap-4 text-base-content/60 text-sm">
-							{release.event && (
-								<Link
-									to="/events/$id"
-									params={{ id: release.event.id }}
-									preload="intent"
-									className="flex items-center gap-1 hover:text-primary"
-								>
-									<Calendar className="size-4" />
-									{release.event.name}
-								</Link>
+							{/* サークル一覧 */}
+							{release.circles.length > 0 && (
+								<div className="flex flex-wrap items-center gap-2">
+									{release.circles
+										.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+										.map((circle, idx) => (
+											<CircleBadge
+												key={`${circle.circleId}-${idx}`}
+												circle={circle}
+											/>
+										))}
+								</div>
 							)}
-							{release.releaseDate && (
-								<span className="flex items-center gap-1">
-									<Calendar className="size-4" />
-									{release.releaseDate}
+
+							{/* イベント・発売日 */}
+							<div className="flex flex-wrap items-center gap-4 text-base-content/60 text-sm">
+								{release.event && (
+									<Link
+										to="/events/$id"
+										params={{ id: release.event.id }}
+										preload="intent"
+										className="flex min-h-11 items-center gap-1 rounded-lg px-2 py-2 transition-colors duration-300 hover:bg-base-200/50 hover:text-primary"
+									>
+										<Calendar className="size-4" />
+										{release.event.name}
+									</Link>
+								)}
+								{release.releaseDate && (
+									<span className="flex items-center gap-1">
+										<Calendar className="size-4" />
+										{release.releaseDate}
+									</span>
+								)}
+							</div>
+						</div>
+					</div>
+
+					{/* 統計カード */}
+					<div className="mt-6 grid grid-cols-2 gap-4">
+						<div className="rounded-2xl bg-base-100/70 p-4 text-center transition-all duration-300 hover:bg-base-100 hover:shadow-md">
+							<div className="flex items-center justify-center gap-2 text-primary">
+								<Music className="size-5" />
+								<span className="font-bold text-2xl">{release.trackCount}</span>
+							</div>
+							<p className="mt-1 text-base-content/70 text-sm">トラック数</p>
+						</div>
+						<div className="rounded-2xl bg-base-100/70 p-4 text-center transition-all duration-300 hover:bg-base-100 hover:shadow-md">
+							<div className="flex items-center justify-center gap-2 text-secondary">
+								<Users className="size-5" />
+								<span className="font-bold text-2xl">
+									{release.artistCount}
 								</span>
-							)}
+							</div>
+							<p className="mt-1 text-base-content/70 text-sm">
+								参加アーティスト
+							</p>
 						</div>
-					</div>
-				</div>
-
-				{/* 統計カード */}
-				<div className="mt-6 grid grid-cols-2 gap-4">
-					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
-						<div className="flex items-center justify-center gap-2 text-primary">
-							<Music className="size-5" />
-							<span className="font-bold text-2xl">{release.trackCount}</span>
-						</div>
-						<p className="mt-1 text-base-content/70 text-sm">トラック数</p>
-					</div>
-					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
-						<div className="flex items-center justify-center gap-2 text-secondary">
-							<Users className="size-5" />
-							<span className="font-bold text-2xl">{release.artistCount}</span>
-						</div>
-						<p className="mt-1 text-base-content/70 text-sm">
-							参加アーティスト
-						</p>
 					</div>
 				</div>
 			</div>
 
 			{/* トラックリスト */}
 			<div className="space-y-4">
-				<h2 className="font-bold text-xl">トラックリスト</h2>
+				<h2 className="flex items-center gap-2 font-bold text-xl">
+					<Music className="size-5 text-primary" />
+					トラックリスト
+				</h2>
 
 				{release.tracks.length > 0 ? (
 					<div className="space-y-4">
@@ -194,24 +212,28 @@ function ReleaseDetailPage() {
 							release.discs.map((disc) => (
 								<div
 									key={disc.id}
-									className="overflow-hidden rounded-2xl bg-base-100 shadow-sm"
+									className="overflow-hidden rounded-2xl shadow-sm transition-shadow duration-300 hover:shadow-md"
 								>
-									<div className="border-base-200 border-b bg-base-200/30 px-4 py-3">
-										<div className="flex items-center gap-2">
-											<Disc3 className="size-4 text-primary" />
-											<span className="font-medium">
-												Disc {disc.discNumber}
-												{disc.discName && ` - ${disc.discName}`}
-											</span>
+									<div className="gradient-track">
+										<div className="glass-card-light border-base-200 border-b px-4 py-3">
+											<div className="flex items-center gap-2">
+												<Disc3 className="size-5 text-primary" />
+												<span className="font-semibold">
+													Disc {disc.discNumber}
+													{disc.discName && ` - ${disc.discName}`}
+												</span>
+											</div>
 										</div>
 									</div>
-									<TrackTable tracks={tracksByDisc.get(disc.id) ?? []} />
+									<div className="bg-base-100">
+										<TrackCardList tracks={tracksByDisc.get(disc.id) ?? []} />
+									</div>
 								</div>
 							))
 						) : (
 							// シングルディスク: そのまま表示
-							<div className="overflow-x-auto rounded-2xl bg-base-100 shadow-sm">
-								<TrackTable tracks={release.tracks} />
+							<div className="rounded-2xl bg-base-100 shadow-sm">
+								<TrackCardList tracks={release.tracks} />
 							</div>
 						)}
 					</div>
@@ -226,16 +248,16 @@ function ReleaseDetailPage() {
 
 			{/* 配信リンク */}
 			{release.publications.length > 0 && (
-				<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
+				<div className="rounded-2xl bg-base-100 p-6 shadow-sm transition-shadow duration-300 hover:shadow-md">
 					<PublicationLinks publications={release.publications} showEmbeds />
 				</div>
 			)}
 
 			{/* メモ */}
 			{release.notes && (
-				<div className="space-y-2">
+				<div className="space-y-3">
 					<h2 className="font-bold text-xl">メモ</h2>
-					<div className="rounded-2xl bg-base-100 p-4 shadow-sm">
+					<div className="rounded-2xl bg-base-100 p-4 shadow-sm transition-shadow duration-300 hover:shadow-md">
 						<p className="whitespace-pre-wrap text-base-content/80">
 							{release.notes}
 						</p>
@@ -259,11 +281,9 @@ function CircleBadge({
 			to="/circles/$id"
 			params={{ id: circle.circleId }}
 			preload="intent"
-			className="inline-flex items-center gap-1 hover:text-primary"
+			className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 py-2 transition-colors duration-300 hover:bg-base-200/50 hover:text-primary"
 		>
-			<span className="font-medium hover:text-primary">
-				{circle.circleName}
-			</span>
+			<span className="font-medium">{circle.circleName}</span>
 			<span
 				className={`badge badge-sm ${participationTypeBadgeColors[circle.participationType] ?? "badge-ghost"}`}
 			>
@@ -275,109 +295,78 @@ function CircleBadge({
 }
 
 /**
- * トラックテーブルコンポーネント
+ * トラックカードリストコンポーネント
  */
-function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
+function TrackCardList({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 	return (
-		<table className="table">
-			<thead>
-				<tr>
-					<th className="w-12">#</th>
-					<th>曲名</th>
-					<th className="hidden md:table-cell">アーティスト</th>
-					<th className="hidden sm:table-cell">原曲</th>
-				</tr>
-			</thead>
-			<tbody>
-				{tracks
-					.sort((a, b) => a.trackNumber - b.trackNumber)
-					.map((track) => (
-						<tr key={track.id} className="hover:bg-base-200/50">
-							<td className="font-mono text-base-content/60">
-								{track.trackNumber.toString().padStart(2, "0")}
-							</td>
-							<td>
-								<Link
-									to="/tracks/$id"
-									params={{ id: track.id }}
-									preload="intent"
-									className="font-medium hover:text-primary"
-								>
-									{track.name}
-								</Link>
-							</td>
-							<td className="hidden md:table-cell">
-								<div className="flex flex-wrap gap-1">
-									{track.credits.slice(0, 3).map((credit, idx) => {
-										// 表示名: creditName → aliasName → artistName の優先順
-										const displayName =
-											credit.creditName ||
-											credit.aliasName ||
-											credit.artistName ||
-											"Unknown";
-										return (
-											<span key={credit.artistAliasId}>
-												{idx > 0 && ", "}
-												<Link
-													to="/artists/$id"
-													params={{ id: credit.artistAliasId }}
-													preload="intent"
-													className="hover:text-primary"
-												>
+		<div className="divide-y divide-base-200">
+			{tracks
+				.sort((a, b) => a.trackNumber - b.trackNumber)
+				.map((track) => (
+					<Link
+						key={track.id}
+						to="/tracks/$id"
+						params={{ id: track.id }}
+						preload="intent"
+						className="group flex min-h-16 items-start gap-3 p-4 transition-colors duration-300 hover:bg-base-200/50 sm:min-h-14 sm:items-center"
+					>
+						{/* トラック番号バッジ */}
+						<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-bold font-mono text-primary transition-all duration-300 group-hover:bg-primary group-hover:text-primary-content sm:size-9">
+							{track.trackNumber.toString().padStart(2, "0")}
+						</div>
+
+						{/* トラック情報 */}
+						<div className="min-w-0 flex-1">
+							{/* 曲名 */}
+							<p className="font-medium transition-colors duration-300 group-hover:text-primary">
+								{track.name}
+							</p>
+
+							{/* アーティスト・原曲情報 */}
+							<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-base-content/60 text-sm">
+								{/* アーティスト */}
+								{track.credits.length > 0 && (
+									<span className="flex items-center gap-1">
+										{track.credits.slice(0, 2).map((credit, idx) => {
+											const displayName =
+												credit.creditName ||
+												credit.aliasName ||
+												credit.artistName ||
+												"Unknown";
+											return (
+												<span key={credit.artistAliasId}>
+													{idx > 0 && ", "}
 													{displayName}
-												</Link>
-												{credit.roles.length > 0 && (
-													<span className="text-base-content/60 text-xs">
-														(
-														{credit.roles
-															.map((r) => r.roleName ?? r.roleCode)
-															.join("/")}
-														)
-													</span>
-												)}
-											</span>
-										);
-									})}
-									{track.credits.length > 3 && (
-										<span className="text-base-content/60 text-xs">
-											他{track.credits.length - 3}名
-										</span>
-									)}
-								</div>
-							</td>
-							<td className="hidden sm:table-cell">
-								{track.officialSongs.length > 0 ? (
-									<div className="flex flex-wrap gap-1">
-										{track.officialSongs.slice(0, 2).map((os, idx) => (
-											<span key={os.officialSongId ?? idx}>
-												{idx > 0 && ", "}
-												{os.officialSongId ? (
-													<Link
-														to="/original-songs/$id"
-														params={{ id: os.officialSongId }}
-														preload="intent"
-														className="hover:text-primary"
-													>
-														{os.songName}
-													</Link>
-												) : (
-													<span>{os.songName}</span>
-												)}
-											</span>
-										))}
-										{track.officialSongs.length > 2 && (
-											<span className="text-base-content/60 text-xs">
-												他{track.officialSongs.length - 2}曲
+												</span>
+											);
+										})}
+										{track.credits.length > 2 && (
+											<span className="text-xs">
+												{" "}
+												他{track.credits.length - 2}名
 											</span>
 										)}
-									</div>
-								) : (
-									<span className="text-base-content/40">-</span>
+									</span>
 								)}
-							</td>
-						</tr>
-					))}
-			</tbody>
-		</table>
+
+								{/* 原曲 */}
+								{track.officialSongs.length > 0 && (
+									<span className="flex items-center gap-1 text-xs">
+										<span className="opacity-60">原曲:</span>
+										{track.officialSongs.slice(0, 1).map((os) => (
+											<span key={os.officialSongId ?? os.songName}>
+												{os.songName}
+											</span>
+										))}
+										{track.officialSongs.length > 1 && (
+											<span> 他{track.officialSongs.length - 1}曲</span>
+										)}
+									</span>
+								)}
+							</div>
+						</div>
+					</Link>
+				))}
+		</div>
 	);
 }

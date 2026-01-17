@@ -1,5 +1,5 @@
 import { LayoutGrid, List } from "lucide-react";
-import { Button } from "../ui/button";
+import { FilterButton } from "./filter-button";
 
 export type ViewMode = "grid" | "list";
 
@@ -8,31 +8,40 @@ interface ViewToggleProps {
 	onChange: (mode: ViewMode) => void;
 }
 
+/**
+ * ViewToggle: グリッド/リスト表示切替コンポーネント
+ *
+ * デザインシステム準拠:
+ * - min-h-11 min-w-11 のタップターゲット確保
+ * - duration-300 トランジション
+ * - glass-card-light スタイル
+ * - rounded-2xl
+ */
 export function ViewToggle({ value, onChange }: ViewToggleProps) {
 	return (
 		<div
 			role="group"
 			aria-label="表示切替"
-			className="flex gap-1 rounded-lg bg-base-200 p-1"
+			className="glass-card-light inline-flex gap-1 rounded-2xl p-1"
 		>
-			<Button
-				size="sm"
-				variant={value === "grid" ? "primary" : "ghost"}
+			<FilterButton
+				isActive={value === "grid"}
 				onClick={() => onChange("grid")}
 				aria-label="グリッド表示"
-				aria-pressed={value === "grid"}
+				size="md"
+				className="rounded-xl"
 			>
-				<LayoutGrid className="size-4" />
-			</Button>
-			<Button
-				size="sm"
-				variant={value === "list" ? "primary" : "ghost"}
+				<LayoutGrid className="size-5" />
+			</FilterButton>
+			<FilterButton
+				isActive={value === "list"}
 				onClick={() => onChange("list")}
 				aria-label="リスト表示"
-				aria-pressed={value === "list"}
+				size="md"
+				className="rounded-xl"
 			>
-				<List className="size-4" />
-			</Button>
+				<List className="size-5" />
+			</FilterButton>
 		</div>
 	);
 }

@@ -369,7 +369,7 @@ function SearchPage() {
 			<PublicBreadcrumb items={[{ label: "検索" }]} />
 
 			{/* Hero search section */}
-			<Card className="relative overflow-hidden rounded-2xl p-6 md:p-8">
+			<Card className="glass-card-light relative overflow-hidden rounded-2xl p-6 md:p-8">
 				<div className="gradient-mesh absolute inset-0" />
 				<div className="relative">
 					<div className="mb-6 text-center">
@@ -382,24 +382,27 @@ function SearchPage() {
 					{/* Search form with enhanced visibility */}
 					<form onSubmit={handleSearch} className="mx-auto max-w-2xl">
 						<div className="flex gap-2">
-							{/* Search input - enhanced visibility */}
-							<div className="relative flex-1">
+							{/* Search input - enhanced visibility with glass effect */}
+							<div className="group relative flex-1">
 								<div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5">
-									<Search className="size-6 text-primary" aria-hidden="true" />
+									<Search
+										className="size-6 text-base-content/40 transition-colors duration-300 group-focus-within:text-primary"
+										aria-hidden="true"
+									/>
 								</div>
 								<input
 									type="text"
 									value={inputValue}
 									onChange={(e) => setInputValue(e.target.value)}
 									placeholder="検索キーワードを入力..."
-									className="w-full rounded-xl border-2 border-primary/30 bg-base-100 py-4 pr-12 pl-14 text-lg shadow-lg transition-all duration-300 placeholder:text-base-content/40 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20"
+									className="min-h-[56px] w-full rounded-xl border-2 border-base-content/10 bg-base-100/70 py-4 pr-12 pl-14 text-lg shadow-lg backdrop-blur-sm transition-all duration-300 placeholder:text-base-content/40 hover:border-primary/30 hover:shadow-xl focus:border-primary focus:bg-base-100 focus:shadow-xl focus:outline-none focus:ring-4 focus:ring-primary/20"
 									aria-label="検索キーワード"
 								/>
 								{inputValue && (
 									<button
 										type="button"
 										onClick={handleClearInput}
-										className="absolute inset-y-0 right-0 flex items-center pr-5 text-base-content/40 transition-colors hover:text-base-content"
+										className="absolute inset-y-0 right-0 flex min-h-[44px] min-w-[44px] items-center justify-center pr-3 text-base-content/40 transition-colors duration-300 hover:text-base-content"
 										aria-label="検索をクリア"
 									>
 										<X className="size-5" />
@@ -407,12 +410,12 @@ function SearchPage() {
 								)}
 							</div>
 
-							{/* Advanced search button */}
+							{/* Advanced search button - mobile optimized */}
 							<Button
 								type="button"
 								variant={activeFilterCount > 0 ? "primary" : "outline"}
 								onClick={openAdvancedSearch}
-								className="gap-2 rounded-xl px-4 py-2"
+								className="min-h-[56px] min-w-[56px] gap-2 rounded-xl px-4 py-2 transition-all duration-300 hover:shadow-lg"
 								aria-label="詳細検索を開く"
 							>
 								<SlidersHorizontal className="size-5" />
@@ -450,7 +453,7 @@ function SearchPage() {
 										key={term}
 										type="button"
 										onClick={() => handleHistoryClick(term)}
-										className="rounded-full bg-base-content/5 px-3 py-1 text-base-content/70 text-xs transition-all hover:bg-primary/10 hover:text-primary"
+										className="min-h-[32px] rounded-full bg-base-content/5 px-3 py-1.5 text-base-content/70 text-xs transition-all duration-300 hover:bg-primary/10 hover:text-primary hover:shadow-sm"
 									>
 										{term}
 									</button>
@@ -469,7 +472,7 @@ function SearchPage() {
 				onSearch={handleAdvancedSearch}
 			/>
 
-			{/* Category tabs */}
+			{/* Category tabs - mobile optimized */}
 			{query && (
 				<div className="flex flex-wrap gap-2">
 					{(Object.keys(categoryConfig) as SearchCategory[]).map((cat) => {
@@ -480,17 +483,17 @@ function SearchPage() {
 								key={cat}
 								type="button"
 								onClick={() => handleCategoryChange(cat)}
-								className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
+								className={`flex min-h-[44px] items-center gap-2 rounded-full px-4 py-2 text-sm transition-all duration-300 ${
 									isActive
 										? "bg-primary text-primary-content shadow-md"
-										: "bg-base-100 shadow-sm hover:ring-2 hover:ring-primary/10"
+										: "bg-base-100 shadow-sm hover:bg-base-200/70 hover:shadow-md hover:ring-2 hover:ring-primary/10"
 								}`}
 								aria-pressed={isActive}
 							>
 								{config.icon}
 								{config.label}
 								<span
-									className={`rounded-full px-1.5 py-0.5 text-xs ${
+									className={`rounded-full px-1.5 py-0.5 text-xs transition-colors duration-300 ${
 										isActive
 											? "bg-primary-content/20 text-primary-content"
 											: "bg-base-content/10 text-base-content/60"
@@ -520,7 +523,7 @@ function SearchPage() {
 									to={getResultHref(result)}
 									preload="intent"
 								>
-									<Card className="group flex items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+									<Card className="group flex min-h-[72px] items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:bg-base-200/60 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
 										<div
 											className={`flex size-12 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${getResultIconColor(result.type)}`}
 										>
@@ -534,14 +537,14 @@ function SearchPage() {
 													{categoryConfig[result.type].label}
 												</span>
 											</div>
-											<h3 className="font-semibold transition-colors group-hover:text-primary">
+											<h3 className="font-semibold transition-colors duration-300 group-hover:text-primary">
 												{highlightMatch(result.title, query)}
 											</h3>
 											<p className="mt-0.5 text-base-content/60 text-sm">
 												{highlightMatch(result.subtitle, query)}
 											</p>
 										</div>
-										<div className="hidden text-base-content/30 transition-all group-hover:translate-x-1 group-hover:text-primary sm:block">
+										<div className="hidden text-base-content/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary sm:block">
 											→
 										</div>
 									</Card>
@@ -549,19 +552,32 @@ function SearchPage() {
 							))}
 						</div>
 					) : (
-						<Card className="rounded-2xl p-12 text-center">
-							<div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-base-content/5">
+						<Card className="glass-card-light rounded-2xl p-12 text-center">
+							<div className="mx-auto mb-4 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-base-content/5 to-base-content/10">
 								<Search
-									className="size-8 text-base-content/30"
+									className="size-10 text-base-content/30"
 									aria-hidden="true"
 								/>
 							</div>
-							<p className="font-medium text-base-content/70">
-								「{query}」に一致する結果が見つかりませんでした
+							<h3 className="mb-2 font-semibold text-base-content/70 text-lg">
+								結果が見つかりませんでした
+							</h3>
+							<p className="text-base-content/60">
+								「<span className="font-medium text-base-content">{query}</span>
+								」に一致する結果はありません
 							</p>
-							<p className="mt-2 text-base-content/60 text-sm">
-								別のキーワードで検索してみてください
+							<p className="mt-4 text-base-content/50 text-sm">
+								別のキーワードで検索するか、詳細検索をお試しください
 							</p>
+							<Button
+								type="button"
+								variant="ghost"
+								onClick={openAdvancedSearch}
+								className="mt-4 gap-2 transition-all duration-300 hover:bg-primary/10 hover:text-primary"
+							>
+								<SlidersHorizontal className="size-4" />
+								詳細検索を開く
+							</Button>
 						</Card>
 					)}
 				</div>
@@ -569,7 +585,7 @@ function SearchPage() {
 				/* Search history */
 				<div className="space-y-6">
 					{searchHistory.length > 0 && (
-						<Card className="rounded-2xl p-6">
+						<Card className="glass-card-light rounded-2xl p-6">
 							<h2 className="mb-4 flex items-center gap-2 font-semibold">
 								<Clock className="size-4 text-primary" aria-hidden="true" />
 								最近の検索
@@ -580,7 +596,7 @@ function SearchPage() {
 										key={historyItem}
 										type="button"
 										onClick={() => handleHistoryClick(historyItem)}
-										className="flex items-center gap-2 rounded-full bg-base-content/5 px-4 py-2 text-sm transition-all hover:bg-primary/10 hover:text-primary"
+										className="flex min-h-[44px] items-center gap-2 rounded-full bg-base-content/5 px-4 py-2 text-sm transition-all duration-300 hover:bg-primary/10 hover:text-primary hover:shadow-md"
 									>
 										<Clock
 											className="size-3 text-base-content/40"
@@ -594,7 +610,7 @@ function SearchPage() {
 					)}
 
 					{/* Browse categories */}
-					<Card className="rounded-2xl p-6">
+					<Card className="glass-card-light rounded-2xl p-6">
 						<h2 className="mb-4 flex items-center gap-2 font-semibold">
 							<Sparkles className="size-4 text-primary" aria-hidden="true" />
 							カテゴリから探す
@@ -603,39 +619,45 @@ function SearchPage() {
 							<Link
 								to="/circles"
 								preload="intent"
-								className="group flex items-center gap-3 rounded-xl bg-primary/5 p-4 transition-all duration-300 hover:bg-primary/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-primary/5 p-4 transition-all duration-300 hover:bg-primary/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 							>
-								<div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+								<div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
 									<Disc3 className="size-5" aria-hidden="true" />
 								</div>
 								<div>
-									<div className="font-medium">サークル</div>
+									<div className="font-medium transition-colors duration-300 group-hover:text-primary">
+										サークル
+									</div>
 									<div className="text-base-content/60 text-xs">456件</div>
 								</div>
 							</Link>
 							<Link
 								to="/artists"
 								preload="intent"
-								className="group flex items-center gap-3 rounded-xl bg-accent/5 p-4 transition-all duration-300 hover:bg-accent/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-accent/5 p-4 transition-all duration-300 hover:bg-accent/10 hover:shadow-lg hover:ring-2 hover:ring-accent/10"
 							>
-								<div className="flex size-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
+								<div className="flex size-12 items-center justify-center rounded-xl bg-accent/10 text-accent transition-transform duration-300 group-hover:scale-110">
 									<Users className="size-5" aria-hidden="true" />
 								</div>
 								<div>
-									<div className="font-medium">アーティスト</div>
+									<div className="font-medium transition-colors duration-300 group-hover:text-accent">
+										アーティスト
+									</div>
 									<div className="text-base-content/60 text-xs">890件</div>
 								</div>
 							</Link>
 							<Link
 								to="/original-songs"
 								preload="intent"
-								className="group flex items-center gap-3 rounded-xl bg-secondary/5 p-4 transition-all duration-300 hover:bg-secondary/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-secondary/5 p-4 transition-all duration-300 hover:bg-secondary/10 hover:shadow-lg hover:ring-2 hover:ring-secondary/10"
 							>
-								<div className="flex size-10 items-center justify-center rounded-xl bg-secondary/10 text-secondary">
+								<div className="flex size-12 items-center justify-center rounded-xl bg-secondary/10 text-secondary transition-transform duration-300 group-hover:scale-110">
 									<Music className="size-5" aria-hidden="true" />
 								</div>
 								<div>
-									<div className="font-medium">原曲</div>
+									<div className="font-medium transition-colors duration-300 group-hover:text-secondary">
+										原曲
+									</div>
 									<div className="text-base-content/60 text-xs">1,234件</div>
 								</div>
 							</Link>

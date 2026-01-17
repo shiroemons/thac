@@ -92,3 +92,148 @@
 		transform: translateY(0);
 	}
 }
+
+/* Mobile drawer animations */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes slideInFromLeft {
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(0);
+	}
+}
+
+/* ========================================
+   Entity-specific gradient patterns
+   ======================================== */
+
+/* Artist: warm purple-pink gradient */
+.gradient-artist {
+	background: linear-gradient(
+		135deg,
+		oklch(from var(--p) l c h / 0.15) 0%,
+		oklch(from var(--s) l c h / 0.1) 50%,
+		oklch(from var(--a) l c h / 0.08) 100%
+	);
+}
+
+/* Circle: cool blue-cyan gradient */
+.gradient-circle {
+	background: linear-gradient(
+		135deg,
+		oklch(from var(--in) l c h / 0.15) 0%,
+		oklch(from var(--p) l c h / 0.1) 50%,
+		oklch(from var(--s) l c h / 0.08) 100%
+	);
+}
+
+/* Release: vibrant accent gradient */
+.gradient-release {
+	background: linear-gradient(
+		135deg,
+		oklch(from var(--a) l c h / 0.15) 0%,
+		oklch(from var(--p) l c h / 0.1) 50%,
+		oklch(from var(--su) l c h / 0.08) 100%
+	);
+}
+
+/* Track: subtle secondary gradient */
+.gradient-track {
+	background: linear-gradient(
+		135deg,
+		oklch(from var(--s) l c h / 0.12) 0%,
+		oklch(from var(--n) l c h / 0.08) 50%,
+		oklch(from var(--p) l c h / 0.06) 100%
+	);
+}
+
+/* ========================================
+   Animated background decoration utilities
+   ======================================== */
+
+/* Glow effect - pulsing light emission */
+.bg-glow {
+	position: relative;
+}
+
+.bg-glow::before {
+	content: "";
+	position: absolute;
+	inset: -2px;
+	border-radius: inherit;
+	background: radial-gradient(
+		ellipse at center,
+		oklch(from var(--p) l c h / 0.4) 0%,
+		oklch(from var(--p) l c h / 0.1) 40%,
+		transparent 70%
+	);
+	filter: blur(20px);
+	animation: glowPulse 3s ease-in-out infinite;
+	z-index: -1;
+	pointer-events: none;
+}
+
+@keyframes glowPulse {
+	0%,
+	100% {
+		opacity: 0.6;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.05);
+	}
+}
+
+/* Shimmer effect - moving light sweep */
+.bg-shimmer {
+	position: relative;
+	overflow: hidden;
+}
+
+.bg-shimmer::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		110deg,
+		transparent 20%,
+		oklch(from var(--bc) l c h / 0.08) 40%,
+		oklch(from var(--bc) l c h / 0.12) 50%,
+		oklch(from var(--bc) l c h / 0.08) 60%,
+		transparent 80%
+	);
+	transform: translateX(-100%);
+	animation: shimmerSweep 2.5s ease-in-out infinite;
+	pointer-events: none;
+}
+
+@keyframes shimmerSweep {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+/* ========================================
+   Enhanced glass card utility
+   ======================================== */
+
+/* Standard glass card with 0.8 opacity */
+.glass-card-light {
+	background: oklch(from var(--b1) l c h / 0.8);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid oklch(from var(--bc) l c h / 0.1);
+}

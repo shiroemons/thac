@@ -14,7 +14,7 @@ function PublicLayout() {
 		<ExternalLinkProvider>
 			<div className="flex min-h-screen flex-col">
 				<PublicHeader />
-				<main className="container mx-auto flex-1 px-4 py-6">
+				<main className="container mx-auto flex-1 px-3 py-4 sm:px-4 sm:py-6 lg:px-6">
 					<Outlet />
 				</main>
 				<PublicFooter />

@@ -8,6 +8,8 @@ import {
 	SCRIPT_CATEGORY_LABELS,
 	type ScriptCategory,
 } from "@/lib/script-filter-utils";
+import { FilterBar } from "./filter-bar";
+import { FilterButton } from "./filter-button";
 
 // Re-export types for convenience
 export type { AlphabetInitial, KanaRow, ScriptCategory };
@@ -23,19 +25,18 @@ interface ScriptFilterProps {
 
 export function ScriptFilter({ value, onChange }: ScriptFilterProps) {
 	return (
-		<div className="flex flex-wrap gap-2">
+		<FilterBar aria-label="文字種選択">
 			{SCRIPT_CATEGORIES.map((category) => (
-				<button
+				<FilterButton
 					key={category}
-					type="button"
-					className={`btn btn-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${value === category ? "btn-primary" : "btn-ghost"}`}
+					isActive={value === category}
 					onClick={() => onChange(category)}
-					aria-pressed={value === category}
+					size="sm"
 				>
 					{SCRIPT_CATEGORY_LABELS[category]}
-				</button>
+				</FilterButton>
 			))}
-		</div>
+		</FilterBar>
 	);
 }
 
@@ -50,28 +51,29 @@ interface AlphabetSubFilterProps {
 
 export function AlphabetSubFilter({ value, onChange }: AlphabetSubFilterProps) {
 	return (
-		<div className="mt-3 rounded-lg bg-base-200 p-3">
-			<p className="mb-2 text-base-content/70 text-sm">頭文字を選択</p>
-			<div className="flex flex-wrap gap-1">
-				<button
-					type="button"
-					className={`btn btn-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${value === null ? "btn-primary" : "btn-ghost"}`}
-					onClick={() => onChange(null)}
-					aria-pressed={value === null}
-				>
-					すべて
-				</button>
-				{ALPHABET_INITIALS.map((initial) => (
-					<button
-						key={initial}
-						type="button"
-						className={`btn btn-xs min-w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${value === initial ? "btn-primary" : "btn-ghost"}`}
-						onClick={() => onChange(initial)}
-						aria-pressed={value === initial}
+		<div className="fade-in slide-in-from-top-2 mt-3 animate-in duration-300">
+			<div className="glass-card-light rounded-2xl p-3">
+				<p className="mb-2 text-base-content/70 text-sm">頭文字を選択</p>
+				<div className="flex flex-wrap gap-1">
+					<FilterButton
+						isActive={value === null}
+						onClick={() => onChange(null)}
+						size="sm"
 					>
-						{initial}
-					</button>
-				))}
+						すべて
+					</FilterButton>
+					{ALPHABET_INITIALS.map((initial) => (
+						<FilterButton
+							key={initial}
+							isActive={value === initial}
+							onClick={() => onChange(initial)}
+							size="sm"
+							className="min-w-9"
+						>
+							{initial}
+						</FilterButton>
+					))}
+				</div>
 			</div>
 		</div>
 	);
@@ -88,28 +90,28 @@ interface KanaSubFilterProps {
 
 export function KanaSubFilter({ value, onChange }: KanaSubFilterProps) {
 	return (
-		<div className="mt-3 rounded-lg bg-base-200 p-3">
-			<p className="mb-2 text-base-content/70 text-sm">行を選択</p>
-			<div className="flex flex-wrap gap-1">
-				<button
-					type="button"
-					className={`btn btn-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${value === null ? "btn-primary" : "btn-ghost"}`}
-					onClick={() => onChange(null)}
-					aria-pressed={value === null}
-				>
-					すべて
-				</button>
-				{KANA_ROWS.map((row) => (
-					<button
-						key={row}
-						type="button"
-						className={`btn btn-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${value === row ? "btn-primary" : "btn-ghost"}`}
-						onClick={() => onChange(row)}
-						aria-pressed={value === row}
+		<div className="fade-in slide-in-from-top-2 mt-3 animate-in duration-300">
+			<div className="glass-card-light rounded-2xl p-3">
+				<p className="mb-2 text-base-content/70 text-sm">行を選択</p>
+				<div className="flex flex-wrap gap-1">
+					<FilterButton
+						isActive={value === null}
+						onClick={() => onChange(null)}
+						size="sm"
 					>
-						{KANA_ROW_LABELS[row]}
-					</button>
-				))}
+						すべて
+					</FilterButton>
+					{KANA_ROWS.map((row) => (
+						<FilterButton
+							key={row}
+							isActive={value === row}
+							onClick={() => onChange(row)}
+							size="sm"
+						>
+							{KANA_ROW_LABELS[row]}
+						</FilterButton>
+					))}
+				</div>
 			</div>
 		</div>
 	);

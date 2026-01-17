@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Disc3, Loader2, Music } from "lucide-react";
+import { ChevronDown, Disc3, Loader2, Music, User } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	DetailTabs,
@@ -157,6 +157,9 @@ function ArtistDetailPage() {
 		fetchTracks(page, roleFilter);
 	};
 
+	// メタ情報の折りたたみ状態
+	const [isMetaExpanded, setIsMetaExpanded] = useState(false);
+
 	// 名義が見つからない場合
 	if (!artist) {
 		return (
@@ -178,6 +181,7 @@ function ArtistDetailPage() {
 	}
 
 	const tracksTotalPages = Math.ceil(tracksTotal / PAGE_SIZE);
+	const hasOtherAliases = artist.otherAliases.length > 0;
 
 	return (
 		<div className="space-y-6">
@@ -188,95 +192,145 @@ function ArtistDetailPage() {
 				]}
 			/>
 
-			{/* ヘッダー */}
-			<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
-				<div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-					{/* アバター */}
-					<div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-3xl text-primary">
-						{artist.name.charAt(0)}
-					</div>
-
-					<div className="flex-1 space-y-2">
-						<div>
-							<h1 className="font-bold text-2xl sm:text-3xl">{artist.name}</h1>
-							{!artist.isMainName && (
-								<p className="text-base-content/70">
-									{artist.artistName}
-									{artist.aliasTypeCode && (
-										<span className="badge badge-ghost badge-sm ml-2">
-											{aliasTypeNames[artist.aliasTypeCode] ||
-												artist.aliasTypeCode}
-										</span>
-									)}
-								</p>
-							)}
+			{/* プロフィールカード */}
+			<div className="overflow-hidden rounded-2xl shadow-sm transition-shadow duration-300 hover:shadow-lg">
+				{/* グラデーションヘッダー */}
+				<div className="gradient-artist px-6 py-8">
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+						{/* アバター */}
+						<div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-base-100/80 shadow-lg transition-transform duration-300 hover:scale-105 sm:size-24">
+							<User className="size-10 text-primary sm:size-12" />
 						</div>
 
-						{/* 役割バッジ */}
-						<div className="flex flex-wrap gap-2">
-							{artist.roles.map((role) => (
-								<span
-									key={role.roleCode}
-									className="badge badge-primary badge-outline"
-								>
-									{role.label}
-								</span>
-							))}
+						<div className="min-w-0 flex-1 space-y-3">
+							{/* 名前 */}
+							<div>
+								<h1 className="font-bold text-2xl sm:text-3xl">
+									{artist.name}
+								</h1>
+								{!artist.isMainName && (
+									<p className="mt-1 text-base-content/70">
+										{artist.artistName}
+										{artist.aliasTypeCode && (
+											<span className="badge badge-ghost badge-sm ml-2">
+												{aliasTypeNames[artist.aliasTypeCode] ||
+													artist.aliasTypeCode}
+											</span>
+										)}
+									</p>
+								)}
+							</div>
+
+							{/* 役割バッジ */}
+							<div className="flex flex-wrap gap-2">
+								{artist.roles.map((role) => (
+									<span
+										key={role.roleCode}
+										className="badge badge-primary badge-outline hover:badge-primary transition-all duration-300 hover:scale-105"
+									>
+										{role.label}
+									</span>
+								))}
+							</div>
 						</div>
 					</div>
 				</div>
 
-				{/* 他名義 */}
-				{artist.otherAliases.length > 0 && (
-					<div className="mt-4 border-base-200 border-t pt-4">
-						<p className="mb-2 text-base-content/60 text-sm">他の名義:</p>
-						<div className="flex flex-wrap gap-2">
-							{artist.otherAliases.map((alias) => (
-								<Link
-									key={alias.id}
-									to="/artists/$id"
-									params={{ id: alias.id }}
-									preload="intent"
-									className="badge badge-ghost hover:badge-primary transition-colors"
-								>
-									{alias.name}
-									{alias.aliasTypeCode && (
-										<span className="ml-1 text-xs opacity-70">
-											(
-											{aliasTypeNames[alias.aliasTypeCode] ||
-												alias.aliasTypeCode}
-											)
-										</span>
-									)}
-									<span className="ml-1 text-xs opacity-70">
-										{alias.trackCount}曲
-									</span>
-								</Link>
-							))}
-						</div>
-					</div>
-				)}
-
 				{/* 統計カード */}
-				<div className="mt-6 grid grid-cols-2 gap-4">
-					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
-						<div className="flex items-center justify-center gap-2 text-primary">
-							<Music className="size-5" />
-							<span className="font-bold text-2xl">
-								{formatNumber(artist.stats.trackCount)}
-							</span>
+				<div className="bg-base-100 p-6">
+					<div className="grid grid-cols-2 gap-4">
+						<div className="rounded-2xl bg-base-200/50 p-4 text-center transition-all duration-300 hover:bg-base-200/70 hover:ring-2 hover:ring-primary/10">
+							<div className="flex items-center justify-center gap-2 text-primary">
+								<Music className="size-5" />
+								<span className="font-bold text-2xl">
+									{formatNumber(artist.stats.trackCount)}
+								</span>
+							</div>
+							<p className="mt-1 text-base-content/70 text-sm">トラック</p>
 						</div>
-						<p className="mt-1 text-base-content/70 text-sm">トラック</p>
-					</div>
-					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
-						<div className="flex items-center justify-center gap-2 text-secondary">
-							<Disc3 className="size-5" />
-							<span className="font-bold text-2xl">
-								{formatNumber(artist.stats.releaseCount)}
-							</span>
+						<div className="rounded-2xl bg-base-200/50 p-4 text-center transition-all duration-300 hover:bg-base-200/70 hover:ring-2 hover:ring-secondary/10">
+							<div className="flex items-center justify-center gap-2 text-secondary">
+								<Disc3 className="size-5" />
+								<span className="font-bold text-2xl">
+									{formatNumber(artist.stats.releaseCount)}
+								</span>
+							</div>
+							<p className="mt-1 text-base-content/70 text-sm">リリース</p>
 						</div>
-						<p className="mt-1 text-base-content/70 text-sm">リリース</p>
 					</div>
+
+					{/* 他名義セクション - モバイルで折りたたみ */}
+					{hasOtherAliases && (
+						<div className="mt-4 border-base-200 border-t pt-4">
+							{/* モバイル: 折りたたみ */}
+							<div className="sm:hidden">
+								<button
+									type="button"
+									onClick={() => setIsMetaExpanded(!isMetaExpanded)}
+									className="flex min-h-[44px] w-full items-center justify-between rounded-xl px-2 py-2 text-base-content/60 text-sm transition-colors duration-300 hover:bg-base-200/50"
+								>
+									<span>他の名義 ({artist.otherAliases.length}件)</span>
+									<ChevronDown
+										className={`size-5 transition-transform duration-300 ${isMetaExpanded ? "rotate-180" : ""}`}
+									/>
+								</button>
+								{isMetaExpanded && (
+									<div className="mt-2 flex flex-wrap gap-2">
+										{artist.otherAliases.map((alias) => (
+											<Link
+												key={alias.id}
+												to="/artists/$id"
+												params={{ id: alias.id }}
+												preload="intent"
+												className="badge badge-ghost hover:badge-primary min-h-[44px] px-3 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+											>
+												{alias.name}
+												{alias.aliasTypeCode && (
+													<span className="ml-1 text-xs opacity-70">
+														(
+														{aliasTypeNames[alias.aliasTypeCode] ||
+															alias.aliasTypeCode}
+														)
+													</span>
+												)}
+												<span className="ml-1 text-xs opacity-70">
+													{alias.trackCount}曲
+												</span>
+											</Link>
+										))}
+									</div>
+								)}
+							</div>
+							{/* デスクトップ: 常に表示 */}
+							<div className="hidden sm:block">
+								<p className="mb-2 text-base-content/60 text-sm">他の名義:</p>
+								<div className="flex flex-wrap gap-2">
+									{artist.otherAliases.map((alias) => (
+										<Link
+											key={alias.id}
+											to="/artists/$id"
+											params={{ id: alias.id }}
+											preload="intent"
+											className="badge badge-ghost hover:badge-primary transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+										>
+											{alias.name}
+											{alias.aliasTypeCode && (
+												<span className="ml-1 text-xs opacity-70">
+													(
+													{aliasTypeNames[alias.aliasTypeCode] ||
+														alias.aliasTypeCode}
+													)
+												</span>
+											)}
+											<span className="ml-1 text-xs opacity-70">
+												{alias.trackCount}曲
+											</span>
+										</Link>
+									))}
+								</div>
+							</div>
+						</div>
+					)}
 				</div>
 			</div>
 
@@ -291,7 +345,7 @@ function ArtistDetailPage() {
 					<div className="flex flex-wrap gap-2">
 						{/* 役割フィルター */}
 						<select
-							className="select select-bordered select-sm"
+							className="select select-bordered sm:select-sm min-h-[44px] sm:min-h-0"
 							value={roleFilter}
 							onChange={(e) => handleRoleFilterChange(e.target.value)}
 						>
@@ -321,7 +375,7 @@ function ArtistDetailPage() {
 							description="フィルター条件を変更してお試しください"
 						/>
 					) : (
-						<div className="overflow-x-auto rounded-2xl bg-base-100 shadow-sm">
+						<div className="overflow-x-auto rounded-2xl bg-base-100 shadow-sm transition-shadow duration-300 hover:shadow-lg">
 							<table className="table">
 								<thead>
 									<tr>
@@ -333,18 +387,21 @@ function ArtistDetailPage() {
 								</thead>
 								<tbody>
 									{tracks.map((credit) => (
-										<tr key={credit.id} className="hover:bg-base-200/50">
-											<td>
+										<tr
+											key={credit.id}
+											className="transition-colors duration-300 hover:bg-base-200/50"
+										>
+											<td className="py-3">
 												<Link
 													to="/tracks/$id"
 													params={{ id: credit.track.id }}
 													preload="intent"
-													className="font-medium hover:text-primary"
+													className="inline-block min-h-[44px] font-medium leading-[44px] transition-colors duration-300 hover:text-primary"
 												>
 													{credit.track.name}
 												</Link>
 											</td>
-											<td className="hidden md:table-cell">
+											<td className="hidden py-3 md:table-cell">
 												<div className="flex flex-wrap gap-1">
 													{credit.roles.map((role) => (
 														<span
@@ -356,41 +413,41 @@ function ArtistDetailPage() {
 													))}
 												</div>
 											</td>
-											<td className="hidden sm:table-cell">
+											<td className="hidden py-3 sm:table-cell">
 												<Link
 													to="/releases/$id"
 													params={{ id: credit.release.id }}
 													preload="intent"
-													className="text-base-content/70 text-sm hover:text-primary"
+													className="text-base-content/70 text-sm transition-colors duration-300 hover:text-primary"
 												>
 													{credit.release.name}
 												</Link>
-												<div className="flex gap-1">
+												<div className="mt-1 flex flex-wrap gap-1">
 													{credit.circles.map((circle) => (
 														<Link
 															key={circle.id}
 															to="/circles/$id"
 															params={{ id: circle.id }}
 															preload="intent"
-															className="text-base-content/60 text-xs hover:text-primary"
+															className="text-base-content/60 text-xs transition-colors duration-300 hover:text-primary"
 														>
 															{circle.name}
 														</Link>
 													))}
 												</div>
 											</td>
-											<td className="hidden lg:table-cell">
+											<td className="hidden py-3 lg:table-cell">
 												{credit.originalSong ? (
 													<Link
 														to="/original-songs/$id"
 														params={{ id: credit.originalSong.id }}
 														preload="intent"
-														className="text-base-content/70 text-sm hover:text-primary"
+														className="text-base-content/70 text-sm transition-colors duration-300 hover:text-primary"
 													>
 														{credit.originalSong.name}
 													</Link>
 												) : (
-													"-"
+													<span className="text-base-content/40">-</span>
 												)}
 											</td>
 										</tr>
