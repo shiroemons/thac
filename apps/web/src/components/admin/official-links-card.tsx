@@ -228,7 +228,7 @@ export function OfficialLinksCard({
 											<div className="flex gap-1">
 												<Button
 													variant="ghost"
-													size="xs"
+													size="sm"
 													disabled={index === 0 || reorderMutation.isPending}
 													onClick={() => handleMoveUp(index)}
 													title="上へ移動"
@@ -237,7 +237,7 @@ export function OfficialLinksCard({
 												</Button>
 												<Button
 													variant="ghost"
-													size="xs"
+													size="sm"
 													disabled={
 														index === sortedLinks.length - 1 ||
 														reorderMutation.isPending
@@ -269,7 +269,7 @@ export function OfficialLinksCard({
 											<div className="flex gap-1">
 												<Button
 													variant="ghost"
-													size="xs"
+													size="sm"
 													onClick={() => openEditDialog(link)}
 													title="編集"
 												>
@@ -277,7 +277,7 @@ export function OfficialLinksCard({
 												</Button>
 												<Button
 													variant="ghost"
-													size="xs"
+													size="sm"
 													onClick={() => handleDelete(link.id)}
 													disabled={isDeleting === link.id}
 													title="削除"
