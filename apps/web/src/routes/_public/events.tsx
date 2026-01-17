@@ -111,16 +111,6 @@ function EventsPage() {
 		}
 	}, [events, selectedYear]);
 
-	// 初期展開シリーズを設定
-	useEffect(() => {
-		if (expandedSeries.size === 0 && events.length > 0) {
-			const firstSeriesId = events.find((e) => e.eventSeriesId)?.eventSeriesId;
-			if (firstSeriesId) {
-				setExpandedSeriesState(new Set([firstSeriesId]));
-			}
-		}
-	}, [events, expandedSeries.size]);
-
 	const setViewMode = (view: EventsViewMode) => {
 		setViewModeState(view);
 		localStorage.setItem(STORAGE_KEY_VIEW, view);
