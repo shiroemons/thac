@@ -72,7 +72,7 @@ function OriginalSongDetailPage() {
 				<PublicBreadcrumb
 					items={[{ label: "原曲", href: "/original-songs" }, { label: id }]}
 				/>
-				<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
+				<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
 					<h1 className="font-bold text-2xl">曲が見つかりません</h1>
 					<p className="mt-2 text-base-content/70">
 						指定されたIDの曲は存在しません
@@ -110,7 +110,7 @@ function OriginalSongDetailPage() {
 			/>
 
 			{/* ヘッダー */}
-			<div className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 					<div className="space-y-2">
 						<div className="flex flex-wrap items-center gap-2">
@@ -163,7 +163,7 @@ function OriginalSongDetailPage() {
 
 				{/* 統計カード */}
 				<div className="mt-6 grid grid-cols-3 gap-4">
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<TrendingUp className="size-5" />
 							<span className="font-bold text-2xl">
@@ -172,7 +172,7 @@ function OriginalSongDetailPage() {
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">アレンジ数</p>
 					</div>
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<Users className="size-5" />
 							<span className="font-bold text-2xl">
@@ -181,7 +181,7 @@ function OriginalSongDetailPage() {
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">サークル数</p>
 					</div>
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<Mic className="size-5" />
 							<span className="font-bold text-2xl">
@@ -229,7 +229,7 @@ function OriginalSongDetailPage() {
 			<div className="space-y-4">
 				<h2 className="font-bold text-xl">アレンジ一覧</h2>
 				{tracks.length > 0 ? (
-					<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
+					<div className="overflow-x-auto rounded-2xl bg-base-100 shadow-sm">
 						<table className="table">
 							<thead>
 								<tr>
@@ -316,7 +316,7 @@ function OriginalSongDetailPage() {
 						</table>
 					</div>
 				) : (
-					<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
+					<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
 						<p className="text-base-content/70">
 							アレンジ情報はまだ登録されていません
 						</p>

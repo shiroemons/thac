@@ -109,7 +109,7 @@ function OfficialWorkDetailPage() {
 						{ label: id },
 					]}
 				/>
-				<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
+				<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
 					<h1 className="font-bold text-2xl">作品が見つかりません</h1>
 					<p className="mt-2 text-base-content/70">
 						指定されたIDの作品は存在しません
@@ -149,7 +149,7 @@ function OfficialWorkDetailPage() {
 			/>
 
 			{/* ヘッダー */}
-			<div className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 					<div className="space-y-2">
 						<div className="flex flex-wrap items-center gap-2">
@@ -195,14 +195,14 @@ function OfficialWorkDetailPage() {
 
 				{/* 統計カード */}
 				<div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-2">
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<Music className="size-5" />
 							<span className="font-bold text-2xl">{stats.songCount}</span>
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">収録曲</p>
 					</div>
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-secondary">
 							<TrendingUp className="size-5" />
 							<span className="font-bold text-2xl">
@@ -218,13 +218,13 @@ function OfficialWorkDetailPage() {
 			<div className="space-y-4">
 				<h2 className="font-bold text-xl">収録曲</h2>
 				{work.songs.length === 0 ? (
-					<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
+					<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
 						<p className="text-base-content/70">
 							楽曲データはまだ登録されていません
 						</p>
 					</div>
 				) : (
-					<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
+					<div className="overflow-x-auto rounded-2xl bg-base-100 shadow-sm">
 						<table className="table">
 							<thead>
 								<tr>

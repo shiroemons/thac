@@ -605,7 +605,7 @@ function SearchPage() {
 								preload="intent"
 								className="group flex items-center gap-3 rounded-xl bg-primary/5 p-4 transition-all duration-300 hover:bg-primary/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 							>
-								<div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+								<div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
 									<Disc3 className="size-5" aria-hidden="true" />
 								</div>
 								<div>
@@ -618,7 +618,7 @@ function SearchPage() {
 								preload="intent"
 								className="group flex items-center gap-3 rounded-xl bg-accent/5 p-4 transition-all duration-300 hover:bg-accent/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 							>
-								<div className="flex size-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
+								<div className="flex size-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
 									<Users className="size-5" aria-hidden="true" />
 								</div>
 								<div>
@@ -631,7 +631,7 @@ function SearchPage() {
 								preload="intent"
 								className="group flex items-center gap-3 rounded-xl bg-secondary/5 p-4 transition-all duration-300 hover:bg-secondary/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 							>
-								<div className="flex size-10 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
+								<div className="flex size-10 items-center justify-center rounded-xl bg-secondary/10 text-secondary">
 									<Music className="size-5" aria-hidden="true" />
 								</div>
 								<div>

@@ -84,7 +84,7 @@ function TrackDetailPage() {
 				<PublicBreadcrumb
 					items={[{ label: "リリース", href: "/releases" }, { label: id }]}
 				/>
-				<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
+				<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
 					<h1 className="font-bold text-2xl">トラックが見つかりません</h1>
 					<p className="mt-2 text-base-content/70">
 						指定されたIDのトラックは存在しません
@@ -112,7 +112,7 @@ function TrackDetailPage() {
 			/>
 
 			{/* ヘッダー */}
-			<div className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<div className="space-y-3">
 					{/* トラック番号とタイトル */}
 					<div className="flex flex-wrap items-center gap-2">
@@ -160,7 +160,7 @@ function TrackDetailPage() {
 			{track.credits.length > 0 && (
 				<div className="space-y-3">
 					<h2 className="font-bold text-xl">クレジット</h2>
-					<div className="rounded-lg bg-base-100 p-4 shadow-sm">
+					<div className="rounded-2xl bg-base-100 p-4 shadow-sm">
 						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 							{Array.from(creditsByRole.entries()).map(
 								([roleCode, credits]) => (
@@ -200,7 +200,7 @@ function TrackDetailPage() {
 						<Music className="size-5" />
 						原曲
 					</h2>
-					<div className="rounded-lg bg-base-100 shadow-sm">
+					<div className="rounded-2xl bg-base-100 shadow-sm">
 						<ul className="divide-y divide-base-200">
 							{track.officialSongs.map((os, idx) => (
 								<li
@@ -259,7 +259,7 @@ function TrackDetailPage() {
 
 			{/* 配信リンク */}
 			{track.publications.length > 0 && (
-				<div className="rounded-lg bg-base-100 p-6 shadow-sm">
+				<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
 					<PublicationLinks publications={track.publications} showEmbeds />
 				</div>
 			)}
@@ -271,7 +271,7 @@ function TrackDetailPage() {
 						<GitFork className="size-5" />
 						派生元
 					</h2>
-					<div className="rounded-lg bg-base-100 shadow-sm">
+					<div className="rounded-2xl bg-base-100 shadow-sm">
 						<ul className="divide-y divide-base-200">
 							{track.parentTracks.map((derivation) => (
 								<li

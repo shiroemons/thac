@@ -164,7 +164,7 @@ function ArtistDetailPage() {
 				<PublicBreadcrumb
 					items={[{ label: "アーティスト", href: "/artists" }, { label: id }]}
 				/>
-				<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
+				<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
 					<h1 className="font-bold text-2xl">アーティストが見つかりません</h1>
 					<p className="mt-2 text-base-content/70">
 						指定されたIDのアーティストは存在しません
@@ -189,7 +189,7 @@ function ArtistDetailPage() {
 			/>
 
 			{/* ヘッダー */}
-			<div className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-start">
 					{/* アバター */}
 					<div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-3xl text-primary">
@@ -259,7 +259,7 @@ function ArtistDetailPage() {
 
 				{/* 統計カード */}
 				<div className="mt-6 grid grid-cols-2 gap-4">
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<Music className="size-5" />
 							<span className="font-bold text-2xl">
@@ -268,7 +268,7 @@ function ArtistDetailPage() {
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">トラック</p>
 					</div>
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-secondary">
 							<Disc3 className="size-5" />
 							<span className="font-bold text-2xl">
@@ -321,7 +321,7 @@ function ArtistDetailPage() {
 							description="フィルター条件を変更してお試しください"
 						/>
 					) : (
-						<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
+						<div className="overflow-x-auto rounded-2xl bg-base-100 shadow-sm">
 							<table className="table">
 								<thead>
 									<tr>
