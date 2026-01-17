@@ -149,17 +149,17 @@ const categoryConfig: Record<
 	all: { label: "すべて", icon: null, color: "" },
 	artist: {
 		label: "アーティスト",
-		icon: <Users className="h-4 w-4" aria-hidden="true" />,
+		icon: <Users className="size-4" aria-hidden="true" />,
 		color: "text-accent",
 	},
 	circle: {
 		label: "サークル",
-		icon: <Disc3 className="h-4 w-4" aria-hidden="true" />,
+		icon: <Disc3 className="size-4" aria-hidden="true" />,
 		color: "text-primary",
 	},
 	track: {
 		label: "曲",
-		icon: <Music className="h-4 w-4" aria-hidden="true" />,
+		icon: <Music className="size-4" aria-hidden="true" />,
 		color: "text-secondary",
 	},
 };
@@ -217,11 +217,11 @@ function getResultHref(result: SearchResult): string {
 function getResultIcon(type: SearchResult["type"]): React.ReactNode {
 	switch (type) {
 		case "artist":
-			return <Users className="h-5 w-5" aria-hidden="true" />;
+			return <Users className="size-5" aria-hidden="true" />;
 		case "circle":
-			return <Disc3 className="h-5 w-5" aria-hidden="true" />;
+			return <Disc3 className="size-5" aria-hidden="true" />;
 		case "track":
-			return <Music className="h-5 w-5" aria-hidden="true" />;
+			return <Music className="size-5" aria-hidden="true" />;
 	}
 }
 
@@ -385,7 +385,7 @@ function SearchPage() {
 							{/* Search input - enhanced visibility */}
 							<div className="relative flex-1">
 								<div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5">
-									<Search className="h-6 w-6 text-primary" aria-hidden="true" />
+									<Search className="size-6 text-primary" aria-hidden="true" />
 								</div>
 								<input
 									type="text"
@@ -402,7 +402,7 @@ function SearchPage() {
 										className="absolute inset-y-0 right-0 flex items-center pr-5 text-base-content/40 transition-colors hover:text-base-content"
 										aria-label="検索をクリア"
 									>
-										<X className="h-5 w-5" />
+										<X className="size-5" />
 									</button>
 								)}
 							</div>
@@ -415,10 +415,10 @@ function SearchPage() {
 								className="gap-2 rounded-xl px-4 py-2"
 								aria-label="詳細検索を開く"
 							>
-								<SlidersHorizontal className="h-5 w-5" />
+								<SlidersHorizontal className="size-5" />
 								<span className="hidden sm:inline">詳細検索</span>
 								{activeFilterCount > 0 && (
-									<Badge className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-content text-primary">
+									<Badge className="flex size-5 items-center justify-center rounded-full bg-primary-content text-primary">
 										{activeFilterCount}
 									</Badge>
 								)}
@@ -441,8 +441,8 @@ function SearchPage() {
 					{!query && chips.length === 0 && (
 						<div className="mx-auto mt-6 max-w-2xl">
 							<div className="flex flex-wrap items-center justify-center gap-2">
-								<span className="flex items-center gap-1 text-base-content/50 text-xs">
-									<TrendingUp className="h-3 w-3" aria-hidden="true" />
+								<span className="flex items-center gap-1 text-base-content/60 text-xs">
+									<TrendingUp className="size-3" aria-hidden="true" />
 									人気:
 								</span>
 								{popularSearches.map((term) => (
@@ -483,7 +483,7 @@ function SearchPage() {
 								className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
 									isActive
 										? "bg-primary text-primary-content shadow-md"
-										: "bg-base-100 shadow-sm hover:ring-2 hover:ring-primary/20"
+										: "bg-base-100 shadow-sm hover:ring-2 hover:ring-primary/10"
 								}`}
 								aria-pressed={isActive}
 							>
@@ -522,7 +522,7 @@ function SearchPage() {
 								>
 									<Card className="group flex items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
 										<div
-											className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${getResultIconColor(result.type)}`}
+											className={`flex size-12 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${getResultIconColor(result.type)}`}
 										>
 											{getResultIcon(result.type)}
 										</div>
@@ -550,16 +550,16 @@ function SearchPage() {
 						</div>
 					) : (
 						<Card className="rounded-2xl p-12 text-center">
-							<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-base-content/5">
+							<div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-base-content/5">
 								<Search
-									className="h-8 w-8 text-base-content/30"
+									className="size-8 text-base-content/30"
 									aria-hidden="true"
 								/>
 							</div>
 							<p className="font-medium text-base-content/70">
 								「{query}」に一致する結果が見つかりませんでした
 							</p>
-							<p className="mt-2 text-base-content/50 text-sm">
+							<p className="mt-2 text-base-content/60 text-sm">
 								別のキーワードで検索してみてください
 							</p>
 						</Card>
@@ -571,7 +571,7 @@ function SearchPage() {
 					{searchHistory.length > 0 && (
 						<Card className="rounded-2xl p-6">
 							<h2 className="mb-4 flex items-center gap-2 font-semibold">
-								<Clock className="h-4 w-4 text-primary" aria-hidden="true" />
+								<Clock className="size-4 text-primary" aria-hidden="true" />
 								最近の検索
 							</h2>
 							<div className="flex flex-wrap gap-2">
@@ -583,7 +583,7 @@ function SearchPage() {
 										className="flex items-center gap-2 rounded-full bg-base-content/5 px-4 py-2 text-sm transition-all hover:bg-primary/10 hover:text-primary"
 									>
 										<Clock
-											className="h-3 w-3 text-base-content/40"
+											className="size-3 text-base-content/40"
 											aria-hidden="true"
 										/>
 										{historyItem}
@@ -596,47 +596,47 @@ function SearchPage() {
 					{/* Browse categories */}
 					<Card className="rounded-2xl p-6">
 						<h2 className="mb-4 flex items-center gap-2 font-semibold">
-							<Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
+							<Sparkles className="size-4 text-primary" aria-hidden="true" />
 							カテゴリから探す
 						</h2>
 						<div className="grid gap-3 sm:grid-cols-3">
 							<Link
 								to="/circles"
 								preload="intent"
-								className="group flex items-center gap-3 rounded-xl bg-primary/5 p-4 transition-all hover:bg-primary/10 hover:shadow-md"
+								className="group flex items-center gap-3 rounded-xl bg-primary/5 p-4 transition-all duration-300 hover:bg-primary/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 							>
-								<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-									<Disc3 className="h-5 w-5" aria-hidden="true" />
+								<div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+									<Disc3 className="size-5" aria-hidden="true" />
 								</div>
 								<div>
 									<div className="font-medium">サークル</div>
-									<div className="text-base-content/50 text-xs">456件</div>
+									<div className="text-base-content/60 text-xs">456件</div>
 								</div>
 							</Link>
 							<Link
 								to="/artists"
 								preload="intent"
-								className="group flex items-center gap-3 rounded-xl bg-accent/5 p-4 transition-all hover:bg-accent/10 hover:shadow-md"
+								className="group flex items-center gap-3 rounded-xl bg-accent/5 p-4 transition-all duration-300 hover:bg-accent/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 							>
-								<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent">
-									<Users className="h-5 w-5" aria-hidden="true" />
+								<div className="flex size-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
+									<Users className="size-5" aria-hidden="true" />
 								</div>
 								<div>
 									<div className="font-medium">アーティスト</div>
-									<div className="text-base-content/50 text-xs">890件</div>
+									<div className="text-base-content/60 text-xs">890件</div>
 								</div>
 							</Link>
 							<Link
 								to="/original-songs"
 								preload="intent"
-								className="group flex items-center gap-3 rounded-xl bg-secondary/5 p-4 transition-all hover:bg-secondary/10 hover:shadow-md"
+								className="group flex items-center gap-3 rounded-xl bg-secondary/5 p-4 transition-all duration-300 hover:bg-secondary/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 							>
-								<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
-									<Music className="h-5 w-5" aria-hidden="true" />
+								<div className="flex size-10 items-center justify-center rounded-xl bg-secondary/10 text-secondary">
+									<Music className="size-5" aria-hidden="true" />
 								</div>
 								<div>
 									<div className="font-medium">原曲</div>
-									<div className="text-base-content/50 text-xs">1,234件</div>
+									<div className="text-base-content/60 text-xs">1,234件</div>
 								</div>
 							</Link>
 						</div>

@@ -26,6 +26,8 @@ export function PublicHeader() {
 					type="button"
 					className="btn btn-ghost btn-circle lg:hidden"
 					aria-label="メニューを開く"
+					aria-expanded={isDrawerOpen}
+					aria-controls="mobile-drawer"
 					onClick={() => setIsDrawerOpen(true)}
 				>
 					<Menu className="size-5" />
@@ -74,15 +76,21 @@ export function PublicHeader() {
 
 			{/* Mobile drawer */}
 			{isDrawerOpen && (
-				<div className="fixed inset-0 z-50 lg:hidden">
+				<div
+					id="mobile-drawer"
+					className="fixed inset-0 z-50 lg:hidden"
+					role="dialog"
+					aria-modal="true"
+					aria-label="ナビゲーションメニュー"
+				>
 					{/* Backdrop */}
 					<div
-						className="absolute inset-0 bg-black/50"
+						className="absolute inset-0 bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 						onClick={() => setIsDrawerOpen(false)}
 						onKeyDown={(e) => e.key === "Escape" && setIsDrawerOpen(false)}
 						role="button"
 						tabIndex={0}
-						aria-label="メニューを閉じる"
+						aria-label="メニューを閉じる（背景クリック）"
 					/>
 					{/* Drawer */}
 					<aside className="absolute top-0 left-0 h-full w-64 bg-base-100 shadow-xl">
@@ -119,7 +127,7 @@ export function PublicHeader() {
 									</Link>
 								</li>
 							))}
-							<li className="mt-4 border-base-300 border-t pt-4">
+							<li className="mt-4 border-base-content/10 border-t pt-4">
 								<Link
 									to="/about"
 									preload="render"

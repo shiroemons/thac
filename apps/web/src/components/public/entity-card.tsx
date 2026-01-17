@@ -26,13 +26,13 @@ export function EntityCard({
 }: EntityCardProps) {
 	return (
 		<Link to={href} preload="intent" className="block">
-			<Card className="transition-shadow hover:shadow-md">
+			<Card className="transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
 				{image && (
 					<figure className="aspect-square bg-base-200">
 						<img src={image} alt={title} className="size-full object-cover" />
 					</figure>
 				)}
-				<div className="card-body p-4">
+				<div className="card-body p-5">
 					<h3 className="card-title text-base">{title}</h3>
 					{subtitle && (
 						<p className="text-base-content/70 text-sm">{subtitle}</p>
@@ -50,7 +50,7 @@ export function EntityCard({
 							))}
 						</div>
 					)}
-					{meta && <p className="text-base-content/50 text-sm">{meta}</p>}
+					{meta && <p className="text-base-content/60 text-sm">{meta}</p>}
 				</div>
 			</Card>
 		</Link>

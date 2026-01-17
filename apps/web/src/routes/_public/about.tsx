@@ -27,7 +27,7 @@ function AboutPage() {
 			</div>
 
 			{/* サイト概要 */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">このサイトについて</h2>
 				<div className="space-y-4 text-base-content/80">
 					<p>
@@ -40,7 +40,7 @@ function AboutPage() {
 			</section>
 
 			{/* プロジェクトの目的 */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">プロジェクトの目的</h2>
 				<ul className="list-inside list-disc space-y-2 text-base-content/80">
 					<li>東方アレンジ楽曲の包括的なデータベースの構築</li>
@@ -52,7 +52,7 @@ function AboutPage() {
 			</section>
 
 			{/* データについて */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">収録データについて</h2>
 				<div className="space-y-4 text-base-content/80">
 					<p>
@@ -67,7 +67,7 @@ function AboutPage() {
 			</section>
 
 			{/* 運営者情報 */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">運営者情報</h2>
 				<div className="space-y-4">
 					<div className="flex items-center gap-4">
@@ -83,7 +83,7 @@ function AboutPage() {
 			</section>
 
 			{/* リンク */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">リンク</h2>
 				<div className="flex flex-wrap gap-4">
 					<a
@@ -100,7 +100,7 @@ function AboutPage() {
 			</section>
 
 			{/* 謝辞 */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">謝辞</h2>
 				<div className="space-y-4 text-base-content/80">
 					<p>

@@ -242,7 +242,7 @@ function CirclesPage() {
 							to="/circles/$id"
 							params={{ id: circle.id }}
 							preload="intent"
-							className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+							className="card bg-base-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 						>
 							<div className="card-body p-4">
 								<div className="flex items-center gap-3">
@@ -254,7 +254,7 @@ function CirclesPage() {
 											{circle.name}
 										</h3>
 										{circle.sortName && (
-											<p className="truncate text-base-content/50 text-sm">
+											<p className="truncate text-base-content/60 text-sm">
 												{circle.sortName}
 											</p>
 										)}

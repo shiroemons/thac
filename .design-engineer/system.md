@@ -1,263 +1,354 @@
-# Design System - THAC Admin
+# Design System - 東方編曲録
 
-**Design Direction**: Precision & Density (Linear/Raycast風)
-**Philosophy**: 情報密度を重視し、クリーンで機能的な管理画面UI
+## Overview
 
----
+daisyUI + TailwindCSS v4 ベースのデザインシステム。
+公開画面で一貫したビジュアル言語を維持するためのガイドライン。
 
 ## Spacing
 
-**Base Unit**: 4px grid
+**Base: 4px (Tailwind default)**
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `spacing-1` | 4px | Micro spacing (icons in buttons) |
-| `spacing-2` | 8px | Compact spacing (gap-2, p-2) |
-| `spacing-3` | 12px | Small spacing (gap-3) |
-| `spacing-4` | 16px | **Standard** (gap-4, p-4, most common) |
-| `spacing-6` | 24px | Large spacing (section gaps, p-6) |
-| `spacing-8` | 32px | Extra large (page margins) |
+| `gap-1` / `p-1` | 4px | アイコン間、バッジ間 |
+| `gap-2` / `p-2` | 8px | コンパクトな要素間 |
+| `gap-3` / `p-3` | 12px | リスト項目間 |
+| `gap-4` / `p-4` | 16px | カード内パディング（小） |
+| `gap-5` / `p-5` | 20px | カード内パディング（標準） |
+| `gap-6` / `p-6` | 24px | セクション間、カード内パディング（大） |
+| `gap-8` / `p-8` | 32px | 大きなセクション間 |
 
-**Primary**: `spacing-4` (16px) for most gaps and padding
-**Secondary**: `spacing-2` (8px) for compact elements
+**推奨:**
+- カード内パディング: `p-5` (標準) または `p-6` (ヒーロー)
+- リスト項目間: `gap-3` または `gap-4`
+- セクション間: `space-y-6` または `space-y-8`
 
----
-
-## Radius
+## Border Radius
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `radius-sm` | 8px | `rounded-lg` - Buttons, inputs, badges |
-| `radius-md` | 8px | `rounded-lg` - Cards, dialogs, dropdowns |
-| `radius-full` | 9999px | `rounded-full` - Avatars, circular buttons |
+| `rounded-lg` | 8px | ボタン、バッジ、小さな要素 |
+| `rounded-xl` | 12px | アイコンコンテナ、入力フィールド |
+| `rounded-2xl` | 16px | カード、モーダル、セクション |
+| `rounded-full` | 50% | アバター、丸いボタン |
 
-**Default**: `radius-sm` (8px) for most interactive elements
+**推奨:**
+- カード: `rounded-2xl`
+- ボタン: `rounded-lg` (daisyUI default)
+- アイコンコンテナ: `rounded-xl`
 
----
+## Typography Colors
 
-## Depth Strategy: Borders-Only
+| Token | Opacity | Usage |
+|-------|---------|-------|
+| `text-base-content` | 100% | 見出し、重要なテキスト |
+| `text-base-content/70` | 70% | サブタイトル、補足情報 |
+| `text-base-content/60` | 60% | 説明文、メタ情報 |
+| `text-base-content/50` | 50% | プレースホルダー、無効状態 |
+| `text-primary` | - | リンク、アクセントテキスト |
+| `text-secondary` | - | セカンダリアクセント |
+| `text-accent` | - | アーティスト関連 |
 
-**Primary Method**: Borders for all depth and separation
+**推奨:**
+- 見出し: `text-base-content` (デフォルト)
+- サブテキスト: `text-base-content/70`
+- 説明文・メタ: `text-base-content/60`
+- `/50` は避け、`/60` を使用（ただしプレースホルダー等の特殊用途は除く）
 
-| Element | Style |
-|---------|-------|
-| Dividers | `border-base-300` |
-| Cards | `border border-base-300` |
-| Inputs | `border border-base-300` |
-| Containers | `border-b border-base-200` |
+## Depth (Border + Shadow)
 
-**Shadows**: Reserved for floating elements only
+### Border
+```tsx
+// 標準カード
+border border-base-300
 
-| Element | Shadow |
-|---------|--------|
-| Dropdowns | `shadow-lg` |
-| Modals | `shadow-xl` |
-| Hover states | `shadow-lg` (on interaction only) |
+// ガラスモーフィズム
+border border-base-content/10
 
-**DO NOT USE**: `shadow-sm` on static cards (use borders instead)
+// セパレーター
+border-base-content/5
+```
 
----
+### Shadow
+```tsx
+// 静止状態
+shadow-sm  // 軽いエレベーション
 
-## Icons
+// ホバー状態
+shadow-lg  // カードホバー時
 
-**Standard Size**: `h-4 w-4` (16px) for all inline icons
+// モーダル・ドロップダウン
+shadow-xl
+```
 
-| Context | Class | Size |
-|---------|-------|------|
-| Buttons, Actions | `h-4 w-4` | 16px |
-| Navigation | `h-4 w-4` | 16px |
-| Table actions | `h-4 w-4` | 16px |
-| Error states (large) | `h-16 w-16` | 64px |
+**推奨:**
+- カード静止時: `shadow-sm` または影なし
+- カードホバー時: `shadow-lg`
+- `shadow-md` は使用しない（統一のため）
 
-**DEPRECATED**: `size-[18px]` - Replace with `h-4 w-4`
-**AVOID**: `h-5 w-5` unless specifically needed for emphasis
+## Card Pattern
 
----
+### Standard Card
+```tsx
+<Card className="rounded-2xl p-5 transition-all hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+  {/* content */}
+</Card>
+```
 
-## Typography
+### Glass Card
+```tsx
+<Card className="glass-card rounded-2xl p-5 transition-all hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+  {/* content */}
+</Card>
+```
 
-### Font Sizes
+### Clickable Card
+```tsx
+<Link to={href}>
+  <Card className="group rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+    {/* icon with group-hover:scale-110 */}
+  </Card>
+</Link>
+```
 
-| Token | Class | Size | Usage |
-|-------|-------|------|-------|
-| `text-xs` | `text-xs` | 12px | Helper text, timestamps |
-| `text-sm` | `text-sm` | 14px | **Body text**, descriptions |
-| `text-base` | `text-base` | 16px | Default (rarely explicit) |
-| `text-lg` | `text-lg` | 18px | Card titles, dialog titles |
-| `text-2xl` | `text-2xl` | 24px | Page headers |
+## Button Pattern
 
-### Font Weights
+daisyUI の `btn` クラスをベースに使用。
 
-| Token | Class | Weight | Usage |
-|-------|-------|--------|-------|
-| `normal` | `font-normal` | 400 | Body text |
-| `medium` | `font-medium` | 500 | Labels, active states |
-| `semibold` | `font-semibold` | 600 | Table headers |
-| `bold` | `font-bold` | 700 | Page titles, dialogs |
+```tsx
+// プライマリ
+<Button variant="primary" size="md">Action</Button>
+// → btn btn-primary
 
-### Text Hierarchy (Opacity)
+// ゴースト
+<Button variant="ghost" size="sm">Cancel</Button>
+// → btn btn-ghost btn-sm
 
-| Level | Class | Usage |
-|-------|-------|-------|
-| Primary | `text-base-content` | Main text |
-| Secondary | `text-base-content/70` | Descriptions, secondary info |
-| Tertiary | `text-base-content/50` | Hints, timestamps |
+// アウトライン
+<Button variant="outline">Secondary</Button>
+// → btn btn-outline
+```
 
----
+**推奨サイズ:**
+- 通常ボタン: `size="md"` (デフォルト)
+- コンパクトUI: `size="sm"`
+- ヒーローセクション: `size="lg"`
 
-## Colors (daisyUI)
+### Toggle/Filter Buttons
+```tsx
+// 選択状態（aria-pressed="true"）
+<Button variant="primary" aria-pressed="true">Selected</Button>
 
-### Background
+// 非選択状態（aria-pressed="false"）
+<Button variant="ghost" aria-pressed="false">Not Selected</Button>
+```
 
-| Token | Class | Usage |
-|-------|-------|-------|
-| `bg-primary` | `bg-base-100` | Main content area |
-| `bg-secondary` | `bg-base-200` | Sidebar, subtle backgrounds |
-| `bg-tertiary` | `bg-base-200/30` | Page backdrop |
+**重要:**
+- フィルターボタンは `aria-pressed` で状態を管理
+- 選択中: `btn-primary`
+- 非選択: `btn-ghost`
 
-### Interactive States
+## Badge Pattern
 
-| State | Class |
-|-------|-------|
-| Hover | `hover:bg-base-200` |
-| Active | `bg-primary/10 border-l-3 border-primary` |
-| Focus | `focus-ring` utility class |
+### Entity-based Colors
+エンティティタイプに応じた一貫した色分け:
 
-### Focus States
+| Entity | Badge Class | Color |
+|--------|-------------|-------|
+| サークル | `badge-primary` | Primary |
+| 原曲 | `badge-secondary` | Secondary |
+| アーティスト | `badge-accent` | Accent |
+| イベント | `badge-info` | Info |
 
-| State | Class |
-|-------|-------|
-| Default | `focus-ring` |
-| Inset | `focus-ring-inset` |
+### Status Badges
+```tsx
+// 成功・トレンド
+<Badge variant="success" className="bg-success/10 text-success">+5%</Badge>
 
-**Utility Classes** (defined in index.css):
-- `.focus-ring`: `focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2`
-- `.focus-ring-inset`: `focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset`
+// 警告
+<Badge variant="warning">要確認</Badge>
+
+// エラー
+<Badge variant="error">削除予定</Badge>
+```
+
+**推奨:**
+- バッジサイズ: `badge-sm` を標準とする
+- カスタム背景: `bg-{color}/10 text-{color}` パターン
+
+## Icon Pattern
+
+### Icon Sizes
+```tsx
+// 小（インライン）
+<Icon className="size-4" />  // 16px
+
+// 中（ボタン内、リスト）
+<Icon className="size-5" />  // 20px
+
+// 大（カード、ヒーロー）
+<Icon className="size-6" />  // 24px
+
+// 特大（ヒーローアイコン）
+<Icon className="size-7" />  // 28px
+```
+
+**推奨:**
+- `h-N w-N` ではなく `size-N` を使用
+
+### Icon Container
+```tsx
+// アイコンコンテナ（標準）
+<div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+  <Icon className="size-5" />
+</div>
+
+// アイコンコンテナ（小）
+<div className="flex size-8 items-center justify-center rounded-full bg-accent/10 text-accent">
+  <Icon className="size-4" />
+</div>
+```
+
+### Icon Hover
+```tsx
+// グループホバーでスケール
+<div className="... transition-transform duration-300 group-hover:scale-110">
+  <Icon />
+</div>
+```
+
+## Hover Effects
+
+### Standard Hover
+```tsx
+// カード
+className="transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+
+// リンクテキスト
+className="transition-colors hover:text-primary"
+
+// テーブル行
+className="hover:bg-base-200/50"
+```
+
+**推奨:**
+- `duration-200` ではなく `duration-300` を使用
+- ホバー時のリング: `ring-2 ring-primary/10`
+
+## Color Usage
 
 ### Semantic Colors
+| Color | Usage |
+|-------|-------|
+| `primary` | メインアクション、リンク、サークル関連 |
+| `secondary` | セカンダリアクション、原曲関連 |
+| `accent` | アーティスト関連 |
+| `info` | イベント、情報 |
+| `success` | 成功状態、トレンド |
+| `warning` | 警告 |
+| `error` | エラー、削除 |
 
-| Token | Class | Usage |
-|-------|-------|-------|
-| Primary | `primary` | Primary actions, links |
-| Error | `error` | Error states, destructive |
-| Success | `success` | Success states |
-| Warning | `warning` | Warning states |
-
----
-
-## Component Patterns
-
-### Button
-
+### Background Opacity
 ```tsx
-// Primary action
-<button className="btn btn-primary gap-1">
-  <Icon className="h-4 w-4" />
-  Label
-</button>
+// アイコン背景
+bg-primary/10  // 10%
 
-// Secondary action
-<button className="btn btn-ghost gap-1">
-  <Icon className="h-4 w-4" />
-  Label
-</button>
+// セクション背景
+bg-primary/5   // 5%
 
-// Icon-only
-<button className="btn btn-ghost btn-sm btn-square">
-  <Icon className="h-4 w-4" />
-</button>
+// ホバー背景
+hover:bg-primary/10
 ```
 
-**Sizes**: `btn-sm` (32px), `btn` (40px), `btn-lg` (48px)
+## Responsive Design
 
-### Card
-
+### Breakpoints
 ```tsx
-<div className="card border border-base-300 bg-base-100">
-  <div className="card-body">
-    <h3 className="card-title text-lg font-bold">Title</h3>
-    <p className="text-sm text-base-content/70">Description</p>
-  </div>
-</div>
+// モバイルファースト
+sm:  // >= 640px
+md:  // >= 768px
+lg:  // >= 1024px
+xl:  // >= 1280px
 ```
 
-**Hover effect**: `hover:shadow-lg hover:ring-2 hover:ring-primary/10` (optional)
-
-### Input
-
+### Grid Patterns
 ```tsx
-<input
-  type="text"
-  className="input input-bordered w-full"
-  placeholder="Placeholder"
-/>
+// カードグリッド
+grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4
+
+// 統計カード
+grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5
 ```
 
-### Form Field
+## Animation
 
+### Transitions
 ```tsx
-<div className="form-control">
-  <label className="label">
-    <span className="label-text font-medium">Label</span>
-  </label>
-  <input className="input input-bordered" />
-  <label className="label">
-    <span className="label-text-alt text-error">Error message</span>
-  </label>
-</div>
+// 標準トランジション
+transition-all duration-300
+
+// カラーのみ
+transition-colors
+
+// 変形のみ
+transition-transform duration-300
 ```
 
-### Table
-
+### Custom Animations
 ```tsx
-<table className="table table-zebra">
-  <thead>
-    <tr>
-      <th className="font-semibold">Header</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Content</td>
-    </tr>
-  </tbody>
-</table>
+// サイドバースライド
+animation: sidebarSlideDown 200ms ease-out
+
+// パルス（装飾）
+animate-pulse
 ```
 
-### Dialog
+## Checklist
 
-```tsx
-<dialog className="modal">
-  <div className="modal-box">
-    <h3 className="font-bold text-lg">Dialog Title</h3>
-    <p className="py-4">Content</p>
-    <div className="modal-action">
-      <button className="btn">Cancel</button>
-      <button className="btn btn-primary">Confirm</button>
-    </div>
-  </div>
-</dialog>
-```
+コンポーネント作成時に確認:
 
----
+### 基本スタイル
+- [ ] カードは `rounded-2xl` を使用
+- [ ] カード内パディングは `p-5`（標準）または `p-6`（大）
+- [ ] テキスト色は `/70`, `/60` のみ（`/50` は特殊用途のみ、`/30` は禁止）
+- [ ] アイコンは `size-N` を使用（`h-N w-N` ではない）
+- [ ] トランジションは `duration-300`
 
-## Anti-Patterns (Avoid)
+### 深度・シャドウ
+- [ ] 静止状態のカードは `shadow-sm`
+- [ ] ホバー効果は `hover:shadow-lg hover:ring-2 hover:ring-primary/10`
+- [ ] `shadow-md` は使用しない
 
-| Pattern | Issue | Fix |
-|---------|-------|-----|
-| `size-[18px]` | Non-standard size | Use `h-4 w-4` |
-| `shadow-sm` on cards | Unnecessary depth | Use `border border-base-300` |
-| `h-5 w-5` for icons | Inconsistent | Use `h-4 w-4` |
-| `gap-1` mixed with `gap-4` | Inconsistent spacing | Stick to `gap-2` or `gap-4` |
-| Custom colors | Off-brand | Use daisyUI semantic colors |
+### ボタン状態
+- [ ] フィルター選択中: `btn-primary`
+- [ ] フィルター非選択: `btn-ghost`
+- [ ] `aria-pressed` で状態を管理
 
----
+### バッジ色
+- [ ] サークル: `badge-primary`
+- [ ] 原曲: `badge-secondary`
+- [ ] アーティスト: `badge-accent`
+- [ ] イベント: `badge-info`
 
-## Audit Checklist
+### アクセシビリティ
+- [ ] フォーカス: `focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none`
+- [ ] タブ: `aria-controls` でコンテンツと関連付け
+- [ ] トグル: `aria-expanded` で開閉状態を伝達
+- [ ] グループ: `role="group" aria-label="..."` でグループ化
 
-- [ ] All icons are `h-4 w-4` (except large error states)
-- [ ] No `size-[18px]` in codebase
-- [ ] Cards use `border border-base-300`, not `shadow-sm`
-- [ ] Spacing follows 4px grid
-- [ ] Text hierarchy uses opacity, not multiple grays
-- [ ] Button icons have `gap-1` with text
+### 見出し階層
+- [ ] h1: `font-bold text-5xl` (ページタイトル)
+- [ ] h2: `font-bold text-3xl` (セクションタイトル)
+- [ ] h3: `font-semibold text-xl` (サブセクション)
+- [ ] h4: `font-medium text-lg` (リストヘッダー)
+
+### 区切り線
+- [ ] 水平: `border-base-content/10 border-b`
+- [ ] 縦: `w-px bg-base-content/20`
+
+### 空状態の背景色
+- [ ] empty: `bg-base-200` (データなし)
+- [ ] error: `bg-error/5` (エラー)
+- [ ] filter: `bg-warning/5` (フィルター結果なし)
+- [ ] search: `bg-info/5` (検索結果なし)

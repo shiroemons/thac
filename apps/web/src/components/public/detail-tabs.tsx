@@ -36,9 +36,10 @@ export function DetailTabs<T extends string>({
 					key={tab.key}
 					type="button"
 					role="tab"
-					className={`tab gap-2 ${activeTab === tab.key ? "tab-active" : ""}`}
+					className={`tab gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeTab === tab.key ? "tab-active" : ""}`}
 					onClick={() => onTabChange(tab.key)}
 					aria-selected={activeTab === tab.key}
+					aria-controls={`tabpanel-${tab.key}`}
 				>
 					{tab.icon}
 					{tab.label}

@@ -90,7 +90,7 @@ function ReleaseDetailPage() {
 				<PublicBreadcrumb
 					items={[{ label: "リリース", href: "/releases" }, { label: id }]}
 				/>
-				<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
+				<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
 					<h1 className="font-bold text-2xl">リリースが見つかりません</h1>
 					<p className="mt-2 text-base-content/70">
 						指定されたIDのリリースは存在しません
@@ -110,7 +110,7 @@ function ReleaseDetailPage() {
 			/>
 
 			{/* ヘッダー */}
-			<div className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 					<div className="space-y-3">
 						{/* リリースタイプバッジとタイトル */}
@@ -164,14 +164,14 @@ function ReleaseDetailPage() {
 
 				{/* 統計カード */}
 				<div className="mt-6 grid grid-cols-2 gap-4">
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<Music className="size-5" />
 							<span className="font-bold text-2xl">{release.trackCount}</span>
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">トラック数</p>
 					</div>
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-secondary">
 							<Users className="size-5" />
 							<span className="font-bold text-2xl">{release.artistCount}</span>
@@ -194,7 +194,7 @@ function ReleaseDetailPage() {
 							release.discs.map((disc) => (
 								<div
 									key={disc.id}
-									className="overflow-hidden rounded-lg bg-base-100 shadow-sm"
+									className="overflow-hidden rounded-2xl bg-base-100 shadow-sm"
 								>
 									<div className="border-base-200 border-b bg-base-200/30 px-4 py-3">
 										<div className="flex items-center gap-2">
@@ -210,7 +210,7 @@ function ReleaseDetailPage() {
 							))
 						) : (
 							// シングルディスク: そのまま表示
-							<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
+							<div className="overflow-x-auto rounded-2xl bg-base-100 shadow-sm">
 								<TrackTable tracks={release.tracks} />
 							</div>
 						)}
@@ -226,7 +226,7 @@ function ReleaseDetailPage() {
 
 			{/* 配信リンク */}
 			{release.publications.length > 0 && (
-				<div className="rounded-lg bg-base-100 p-6 shadow-sm">
+				<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
 					<PublicationLinks publications={release.publications} showEmbeds />
 				</div>
 			)}
@@ -235,7 +235,7 @@ function ReleaseDetailPage() {
 			{release.notes && (
 				<div className="space-y-2">
 					<h2 className="font-bold text-xl">メモ</h2>
-					<div className="rounded-lg bg-base-100 p-4 shadow-sm">
+					<div className="rounded-2xl bg-base-100 p-4 shadow-sm">
 						<p className="whitespace-pre-wrap text-base-content/80">
 							{release.notes}
 						</p>
@@ -259,7 +259,7 @@ function CircleBadge({
 			to="/circles/$id"
 			params={{ id: circle.circleId }}
 			preload="intent"
-			className="inline-flex items-center gap-1 hover:opacity-80"
+			className="inline-flex items-center gap-1 hover:text-primary"
 		>
 			<span className="font-medium hover:text-primary">
 				{circle.circleName}
@@ -330,7 +330,7 @@ function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 													{displayName}
 												</Link>
 												{credit.roles.length > 0 && (
-													<span className="text-base-content/50 text-xs">
+													<span className="text-base-content/60 text-xs">
 														(
 														{credit.roles
 															.map((r) => r.roleName ?? r.roleCode)
@@ -342,7 +342,7 @@ function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 										);
 									})}
 									{track.credits.length > 3 && (
-										<span className="text-base-content/50 text-xs">
+										<span className="text-base-content/60 text-xs">
 											他{track.credits.length - 3}名
 										</span>
 									)}
@@ -369,7 +369,7 @@ function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 											</span>
 										))}
 										{track.officialSongs.length > 2 && (
-											<span className="text-base-content/50 text-xs">
+											<span className="text-base-content/60 text-xs">
 												他{track.officialSongs.length - 2}曲
 											</span>
 										)}

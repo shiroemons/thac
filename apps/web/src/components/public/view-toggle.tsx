@@ -10,7 +10,11 @@ interface ViewToggleProps {
 
 export function ViewToggle({ value, onChange }: ViewToggleProps) {
 	return (
-		<div className="flex gap-1 rounded-lg bg-base-200 p-1">
+		<div
+			role="group"
+			aria-label="表示切替"
+			className="flex gap-1 rounded-lg bg-base-200 p-1"
+		>
 			<Button
 				size="sm"
 				variant={value === "grid" ? "primary" : "ghost"}

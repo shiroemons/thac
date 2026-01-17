@@ -25,7 +25,7 @@ function PrivacyPage() {
 			</div>
 
 			{/* 基本方針 */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">基本方針</h2>
 				<div className="space-y-4 text-base-content/80">
 					<p>
@@ -36,7 +36,7 @@ function PrivacyPage() {
 			</section>
 
 			{/* 収集する情報 */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">収集する情報</h2>
 				<div className="space-y-4 text-base-content/80">
 					<p>当サイトでは、以下の情報を収集する場合があります。</p>
@@ -58,7 +58,7 @@ function PrivacyPage() {
 			</section>
 
 			{/* 情報の利用目的 */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">情報の利用目的</h2>
 				<div className="space-y-4 text-base-content/80">
 					<p>収集した情報は、以下の目的で利用します。</p>
@@ -73,7 +73,7 @@ function PrivacyPage() {
 			</section>
 
 			{/* 情報の第三者提供 */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">情報の第三者提供</h2>
 				<div className="space-y-4 text-base-content/80">
 					<p>
@@ -89,7 +89,7 @@ function PrivacyPage() {
 			</section>
 
 			{/* Cookieについて */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">Cookieについて</h2>
 				<div className="space-y-4 text-base-content/80">
 					<p>
@@ -102,7 +102,7 @@ function PrivacyPage() {
 			</section>
 
 			{/* セキュリティ */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">セキュリティ</h2>
 				<div className="space-y-4 text-base-content/80">
 					<p>
@@ -115,7 +115,7 @@ function PrivacyPage() {
 			</section>
 
 			{/* プライバシーポリシーの変更 */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">プライバシーポリシーの変更</h2>
 				<div className="space-y-4 text-base-content/80">
 					<p>
@@ -126,7 +126,7 @@ function PrivacyPage() {
 			</section>
 
 			{/* お問い合わせ */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<h2 className="mb-4 font-bold text-xl">お問い合わせ</h2>
 				<div className="space-y-4 text-base-content/80">
 					<p>
@@ -140,7 +140,7 @@ function PrivacyPage() {
 			</section>
 
 			{/* 制定日 */}
-			<section className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<section className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<div className="text-base-content/70 text-sm">
 					<p>制定日: 2025年1月4日</p>
 				</div>

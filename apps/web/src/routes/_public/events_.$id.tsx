@@ -165,7 +165,7 @@ function EventDetailPage() {
 				<PublicBreadcrumb
 					items={[{ label: "イベント", href: "/events" }, { label: id }]}
 				/>
-				<div className="rounded-lg bg-base-100 p-8 text-center shadow-sm">
+				<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
 					<h1 className="font-bold text-2xl">イベントが見つかりません</h1>
 					<p className="mt-2 text-base-content/70">
 						指定されたIDのイベントは存在しません
@@ -196,7 +196,7 @@ function EventDetailPage() {
 			/>
 
 			{/* ヘッダー */}
-			<div className="rounded-lg bg-base-100 p-6 shadow-sm">
+			<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
 				<div className="space-y-3">
 					<div>
 						{event.eventSeriesName && (
@@ -238,7 +238,7 @@ function EventDetailPage() {
 
 				{/* 統計カード */}
 				<div className="mt-6 grid grid-cols-3 gap-4">
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<Disc3 className="size-5" />
 							<span className="font-bold text-2xl">
@@ -247,7 +247,7 @@ function EventDetailPage() {
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">リリース</p>
 					</div>
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-secondary">
 							<Users className="size-5" />
 							<span className="font-bold text-2xl">
@@ -256,7 +256,7 @@ function EventDetailPage() {
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">サークル</p>
 					</div>
-					<div className="rounded-lg bg-base-200/50 p-4 text-center">
+					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-accent">
 							<Music className="size-5" />
 							<span className="font-bold text-2xl">
@@ -294,7 +294,7 @@ function EventDetailPage() {
 							{releases.map((release) => (
 								<div
 									key={release.id}
-									className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+									className="card bg-base-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 								>
 									<div className="card-body p-4">
 										<Link
@@ -325,7 +325,7 @@ function EventDetailPage() {
 												</Link>
 											))}
 										</div>
-										<div className="mt-2 flex items-center gap-4 text-base-content/50 text-sm">
+										<div className="mt-2 flex items-center gap-4 text-base-content/60 text-sm">
 											{release.releaseDate && (
 												<span className="flex items-center gap-1">
 													<Calendar className="size-3" />
@@ -342,7 +342,7 @@ function EventDetailPage() {
 							))}
 						</div>
 					) : (
-						<div className="overflow-x-auto rounded-lg bg-base-100 shadow-sm">
+						<div className="overflow-x-auto rounded-2xl bg-base-100 shadow-sm">
 							<table className="table">
 								<thead>
 									<tr>

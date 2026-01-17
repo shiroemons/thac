@@ -70,7 +70,7 @@ function ReleaseCard({ release }: { release: Release }) {
 				<div className="relative aspect-square overflow-hidden bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20">
 					<div className="flex h-full items-center justify-center">
 						<Disc3
-							className="h-16 w-16 text-base-content/20 transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110"
+							className="size-16 text-base-content/20 transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110"
 							aria-hidden="true"
 						/>
 					</div>
@@ -80,7 +80,7 @@ function ReleaseCard({ release }: { release: Release }) {
 								variant="primary"
 								className="flex items-center gap-1 bg-primary px-2 py-0.5 text-primary-content shadow-lg"
 							>
-								<Sparkles className="h-3 w-3" aria-hidden="true" />
+								<Sparkles className="size-3" aria-hidden="true" />
 								NEW
 							</Badge>
 						</div>
@@ -92,7 +92,7 @@ function ReleaseCard({ release }: { release: Release }) {
 						</div>
 					</div>
 				</div>
-				<div className="p-4">
+				<div className="p-5">
 					<h3 className="mb-1 truncate font-semibold text-sm transition-colors group-hover:text-primary">
 						{release.title}
 					</h3>
@@ -100,7 +100,7 @@ function ReleaseCard({ release }: { release: Release }) {
 						{release.circleName}
 					</p>
 					<div className="mt-2 flex items-center gap-1 text-base-content/40 text-xs">
-						<Calendar className="h-3 w-3" aria-hidden="true" />
+						<Calendar className="size-3" aria-hidden="true" />
 						<span>{release.eventName}</span>
 					</div>
 				</div>
@@ -148,9 +148,9 @@ export function RecentReleases() {
 							onClick={() => scroll("left")}
 							disabled={!canScrollLeft}
 							aria-label="前へ"
-							className="h-8 w-8 rounded-full"
+							className="size-8 rounded-full"
 						>
-							<ChevronLeft className="h-4 w-4" />
+							<ChevronLeft className="size-4" />
 						</Button>
 						<Button
 							variant="ghost"
@@ -158,15 +158,15 @@ export function RecentReleases() {
 							onClick={() => scroll("right")}
 							disabled={!canScrollRight}
 							aria-label="次へ"
-							className="h-8 w-8 rounded-full"
+							className="size-8 rounded-full"
 						>
-							<ChevronRight className="h-4 w-4" />
+							<ChevronRight className="size-4" />
 						</Button>
 					</div>
 					<Link
 						to="/stats"
 						preload="render"
-						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
+						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary"
 					>
 						すべて見る
 						<span className="transition-transform group-hover:translate-x-0.5">

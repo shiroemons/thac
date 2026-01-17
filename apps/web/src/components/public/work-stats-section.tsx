@@ -446,7 +446,7 @@ export function WorkStatsSection({
 	// エラー表示
 	if (error) {
 		return (
-			<Card className="p-8 text-center">
+			<Card className="bg-error/5 p-8 text-center shadow-sm">
 				<div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-error/10">
 					<BarChart3 className="size-8 text-error" />
 				</div>
@@ -458,9 +458,9 @@ export function WorkStatsSection({
 	// データなし
 	if (!chartData || chartData.data.length === 0) {
 		return (
-			<Card className="p-8 text-center">
-				<div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-base-200">
-					<BarChart3 className="size-8 text-base-content/50" />
+			<Card className="bg-base-200 p-8 text-center shadow-sm">
+				<div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-base-300">
+					<BarChart3 className="size-8 text-base-content/60" />
 				</div>
 				<p className="text-base-content/70">統計データがありません</p>
 			</Card>
@@ -476,7 +476,7 @@ export function WorkStatsSection({
 	return (
 		<div className="space-y-4">
 			{/* ヘッダー: タイトル + コントロール */}
-			<Card className="space-y-6 border-2 border-base-content/20 p-6">
+			<Card className="space-y-6 border-2 border-base-content/20 p-6 shadow-sm">
 				{/* タイトル行 */}
 				{selectedWorkId ? (
 					<div className="flex items-center gap-3">

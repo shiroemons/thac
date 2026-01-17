@@ -65,7 +65,7 @@ export function NavigationSection() {
 
 			<div className="relative mx-auto max-w-6xl">
 				<div className="mb-16 text-center">
-					<h2 className="mb-4 font-bold text-4xl tracking-tight md:text-5xl">
+					<h2 className="mb-4 font-bold text-3xl tracking-tight md:text-5xl">
 						<span className="bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
 							コンテンツを探索
 						</span>
@@ -81,7 +81,7 @@ export function NavigationSection() {
 							key={item.href}
 							to={item.href}
 							preload="render"
-							className="glass-card group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:ring-2 hover:ring-primary/20"
+							className="glass-card group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 						>
 							{/* Gradient accent */}
 							<div
@@ -90,9 +90,9 @@ export function NavigationSection() {
 
 							<div className="flex items-start gap-4">
 								<div
-									className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.color} text-white transition-transform duration-300 group-hover:scale-110`}
+									className={`flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.color} text-white transition-transform duration-300 group-hover:scale-110`}
 								>
-									<item.icon className="h-6 w-6" aria-hidden="true" />
+									<item.icon className="size-6" aria-hidden="true" />
 								</div>
 								<div className="min-w-0 flex-1">
 									<h3 className="mb-1 font-bold text-lg">{item.title}</h3>
@@ -101,7 +101,7 @@ export function NavigationSection() {
 									</p>
 								</div>
 								<ArrowRight
-									className="h-5 w-5 shrink-0 text-base-content/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary"
+									className="size-5 shrink-0 text-base-content/60 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary"
 									aria-hidden="true"
 								/>
 							</div>

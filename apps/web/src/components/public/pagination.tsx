@@ -98,23 +98,23 @@ export function Pagination({
 				{/* 最初のページへ */}
 				<button
 					type="button"
-					className="btn btn-sm join-item"
+					className="btn btn-ghost btn-sm join-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 					onClick={() => handlePageChange(1)}
 					disabled={currentPage === 1}
 					aria-label="最初のページへ"
 				>
-					<ChevronsLeft className="h-4 w-4" />
+					<ChevronsLeft className="size-4" />
 				</button>
 
 				{/* 前のページへ */}
 				<button
 					type="button"
-					className="btn btn-sm join-item"
+					className="btn btn-ghost btn-sm join-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 					onClick={() => handlePageChange(currentPage - 1)}
 					disabled={currentPage === 1}
 					aria-label="前のページへ"
 				>
-					<ChevronLeft className="h-4 w-4" />
+					<ChevronLeft className="size-4" />
 				</button>
 
 				{/* ページ番号 */}
@@ -135,8 +135,8 @@ export function Pagination({
 						<button
 							key={page}
 							type="button"
-							className={`btn btn-sm join-item ${
-								currentPage === page ? "btn-primary" : ""
+							className={`btn btn-sm join-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+								currentPage === page ? "btn-primary" : "btn-ghost"
 							}`}
 							onClick={() => handlePageChange(page)}
 							aria-current={currentPage === page ? "page" : undefined}
@@ -149,23 +149,23 @@ export function Pagination({
 				{/* 次のページへ */}
 				<button
 					type="button"
-					className="btn btn-sm join-item"
+					className="btn btn-ghost btn-sm join-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 					onClick={() => handlePageChange(currentPage + 1)}
 					disabled={currentPage === totalPages}
 					aria-label="次のページへ"
 				>
-					<ChevronRight className="h-4 w-4" />
+					<ChevronRight className="size-4" />
 				</button>
 
 				{/* 最後のページへ */}
 				<button
 					type="button"
-					className="btn btn-sm join-item"
+					className="btn btn-ghost btn-sm join-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 					onClick={() => handlePageChange(totalPages)}
 					disabled={currentPage === totalPages}
 					aria-label="最後のページへ"
 				>
-					<ChevronsRight className="h-4 w-4" />
+					<ChevronsRight className="size-4" />
 				</button>
 			</div>
 		</div>
