@@ -73,7 +73,7 @@ export function StatsCards() {
 				<Link
 					to="/stats"
 					preload="render"
-					className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
+					className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary"
 				>
 					詳細を見る
 					<span className="transition-transform group-hover:translate-x-0.5">

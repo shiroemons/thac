@@ -287,7 +287,7 @@ function ArtistsPage() {
 								type="button"
 								onClick={() => handleRoleChange(r)}
 								className={`btn btn-sm ${
-									roleFilter === r ? "btn-primary" : "btn-ghost border-base-300"
+									roleFilter === r ? "btn-primary" : "btn-ghost"
 								}`}
 								aria-pressed={roleFilter === r}
 							>

@@ -188,7 +188,7 @@ function RankingsSection() {
 					<Link
 						to="/original-songs"
 						preload="intent"
-						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
+						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary"
 					>
 						すべて見る
 						<span className="transition-transform group-hover:translate-x-0.5">
@@ -220,7 +220,7 @@ function RankingsSection() {
 					<Link
 						to="/circles"
 						preload="intent"
-						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
+						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary"
 					>
 						すべて見る
 						<span className="transition-transform group-hover:translate-x-0.5">
@@ -252,7 +252,7 @@ function RankingsSection() {
 					<Link
 						to="/artists"
 						preload="intent"
-						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary/80"
+						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary"
 					>
 						すべて見る
 						<span className="transition-transform group-hover:translate-x-0.5">

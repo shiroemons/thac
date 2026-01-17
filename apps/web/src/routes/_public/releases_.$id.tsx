@@ -259,7 +259,7 @@ function CircleBadge({
 			to="/circles/$id"
 			params={{ id: circle.circleId }}
 			preload="intent"
-			className="inline-flex items-center gap-1 hover:opacity-80"
+			className="inline-flex items-center gap-1 hover:text-primary"
 		>
 			<span className="font-medium hover:text-primary">
 				{circle.circleName}
