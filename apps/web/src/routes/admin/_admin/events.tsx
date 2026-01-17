@@ -427,25 +427,25 @@ function EventsPage() {
 					secondaryActions={[
 						{
 							label: "TSVでエクスポート",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("tsv", false),
 							disabled: isExporting,
 						},
 						{
 							label: "JSONでエクスポート",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("json", false),
 							disabled: isExporting,
 						},
 						{
 							label: "TSV（関連データ含む）",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("tsv", true),
 							disabled: isExporting,
 						},
 						{
 							label: "JSON（関連データ含む）",
-							icon: <Download className="mr-2 h-4 w-4" />,
+							icon: <Download className="h-4 w-4" />,
 							onClick: () => handleExport("json", true),
 							disabled: isExporting,
 						},
@@ -874,9 +874,10 @@ function EventsPage() {
 									type="button"
 									variant="outline"
 									size="sm"
+									className="gap-1"
 									onClick={handleOpenAddDayDialog}
 								>
-									<Plus className="mr-1 h-4 w-4" />
+									<Plus className="h-4 w-4" />
 									追加
 								</Button>
 							</div>

@@ -251,8 +251,8 @@ function CircleDetailPage() {
 				<div className="alert alert-error">
 					<span>サークルが見つかりません</span>
 				</div>
-				<Link to="/admin/circles" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link to="/admin/circles" className="btn btn-ghost mt-4 gap-1">
+					<ArrowLeft className="h-4 w-4" />
 					サークル一覧に戻る
 				</Link>
 			</div>
@@ -291,18 +291,19 @@ function CircleDetailPage() {
 					<Button
 						variant="outline"
 						size="sm"
+						className="gap-1"
 						onClick={() => setIsEditDialogOpen(true)}
 					>
-						<Pencil className="mr-2 h-4 w-4" />
+						<Pencil className="h-4 w-4" />
 						編集
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="text-error hover:bg-error hover:text-error-content"
+						className="gap-1 text-error hover:bg-error hover:text-error-content"
 						onClick={() => setIsDeleteDialogOpen(true)}
 					>
-						<Trash2 className="mr-2 h-4 w-4" />
+						<Trash2 className="h-4 w-4" />
 						削除
 					</Button>
 				</div>
@@ -363,9 +364,10 @@ function CircleDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
+							className="gap-1"
 							onClick={() => openLinkDialog()}
 						>
-							<Plus className="mr-2 h-4 w-4" />
+							<Plus className="h-4 w-4" />
 							リンク追加
 						</Button>
 					</div>

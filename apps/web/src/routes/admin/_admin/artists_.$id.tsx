@@ -149,8 +149,8 @@ function ArtistDetailPage() {
 				<div className="alert alert-error">
 					<span>アーティストが見つかりません</span>
 				</div>
-				<Link to="/admin/artists" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link to="/admin/artists" className="btn btn-ghost mt-4 gap-1">
+					<ArrowLeft className="h-4 w-4" />
 					アーティスト一覧に戻る
 				</Link>
 			</div>
@@ -206,18 +206,19 @@ function ArtistDetailPage() {
 					<Button
 						variant="outline"
 						size="sm"
+						className="gap-1"
 						onClick={() => setIsEditDialogOpen(true)}
 					>
-						<Pencil className="mr-2 h-4 w-4" />
+						<Pencil className="h-4 w-4" />
 						編集
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="text-error hover:bg-error hover:text-error-content"
+						className="gap-1 text-error hover:bg-error hover:text-error-content"
 						onClick={() => setIsDeleteDialogOpen(true)}
 					>
-						<Trash2 className="mr-2 h-4 w-4" />
+						<Trash2 className="h-4 w-4" />
 						削除
 					</Button>
 				</div>
@@ -277,8 +278,13 @@ function ArtistDetailPage() {
 								<Badge variant="secondary">{artist.aliases.length}件</Badge>
 							)}
 						</h2>
-						<Button variant="primary" size="sm" onClick={handleCreateAlias}>
-							<Plus className="mr-1 h-4 w-4" />
+						<Button
+							variant="primary"
+							size="sm"
+							className="gap-1"
+							onClick={handleCreateAlias}
+						>
+							<Plus className="h-4 w-4" />
 							別名義追加
 						</Button>
 					</div>

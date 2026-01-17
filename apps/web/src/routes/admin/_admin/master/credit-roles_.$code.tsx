@@ -47,8 +47,11 @@ function CreditRoleDetailPage() {
 				<div className="alert alert-error">
 					<span>クレジット役割が見つかりません</span>
 				</div>
-				<Link to="/admin/master/credit-roles" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link
+					to="/admin/master/credit-roles"
+					className="btn btn-ghost mt-4 gap-1"
+				>
+					<ArrowLeft className="h-4 w-4" />
 					クレジット役割一覧に戻る
 				</Link>
 			</div>
@@ -87,18 +90,19 @@ function CreditRoleDetailPage() {
 					<Button
 						variant="outline"
 						size="sm"
+						className="gap-1"
 						onClick={() => setIsEditDialogOpen(true)}
 					>
-						<Pencil className="mr-2 h-4 w-4" />
+						<Pencil className="h-4 w-4" />
 						編集
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="text-error hover:text-error"
+						className="gap-1 text-error hover:text-error"
 						onClick={() => setIsDeleteDialogOpen(true)}
 					>
-						<Trash2 className="mr-2 h-4 w-4" />
+						<Trash2 className="h-4 w-4" />
 						削除
 					</Button>
 				</div>

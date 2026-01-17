@@ -198,7 +198,7 @@ function EventSeriesPage() {
 					secondaryActions={[
 						{
 							label: reorderMutation.isPending ? "整理中..." : "順序を整理",
-							icon: <ArrowUpDown className="mr-2 h-4 w-4" />,
+							icon: <ArrowUpDown className="h-4 w-4" />,
 							onClick: handleReorder,
 							disabled: reorderMutation.isPending || seriesList.length === 0,
 						},

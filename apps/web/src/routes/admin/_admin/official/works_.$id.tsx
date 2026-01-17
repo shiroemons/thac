@@ -83,8 +83,8 @@ function OfficialWorkDetailPage() {
 				<div className="alert alert-error">
 					<span>公式作品が見つかりません</span>
 				</div>
-				<Link to="/admin/official/works" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link to="/admin/official/works" className="btn btn-ghost mt-4 gap-1">
+					<ArrowLeft className="h-4 w-4" />
 					公式作品一覧に戻る
 				</Link>
 			</div>
@@ -124,9 +124,10 @@ function OfficialWorkDetailPage() {
 				<Button
 					variant="outline"
 					size="sm"
+					className="gap-1"
 					onClick={() => setIsEditDialogOpen(true)}
 				>
-					<Pencil className="mr-2 h-4 w-4" />
+					<Pencil className="h-4 w-4" />
 					編集
 				</Button>
 			</div>

@@ -918,8 +918,8 @@ function ReleaseDetailPage() {
 				<div className="alert alert-error">
 					<span>作品が見つかりません</span>
 				</div>
-				<Link to="/admin/releases" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link to="/admin/releases" className="btn btn-ghost mt-4 gap-1">
+					<ArrowLeft className="h-4 w-4" />
 					作品一覧に戻る
 				</Link>
 			</div>
@@ -964,9 +964,10 @@ function ReleaseDetailPage() {
 				<Button
 					variant="outline"
 					size="sm"
+					className="gap-1"
 					onClick={() => setIsEditDialogOpen(true)}
 				>
-					<Pencil className="mr-2 h-4 w-4" />
+					<Pencil className="h-4 w-4" />
 					編集
 				</Button>
 			</div>
@@ -1059,9 +1060,10 @@ function ReleaseDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
+							className="gap-1"
 							onClick={() => openDiscDialog()}
 						>
-							<Plus className="mr-2 h-4 w-4" />
+							<Plus className="h-4 w-4" />
 							ディスク追加
 						</Button>
 					</div>
@@ -1123,8 +1125,13 @@ function ReleaseDetailPage() {
 							<Users className="h-4 w-4" />
 							関連サークル
 						</h2>
-						<Button variant="outline" size="sm" onClick={openCircleDialog}>
-							<Plus className="mr-2 h-4 w-4" />
+						<Button
+							variant="outline"
+							size="sm"
+							className="gap-1"
+							onClick={openCircleDialog}
+						>
+							<Plus className="h-4 w-4" />
 							サークル追加
 						</Button>
 					</div>
@@ -1212,9 +1219,10 @@ function ReleaseDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
+							className="gap-1"
 							onClick={() => openPublicationDialog()}
 						>
-							<Plus className="mr-2 h-4 w-4" />
+							<Plus className="h-4 w-4" />
 							リンク追加
 						</Button>
 					</div>
@@ -1294,9 +1302,10 @@ function ReleaseDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
+							className="gap-1"
 							onClick={() => openJanCodeDialog()}
 						>
-							<Plus className="mr-2 h-4 w-4" />
+							<Plus className="h-4 w-4" />
 							JANコード追加
 						</Button>
 					</div>
@@ -1367,9 +1376,10 @@ function ReleaseDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
+							className="gap-1"
 							onClick={() => openTrackDialog()}
 						>
-							<Plus className="mr-2 h-4 w-4" />
+							<Plus className="h-4 w-4" />
 							トラック追加
 						</Button>
 					</div>
@@ -1908,9 +1918,10 @@ function ReleaseDetailPage() {
 							<Button
 								variant="outline"
 								size="sm"
+								className="gap-1"
 								onClick={() => openCreditEditDialog()}
 							>
-								<Plus className="mr-2 h-4 w-4" />
+								<Plus className="h-4 w-4" />
 								クレジット追加
 							</Button>
 						</div>

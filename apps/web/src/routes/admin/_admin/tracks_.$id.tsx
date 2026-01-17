@@ -948,9 +948,10 @@ function TrackDetailPage() {
 						<Button
 							variant="outline"
 							size="sm"
+							className="gap-1"
 							onClick={() => setIsEditDialogOpen(true)}
 						>
-							<Pencil className="mr-1 h-4 w-4" />
+							<Pencil className="h-4 w-4" />
 							編集
 						</Button>
 					</div>
@@ -1119,8 +1120,13 @@ function TrackDetailPage() {
 			<div className="mt-6 rounded-lg border border-base-300 bg-base-100">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h2 className="font-bold text-lg">クレジット</h2>
-					<Button variant="outline" size="sm" onClick={openCreditDialog}>
-						<Plus className="mr-2 h-4 w-4" />
+					<Button
+						variant="outline"
+						size="sm"
+						className="gap-1"
+						onClick={openCreditDialog}
+					>
+						<Plus className="h-4 w-4" />
 						クレジット追加
 					</Button>
 				</div>
@@ -1226,8 +1232,13 @@ function TrackDetailPage() {
 						<Music className="mr-2 inline-block h-4 w-4" />
 						原曲紐付け
 					</h2>
-					<Button variant="outline" size="sm" onClick={openOfficialSongDialog}>
-						<Plus className="mr-2 h-4 w-4" />
+					<Button
+						variant="outline"
+						size="sm"
+						className="gap-1"
+						onClick={openOfficialSongDialog}
+					>
+						<Plus className="h-4 w-4" />
 						原曲追加
 					</Button>
 				</div>
@@ -1321,8 +1332,13 @@ function TrackDetailPage() {
 						<GitFork className="mr-2 inline-block h-4 w-4" />
 						派生関係
 					</h2>
-					<Button variant="outline" size="sm" onClick={openDerivationDialog}>
-						<Plus className="mr-2 h-4 w-4" />
+					<Button
+						variant="outline"
+						size="sm"
+						className="gap-1"
+						onClick={openDerivationDialog}
+					>
+						<Plus className="h-4 w-4" />
 						派生元追加
 					</Button>
 				</div>
@@ -1389,8 +1405,13 @@ function TrackDetailPage() {
 						<ExternalLink className="mr-2 inline-block h-4 w-4" />
 						公開リンク
 					</h2>
-					<Button variant="outline" size="sm" onClick={openPublicationDialog}>
-						<Plus className="mr-2 h-4 w-4" />
+					<Button
+						variant="outline"
+						size="sm"
+						className="gap-1"
+						onClick={openPublicationDialog}
+					>
+						<Plus className="h-4 w-4" />
 						公開リンク追加
 					</Button>
 				</div>
@@ -1455,8 +1476,13 @@ function TrackDetailPage() {
 			<div className="mt-6 rounded-lg border border-base-300 bg-base-100">
 				<div className="flex items-center justify-between border-base-300 border-b p-4">
 					<h2 className="font-bold text-lg">ISRC</h2>
-					<Button variant="outline" size="sm" onClick={openIsrcDialog}>
-						<Plus className="mr-2 h-4 w-4" />
+					<Button
+						variant="outline"
+						size="sm"
+						className="gap-1"
+						onClick={openIsrcDialog}
+					>
+						<Plus className="h-4 w-4" />
 						ISRC追加
 					</Button>
 				</div>
@@ -1522,17 +1548,17 @@ function TrackDetailPage() {
 
 			{/* 関連リンク */}
 			<div className="mt-6 flex items-center gap-4">
-				<Link to="/admin/tracks" className="btn btn-outline btn-sm">
-					<ArrowLeft className="mr-1 h-4 w-4" />
+				<Link to="/admin/tracks" className="btn btn-outline btn-sm gap-1">
+					<ArrowLeft className="h-4 w-4" />
 					トラック一覧
 				</Link>
 				{track.release && (
 					<Link
 						to="/admin/releases/$id"
 						params={{ id: track.release.id }}
-						className="btn btn-outline btn-sm"
+						className="btn btn-outline btn-sm gap-1"
 					>
-						<Disc3 className="mr-1 h-4 w-4" />
+						<Disc3 className="h-4 w-4" />
 						作品詳細
 					</Link>
 				)}

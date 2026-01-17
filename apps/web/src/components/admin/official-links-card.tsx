@@ -195,8 +195,13 @@ export function OfficialLinksCard({
 						<ExternalLink className="h-4 w-4" />
 						外部リンク
 					</h3>
-					<Button variant="outline" size="sm" onClick={openCreateDialog}>
-						<Plus className="mr-1 h-4 w-4" />
+					<Button
+						variant="outline"
+						size="sm"
+						className="gap-1"
+						onClick={openCreateDialog}
+					>
+						<Plus className="h-4 w-4" />
 						追加
 					</Button>
 				</div>

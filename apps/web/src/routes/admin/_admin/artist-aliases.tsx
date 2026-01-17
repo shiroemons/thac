@@ -300,7 +300,7 @@ function ArtistAliasesPage() {
 							? [
 									{
 										label: `選択中の${selectedCount}件を削除`,
-										icon: <Trash2 className="mr-2 h-4 w-4" />,
+										icon: <Trash2 className="h-4 w-4" />,
 										onClick: () => setIsBatchDeleteDialogOpen(true),
 									},
 								]

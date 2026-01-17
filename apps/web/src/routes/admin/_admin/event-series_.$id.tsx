@@ -102,8 +102,8 @@ function EventSeriesDetailPage() {
 				<div className="alert alert-error">
 					<span>イベントシリーズが見つかりません</span>
 				</div>
-				<Link to="/admin/event-series" className="btn btn-ghost mt-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
+				<Link to="/admin/event-series" className="btn btn-ghost mt-4 gap-1">
+					<ArrowLeft className="h-4 w-4" />
 					イベントシリーズ一覧に戻る
 				</Link>
 			</div>
@@ -144,17 +144,22 @@ function EventSeriesDetailPage() {
 					<h1 className="font-bold text-2xl">{series.name}</h1>
 				</div>
 				<div className="flex gap-2">
-					<Button variant="outline" size="sm" onClick={handleEdit}>
-						<Pencil className="mr-2 h-4 w-4" />
+					<Button
+						variant="outline"
+						size="sm"
+						className="gap-1"
+						onClick={handleEdit}
+					>
+						<Pencil className="h-4 w-4" />
 						編集
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="text-error hover:text-error"
+						className="gap-1 text-error hover:text-error"
 						onClick={() => setIsDeleteDialogOpen(true)}
 					>
-						<Trash2 className="mr-2 h-4 w-4" />
+						<Trash2 className="h-4 w-4" />
 						削除
 					</Button>
 				</div>
