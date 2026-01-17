@@ -1,25 +1,50 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Menu, Search, X } from "lucide-react";
-import { useState } from "react";
+import {
+	BarChart3,
+	Calendar,
+	Home,
+	Info,
+	Menu,
+	Music,
+	Search,
+	Users,
+	X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { ThemeSwitcher } from "../theme-switcher";
 import UserMenu from "../user-menu";
 
 const navLinks = [
-	{ to: "/original-songs", label: "原曲" },
-	{ to: "/circles", label: "サークル" },
-	{ to: "/artists", label: "アーティスト" },
-	{ to: "/events", label: "イベント" },
-	{ to: "/stats", label: "統計" },
+	{ to: "/original-songs", label: "原曲", icon: Music },
+	{ to: "/circles", label: "サークル", icon: Users },
+	{ to: "/artists", label: "アーティスト", icon: Users },
+	{ to: "/events", label: "イベント", icon: Calendar },
+	{ to: "/stats", label: "統計", icon: BarChart3 },
 ] as const;
 
 export function PublicHeader() {
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+	const [isScrolled, setIsScrolled] = useState(false);
 	const location = useLocation();
 
 	const isActive = (path: string) => location.pathname.startsWith(path);
 
+	useEffect(() => {
+		const handleScroll = () => {
+			setIsScrolled(window.scrollY > 10);
+		};
+		window.addEventListener("scroll", handleScroll, { passive: true });
+		return () => window.removeEventListener("scroll", handleScroll);
+	}, []);
+
 	return (
-		<header className="navbar sticky top-0 z-50 bg-base-100 shadow-sm">
+		<header
+			className={`navbar sticky top-0 z-50 transition-all duration-300 ${
+				isScrolled
+					? "glass-card-strong shadow-lg"
+					: "bg-base-100/70 backdrop-blur-sm"
+			}`}
+		>
 			{/* Mobile menu button */}
 			<div className="navbar-start">
 				<button
@@ -49,9 +74,11 @@ export function PublicHeader() {
 							<Link
 								to={to}
 								preload="render"
-								className={
-									isActive(to) ? "bg-base-200 font-semibold" : undefined
-								}
+								className={`relative transition-all duration-300 hover:bg-base-200/60 ${
+									isActive(to)
+										? "bg-primary/10 font-semibold text-primary after:absolute after:right-2 after:bottom-0 after:left-2 after:h-0.5 after:rounded-full after:bg-primary"
+										: "text-base-content/70 hover:text-base-content"
+								}`}
 							>
 								{label}
 							</Link>
@@ -83,46 +110,57 @@ export function PublicHeader() {
 					aria-modal="true"
 					aria-label="ナビゲーションメニュー"
 				>
-					{/* Backdrop */}
+					{/* Backdrop with fade-in animation */}
 					<div
-						className="absolute inset-0 bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+						className="absolute inset-0 animate-[fadeIn_300ms_ease-out] bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 						onClick={() => setIsDrawerOpen(false)}
 						onKeyDown={(e) => e.key === "Escape" && setIsDrawerOpen(false)}
 						role="button"
 						tabIndex={0}
 						aria-label="メニューを閉じる（背景クリック）"
 					/>
-					{/* Drawer */}
-					<aside className="absolute top-0 left-0 h-full w-64 bg-base-100 shadow-xl">
-						<div className="flex items-center justify-between p-4">
+					{/* Drawer with slide-in animation */}
+					<aside className="glass-card-strong absolute top-0 left-0 h-full w-72 animate-[slideInFromLeft_300ms_ease-out] shadow-2xl">
+						<div className="flex items-center justify-between border-base-content/10 border-b p-4">
 							<span className="font-bold text-lg">メニュー</span>
 							<button
 								type="button"
-								className="btn btn-ghost btn-circle btn-sm"
+								className="btn btn-ghost btn-circle transition-all duration-300 hover:bg-base-200/60"
 								aria-label="メニューを閉じる"
 								onClick={() => setIsDrawerOpen(false)}
 							>
 								<X className="size-5" />
 							</button>
 						</div>
-						<ul className="menu p-4">
+						<ul className="menu gap-1 p-4 [&_a]:min-h-12">
 							<li>
 								<Link
 									to="/"
 									preload="render"
+									className={`flex items-center gap-3 transition-all duration-300 ${
+										location.pathname === "/"
+											? "bg-primary/10 font-semibold text-primary"
+											: "text-base-content/70 hover:bg-base-200/60 hover:text-base-content"
+									}`}
 									onClick={() => setIsDrawerOpen(false)}
 								>
+									<Home className="size-5" />
 									ホーム
 								</Link>
 							</li>
-							{navLinks.map(({ to, label }) => (
+							{navLinks.map(({ to, label, icon: Icon }) => (
 								<li key={to}>
 									<Link
 										to={to}
 										preload="render"
-										className={isActive(to) ? "active" : undefined}
+										className={`flex items-center gap-3 transition-all duration-300 ${
+											isActive(to)
+												? "bg-primary/10 font-semibold text-primary"
+												: "text-base-content/70 hover:bg-base-200/60 hover:text-base-content"
+										}`}
 										onClick={() => setIsDrawerOpen(false)}
 									>
+										<Icon className="size-5" />
 										{label}
 									</Link>
 								</li>
@@ -131,8 +169,10 @@ export function PublicHeader() {
 								<Link
 									to="/about"
 									preload="render"
+									className="flex items-center gap-3 text-base-content/70 transition-all duration-300 hover:bg-base-200/60 hover:text-base-content"
 									onClick={() => setIsDrawerOpen(false)}
 								>
+									<Info className="size-5" />
 									About
 								</Link>
 							</li>

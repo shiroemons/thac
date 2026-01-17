@@ -1,10 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Calendar, Disc3, Loader2, Music, Users } from "lucide-react";
+import {
+	Building2,
+	Calendar,
+	Disc3,
+	Loader2,
+	Music,
+	Users,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
 	ExternalLink,
+	Pagination,
 	PublicBreadcrumb,
 	TabIcons,
 	type ViewMode,
@@ -252,21 +260,26 @@ function CircleDetailPage() {
 				]}
 			/>
 
-			{/* ヘッダー */}
-			<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
+			{/* ヘッダー - グラデーション背景 */}
+			<div className="gradient-circle rounded-2xl p-6 shadow-sm transition-shadow duration-300 hover:shadow-lg">
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-					<div className="space-y-2">
-						<div className="flex items-center gap-3">
-							{/* アバター */}
-							<div className="flex size-16 items-center justify-center rounded-full bg-primary/10 font-bold text-2xl text-primary">
-								{circle.nameInitial || circle.name.charAt(0)}
+					<div className="space-y-3">
+						<div className="flex items-center gap-4">
+							{/* アバター - Building2アイコン使用 */}
+							<div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-info/15 ring-2 ring-info/20">
+								<Building2 className="size-10 text-info" />
 							</div>
-							<div>
+							<div className="space-y-1">
 								<h1 className="font-bold text-2xl sm:text-3xl">
 									{circle.name}
 								</h1>
 								{circle.nameJa && circle.nameJa !== circle.name && (
 									<p className="text-base-content/70">{circle.nameJa}</p>
+								)}
+								{circle.nameInitial && (
+									<span className="badge badge-ghost badge-sm">
+										{circle.nameInitial}
+									</span>
 								)}
 							</div>
 						</div>
@@ -282,7 +295,7 @@ function CircleDetailPage() {
 								<ExternalLink
 									key={link.id}
 									href={link.url}
-									className="btn btn-outline btn-sm gap-1"
+									className="btn btn-outline btn-sm gap-1 transition-all duration-300 hover:shadow-md"
 								>
 									{platformNames[link.platformCode] ||
 										link.platformName ||
@@ -293,9 +306,9 @@ function CircleDetailPage() {
 					)}
 				</div>
 
-				{/* 統計カード */}
+				{/* 統計カード - glass-card-light使用 */}
 				<div className="mt-6 grid grid-cols-2 gap-4">
-					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
+					<div className="glass-card-light rounded-2xl p-4 text-center transition-all duration-300 hover:shadow-md">
 						<div className="flex items-center justify-center gap-2 text-primary">
 							<Disc3 className="size-5" />
 							<span className="font-bold text-2xl">
@@ -304,7 +317,7 @@ function CircleDetailPage() {
 						</div>
 						<p className="mt-1 text-base-content/70 text-sm">リリース</p>
 					</div>
-					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
+					<div className="glass-card-light rounded-2xl p-4 text-center transition-all duration-300 hover:shadow-md">
 						<div className="flex items-center justify-center gap-2 text-secondary">
 							<Music className="size-5" />
 							<span className="font-bold text-2xl">
@@ -338,57 +351,63 @@ function CircleDetailPage() {
 					) : releases.length === 0 ? (
 						<EmptyState type="empty" title="リリースがありません" />
 					) : viewMode === "grid" ? (
-						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
 							{releases.map((release) => (
-								<div
+								<Link
 									key={release.id}
-									className="card bg-base-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+									to="/releases/$id"
+									params={{ id: release.id }}
+									preload="intent"
+									className="group"
 								>
-									<div className="card-body p-4">
-										<Link
-											to="/releases/$id"
-											params={{ id: release.id }}
-											preload="intent"
-											className="card-title text-base hover:text-primary"
-										>
-											{release.name}
-										</Link>
-										<div className="flex flex-wrap items-center gap-2 text-base-content/60 text-sm">
-											{release.event && (
-												<Link
-													to="/events/$id"
-													params={{ id: release.event.id }}
-													preload="intent"
-													className="badge badge-outline badge-sm hover:badge-primary"
+									<div className="rounded-2xl bg-base-100 p-3 shadow-sm transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+										{/* ジャケット風のプレースホルダー */}
+										<div className="relative aspect-square overflow-hidden rounded-xl bg-gradient-to-br from-info/20 via-primary/15 to-secondary/20">
+											<div className="absolute inset-0 flex flex-col items-center justify-center p-2">
+												<Disc3 className="size-8 text-info/60 sm:size-12" />
+												<span className="mt-1 line-clamp-2 text-center font-medium text-base-content/70 text-xs sm:mt-2 sm:text-sm">
+													{release.name}
+												</span>
+											</div>
+											{/* 参加種別バッジ */}
+											<div className="absolute top-2 right-2">
+												<span
+													className={`badge badge-xs ${
+														release.participationType === "host"
+															? "badge-primary"
+															: "badge-ghost"
+													}`}
 												>
-													{release.event.name}
-												</Link>
-											)}
-											<span
-												className={`badge badge-sm ${
-													release.participationType === "host"
-														? "badge-primary"
-														: "badge-ghost"
-												}`}
-											>
-												{participationTypeNames[release.participationType] ||
-													release.participationType}
-											</span>
+													{participationTypeNames[release.participationType] ||
+														release.participationType}
+												</span>
+											</div>
 										</div>
-										<div className="mt-2 flex items-center gap-4 text-base-content/60 text-sm">
-											{release.releaseDate && (
+										{/* タイトル・情報 */}
+										<div className="mt-2 min-h-[44px] space-y-1">
+											<h3 className="line-clamp-2 font-medium text-sm leading-tight transition-colors duration-300 group-hover:text-primary">
+												{release.name}
+											</h3>
+											<div className="flex flex-wrap items-center gap-1 text-base-content/60 text-xs">
+												{release.releaseDate && (
+													<span className="flex items-center gap-1">
+														<Calendar className="size-3" />
+														{release.releaseDate.slice(0, 4)}
+													</span>
+												)}
 												<span className="flex items-center gap-1">
-													<Calendar className="size-3" />
-													{release.releaseDate}
+													<Music className="size-3" />
+													{release.trackCount}曲
+												</span>
+											</div>
+											{release.event && (
+												<span className="badge badge-outline badge-xs">
+													{release.event.name}
 												</span>
 											)}
-											<span className="flex items-center gap-1">
-												<Music className="size-3" />
-												{release.trackCount}曲
-											</span>
 										</div>
 									</div>
-								</div>
+								</Link>
 							))}
 						</div>
 					) : (
@@ -405,13 +424,16 @@ function CircleDetailPage() {
 								</thead>
 								<tbody>
 									{releases.map((release) => (
-										<tr key={release.id} className="hover:bg-base-200/50">
-											<td>
+										<tr
+											key={release.id}
+											className="transition-colors duration-300 hover:bg-base-200/50"
+										>
+											<td className="min-h-[44px]">
 												<Link
 													to="/releases/$id"
 													params={{ id: release.id }}
 													preload="intent"
-													className="font-medium hover:text-primary"
+													className="font-medium transition-colors duration-300 hover:text-primary"
 												>
 													{release.name}
 												</Link>
@@ -422,7 +444,7 @@ function CircleDetailPage() {
 														to="/events/$id"
 														params={{ id: release.event.id }}
 														preload="intent"
-														className="hover:text-primary"
+														className="transition-colors duration-300 hover:text-primary"
 													>
 														{release.event.name}
 													</Link>
@@ -457,27 +479,11 @@ function CircleDetailPage() {
 
 					{/* ページネーション */}
 					{releasesTotalPages > 1 && (
-						<div className="flex justify-center gap-2">
-							<button
-								type="button"
-								className="btn btn-sm"
-								disabled={releasesPage <= 1}
-								onClick={() => fetchReleases(releasesPage - 1)}
-							>
-								前へ
-							</button>
-							<span className="flex items-center px-2 text-sm">
-								{releasesPage} / {releasesTotalPages}
-							</span>
-							<button
-								type="button"
-								className="btn btn-sm"
-								disabled={releasesPage >= releasesTotalPages}
-								onClick={() => fetchReleases(releasesPage + 1)}
-							>
-								次へ
-							</button>
-						</div>
+						<Pagination
+							currentPage={releasesPage}
+							totalPages={releasesTotalPages}
+							onPageChange={(page) => fetchReleases(page)}
+						/>
 					)}
 				</>
 			)}
@@ -504,13 +510,16 @@ function CircleDetailPage() {
 								</thead>
 								<tbody>
 									{tracks.map((track) => (
-										<tr key={track.id} className="hover:bg-base-200/50">
-											<td>
+										<tr
+											key={track.id}
+											className="transition-colors duration-300 hover:bg-base-200/50"
+										>
+											<td className="min-h-[44px]">
 												<Link
 													to="/tracks/$id"
 													params={{ id: track.id }}
 													preload="intent"
-													className="font-medium hover:text-primary"
+													className="font-medium transition-colors duration-300 hover:text-primary"
 												>
 													{track.name}
 												</Link>
@@ -521,7 +530,7 @@ function CircleDetailPage() {
 														to="/releases/$id"
 														params={{ id: track.releaseId }}
 														preload="intent"
-														className="hover:text-primary"
+														className="transition-colors duration-300 hover:text-primary"
 													>
 														{track.releaseName || "-"}
 													</Link>
@@ -537,7 +546,7 @@ function CircleDetailPage() {
 															to="/artists/$id"
 															params={{ id: artist.artistAliasId }}
 															preload="intent"
-															className="inline-flex items-center gap-1 hover:text-primary"
+															className="inline-flex min-h-[44px] items-center gap-1 transition-colors duration-300 hover:text-primary"
 														>
 															<Users className="size-3" />
 															<span>{artist.creditName}</span>
@@ -558,7 +567,7 @@ function CircleDetailPage() {
 														to="/original-songs/$id"
 														params={{ id: track.originalSong.id }}
 														preload="intent"
-														className="text-base-content/70 hover:text-primary"
+														className="text-base-content/70 transition-colors duration-300 hover:text-primary"
 													>
 														{track.originalSong.name}
 													</Link>
@@ -575,27 +584,11 @@ function CircleDetailPage() {
 
 					{/* ページネーション */}
 					{tracksTotalPages > 1 && (
-						<div className="flex justify-center gap-2">
-							<button
-								type="button"
-								className="btn btn-sm"
-								disabled={tracksPage <= 1}
-								onClick={() => fetchTracks(tracksPage - 1)}
-							>
-								前へ
-							</button>
-							<span className="flex items-center px-2 text-sm">
-								{tracksPage} / {tracksTotalPages}
-							</span>
-							<button
-								type="button"
-								className="btn btn-sm"
-								disabled={tracksPage >= tracksTotalPages}
-								onClick={() => fetchTracks(tracksPage + 1)}
-							>
-								次へ
-							</button>
-						</div>
+						<Pagination
+							currentPage={tracksPage}
+							totalPages={tracksTotalPages}
+							onPageChange={(page) => fetchTracks(page)}
+						/>
 					)}
 				</>
 			)}

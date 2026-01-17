@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_public/")({
 function HomePage() {
 	const { stats } = Route.useLoaderData();
 	return (
-		<div className="scrollbar-hide -mx-4 -my-6 h-[calc(100vh-4rem)] snap-y snap-mandatory overflow-y-auto">
+		<div className="scrollbar-hide -mx-3 -my-4 h-[calc(100vh-4rem)] snap-y snap-mandatory overflow-y-auto sm:-mx-4 sm:-my-6 lg:-mx-6">
 			<div className="snap-start">
 				<HeroSection stats={stats} />
 			</div>
