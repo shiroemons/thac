@@ -330,3 +330,25 @@ animate-pulse
 - [ ] 原曲: `badge-secondary`
 - [ ] アーティスト: `badge-accent`
 - [ ] イベント: `badge-info`
+
+### アクセシビリティ
+- [ ] フォーカス: `focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none`
+- [ ] タブ: `aria-controls` でコンテンツと関連付け
+- [ ] トグル: `aria-expanded` で開閉状態を伝達
+- [ ] グループ: `role="group" aria-label="..."` でグループ化
+
+### 見出し階層
+- [ ] h1: `font-bold text-5xl` (ページタイトル)
+- [ ] h2: `font-bold text-3xl` (セクションタイトル)
+- [ ] h3: `font-semibold text-xl` (サブセクション)
+- [ ] h4: `font-medium text-lg` (リストヘッダー)
+
+### 区切り線
+- [ ] 水平: `border-base-content/10 border-b`
+- [ ] 縦: `w-px bg-base-content/20`
+
+### 空状態の背景色
+- [ ] empty: `bg-base-200` (データなし)
+- [ ] error: `bg-error/5` (エラー)
+- [ ] filter: `bg-warning/5` (フィルター結果なし)
+- [ ] search: `bg-info/5` (検索結果なし)

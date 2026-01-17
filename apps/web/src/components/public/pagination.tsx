@@ -98,7 +98,7 @@ export function Pagination({
 				{/* 最初のページへ */}
 				<button
 					type="button"
-					className="btn btn-ghost btn-sm join-item"
+					className="btn btn-ghost btn-sm join-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 					onClick={() => handlePageChange(1)}
 					disabled={currentPage === 1}
 					aria-label="最初のページへ"
@@ -109,7 +109,7 @@ export function Pagination({
 				{/* 前のページへ */}
 				<button
 					type="button"
-					className="btn btn-ghost btn-sm join-item"
+					className="btn btn-ghost btn-sm join-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 					onClick={() => handlePageChange(currentPage - 1)}
 					disabled={currentPage === 1}
 					aria-label="前のページへ"
@@ -135,7 +135,7 @@ export function Pagination({
 						<button
 							key={page}
 							type="button"
-							className={`btn btn-sm join-item ${
+							className={`btn btn-sm join-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
 								currentPage === page ? "btn-primary" : "btn-ghost"
 							}`}
 							onClick={() => handlePageChange(page)}
@@ -149,7 +149,7 @@ export function Pagination({
 				{/* 次のページへ */}
 				<button
 					type="button"
-					className="btn btn-ghost btn-sm join-item"
+					className="btn btn-ghost btn-sm join-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 					onClick={() => handlePageChange(currentPage + 1)}
 					disabled={currentPage === totalPages}
 					aria-label="次のページへ"
@@ -160,7 +160,7 @@ export function Pagination({
 				{/* 最後のページへ */}
 				<button
 					type="button"
-					className="btn btn-ghost btn-sm join-item"
+					className="btn btn-ghost btn-sm join-item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
 					onClick={() => handlePageChange(totalPages)}
 					disabled={currentPage === totalPages}
 					aria-label="最後のページへ"

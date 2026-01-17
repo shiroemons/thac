@@ -69,7 +69,7 @@ export function StatsCards() {
 	return (
 		<section className="py-8">
 			<div className="mb-6 flex items-center justify-between">
-				<h2 className="font-bold text-xl">データ統計</h2>
+				<h2 className="font-bold text-3xl">データ統計</h2>
 				<Link
 					to="/stats"
 					preload="render"

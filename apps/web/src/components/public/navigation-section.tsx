@@ -65,7 +65,7 @@ export function NavigationSection() {
 
 			<div className="relative mx-auto max-w-6xl">
 				<div className="mb-16 text-center">
-					<h2 className="mb-4 font-bold text-4xl tracking-tight md:text-5xl">
+					<h2 className="mb-4 font-bold text-3xl tracking-tight md:text-5xl">
 						<span className="bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
 							コンテンツを探索
 						</span>

@@ -39,7 +39,7 @@ export function FeaturesSection() {
 
 			<div className="relative mx-auto max-w-6xl">
 				<div className="mb-16 text-center">
-					<h2 className="mb-4 font-bold text-4xl tracking-tight md:text-5xl">
+					<h2 className="mb-4 font-bold text-3xl tracking-tight md:text-5xl">
 						<span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
 							東方編曲録でできること
 						</span>
@@ -51,7 +51,7 @@ export function FeaturesSection() {
 					</p>
 				</div>
 
-				<div className="grid gap-8 md:grid-cols-2">
+				<div className="grid gap-8 sm:grid-cols-2">
 					{features.map((feature) => (
 						<Card
 							key={feature.title}

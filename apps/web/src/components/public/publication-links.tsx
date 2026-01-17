@@ -80,11 +80,11 @@ export function PublicationLinks({
 			{/* 埋め込みプレイヤー */}
 			{embeds.length > 0 && (
 				<div className="space-y-4">
-					<h3 className="flex items-center gap-2 font-semibold text-lg">
+					<h3 className="flex items-center gap-2 font-semibold text-xl">
 						<Video className="size-5" />
 						メディア
 					</h3>
-					<div className="grid gap-4 md:grid-cols-2">
+					<div className="grid gap-4 sm:grid-cols-2">
 						{embeds.map((embed, index) => (
 							<MediaEmbed
 								key={`${embed.type}-${embed.id}-${index}`}
@@ -98,7 +98,7 @@ export function PublicationLinks({
 			{/* リンク一覧 */}
 			{!isGroupedPublicationsEmpty(grouped) && (
 				<div className="space-y-4">
-					<h3 className="flex items-center gap-2 font-semibold text-lg">
+					<h3 className="flex items-center gap-2 font-semibold text-xl">
 						<ExternalLinkIcon className="size-5" />
 						{title}
 					</h3>

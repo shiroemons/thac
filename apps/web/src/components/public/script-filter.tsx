@@ -28,7 +28,7 @@ export function ScriptFilter({ value, onChange }: ScriptFilterProps) {
 				<button
 					key={category}
 					type="button"
-					className={`btn btn-sm ${value === category ? "btn-primary" : "btn-ghost"}`}
+					className={`btn btn-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${value === category ? "btn-primary" : "btn-ghost"}`}
 					onClick={() => onChange(category)}
 					aria-pressed={value === category}
 				>
@@ -55,7 +55,7 @@ export function AlphabetSubFilter({ value, onChange }: AlphabetSubFilterProps) {
 			<div className="flex flex-wrap gap-1">
 				<button
 					type="button"
-					className={`btn btn-xs ${value === null ? "btn-primary" : "btn-ghost"}`}
+					className={`btn btn-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${value === null ? "btn-primary" : "btn-ghost"}`}
 					onClick={() => onChange(null)}
 					aria-pressed={value === null}
 				>
@@ -65,7 +65,7 @@ export function AlphabetSubFilter({ value, onChange }: AlphabetSubFilterProps) {
 					<button
 						key={initial}
 						type="button"
-						className={`btn btn-xs min-w-8 ${value === initial ? "btn-primary" : "btn-ghost"}`}
+						className={`btn btn-xs min-w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${value === initial ? "btn-primary" : "btn-ghost"}`}
 						onClick={() => onChange(initial)}
 						aria-pressed={value === initial}
 					>
@@ -93,7 +93,7 @@ export function KanaSubFilter({ value, onChange }: KanaSubFilterProps) {
 			<div className="flex flex-wrap gap-1">
 				<button
 					type="button"
-					className={`btn btn-xs ${value === null ? "btn-primary" : "btn-ghost"}`}
+					className={`btn btn-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${value === null ? "btn-primary" : "btn-ghost"}`}
 					onClick={() => onChange(null)}
 					aria-pressed={value === null}
 				>
@@ -103,7 +103,7 @@ export function KanaSubFilter({ value, onChange }: KanaSubFilterProps) {
 					<button
 						key={row}
 						type="button"
-						className={`btn btn-xs ${value === row ? "btn-primary" : "btn-ghost"}`}
+						className={`btn btn-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${value === row ? "btn-primary" : "btn-ghost"}`}
 						onClick={() => onChange(row)}
 						aria-pressed={value === row}
 					>
