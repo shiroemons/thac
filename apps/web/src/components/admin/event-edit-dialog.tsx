@@ -322,7 +322,7 @@ export function EventEditDialog({
 								<Button
 									variant="ghost"
 									size="sm"
-									className="h-auto p-0 text-primary text-xs hover:underline"
+									className="h-auto p-0 text-primary text-sm hover:underline"
 									onClick={() => setIsSeriesDialogOpen(true)}
 									disabled={isPending}
 								>

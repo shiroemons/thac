@@ -279,7 +279,7 @@ function PlatformsPage() {
 				/>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}
@@ -464,7 +464,7 @@ function PlatformsPage() {
 												</TableCell>
 											)}
 											{isVisible("urlPattern") && (
-												<TableCell className="max-w-[300px] truncate font-mono text-base-content/70 text-xs">
+												<TableCell className="max-w-[300px] truncate font-mono text-base-content/70 text-sm">
 													{p.urlPattern || "-"}
 												</TableCell>
 											)}

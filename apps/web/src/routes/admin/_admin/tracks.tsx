@@ -400,7 +400,7 @@ function TracksPage() {
 				</DataTableActionBar>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}
@@ -558,7 +558,7 @@ function TracksPage() {
 												/>
 											</TableCell>
 											{isVisible("id") && (
-												<TableCell className="font-mono text-base-content/50 text-xs">
+												<TableCell className="font-mono text-base-content/50 text-sm">
 													{track.id}
 												</TableCell>
 											)}
@@ -800,7 +800,7 @@ function TracksPage() {
 							/>
 						</div>
 						{createMutation.error && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 								{createMutation.error instanceof Error
 									? createMutation.error.message
 									: "作成に失敗しました"}

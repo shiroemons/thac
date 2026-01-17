@@ -329,7 +329,7 @@ function ArtistAliasesPage() {
 				</DataTableActionBar>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}
@@ -460,7 +460,7 @@ function ArtistAliasesPage() {
 												/>
 											</TableCell>
 											{isVisible("id") && (
-												<TableCell className="font-mono text-base-content/50 text-xs">
+												<TableCell className="font-mono text-base-content/50 text-sm">
 													{alias.id}
 												</TableCell>
 											)}

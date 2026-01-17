@@ -702,7 +702,7 @@ function SongMappingRow({
 	};
 
 	return (
-		<div className="flex items-center gap-4 rounded-lg border border-base-300 bg-base-100 p-3">
+		<div className="flex items-center gap-4 rounded-lg border border-base-300 bg-base-100 p-4">
 			<div className="flex-1">
 				<div className="flex items-center gap-2">
 					<Music className="h-4 w-4 text-base-content/40" />

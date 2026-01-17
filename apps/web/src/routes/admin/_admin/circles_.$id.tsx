@@ -708,7 +708,7 @@ function CircleDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{linkCreateMutation.error || linkUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									linkCreateMutation.error || linkUpdateMutation.error,
 								)}

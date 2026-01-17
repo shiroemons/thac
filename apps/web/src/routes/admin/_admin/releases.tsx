@@ -461,7 +461,7 @@ function ReleasesPage() {
 				</DataTableActionBar>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}
@@ -607,7 +607,7 @@ function ReleasesPage() {
 												/>
 											</TableCell>
 											{isVisible("id") && (
-												<TableCell className="font-mono text-base-content/50 text-xs">
+												<TableCell className="font-mono text-base-content/50 text-sm">
 													{release.id}
 												</TableCell>
 											)}
@@ -754,7 +754,7 @@ function ReleasesPage() {
 							<Label htmlFor="create-name">
 								作品名 <span className="text-error">*</span>
 							</Label>
-							<p className="text-base-content/70 text-xs">
+							<p className="text-base-content/70 text-sm">
 								アルバム名、シングル名、EP名などを入力してください
 							</p>
 							<Input

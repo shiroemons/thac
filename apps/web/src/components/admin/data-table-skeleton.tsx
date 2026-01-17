@@ -37,7 +37,7 @@ function DataTableSkeleton({
 			{/* Table Skeleton */}
 			<div className="overflow-hidden">
 				{/* Header */}
-				<div className="flex gap-4 border-base-300 border-b bg-base-200/50 px-4 py-3">
+				<div className="flex gap-4 border-base-300 border-b bg-base-200/50 px-4 py-4">
 					{Array.from({ length: columns }).map((_, i) => (
 						// biome-ignore lint/suspicious/noArrayIndexKey: Skeleton placeholder
 						<Skeleton key={i} className="h-4 flex-1" />

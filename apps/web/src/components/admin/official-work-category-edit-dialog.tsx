@@ -193,7 +193,7 @@ export function OfficialWorkCategoryEditDialog({
 								autoComplete="off"
 							/>
 							{mode === "edit" && (
-								<p className="text-muted-foreground text-xs">
+								<p className="text-muted-foreground text-sm">
 									コードは変更できません
 								</p>
 							)}

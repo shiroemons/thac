@@ -453,7 +453,7 @@ function EventsPage() {
 				/>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-3 text-error text-sm">
+					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
 						{displayError}
 					</div>
 				)}
@@ -574,7 +574,7 @@ function EventsPage() {
 									events.map((event) => (
 										<TableRow key={event.id}>
 											{isVisible("id") && (
-												<TableCell className="font-mono text-base-content/50 text-xs">
+												<TableCell className="font-mono text-base-content/50 text-sm">
 													{event.id}
 												</TableCell>
 											)}
@@ -712,7 +712,7 @@ function EventsPage() {
 							/>
 						</div>
 						{createSeriesMutation.error && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 								{createSeriesMutation.error instanceof Error
 									? createSeriesMutation.error.message
 									: "シリーズの作成に失敗しました"}
@@ -773,7 +773,7 @@ function EventsPage() {
 								<Button
 									variant="ghost"
 									size="sm"
-									className="h-auto p-0 text-primary text-xs hover:underline"
+									className="h-auto p-0 text-primary text-sm hover:underline"
 									onClick={() => setIsSeriesDialogOpen(true)}
 								>
 									+ 新規シリーズ作成
@@ -986,7 +986,7 @@ function EventsPage() {
 							/>
 						</div>
 						{createDayMutation.error || updateDayMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									createDayMutation.error || updateDayMutation.error,
 									"開催日の保存に失敗しました",

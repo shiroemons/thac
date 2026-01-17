@@ -1625,7 +1625,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{discCreateMutation.error || discUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									discCreateMutation.error || discUpdateMutation.error,
 								)}
@@ -1698,7 +1698,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{circleAddMutation.error && (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(circleAddMutation.error)}
 							</div>
 						)}
@@ -1769,7 +1769,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{trackCreateMutation.error || trackUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									trackCreateMutation.error || trackUpdateMutation.error,
 								)}
@@ -1942,7 +1942,7 @@ function ReleaseDetailPage() {
 														<div>
 															<p className="font-medium">{credit.creditName}</p>
 															{credit.artistAlias && (
-																<p className="text-base-content/70 text-xs">
+																<p className="text-base-content/70 text-sm">
 																	名義
 																</p>
 															)}
@@ -2022,7 +2022,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{creditCreateMutation.error || creditUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									creditCreateMutation.error || creditUpdateMutation.error,
 								)}
@@ -2046,7 +2046,7 @@ function ReleaseDetailPage() {
 								clearable={false}
 							/>
 							{creditForm.artistId && (
-								<p className="text-base-content/70 text-xs">
+								<p className="text-base-content/70 text-sm">
 									アーティスト:{" "}
 									{artistsData?.data.find((a) => a.id === creditForm.artistId)
 										?.name ?? "-"}{" "}
@@ -2073,7 +2073,7 @@ function ReleaseDetailPage() {
 								}
 								placeholder="盤面に表示される名前"
 							/>
-							<p className="text-base-content/70 text-xs">
+							<p className="text-base-content/70 text-sm">
 								アーティスト名義から自動入力されます。必要に応じて編集してください。
 							</p>
 						</div>
@@ -2098,7 +2098,7 @@ function ReleaseDetailPage() {
 
 						<div className="grid gap-2">
 							<Label>役割</Label>
-							<div className="flex flex-wrap gap-2 rounded-md border border-base-300 p-3">
+							<div className="flex flex-wrap gap-2 rounded-md border border-base-300 p-4">
 								{creditRolesData?.data.map((role) => (
 									<label
 										key={role.code}
@@ -2123,7 +2123,7 @@ function ReleaseDetailPage() {
 									</span>
 								)}
 							</div>
-							<p className="text-base-content/70 text-xs">
+							<p className="text-base-content/70 text-sm">
 								選択した順序で役割が表示されます。
 							</p>
 						</div>
@@ -2174,7 +2174,7 @@ function ReleaseDetailPage() {
 					<div className="grid gap-4 py-4">
 						{publicationCreateMutation.error ||
 						publicationUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									publicationCreateMutation.error ||
 										publicationUpdateMutation.error,
@@ -2268,7 +2268,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{janCodeCreateMutation.error || janCodeUpdateMutation.error ? (
-							<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+							<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 								{getErrorMessage(
 									janCodeCreateMutation.error || janCodeUpdateMutation.error,
 								)}
@@ -2292,7 +2292,7 @@ function ReleaseDetailPage() {
 								disabled={!!editingJanCode}
 								className="font-mono"
 							/>
-							<p className="text-base-content/70 text-xs">
+							<p className="text-base-content/70 text-sm">
 								8桁または13桁の数字（編集時は変更不可）
 							</p>
 						</div>

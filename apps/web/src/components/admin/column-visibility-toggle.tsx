@@ -36,7 +36,7 @@ function ColumnVisibilityToggle({
 					{columns.map((column) => (
 						<label
 							key={column.key}
-							className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-base-200"
+							className="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-base-200"
 						>
 							<Checkbox
 								id={`column-toggle-${column.key}`}

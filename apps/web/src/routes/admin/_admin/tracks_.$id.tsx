@@ -1058,7 +1058,7 @@ function TrackDetailPage() {
 
 						<div className="border-base-300 border-t pt-4">
 							<p className="text-base-content/70 text-sm">ID</p>
-							<p className="font-mono text-xs">{track.id}</p>
+							<p className="font-mono text-sm">{track.id}</p>
 						</div>
 					</div>
 				</div>
@@ -1272,7 +1272,7 @@ function TrackDetailPage() {
 													relation.officialSongId ??
 													"-"}
 												{relation.customSongName && (
-													<span className="ml-2 text-base-content/50 text-xs">
+													<span className="ml-2 text-base-content/50 text-sm">
 														（カスタム）
 													</span>
 												)}
@@ -1562,7 +1562,7 @@ function TrackDetailPage() {
 								clearable={true}
 							/>
 							{creditForm.artistId && (
-								<p className="text-base-content/70 text-xs">
+								<p className="text-base-content/70 text-sm">
 									アーティスト:{" "}
 									{artistsData?.data.find((a) => a.id === creditForm.artistId)
 										?.name ?? "-"}{" "}
@@ -1621,7 +1621,7 @@ function TrackDetailPage() {
 						</div>
 					</div>
 					{creditCreateMutation.error && (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+						<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 							{getErrorMessage(creditCreateMutation.error)}
 						</div>
 					)}
@@ -1671,7 +1671,7 @@ function TrackDetailPage() {
 								clearable={true}
 							/>
 							{creditForm.artistId && (
-								<p className="text-base-content/70 text-xs">
+								<p className="text-base-content/70 text-sm">
 									アーティスト:{" "}
 									{artistsData?.data.find((a) => a.id === creditForm.artistId)
 										?.name ?? "-"}{" "}
@@ -1730,7 +1730,7 @@ function TrackDetailPage() {
 						</div>
 					</div>
 					{creditUpdateMutation.error ? (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+						<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 							{getErrorMessage(creditUpdateMutation.error)}
 						</div>
 					) : null}
@@ -1870,7 +1870,7 @@ function TrackDetailPage() {
 							? officialSongUpdateMutation.error
 							: officialSongCreateMutation.error
 					) ? (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+						<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 							{getErrorMessage(
 								editingOfficialSong
 									? officialSongUpdateMutation.error
@@ -1951,7 +1951,7 @@ function TrackDetailPage() {
 						</div>
 					</div>
 					{derivationCreateMutation.error && (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+						<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 							{getErrorMessage(derivationCreateMutation.error)}
 						</div>
 					)}
@@ -2028,7 +2028,7 @@ function TrackDetailPage() {
 							? publicationUpdateMutation.error
 							: publicationCreateMutation.error
 					) ? (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+						<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 							{getErrorMessage(
 								editingPublication
 									? publicationUpdateMutation.error
@@ -2101,7 +2101,7 @@ function TrackDetailPage() {
 									maxLength={12}
 									className="font-mono"
 								/>
-								<p className="text-base-content/70 text-xs">
+								<p className="text-base-content/70 text-sm">
 									12桁：国コード(2) + 登録者コード(3) + 年(2) + コード(5)
 								</p>
 							</div>
@@ -2123,7 +2123,7 @@ function TrackDetailPage() {
 							? isrcUpdateMutation.error
 							: isrcCreateMutation.error
 					) ? (
-						<div className="rounded-md bg-error/10 p-3 text-error text-sm">
+						<div className="rounded-md bg-error/10 p-4 text-error text-sm">
 							{getErrorMessage(
 								editingIsrc
 									? isrcUpdateMutation.error

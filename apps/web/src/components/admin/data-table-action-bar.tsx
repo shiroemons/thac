@@ -81,7 +81,7 @@ function DataTableActionBar({
 			)}
 			{...props}
 		>
-			<div className="flex flex-1 items-center gap-3">
+			<div className="flex flex-1 items-center gap-4">
 				{onSearchChange && (
 					<SearchInput
 						id="table-search"

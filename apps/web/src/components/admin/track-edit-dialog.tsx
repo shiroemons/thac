@@ -306,7 +306,7 @@ export function TrackEditDialog({
 								{releasesData?.data.find((r) => r.id === track.releaseId)
 									?.name || "未選択"}
 							</p>
-							<p className="text-base-content/50 text-xs">
+							<p className="text-base-content/50 text-sm">
 								※作品の変更はサポートされていません。変更する場合は削除後に再作成してください。
 							</p>
 						</div>
@@ -408,7 +408,7 @@ export function TrackEditDialog({
 													?.name || "未設定"
 											: "未設定"}
 									</p>
-									<p className="text-base-content/50 text-xs">
+									<p className="text-base-content/50 text-sm">
 										※作品に紐づくトラックのイベントは変更できません
 									</p>
 								</>
@@ -487,7 +487,7 @@ export function TrackEditDialog({
 								disabled={!isReleaseDateEditable}
 							/>
 							{!isReleaseDateEditable && (
-								<p className="text-base-content/50 text-xs">
+								<p className="text-base-content/50 text-sm">
 									※イベント日が設定されている場合、リリース日は自動設定されます
 								</p>
 							)}

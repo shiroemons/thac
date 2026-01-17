@@ -66,7 +66,7 @@ function ConflictDialog<T>({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-[500px]" showCloseButton={false}>
 				<DialogHeader>
-					<div className="flex items-center gap-3">
+					<div className="flex items-center gap-4">
 						<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-warning/10">
 							<AlertTriangle className="h-4 w-4 text-warning" />
 						</div>

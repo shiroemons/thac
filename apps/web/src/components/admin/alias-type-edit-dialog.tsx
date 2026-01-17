@@ -182,7 +182,7 @@ export function AliasTypeEditDialog({
 								disabled={isPending || mode === "edit"}
 							/>
 							{mode === "edit" && (
-								<p className="text-muted-foreground text-xs">
+								<p className="text-muted-foreground text-sm">
 									コードは変更できません
 								</p>
 							)}
