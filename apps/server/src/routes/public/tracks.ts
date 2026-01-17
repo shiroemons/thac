@@ -242,7 +242,7 @@ tracksRouter.get("/:id", async (c) => {
 		// クレジットデータを構築
 		const credits = creditsData.map((credit) => ({
 			artistId: credit.artistId,
-			artistAliasId: credit.artistAliasId,
+			artistAliasId: credit.artistAliasId ?? `${credit.artistId}__main__`,
 			creditName: credit.creditName,
 			roles: rolesByCredit.get(credit.creditId) ?? [],
 		}));

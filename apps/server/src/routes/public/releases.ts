@@ -274,7 +274,7 @@ releasesRouter.get("/:id", async (c) => {
 			}
 			existing.push({
 				artistId: credit.artistId,
-				artistAliasId: credit.artistAliasId,
+				artistAliasId: credit.artistAliasId ?? `${credit.artistId}__main__`,
 				creditName: credit.creditName,
 				aliasName: credit.aliasName,
 				artistName: credit.artistName,

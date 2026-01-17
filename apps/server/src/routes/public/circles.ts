@@ -518,7 +518,7 @@ circlesRouter.get("/:id/tracks", async (c) => {
 			} else {
 				existing.push({
 					id: cr.artistId,
-					artistAliasId: cr.artistAliasId,
+					artistAliasId: cr.artistAliasId ?? `${cr.artistId}__main__`,
 					creditName: cr.creditName,
 					roles: cr.roleName ? [cr.roleName] : [],
 				});

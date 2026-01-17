@@ -315,15 +315,12 @@ function TrackTable({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 											credit.aliasName ||
 											credit.artistName ||
 											"Unknown";
-										// リンク先ID: artistAliasId があればそれを使用、なければ artistId__main__
-										const linkId =
-											credit.artistAliasId ?? `${credit.artistId}__main__`;
 										return (
-											<span key={credit.artistAliasId ?? credit.artistId}>
+											<span key={credit.artistAliasId}>
 												{idx > 0 && ", "}
 												<Link
 													to="/artists/$id"
-													params={{ id: linkId }}
+													params={{ id: credit.artistAliasId }}
 													preload="intent"
 													className="hover:text-primary"
 												>
