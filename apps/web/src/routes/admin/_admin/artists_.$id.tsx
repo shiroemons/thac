@@ -224,7 +224,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 基本情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 
@@ -268,7 +268,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 別名義一覧カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
@@ -353,7 +353,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 統計情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">統計情報</h2>
 
@@ -423,7 +423,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 参加サークルカード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
 						<Users className="h-4 w-4" />
@@ -487,7 +487,7 @@ function ArtistDetailPage() {
 			</div>
 
 			{/* 関連楽曲カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
 						<Music className="h-4 w-4" />

@@ -309,7 +309,7 @@ function CircleDetailPage() {
 			</div>
 
 			{/* 基本情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 
@@ -353,7 +353,7 @@ function CircleDetailPage() {
 			</div>
 
 			{/* 外部リンク一覧カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center justify-between">
 						<h2 className="card-title">
@@ -450,7 +450,7 @@ function CircleDetailPage() {
 			</div>
 
 			{/* 統計情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
 						<BarChart3 className="h-4 w-4" />
@@ -514,7 +514,7 @@ function CircleDetailPage() {
 			</div>
 
 			{/* 参加アーティストカード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<div className="flex items-center gap-2">
 						<Users className="h-4 w-4" />
@@ -614,7 +614,7 @@ function CircleDetailPage() {
 			</div>
 
 			{/* 参加形態別リリース一覧カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">参加作品一覧</h2>
 

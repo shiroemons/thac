@@ -228,7 +228,7 @@ export function OfficialLinksCard({
 													onClick={() => handleMoveUp(index)}
 													title="上へ移動"
 												>
-													<ArrowUp className="h-3 w-3" />
+													<ArrowUp className="h-4 w-4" />
 												</Button>
 												<Button
 													variant="ghost"
@@ -240,7 +240,7 @@ export function OfficialLinksCard({
 													onClick={() => handleMoveDown(index)}
 													title="下へ移動"
 												>
-													<ArrowDown className="h-3 w-3" />
+													<ArrowDown className="h-4 w-4" />
 												</Button>
 											</div>
 										</TableCell>
@@ -257,7 +257,7 @@ export function OfficialLinksCard({
 												<span className="max-w-[300px] truncate">
 													{link.url}
 												</span>
-												<ExternalLink className="h-3 w-3 flex-shrink-0" />
+												<ExternalLink className="h-4 w-4 flex-shrink-0" />
 											</a>
 										</TableCell>
 										<TableCell>
@@ -268,7 +268,7 @@ export function OfficialLinksCard({
 													onClick={() => openEditDialog(link)}
 													title="編集"
 												>
-													<Pencil className="h-3 w-3" />
+													<Pencil className="h-4 w-4" />
 												</Button>
 												<Button
 													variant="ghost"
@@ -278,7 +278,7 @@ export function OfficialLinksCard({
 													title="削除"
 													className="text-error"
 												>
-													<Trash2 className="h-3 w-3" />
+													<Trash2 className="h-4 w-4" />
 												</Button>
 											</div>
 										</TableCell>

@@ -330,7 +330,7 @@ function LegacyImportPage() {
 			</div>
 
 			{/* ステップコンテンツ */}
-			<div className="card border border-base-300 bg-base-100 shadow-sm">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					{step === "upload" && (
 						<UploadStep
@@ -629,7 +629,7 @@ function MappingStep({
 			</div>
 
 			{/* 統計 */}
-			<div className="stats w-full border border-base-300 shadow-sm">
+			<div className="stats w-full border border-base-300">
 				<div className="stat">
 					<div className="stat-title">レコード数</div>
 					<div className="stat-value text-2xl">{records.length}</div>
@@ -779,7 +779,10 @@ function EventRegistrationStep({
 						</p>
 					</div>
 					{existingEventsWithDays.map((event) => (
-						<div key={event.eventId} className="card bg-base-200 p-4 shadow-sm">
+						<div
+							key={event.eventId}
+							className="card border border-base-300 bg-base-200 p-4"
+						>
 							<h4 className="mb-3 font-medium">{event.eventName}</h4>
 							<div className="flex flex-wrap gap-4">
 								{event.eventDays.map((day) => (
@@ -1127,7 +1130,7 @@ function ImportingStep({
 
 			{/* エンティティ別進捗 */}
 			{entityProgress && (
-				<div className="stats stats-vertical lg:stats-horizontal w-full border border-base-300 shadow-sm">
+				<div className="stats stats-vertical lg:stats-horizontal w-full border border-base-300">
 					{(
 						Object.entries(entityLabels) as [keyof EntityProgressMap, string][]
 					).map(([key, label]) => {

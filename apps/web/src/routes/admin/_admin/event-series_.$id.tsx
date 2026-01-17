@@ -171,7 +171,7 @@ function EventSeriesDetailPage() {
 			)}
 
 			{/* 基本情報カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">基本情報</h2>
 
@@ -189,7 +189,7 @@ function EventSeriesDetailPage() {
 			</div>
 
 			{/* 所属イベント一覧カード */}
-			<div className="card bg-base-100 shadow-xl">
+			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">所属イベント一覧</h2>
 
