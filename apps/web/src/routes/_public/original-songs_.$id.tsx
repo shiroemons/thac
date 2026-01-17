@@ -11,6 +11,7 @@ import {
 	Users,
 } from "lucide-react";
 import { ExternalLink, PublicBreadcrumb } from "@/components/public";
+import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { formatNumber } from "@/lib/format";
 import { createPublicOriginalSongHead } from "@/lib/head";
 import {
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/_public/original-songs_/$id")({
 		}
 	},
 	head: ({ loaderData }) => createPublicOriginalSongHead(loaderData?.song),
+	headers: () => CACHE_HEADERS.PUBLIC_DETAIL,
 	component: OriginalSongDetailPage,
 });
 

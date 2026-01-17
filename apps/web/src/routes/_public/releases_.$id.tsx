@@ -6,6 +6,7 @@ import {
 	PublicationLinks,
 	PublicBreadcrumb,
 } from "@/components/public";
+import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPublicReleaseHead } from "@/lib/head";
 import { type PublicReleaseDetail, publicApi } from "@/lib/public-api";
 
@@ -55,6 +56,7 @@ export const Route = createFileRoute("/_public/releases_/$id")({
 		}
 	},
 	head: ({ loaderData }) => createPublicReleaseHead(loaderData?.release),
+	headers: () => CACHE_HEADERS.PUBLIC_DETAIL,
 	component: ReleaseDetailPage,
 });
 

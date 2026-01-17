@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import { PublicationLinks, PublicBreadcrumb } from "@/components/public";
+import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPublicTrackHead } from "@/lib/head";
 import { type PublicTrackDetail, publicApi } from "@/lib/public-api";
 
@@ -39,6 +40,7 @@ export const Route = createFileRoute("/_public/tracks_/$id")({
 		}
 	},
 	head: ({ loaderData }) => createPublicTrackHead(loaderData?.track),
+	headers: () => CACHE_HEADERS.PUBLIC_DETAIL,
 	component: TrackDetailPage,
 });
 

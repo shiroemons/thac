@@ -3,8 +3,10 @@ import { AdminErrorBoundary } from "@/components/admin-error-boundary";
 import { AdminLayout } from "@/components/admin-layout";
 import ForbiddenPage from "@/components/forbidden-page";
 import { getAdminUser } from "@/functions/get-admin-user";
+import { CACHE_HEADERS } from "@/lib/cache-headers";
 
 export const Route = createFileRoute("/admin/_admin")({
+	headers: () => CACHE_HEADERS.PRIVATE,
 	beforeLoad: async () => {
 		try {
 			// サーバー関数経由でセッション確認（Cookie転送を含む）

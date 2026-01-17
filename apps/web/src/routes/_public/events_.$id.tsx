@@ -12,6 +12,7 @@ import {
 	WorkStatsSection,
 	WorkStatsSkeleton,
 } from "@/components/public";
+import { CACHE_HEADERS } from "@/lib/cache-headers";
 import {
 	type EventDetailTab,
 	parseEventDetailTab,
@@ -53,6 +54,7 @@ export const Route = createFileRoute("/_public/events_/$id")({
 		}
 	},
 	head: ({ loaderData }) => createPublicEventHead(loaderData?.event),
+	headers: () => CACHE_HEADERS.PUBLIC_DETAIL,
 	component: EventDetailPage,
 });
 

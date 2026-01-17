@@ -19,6 +19,7 @@ import {
 	RankingsSkeleton,
 	RecentUpdatesSkeleton,
 } from "@/components/public/stats-skeleton";
+import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
 import { publicApi } from "@/lib/public-api";
@@ -29,6 +30,7 @@ import {
 
 export const Route = createFileRoute("/_public/stats")({
 	head: () => createPageHead("統計"),
+	headers: () => CACHE_HEADERS.PUBLIC_DETAIL,
 	loader: async ({ context }) => {
 		// 基本統計を await（ブロッキング）
 		const stats = await publicApi.stats();

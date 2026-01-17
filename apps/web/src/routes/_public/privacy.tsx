@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Shield } from "lucide-react";
 import { PublicBreadcrumb } from "@/components/public";
+import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/_public/privacy")({
 	head: () => createPageHead("プライバシーポリシー"),
+	headers: () => CACHE_HEADERS.PUBLIC_STATIC,
 	component: PrivacyPage,
 });
 

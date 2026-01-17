@@ -22,7 +22,7 @@
         "lefthook": "^2.0.15",
         "turbo": "^2.7.4",
         "typescript": "catalog:",
-        "web": "workspace:*",
+        "web": "^0.0.2",
       },
     },
     "apps/server": {
