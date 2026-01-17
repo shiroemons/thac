@@ -1,6 +1,17 @@
 {
 	"includeCoAuthoredBy": false,
 	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Write|Edit",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "cd \"$CLAUDE_PROJECT_DIR\" && bun run check || true"
+					}
+				]
+			}
+		],
 		"Stop": [
 			{
 				"matcher": "",
