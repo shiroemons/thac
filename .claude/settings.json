@@ -1,9 +1,5 @@
 {
 	"includeCoAuthoredBy": false,
-	"statusLine": {
-		"type": "command",
-		"command": "npx -y ccstatusline@latest"
-	},
 	"hooks": {
 		"Stop": [
 			{
@@ -16,5 +12,12 @@
 				]
 			}
 		]
+	},
+	"statusLine": {
+		"type": "command",
+		"command": "npx -y ccstatusline@latest"
+	},
+	"enabledPlugins": {
+		"hono-skill@hono-skill": true
 	}
 }
