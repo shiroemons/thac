@@ -85,9 +85,11 @@ export function FilterChips({
 						<div
 							key={chip.id}
 							className={cn(
-								"badge gap-1 pr-1",
+								"badge cursor-default gap-1 pr-1",
 								colorClass,
-								"transition-all hover:opacity-80",
+								"transition-all duration-200",
+								"hover:shadow-sm hover:brightness-95",
+								"motion-reduce:transition-none",
 							)}
 						>
 							<Icon className="h-3 w-3" />
@@ -101,7 +103,12 @@ export function FilterChips({
 							<button
 								type="button"
 								onClick={() => onRemove(chip)}
-								className="ml-1 rounded-full p-0.5 transition-colors hover:bg-base-content/20"
+								className={cn(
+									"ml-1 cursor-pointer rounded-full p-0.5",
+									"transition-colors duration-150",
+									"hover:bg-base-content/30 active:bg-base-content/40",
+									"focus:outline-none focus-visible:ring-1 focus-visible:ring-base-content/50",
+								)}
 								aria-label={`${chip.label}を削除`}
 							>
 								<X className="h-3 w-3" />
@@ -116,7 +123,13 @@ export function FilterChips({
 				<button
 					type="button"
 					onClick={onClearAll}
-					className="ml-auto rounded px-2 py-1 text-base-content/60 text-xs transition-colors hover:bg-base-300 hover:text-base-content"
+					className={cn(
+						"ml-auto cursor-pointer rounded px-2 py-1",
+						"text-base-content/60 text-xs",
+						"transition-colors duration-150",
+						"hover:bg-base-300 hover:text-base-content",
+						"focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+					)}
 				>
 					すべてクリア
 				</button>

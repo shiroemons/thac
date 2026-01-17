@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,15 +49,18 @@ export function FilterSection({
 			<button
 				type="button"
 				onClick={onToggle}
-				className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left transition-colors hover:bg-base-200/50"
+				aria-expanded={isOpen}
+				className="flex w-full items-center justify-between gap-2 px-6 py-3 text-left transition-colors hover:bg-base-200/50"
 			>
 				<div className="flex items-center gap-2">
 					{/* 展開アイコン */}
-					{isOpen ? (
-						<ChevronDown className="h-4 w-4 text-base-content/60" />
-					) : (
-						<ChevronRight className="h-4 w-4 text-base-content/60" />
-					)}
+					<ChevronDown
+						className={cn(
+							"h-4 w-4 text-base-content/60 transition-transform duration-200",
+							isOpen ? "rotate-0" : "-rotate-90",
+							"motion-reduce:transition-none",
+						)}
+					/>
 
 					{/* タイトル */}
 					<span className="font-medium text-base-content">{title}</span>
@@ -86,11 +89,14 @@ export function FilterSection({
 			{/* コンテンツ（展開時のみ表示） */}
 			<div
 				className={cn(
-					"transition-all duration-300 ease-in-out",
-					isOpen ? "opacity-100" : "max-h-0 overflow-hidden opacity-0",
+					"grid transition-[grid-template-rows] duration-200 ease-out",
+					isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+					"motion-reduce:transition-none",
 				)}
 			>
-				<div className="px-4 pb-4">{children}</div>
+				<div className="overflow-hidden">
+					<div className="px-6 pb-4">{children}</div>
+				</div>
 			</div>
 		</div>
 	);
