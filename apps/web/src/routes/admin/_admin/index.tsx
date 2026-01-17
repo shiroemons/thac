@@ -32,17 +32,17 @@ interface StatCardProps {
 
 function StatCard({ title, value, icon, href, isLoading }: StatCardProps) {
 	const content = (
-		<div className="card-body">
-			<div className="flex items-center justify-between">
-				<div className="text-base-content/60">{icon}</div>
-				<div className="text-right">
-					{isLoading ? (
-						<div className="skeleton h-8 w-16" />
-					) : (
-						<div className="font-bold text-3xl">{value?.toLocaleString()}</div>
-					)}
-					<div className="text-base-content/60 text-sm">{title}</div>
-				</div>
+		<div className="flex items-center gap-3 p-3">
+			<div className="text-base-content/50">{icon}</div>
+			<div>
+				{isLoading ? (
+					<div className="skeleton h-6 w-12" />
+				) : (
+					<div className="font-bold text-2xl leading-tight">
+						{value?.toLocaleString()}
+					</div>
+				)}
+				<div className="text-base-content/60 text-xs">{title}</div>
 			</div>
 		</div>
 	);
@@ -51,7 +51,7 @@ function StatCard({ title, value, icon, href, isLoading }: StatCardProps) {
 		return (
 			<Link
 				to={href}
-				className="card border border-base-300 bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+				className="rounded-lg border border-base-300 bg-base-100 transition-colors hover:bg-base-200"
 			>
 				{content}
 			</Link>
@@ -59,7 +59,7 @@ function StatCard({ title, value, icon, href, isLoading }: StatCardProps) {
 	}
 
 	return (
-		<div className="card border border-base-300 bg-base-100 shadow-sm">
+		<div className="rounded-lg border border-base-300 bg-base-100">
 			{content}
 		</div>
 	);
@@ -76,13 +76,13 @@ function AdminDashboard() {
 		{
 			title: "公式作品",
 			value: data?.officialWorks,
-			icon: <Disc className="h-8 w-8" />,
+			icon: <Disc className="h-5 w-5" />,
 			href: "/admin/official/works" as const,
 		},
 		{
 			title: "公式楽曲",
 			value: data?.officialSongs,
-			icon: <Music className="h-8 w-8" />,
+			icon: <Music className="h-5 w-5" />,
 			href: "/admin/official/songs" as const,
 		},
 	];
@@ -91,19 +91,19 @@ function AdminDashboard() {
 		{
 			title: "アーティスト",
 			value: data?.artists,
-			icon: <UserPen className="h-8 w-8" />,
+			icon: <UserPen className="h-5 w-5" />,
 			href: "/admin/artists" as const,
 		},
 		{
 			title: "アーティスト名義",
 			value: data?.artistAliases,
-			icon: <Users className="h-8 w-8" />,
+			icon: <Users className="h-5 w-5" />,
 			href: "/admin/artist-aliases" as const,
 		},
 		{
 			title: "サークル",
 			value: data?.circles,
-			icon: <CircleUser className="h-8 w-8" />,
+			icon: <CircleUser className="h-5 w-5" />,
 			href: "/admin/circles" as const,
 		},
 	];
@@ -112,13 +112,13 @@ function AdminDashboard() {
 		{
 			title: "イベントシリーズ",
 			value: data?.eventSeries,
-			icon: <Layers className="h-8 w-8" />,
+			icon: <Layers className="h-5 w-5" />,
 			href: "/admin/event-series" as const,
 		},
 		{
 			title: "イベント",
 			value: data?.events,
-			icon: <Calendar className="h-8 w-8" />,
+			icon: <Calendar className="h-5 w-5" />,
 			href: "/admin/events" as const,
 		},
 	];
@@ -127,13 +127,13 @@ function AdminDashboard() {
 		{
 			title: "作品",
 			value: data?.releases,
-			icon: <Disc3 className="h-8 w-8" />,
+			icon: <Disc3 className="h-5 w-5" />,
 			href: "/admin/releases" as const,
 		},
 		{
 			title: "トラック",
 			value: data?.tracks,
-			icon: <Music className="h-8 w-8" />,
+			icon: <Music className="h-5 w-5" />,
 			href: "/admin/tracks" as const,
 		},
 	];
@@ -142,31 +142,31 @@ function AdminDashboard() {
 		{
 			title: "プラットフォーム",
 			value: data?.platforms,
-			icon: <MonitorSmartphone className="h-8 w-8" />,
+			icon: <MonitorSmartphone className="h-5 w-5" />,
 			href: "/admin/master/platforms" as const,
 		},
 		{
 			title: "名義種別",
 			value: data?.aliasTypes,
-			icon: <Users className="h-8 w-8" />,
+			icon: <Users className="h-5 w-5" />,
 			href: "/admin/master/alias-types" as const,
 		},
 		{
 			title: "クレジット役割",
 			value: data?.creditRoles,
-			icon: <UserCog className="h-8 w-8" />,
+			icon: <UserCog className="h-5 w-5" />,
 			href: "/admin/master/credit-roles" as const,
 		},
 		{
 			title: "公式作品カテゴリ",
 			value: data?.officialWorkCategories,
-			icon: <FolderOpen className="h-8 w-8" />,
+			icon: <FolderOpen className="h-5 w-5" />,
 			href: "/admin/master/official-work-categories" as const,
 		},
 	];
 
 	return (
-		<div className="container mx-auto space-y-6 p-6">
+		<div className="container mx-auto space-y-4 p-4">
 			{/* パンくずナビゲーション */}
 			<nav className="breadcrumbs text-sm">
 				<ul>
@@ -180,17 +180,19 @@ function AdminDashboard() {
 			</nav>
 
 			{/* ヘッダー */}
-			<h1 className="font-bold text-2xl">ダッシュボード</h1>
+			<h1 className="font-bold text-xl">ダッシュボード</h1>
 
-			<div className="space-y-6">
+			<div className="space-y-4">
 				{/* ユーザー */}
 				<section>
-					<h2 className="mb-3 font-semibold text-lg">ユーザー</h2>
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+					<h2 className="mb-2 font-medium text-base text-base-content/80">
+						ユーザー
+					</h2>
+					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						<StatCard
 							title="ユーザー"
 							value={data?.users}
-							icon={<Users className="h-8 w-8" />}
+							icon={<Users className="h-5 w-5" />}
 							isLoading={isLoading}
 						/>
 					</div>
@@ -198,8 +200,10 @@ function AdminDashboard() {
 
 				{/* マスタ管理 */}
 				<section>
-					<h2 className="mb-3 font-semibold text-lg">マスタ管理</h2>
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+					<h2 className="mb-2 font-medium text-base text-base-content/80">
+						マスタ管理
+					</h2>
+					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						{masterStats.map((stat) => (
 							<StatCard
 								key={stat.title}
@@ -215,8 +219,10 @@ function AdminDashboard() {
 
 				{/* 公式管理 */}
 				<section>
-					<h2 className="mb-3 font-semibold text-lg">公式管理</h2>
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+					<h2 className="mb-2 font-medium text-base text-base-content/80">
+						公式管理
+					</h2>
+					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						{officialStats.map((stat) => (
 							<StatCard
 								key={stat.title}
@@ -232,8 +238,10 @@ function AdminDashboard() {
 
 				{/* アーティスト・サークル */}
 				<section>
-					<h2 className="mb-3 font-semibold text-lg">アーティスト・サークル</h2>
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+					<h2 className="mb-2 font-medium text-base text-base-content/80">
+						アーティスト・サークル
+					</h2>
+					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						{artistCircleStats.map((stat) => (
 							<StatCard
 								key={stat.title}
@@ -249,8 +257,10 @@ function AdminDashboard() {
 
 				{/* イベント管理 */}
 				<section>
-					<h2 className="mb-3 font-semibold text-lg">イベント管理</h2>
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+					<h2 className="mb-2 font-medium text-base text-base-content/80">
+						イベント管理
+					</h2>
+					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						{eventStats.map((stat) => (
 							<StatCard
 								key={stat.title}
@@ -266,8 +276,10 @@ function AdminDashboard() {
 
 				{/* 作品管理 */}
 				<section>
-					<h2 className="mb-3 font-semibold text-lg">作品管理</h2>
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+					<h2 className="mb-2 font-medium text-base text-base-content/80">
+						作品管理
+					</h2>
+					<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
 						{releaseStats.map((stat) => (
 							<StatCard
 								key={stat.title}
