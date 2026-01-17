@@ -172,13 +172,13 @@ export const ROLE_LABELS: Record<CreditRole, string> = {
 /** フィルターチップの色マッピング */
 export const CHIP_COLORS: Record<FilterChipType, string> = {
 	textSearch: "badge-neutral",
-	originalSong: "badge-primary",
-	artist: "badge-accent",
-	circle: "badge-secondary",
+	originalSong: "badge-secondary", // 原曲関連
+	artist: "badge-accent", // アーティスト関連
+	circle: "badge-primary", // サークル関連
 	roleCount: "badge-warning",
 	songCount: "badge-ghost",
 	date: "badge-info",
-	event: "badge-info",
+	event: "badge-info", // イベント関連
 };
 
 /** デフォルトのテキスト検索状態 */

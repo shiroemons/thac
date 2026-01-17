@@ -76,7 +76,7 @@ export function CircleFilter({
 					{selectedCircles.map((circle) => (
 						<div
 							key={circle.id}
-							className="badge badge-secondary gap-1 pr-1 transition-all hover:opacity-80"
+							className="badge badge-primary gap-1 pr-1 transition-all hover:opacity-80"
 						>
 							<Disc3 className="h-3 w-3" />
 							<span className="max-w-[120px] truncate">{circle.name}</span>
@@ -153,15 +153,14 @@ export function CircleFilter({
 											onClick={() => toggleCircle(circle)}
 											className={cn(
 												"flex w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-base-200",
-												isSelected &&
-													"bg-secondary/10 font-medium text-secondary",
+												isSelected && "bg-primary/10 font-medium text-primary",
 											)}
 										>
 											<div
 												className={cn(
 													"flex h-4 w-4 shrink-0 items-center justify-center rounded border",
 													isSelected
-														? "border-secondary bg-secondary text-secondary-content"
+														? "border-primary bg-primary text-primary-content"
 														: "border-base-300",
 												)}
 											>

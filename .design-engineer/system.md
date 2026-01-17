@@ -135,6 +135,48 @@ daisyUI の `btn` クラスをベースに使用。
 - コンパクトUI: `size="sm"`
 - ヒーローセクション: `size="lg"`
 
+### Toggle/Filter Buttons
+```tsx
+// 選択状態（aria-pressed="true"）
+<Button variant="primary" aria-pressed="true">Selected</Button>
+
+// 非選択状態（aria-pressed="false"）
+<Button variant="ghost" aria-pressed="false">Not Selected</Button>
+```
+
+**重要:**
+- フィルターボタンは `aria-pressed` で状態を管理
+- 選択中: `btn-primary`
+- 非選択: `btn-ghost`
+
+## Badge Pattern
+
+### Entity-based Colors
+エンティティタイプに応じた一貫した色分け:
+
+| Entity | Badge Class | Color |
+|--------|-------------|-------|
+| サークル | `badge-primary` | Primary |
+| 原曲 | `badge-secondary` | Secondary |
+| アーティスト | `badge-accent` | Accent |
+| イベント | `badge-info` | Info |
+
+### Status Badges
+```tsx
+// 成功・トレンド
+<Badge variant="success" className="bg-success/10 text-success">+5%</Badge>
+
+// 警告
+<Badge variant="warning">要確認</Badge>
+
+// エラー
+<Badge variant="error">削除予定</Badge>
+```
+
+**推奨:**
+- バッジサイズ: `badge-sm` を標準とする
+- カスタム背景: `bg-{color}/10 text-{color}` パターン
+
 ## Icon Pattern
 
 ### Icon Sizes
@@ -266,9 +308,25 @@ animate-pulse
 
 コンポーネント作成時に確認:
 
+### 基本スタイル
 - [ ] カードは `rounded-2xl` を使用
-- [ ] テキスト色は `/70`, `/60` のみ（`/50` を避ける）
+- [ ] カード内パディングは `p-5`（標準）または `p-6`（大）
+- [ ] テキスト色は `/70`, `/60` のみ（`/50` は特殊用途のみ、`/30` は禁止）
 - [ ] アイコンは `size-N` を使用（`h-N w-N` ではない）
-- [ ] ホバー効果は `shadow-lg` + `ring-2 ring-primary/10`
-- [ ] アイコンコンテナは `rounded-xl` + `bg-{color}/10`
 - [ ] トランジションは `duration-300`
+
+### 深度・シャドウ
+- [ ] 静止状態のカードは `shadow-sm`
+- [ ] ホバー効果は `hover:shadow-lg hover:ring-2 hover:ring-primary/10`
+- [ ] `shadow-md` は使用しない
+
+### ボタン状態
+- [ ] フィルター選択中: `btn-primary`
+- [ ] フィルター非選択: `btn-ghost`
+- [ ] `aria-pressed` で状態を管理
+
+### バッジ色
+- [ ] サークル: `badge-primary`
+- [ ] 原曲: `badge-secondary`
+- [ ] アーティスト: `badge-accent`
+- [ ] イベント: `badge-info`
