@@ -1,5 +1,5 @@
 import { Check, Search, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface Option {
@@ -32,6 +32,10 @@ export function SearchableSelect({
 	disabled = false,
 	className,
 }: SearchableSelectProps) {
+	const generatedId = useId();
+	const componentId = id || generatedId;
+	const listboxId = `${componentId}-listbox`;
+
 	const [isOpen, setIsOpen] = useState(false);
 	const [search, setSearch] = useState("");
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -90,7 +94,14 @@ export function SearchableSelect({
 			{/* トリガーボタン */}
 			<button
 				type="button"
-				id={id}
+				id={componentId}
+				role="combobox"
+				aria-expanded={isOpen}
+				aria-haspopup="listbox"
+				aria-controls={listboxId}
+				aria-activedescendant={
+					isOpen && value ? `${componentId}-option-${value}` : undefined
+				}
 				onClick={() => !disabled && setIsOpen(!isOpen)}
 				disabled={disabled}
 				className={cn(
@@ -133,7 +144,12 @@ export function SearchableSelect({
 					</div>
 
 					{/* オプションリスト */}
-					<div className="max-h-60 overflow-y-auto">
+					<div
+						role="listbox"
+						id={listboxId}
+						aria-label={placeholder}
+						className="max-h-60 overflow-y-auto"
+					>
 						{filteredOptions.length === 0 ? (
 							<div className="p-4 text-center text-base-content/50">
 								{emptyMessage}
@@ -143,6 +159,9 @@ export function SearchableSelect({
 								<button
 									key={option.value}
 									type="button"
+									role="option"
+									id={`${componentId}-option-${option.value}`}
+									aria-selected={value === option.value}
 									onClick={() => handleSelect(option.value)}
 									className={cn(
 										"flex w-full items-center gap-2 px-4 py-2 text-left transition-colors hover:bg-base-200",

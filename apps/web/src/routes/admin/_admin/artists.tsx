@@ -6,11 +6,12 @@ import {
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Download, Eye, Home, Pencil, Trash2 } from "lucide-react";
+import { Download, Home, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ArtistEditDialog } from "@/components/admin/artist-edit-dialog";
 import { DataTableActionBar } from "@/components/admin/data-table-action-bar";
 import { DataTableSkeleton } from "@/components/admin/data-table-skeleton";
+import { AdminRowActions } from "@/components/admin/row-action-menu";
 import { SortIcon } from "@/components/admin/sort-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -410,7 +411,7 @@ function ArtistsPage() {
 											/>
 										</TableHead>
 									)}
-									<TableHead className="w-[70px]" />
+									<TableHead sticky="right" className="w-[70px]" />
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -509,36 +510,13 @@ function ArtistsPage() {
 													)}
 												</TableCell>
 											)}
-											<TableCell>
-												<div className="flex items-center gap-1">
-													<Link
-														to="/admin/artists/$id"
-														params={{ id: artist.id }}
-														className="btn btn-ghost btn-sm"
-													>
-														<Eye className="h-4 w-4" />
-														<span className="sr-only">詳細</span>
-													</Link>
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() => {
-															setEditingArtist(artist);
-														}}
-													>
-														<Pencil className="h-4 w-4" />
-														<span className="sr-only">編集</span>
-													</Button>
-													<Button
-														variant="ghost"
-														size="icon"
-														className="text-error hover:text-error"
-														onClick={() => setDeleteTarget(artist)}
-													>
-														<Trash2 className="h-4 w-4" />
-														<span className="sr-only">削除</span>
-													</Button>
-												</div>
+											<TableCell sticky="right">
+												<AdminRowActions
+													viewHref="/admin/artists/$id"
+													viewParams={{ id: artist.id }}
+													onEdit={() => setEditingArtist(artist)}
+													onDelete={() => setDeleteTarget(artist)}
+												/>
 											</TableCell>
 										</TableRow>
 									))

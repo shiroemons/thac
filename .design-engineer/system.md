@@ -27,11 +27,11 @@
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `radius-sm` | 4px | `rounded` - Buttons, inputs, badges |
+| `radius-sm` | 8px | `rounded-lg` - Buttons, inputs, badges |
 | `radius-md` | 8px | `rounded-lg` - Cards, dialogs, dropdowns |
 | `radius-full` | 9999px | `rounded-full` - Avatars, circular buttons |
 
-**Default**: `radius-sm` (4px) for most interactive elements
+**Default**: `radius-sm` (8px) for most interactive elements
 
 ---
 
@@ -121,7 +121,18 @@
 |-------|-------|
 | Hover | `hover:bg-base-200` |
 | Active | `bg-primary/10 border-l-3 border-primary` |
-| Focus | Managed by daisyUI |
+| Focus | `focus-ring` utility class |
+
+### Focus States
+
+| State | Class |
+|-------|-------|
+| Default | `focus-ring` |
+| Inset | `focus-ring-inset` |
+
+**Utility Classes** (defined in index.css):
+- `.focus-ring`: `focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2`
+- `.focus-ring-inset`: `focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset`
 
 ### Semantic Colors
 
