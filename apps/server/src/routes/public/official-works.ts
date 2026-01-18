@@ -193,6 +193,16 @@ officialWorksRouter.get("/:id", async (c) => {
 
 		const work = workResult[0];
 
+		// 原曲ごとのアレンジ数をサブクエリで計算（LEFT JOIN方式）
+		const arrangeCountSq = db
+			.select({
+				songId: trackOfficialSongs.officialSongId,
+				count: countDistinct(trackOfficialSongs.trackId).as("arrangeCount"),
+			})
+			.from(trackOfficialSongs)
+			.groupBy(trackOfficialSongs.officialSongId)
+			.as("arrangeCountSq");
+
 		// 楽曲、リンク、統計を並列取得
 		const [songsData, linksData, statsData] = await Promise.all([
 			// 楽曲一覧（arrangeCount含む）
@@ -204,13 +214,10 @@ officialWorksRouter.get("/:id", async (c) => {
 					nameJa: officialSongs.nameJa,
 					nameEn: officialSongs.nameEn,
 					composerName: officialSongs.composerName,
-					arrangeCount: sql<number>`(
-						SELECT COUNT(DISTINCT ${trackOfficialSongs.trackId})
-						FROM ${trackOfficialSongs}
-						WHERE ${trackOfficialSongs.officialSongId} = ${officialSongs.id}
-					)`,
+					arrangeCount: sql<number>`COALESCE(${arrangeCountSq.count}, 0)`,
 				})
 				.from(officialSongs)
+				.leftJoin(arrangeCountSq, eq(officialSongs.id, arrangeCountSq.songId))
 				.where(eq(officialSongs.officialWorkId, id))
 				.orderBy(asc(officialSongs.trackNumber)),
 
