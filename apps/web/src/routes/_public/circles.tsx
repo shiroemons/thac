@@ -1,9 +1,13 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Disc, Music, Users } from "lucide-react";
+import { Building2, Disc, Music, Users } from "lucide-react";
 import { useRef, useState } from "react";
 import {
 	EmptyState,
+	FilterDrawer,
+	FilterDrawerTrigger,
+	MobileCardItem,
+	MobileCardList,
 	PublicBreadcrumb,
 	TwoStageScriptFilter,
 	type ViewMode,
@@ -71,6 +75,8 @@ function CirclesPage() {
 	// 検索入力のローカルステート（IME対応）
 	const [searchInput, setSearchInput] = useState(search);
 	const isComposingRef = useRef(false);
+	// モバイルフィルタードロワーの状態
+	const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
 	// 型安全なパラメータ
 	const scriptCategory = script as ScriptCategory;
@@ -176,6 +182,22 @@ function CirclesPage() {
 		});
 	};
 
+	// アクティブなフィルター数を計算
+	const activeFilterCount =
+		(search ? 1 : 0) +
+		(scriptCategory !== "all" ? 1 : 0) +
+		(alphabetInitial ? 1 : 0) +
+		(kanaRow ? 1 : 0);
+
+	// フィルターをリセット
+	const handleResetFilters = () => {
+		setSearchInput("");
+		navigate({
+			to: "/circles",
+			search: { view },
+		});
+	};
+
 	return (
 		<div className="space-y-6">
 			<PublicBreadcrumb items={[{ label: "サークル" }]} />
@@ -188,11 +210,56 @@ function CirclesPage() {
 						同人サークル · {formatNumber(total)}件
 					</p>
 				</div>
-				<ViewToggle value={view} onChange={handleViewChange} />
+				<div className="flex items-center gap-2">
+					{/* モバイル用フィルタートリガー（md未満で表示） */}
+					<FilterDrawerTrigger
+						onClick={() => setIsFilterDrawerOpen(true)}
+						activeFilterCount={activeFilterCount}
+					/>
+					<ViewToggle value={view} onChange={handleViewChange} />
+				</div>
 			</div>
 
-			{/* フィルター */}
-			<div className="space-y-4">
+			{/* モバイル用フィルタードロワー */}
+			<FilterDrawer
+				isOpen={isFilterDrawerOpen}
+				onClose={() => setIsFilterDrawerOpen(false)}
+				title="フィルター"
+				onReset={handleResetFilters}
+			>
+				<div className="space-y-6">
+					{/* キーワード検索 */}
+					<div>
+						<span className="mb-2 block font-medium text-sm">
+							キーワード検索:
+						</span>
+						<SearchInput
+							value={searchInput}
+							onChange={handleSearchChange}
+							onCompositionStart={handleCompositionStart}
+							onCompositionEnd={handleCompositionEnd}
+							placeholder="サークル名で検索..."
+							size="sm"
+						/>
+					</div>
+
+					{/* 文字種フィルター（2段階） */}
+					<div>
+						<span className="mb-2 block font-medium text-sm">文字種:</span>
+						<TwoStageScriptFilter
+							scriptCategory={scriptCategory}
+							alphabetInitial={alphabetInitial ?? null}
+							kanaRow={kanaRow ?? null}
+							onScriptCategoryChange={handleScriptCategoryChange}
+							onAlphabetInitialChange={handleAlphabetInitialChange}
+							onKanaRowChange={handleKanaRowChange}
+						/>
+					</div>
+				</div>
+			</FilterDrawer>
+
+			{/* デスクトップ用フィルター（md以上で表示） */}
+			<div className="hidden space-y-4 md:block">
 				{/* キーワード検索 */}
 				<div>
 					<span className="mb-2 block font-medium text-sm">
@@ -234,90 +301,144 @@ function CirclesPage() {
 					title="該当するサークルがありません"
 					description="フィルター条件を変更してお試しください"
 				/>
-			) : view === "grid" ? (
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{circles.map((circle) => (
-						<Link
-							key={circle.id}
-							to="/circles/$id"
-							params={{ id: circle.id }}
-							preload="intent"
-							className="card bg-base-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
-						>
-							<div className="card-body p-4">
-								<div className="flex items-center gap-3">
-									<div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
-										<Users className="size-6 text-primary" aria-hidden="true" />
-									</div>
-									<div className="min-w-0 flex-1">
-										<h3 className="truncate font-bold text-base">
-											{circle.name}
-										</h3>
-										{circle.sortName && (
-											<p className="truncate text-base-content/60 text-sm">
-												{circle.sortName}
-											</p>
-										)}
-									</div>
-								</div>
-								<div className="mt-3 flex items-center gap-4 text-base-content/70 text-sm">
-									<span className="flex items-center gap-1">
-										<Disc className="size-4" aria-hidden="true" />
-										{formatNumber(circle.releaseCount)}リリース
-									</span>
-									<span className="flex items-center gap-1">
-										<Music className="size-4" aria-hidden="true" />
-										{formatNumber(circle.trackCount)}曲
-									</span>
-								</div>
-							</div>
-						</Link>
-					))}
-				</div>
 			) : (
-				<div className="overflow-x-auto">
-					<table className="table">
-						<thead>
-							<tr>
-								<th>サークル名</th>
-								<th>読み</th>
-								<th>リリース数</th>
-								<th>曲数</th>
-							</tr>
-						</thead>
-						<tbody>
+				<>
+					{/* モバイル用カードリスト（sm未満で表示） */}
+					<MobileCardList
+						items={circles}
+						keyExtractor={(circle) => circle.id}
+						renderCard={(circle) => (
+							<Link
+								to="/circles/$id"
+								params={{ id: circle.id }}
+								preload="intent"
+								className="block"
+							>
+								<MobileCardItem>
+									<div className="flex items-center gap-3">
+										<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+											<Building2
+												className="size-6 text-primary"
+												aria-hidden="true"
+											/>
+										</div>
+										<div className="min-w-0 flex-1">
+											<h3 className="truncate font-bold text-base">
+												{circle.name}
+											</h3>
+											{circle.sortName && (
+												<p className="truncate text-base-content/60 text-sm">
+													{circle.sortName}
+												</p>
+											)}
+											<div className="mt-2 flex items-center gap-4 text-base-content/70 text-sm">
+												<span className="flex items-center gap-1">
+													<Disc className="size-4" aria-hidden="true" />
+													{formatNumber(circle.releaseCount)}
+												</span>
+												<span className="flex items-center gap-1">
+													<Music className="size-4" aria-hidden="true" />
+													{formatNumber(circle.trackCount)}
+												</span>
+											</div>
+										</div>
+									</div>
+								</MobileCardItem>
+							</Link>
+						)}
+					/>
+
+					{/* デスクトップ用グリッド表示（sm以上で表示） */}
+					{view === "grid" ? (
+						<div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 							{circles.map((circle) => (
-								<tr key={circle.id} className="hover:bg-base-200/50">
-									<td>
-										<Link
-											to="/circles/$id"
-											params={{ id: circle.id }}
-											preload="intent"
-											className="flex items-center gap-3 hover:text-primary"
-										>
-											<div className="flex size-8 items-center justify-center rounded-full bg-primary/10">
+								<Link
+									key={circle.id}
+									to="/circles/$id"
+									params={{ id: circle.id }}
+									preload="intent"
+									className="card bg-base-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+								>
+									<div className="card-body p-4">
+										<div className="flex items-center gap-3">
+											<div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
 												<Users
-													className="size-4 text-primary"
+													className="size-6 text-primary"
 													aria-hidden="true"
 												/>
 											</div>
-											<span className="font-medium">{circle.name}</span>
-										</Link>
-									</td>
-									<td className="text-base-content/70">
-										{circle.sortName || "-"}
-									</td>
-									<td className="text-base-content/70">
-										{formatNumber(circle.releaseCount)}
-									</td>
-									<td className="text-base-content/70">
-										{formatNumber(circle.trackCount)}
-									</td>
-								</tr>
+											<div className="min-w-0 flex-1">
+												<h3 className="truncate font-bold text-base">
+													{circle.name}
+												</h3>
+												{circle.sortName && (
+													<p className="truncate text-base-content/60 text-sm">
+														{circle.sortName}
+													</p>
+												)}
+											</div>
+										</div>
+										<div className="mt-3 flex items-center gap-4 text-base-content/70 text-sm">
+											<span className="flex items-center gap-1">
+												<Disc className="size-4" aria-hidden="true" />
+												{formatNumber(circle.releaseCount)}リリース
+											</span>
+											<span className="flex items-center gap-1">
+												<Music className="size-4" aria-hidden="true" />
+												{formatNumber(circle.trackCount)}曲
+											</span>
+										</div>
+									</div>
+								</Link>
 							))}
-						</tbody>
-					</table>
-				</div>
+						</div>
+					) : (
+						/* デスクトップ用テーブル表示（sm以上で表示） */
+						<div className="hidden overflow-x-auto sm:block">
+							<table className="table">
+								<thead>
+									<tr>
+										<th>サークル名</th>
+										<th>読み</th>
+										<th>リリース数</th>
+										<th>曲数</th>
+									</tr>
+								</thead>
+								<tbody>
+									{circles.map((circle) => (
+										<tr key={circle.id} className="hover:bg-base-200/50">
+											<td>
+												<Link
+													to="/circles/$id"
+													params={{ id: circle.id }}
+													preload="intent"
+													className="flex items-center gap-3 hover:text-primary"
+												>
+													<div className="flex size-8 items-center justify-center rounded-full bg-primary/10">
+														<Users
+															className="size-4 text-primary"
+															aria-hidden="true"
+														/>
+													</div>
+													<span className="font-medium">{circle.name}</span>
+												</Link>
+											</td>
+											<td className="text-base-content/70">
+												{circle.sortName || "-"}
+											</td>
+											<td className="text-base-content/70">
+												{formatNumber(circle.releaseCount)}
+											</td>
+											<td className="text-base-content/70">
+												{formatNumber(circle.trackCount)}
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+				</>
 			)}
 
 			{/* 無限スクロール */}

@@ -1,7 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Calendar, ChevronDown, ChevronRight, Disc } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { EmptyState, PublicBreadcrumb } from "@/components/public";
+import {
+	EmptyState,
+	MobileCardItem,
+	MobileCardList,
+	PublicBreadcrumb,
+} from "@/components/public";
 import { SearchInput } from "@/components/ui/search-input";
 import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
@@ -252,61 +257,110 @@ function EventsPage() {
 				(eventsBySeries.length === 0 ? (
 					<EmptyState type="empty" title="イベントがありません" />
 				) : (
-					<div className="space-y-2">
-						{eventsBySeries.map((series) => (
-							<div
-								key={series.id}
-								className="overflow-hidden rounded-lg border border-base-300 bg-base-100"
-							>
-								{/* シリーズヘッダー */}
-								<button
-									type="button"
-									className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-base-200/50"
-									onClick={() => toggleSeries(series.id)}
-									aria-expanded={expandedSeries.has(series.id)}
+					<>
+						{/* モバイル用カードリスト */}
+						<MobileCardList
+							items={eventsBySeries.flatMap((series) => series.events)}
+							keyExtractor={(event) => event.id}
+							emptyMessage="イベントがありません"
+							renderCard={(event) => (
+								<Link
+									to="/events/$id"
+									params={{ id: event.id }}
+									preload="intent"
+									className="block"
 								>
-									<div className="flex items-center gap-3">
-										{expandedSeries.has(series.id) ? (
-											<ChevronDown className="size-5" aria-hidden="true" />
-										) : (
-											<ChevronRight className="size-5" aria-hidden="true" />
-										)}
-										<span className="font-bold text-lg">{series.name}</span>
-									</div>
-									<span className="badge badge-ghost">
-										{series.events.length}回
-									</span>
-								</button>
-
-								{/* イベントリスト */}
-								{expandedSeries.has(series.id) && (
-									<div className="border-base-300 border-t">
-										{series.events.map((event) => (
-											<Link
-												key={event.id}
-												to="/events/$id"
-												params={{ id: event.id }}
-												preload="intent"
-												className="flex items-center justify-between border-base-200 border-b px-4 py-3 pl-12 last:border-b-0 hover:bg-base-200/30"
-											>
-												<div className="flex items-center gap-4">
-													<span className="font-medium">{event.name}</span>
-													<span className="flex items-center gap-1 text-base-content/60 text-sm">
-														<Calendar className="size-4" aria-hidden="true" />
+									<MobileCardItem className="gradient-event">
+										<div className="flex items-start gap-3">
+											<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning/10 ring-2 ring-warning/20">
+												<Calendar
+													className="size-5 text-warning"
+													aria-hidden="true"
+												/>
+											</div>
+											<div className="min-w-0 flex-1 space-y-1">
+												<h3 className="font-bold text-base leading-tight">
+													{event.name}
+												</h3>
+												<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base-content/70 text-sm">
+													<span className="flex items-center gap-1">
+														<Calendar className="size-3.5" aria-hidden="true" />
 														{formatDateRange(event.startDate, event.endDate)}
 													</span>
+													{event.eventSeriesName && (
+														<span className="truncate text-base-content/50">
+															{event.eventSeriesName}
+														</span>
+													)}
 												</div>
-												<span className="flex items-center gap-1 text-base-content/70 text-sm">
-													<Disc className="size-4" aria-hidden="true" />
+												<div className="flex items-center gap-1 text-base-content/60 text-sm">
+													<Disc className="size-3.5" aria-hidden="true" />
 													{formatNumber(event.releaseCount)}リリース
-												</span>
-											</Link>
-										))}
-									</div>
-								)}
-							</div>
-						))}
-					</div>
+												</div>
+											</div>
+										</div>
+									</MobileCardItem>
+								</Link>
+							)}
+						/>
+
+						{/* デスクトップ用アコーディオン表示 */}
+						<div className="hidden space-y-2 sm:block">
+							{eventsBySeries.map((series) => (
+								<div
+									key={series.id}
+									className="overflow-hidden rounded-lg border border-base-300 bg-base-100"
+								>
+									{/* シリーズヘッダー */}
+									<button
+										type="button"
+										className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-base-200/50"
+										onClick={() => toggleSeries(series.id)}
+										aria-expanded={expandedSeries.has(series.id)}
+									>
+										<div className="flex items-center gap-3">
+											{expandedSeries.has(series.id) ? (
+												<ChevronDown className="size-5" aria-hidden="true" />
+											) : (
+												<ChevronRight className="size-5" aria-hidden="true" />
+											)}
+											<span className="font-bold text-lg">{series.name}</span>
+										</div>
+										<span className="badge badge-ghost">
+											{series.events.length}回
+										</span>
+									</button>
+
+									{/* イベントリスト */}
+									{expandedSeries.has(series.id) && (
+										<div className="border-base-300 border-t">
+											{series.events.map((event) => (
+												<Link
+													key={event.id}
+													to="/events/$id"
+													params={{ id: event.id }}
+													preload="intent"
+													className="flex items-center justify-between border-base-200 border-b px-4 py-3 pl-12 last:border-b-0 hover:bg-base-200/30"
+												>
+													<div className="flex items-center gap-4">
+														<span className="font-medium">{event.name}</span>
+														<span className="flex items-center gap-1 text-base-content/60 text-sm">
+															<Calendar className="size-4" aria-hidden="true" />
+															{formatDateRange(event.startDate, event.endDate)}
+														</span>
+													</div>
+													<span className="flex items-center gap-1 text-base-content/70 text-sm">
+														<Disc className="size-4" aria-hidden="true" />
+														{formatNumber(event.releaseCount)}リリース
+													</span>
+												</Link>
+											))}
+										</div>
+									)}
+								</div>
+							))}
+						</div>
+					</>
 				))}
 
 			{/* 年別表示 */}
@@ -334,63 +388,140 @@ function EventsPage() {
 						{eventsByYear
 							.filter((group) => group.year === selectedYear)
 							.map((group) => (
-								<div
-									key={group.year}
-									className="overflow-hidden rounded-lg border border-base-300 bg-base-100"
-								>
-									<div className="border-base-300 border-b bg-base-200/50 px-4 py-3">
-										<h2 className="font-bold text-lg">{group.year}年</h2>
-										<p className="text-base-content/70 text-sm">
-											{group.events.length}イベント
-										</p>
+								<div key={group.year}>
+									{/* モバイル用カードリスト */}
+									<div className="sm:hidden">
+										<div className="mb-3 rounded-lg bg-base-200/50 px-4 py-3">
+											<h2 className="font-bold text-lg">{group.year}年</h2>
+											<p className="text-base-content/70 text-sm">
+												{group.events.length}イベント
+											</p>
+										</div>
+										<MobileCardList
+											items={group.events}
+											keyExtractor={(event) => event.id}
+											emptyMessage="イベントがありません"
+											renderCard={(event) => {
+												const month = event.startDate
+													? Number.parseInt(event.startDate.split("-")[1], 10)
+													: null;
+												return (
+													<Link
+														to="/events/$id"
+														params={{ id: event.id }}
+														preload="intent"
+														className="block"
+													>
+														<MobileCardItem className="gradient-event">
+															<div className="flex items-start gap-3">
+																<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning/10 ring-2 ring-warning/20">
+																	<Calendar
+																		className="size-5 text-warning"
+																		aria-hidden="true"
+																	/>
+																</div>
+																<div className="min-w-0 flex-1 space-y-1">
+																	<h3 className="font-bold text-base leading-tight">
+																		{event.name}
+																	</h3>
+																	<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base-content/70 text-sm">
+																		{month && (
+																			<span className="font-medium text-warning">
+																				{month}月
+																			</span>
+																		)}
+																		<span className="flex items-center gap-1">
+																			<Calendar
+																				className="size-3.5"
+																				aria-hidden="true"
+																			/>
+																			{formatDateRange(
+																				event.startDate,
+																				event.endDate,
+																			)}
+																		</span>
+																	</div>
+																	<div className="flex items-center gap-1 text-base-content/60 text-sm">
+																		<Disc
+																			className="size-3.5"
+																			aria-hidden="true"
+																		/>
+																		{formatNumber(event.releaseCount)}リリース
+																	</div>
+																</div>
+															</div>
+														</MobileCardItem>
+													</Link>
+												);
+											}}
+										/>
 									</div>
-									<div className="overflow-x-auto">
-										<table className="table">
-											<thead>
-												<tr>
-													<th>月</th>
-													<th>イベント名</th>
-													<th>開催日</th>
-													<th>リリース数</th>
-												</tr>
-											</thead>
-											<tbody>
-												{group.events.map((event) => {
-													const month = event.startDate
-														? Number.parseInt(event.startDate.split("-")[1], 10)
-														: null;
-													return (
-														<tr key={event.id} className="hover:bg-base-200/50">
-															<td className="text-base-content/70">
-																{month ? `${month}月` : "-"}
-															</td>
-															<td>
-																<Link
-																	to="/events/$id"
-																	params={{ id: event.id }}
-																	preload="intent"
-																	className="font-medium hover:text-primary"
-																>
-																	{event.name}
-																</Link>
-															</td>
-															<td className="text-base-content/70">
-																{formatDateRange(
-																	event.startDate,
-																	event.endDate,
-																)}
-															</td>
-															<td className="text-base-content/70">
-																<span className="flex items-center gap-1">
-																	<Disc className="size-4" aria-hidden="true" />
-																	{formatNumber(event.releaseCount)}
-																</span>
-															</td>
-														</tr>
-													);
-												})}
-											</tbody>
-										</table>
+
+									{/* デスクトップ用テーブル表示 */}
+									<div className="hidden overflow-hidden rounded-lg border border-base-300 bg-base-100 sm:block">
+										<div className="border-base-300 border-b bg-base-200/50 px-4 py-3">
+											<h2 className="font-bold text-lg">{group.year}年</h2>
+											<p className="text-base-content/70 text-sm">
+												{group.events.length}イベント
+											</p>
+										</div>
+										<div className="overflow-x-auto">
+											<table className="table">
+												<thead>
+													<tr>
+														<th>月</th>
+														<th>イベント名</th>
+														<th>開催日</th>
+														<th>リリース数</th>
+													</tr>
+												</thead>
+												<tbody>
+													{group.events.map((event) => {
+														const month = event.startDate
+															? Number.parseInt(
+																	event.startDate.split("-")[1],
+																	10,
+																)
+															: null;
+														return (
+															<tr
+																key={event.id}
+																className="hover:bg-base-200/50"
+															>
+																<td className="text-base-content/70">
+																	{month ? `${month}月` : "-"}
+																</td>
+																<td>
+																	<Link
+																		to="/events/$id"
+																		params={{ id: event.id }}
+																		preload="intent"
+																		className="font-medium hover:text-primary"
+																	>
+																		{event.name}
+																	</Link>
+																</td>
+																<td className="text-base-content/70">
+																	{formatDateRange(
+																		event.startDate,
+																		event.endDate,
+																	)}
+																</td>
+																<td className="text-base-content/70">
+																	<span className="flex items-center gap-1">
+																		<Disc
+																			className="size-4"
+																			aria-hidden="true"
+																		/>
+																		{formatNumber(event.releaseCount)}
+																	</span>
+																</td>
+															</tr>
+														);
+													})}
+												</tbody>
+											</table>
+										</div>
 									</div>
 								</div>
 							))}

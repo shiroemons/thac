@@ -1,7 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight, Loader2, Music } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { PublicBreadcrumb } from "@/components/public";
+import {
+	FilterDrawer,
+	FilterDrawerTrigger,
+	MobileCardItem,
+	MobileCardList,
+	PublicBreadcrumb,
+} from "@/components/public";
 import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
 import {
@@ -78,6 +84,9 @@ function OriginalSongsPage() {
 	const navigate = useNavigate({ from: Route.fullPath });
 	const { type = "all", open } = Route.useSearch();
 	const { categories, works, totalSongCount } = Route.useLoaderData();
+
+	// モバイルフィルタードロワーの状態
+	const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
 	// 遅延読み込み用の状態管理
 	const [songCache, setSongCache] = useState<Map<string, PublicSongItem[]>>(
@@ -196,7 +205,13 @@ function OriginalSongsPage() {
 		navigate({
 			search: { type: newType, open: undefined },
 		});
+
+		// モバイルフィルタードロワーを閉じる
+		setIsFilterDrawerOpen(false);
 	};
+
+	// アクティブなフィルター数を計算
+	const activeFilterCount = type !== "all" ? 1 : 0;
 
 	return (
 		<div className="space-y-6">
@@ -210,19 +225,58 @@ function OriginalSongsPage() {
 						東方Project公式楽曲 · {works.length}作品 · {totalSongCount}曲
 					</p>
 				</div>
-				<Link
-					to="/official-works"
-					preload="intent"
-					className="btn btn-outline btn-sm gap-1"
-				>
-					<Music className="size-4" />
-					公式作品一覧
-					<ChevronRight className="size-4" />
-				</Link>
+				<div className="flex gap-2">
+					{/* モバイルフィルターボタン */}
+					<FilterDrawerTrigger
+						onClick={() => setIsFilterDrawerOpen(true)}
+						activeFilterCount={activeFilterCount}
+					/>
+					<Link
+						to="/official-works"
+						preload="intent"
+						className="btn btn-outline btn-sm gap-1"
+					>
+						<Music className="size-4" />
+						<span className="xs:inline hidden">公式作品一覧</span>
+						<span className="xs:hidden">公式作品</span>
+						<ChevronRight className="size-4" />
+					</Link>
+				</div>
 			</div>
 
-			{/* Step 1: カテゴリフィルター */}
-			<div className="space-y-2">
+			{/* モバイルフィルタードロワー */}
+			<FilterDrawer
+				isOpen={isFilterDrawerOpen}
+				onClose={() => setIsFilterDrawerOpen(false)}
+				title="カテゴリで絞り込み"
+			>
+				<div className="space-y-4">
+					<div className="flex flex-wrap gap-2">
+						<button
+							type="button"
+							className={`btn btn-sm ${type === "all" ? "btn-primary" : "btn-ghost"}`}
+							onClick={() => handleTypeChange("all")}
+							aria-pressed={type === "all"}
+						>
+							すべて
+						</button>
+						{categories.map((cat: PublicCategory) => (
+							<button
+								key={cat.code}
+								type="button"
+								className={`btn btn-sm ${type === cat.code ? "btn-primary" : "btn-ghost"}`}
+								onClick={() => handleTypeChange(cat.code)}
+								aria-pressed={type === cat.code}
+							>
+								{cat.name}
+							</button>
+						))}
+					</div>
+				</div>
+			</FilterDrawer>
+
+			{/* Step 1: カテゴリフィルター（デスクトップのみ） */}
+			<div className="hidden space-y-2 md:block">
 				<h2 className="font-medium text-base-content/70 text-sm">
 					カテゴリを選択
 				</h2>
@@ -249,8 +303,18 @@ function OriginalSongsPage() {
 				</div>
 			</div>
 
-			{/* Step 2: 作品アコーディオン */}
-			<div className="space-y-2">
+			{/* モバイル: 選択中のカテゴリ表示 */}
+			{type !== "all" && (
+				<div className="md:hidden">
+					<span className="badge badge-primary gap-1">
+						{categories.find((c: PublicCategory) => c.code === type)?.name ||
+							type}
+					</span>
+				</div>
+			)}
+
+			{/* Step 2: 作品アコーディオン（デスクトップ） */}
+			<div className="hidden space-y-2 sm:block">
 				<h2 className="font-medium text-base-content/70 text-sm">
 					作品を選択して楽曲を表示
 				</h2>
@@ -274,6 +338,44 @@ function OriginalSongsPage() {
 					</div>
 				)}
 			</div>
+
+			{/* Step 2: 作品カードリスト（モバイル） */}
+			<MobileCardList
+				items={works}
+				keyExtractor={(work: PublicWorkItem) => work.id}
+				emptyMessage="選択したカテゴリに作品がありません"
+				renderCard={(work: PublicWorkItem) => (
+					<Link
+						to="/official-works/$id"
+						params={{ id: work.id }}
+						preload="intent"
+						className="block"
+					>
+						<MobileCardItem className="gradient-song">
+							<div className="flex items-center gap-3">
+								<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-success/20">
+									<Music className="size-5 text-success" aria-hidden="true" />
+								</div>
+								<div className="min-w-0 flex-1">
+									<h3 className="truncate font-bold text-base">
+										{work.nameJa}
+									</h3>
+									{work.nameEn && work.nameEn !== work.nameJa && (
+										<p className="truncate text-base-content/60 text-sm">
+											{work.nameEn}
+										</p>
+									)}
+								</div>
+								<div className="shrink-0 text-right">
+									<span className="badge badge-success badge-sm">
+										{work.songCount ?? 0}曲
+									</span>
+								</div>
+							</div>
+						</MobileCardItem>
+					</Link>
+				)}
+			/>
 		</div>
 	);
 }

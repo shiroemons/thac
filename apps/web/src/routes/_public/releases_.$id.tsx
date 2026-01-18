@@ -3,8 +3,11 @@ import { Calendar, Disc, Disc3, Music, Users } from "lucide-react";
 import { useMemo } from "react";
 import {
 	EmptyState,
+	EntityDetailHeader,
 	PublicationLinks,
 	PublicBreadcrumb,
+	type StatItem,
+	StatsCardGrid,
 } from "@/components/public";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPublicReleaseHead } from "@/lib/head";
@@ -109,94 +112,81 @@ function ReleaseDetailPage() {
 				]}
 			/>
 
-			{/* ヘッダー - グラデーション背景 */}
-			<div className="gradient-release overflow-hidden rounded-2xl shadow-sm transition-shadow duration-300 hover:shadow-lg">
-				<div className="glass-card-light rounded-2xl p-6">
-					<div className="flex flex-col gap-6 sm:flex-row">
-						{/* ジャケット画像エリア（プレースホルダー） */}
-						<div className="group relative mx-auto flex size-40 shrink-0 items-center justify-center rounded-2xl bg-base-200/70 transition-all duration-300 hover:ring-2 hover:ring-primary/10 sm:mx-0 sm:size-48">
-							<Disc className="size-16 text-primary/60 transition-transform duration-300 group-hover:scale-110 sm:size-20" />
-							{/* オーバーレイ効果 */}
-							<div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-base-content/5 to-transparent" />
-						</div>
-
-						{/* リリース情報 */}
-						<div className="flex flex-1 flex-col justify-center space-y-4">
-							{/* リリースタイプバッジとタイトル */}
-							<div className="space-y-2">
-								{release.releaseType && (
-									<span
-										className={`badge ${releaseTypeBadgeColors[release.releaseType] ?? "badge-ghost"}`}
-									>
-										{releaseTypeNames[release.releaseType] ??
-											release.releaseType}
-									</span>
-								)}
-								<h1 className="font-bold text-2xl sm:text-3xl">
-									{release.name}
-								</h1>
-							</div>
-
-							{/* サークル一覧 */}
-							{release.circles.length > 0 && (
-								<div className="flex flex-wrap items-center gap-2">
-									{release.circles
-										.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-										.map((circle, idx) => (
-											<CircleBadge
-												key={`${circle.circleId}-${idx}`}
-												circle={circle}
-											/>
-										))}
-								</div>
-							)}
-
-							{/* イベント・発売日 */}
-							<div className="flex flex-wrap items-center gap-4 text-base-content/60 text-sm">
-								{release.event && (
-									<Link
-										to="/events/$id"
-										params={{ id: release.event.id }}
-										preload="intent"
-										className="flex min-h-11 items-center gap-1 rounded-lg px-2 py-2 transition-colors duration-300 hover:bg-base-200/50 hover:text-primary"
-									>
-										<Calendar className="size-4" />
-										{release.event.name}
-									</Link>
-								)}
-								{release.releaseDate && (
-									<span className="flex items-center gap-1">
-										<Calendar className="size-4" />
-										{release.releaseDate}
-									</span>
-								)}
-							</div>
-						</div>
+			{/* ヘッダー - EntityDetailHeader + StatsCardGrid */}
+			<EntityDetailHeader
+				gradientClass="gradient-release"
+				icon={<Disc className="size-10 text-primary/80 sm:size-12" />}
+				iconRingClass="ring-primary/20"
+				title={release.name}
+				badges={
+					release.releaseType
+						? [
+								<span
+									key="releaseType"
+									className={`badge ${releaseTypeBadgeColors[release.releaseType] ?? "badge-ghost"}`}
+								>
+									{releaseTypeNames[release.releaseType] ?? release.releaseType}
+								</span>,
+							]
+						: undefined
+				}
+			>
+				{/* サークル一覧 */}
+				{release.circles.length > 0 && (
+					<div className="flex flex-wrap items-center gap-2">
+						{release.circles
+							.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+							.map((circle, idx) => (
+								<CircleBadge
+									key={`${circle.circleId}-${idx}`}
+									circle={circle}
+								/>
+							))}
 					</div>
+				)}
 
-					{/* 統計カード */}
-					<div className="mt-6 grid grid-cols-2 gap-4">
-						<div className="rounded-2xl bg-base-100/70 p-4 text-center transition-all duration-300 hover:bg-base-100 hover:shadow-md">
-							<div className="flex items-center justify-center gap-2 text-primary">
-								<Music className="size-5" />
-								<span className="font-bold text-2xl">{release.trackCount}</span>
-							</div>
-							<p className="mt-1 text-base-content/70 text-sm">トラック数</p>
-						</div>
-						<div className="rounded-2xl bg-base-100/70 p-4 text-center transition-all duration-300 hover:bg-base-100 hover:shadow-md">
-							<div className="flex items-center justify-center gap-2 text-secondary">
-								<Users className="size-5" />
-								<span className="font-bold text-2xl">
-									{release.artistCount}
-								</span>
-							</div>
-							<p className="mt-1 text-base-content/70 text-sm">
-								参加アーティスト
-							</p>
-						</div>
-					</div>
+				{/* イベント・発売日 */}
+				<div className="flex flex-wrap items-center gap-4 text-base-content/60 text-sm">
+					{release.event && (
+						<Link
+							to="/events/$id"
+							params={{ id: release.event.id }}
+							preload="intent"
+							className="flex min-h-11 items-center gap-1 rounded-lg px-2 py-2 transition-colors duration-300 hover:bg-base-200/50 hover:text-primary"
+						>
+							<Calendar className="size-4" />
+							{release.event.name}
+						</Link>
+					)}
+					{release.releaseDate && (
+						<span className="flex items-center gap-1">
+							<Calendar className="size-4" />
+							{release.releaseDate}
+						</span>
+					)}
 				</div>
-			</div>
+			</EntityDetailHeader>
+
+			{/* 統計カード */}
+			<StatsCardGrid
+				items={
+					[
+						{
+							label: "トラック数",
+							value: release.trackCount,
+							icon: <Music className="size-5" />,
+							iconColorClass: "text-primary",
+						},
+						{
+							label: "参加アーティスト",
+							value: release.artistCount,
+							icon: <Users className="size-5" />,
+							iconColorClass: "text-secondary",
+						},
+					] satisfies StatItem[]
+				}
+				columns={2}
+			/>
 
 			{/* トラックリスト */}
 			<div className="space-y-4">

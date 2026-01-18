@@ -112,6 +112,15 @@
 	}
 }
 
+@keyframes slideInFromBottom {
+	from {
+		transform: translateY(100%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+
 /* ========================================
    Entity-specific gradient patterns
    ======================================== */
@@ -153,6 +162,26 @@
 		oklch(from var(--s) l c h / 0.12) 0%,
 		oklch(from var(--n) l c h / 0.08) 50%,
 		oklch(from var(--p) l c h / 0.06) 100%
+	);
+}
+
+/* Event: warm orange-amber gradient */
+.gradient-event {
+	background: linear-gradient(
+		135deg,
+		oklch(from var(--wa) l c h / 0.15) 0%,
+		oklch(from var(--a) l c h / 0.1) 50%,
+		oklch(from var(--s) l c h / 0.08) 100%
+	);
+}
+
+/* Song: calm green-teal gradient */
+.gradient-song {
+	background: linear-gradient(
+		135deg,
+		oklch(from var(--su) l c h / 0.15) 0%,
+		oklch(from var(--in) l c h / 0.1) 50%,
+		oklch(from var(--p) l c h / 0.08) 100%
 	);
 }
 

@@ -13,6 +13,10 @@ export {
 } from "./embeds";
 export { EmptyState, type EmptyStateType } from "./empty-state";
 export { type BadgeInfo, EntityCard } from "./entity-card";
+export {
+	EntityDetailHeader,
+	type EntityDetailHeaderProps,
+} from "./entity-detail-header";
 export { ExternalLink } from "./external-link";
 export { FeaturesSection } from "./features-section";
 export {
@@ -28,7 +32,18 @@ export {
 	type FilterButtonProps,
 	type FilterButtonSize,
 } from "./filter-button";
+export {
+	FilterDrawer,
+	type FilterDrawerProps,
+	FilterDrawerTrigger,
+} from "./filter-drawer";
 export { HeroSection } from "./hero-section";
+export {
+	MobileCardItem,
+	type MobileCardItemProps,
+	MobileCardList,
+	type MobileCardListProps,
+} from "./mobile-card-list";
 export { NavigationSection } from "./navigation-section";
 export {
 	calculateTotalPages,
@@ -55,6 +70,11 @@ export {
 	ScriptFilter,
 	TwoStageScriptFilter,
 } from "./script-filter";
+export {
+	type StatItem,
+	StatsCardGrid,
+	type StatsCardGridProps,
+} from "./stats-card-grid";
 export { StatsCards } from "./stats-cards";
 export { StatsPlaceholder } from "./stats-placeholder";
 export { type ViewMode, ViewToggle } from "./view-toggle";
