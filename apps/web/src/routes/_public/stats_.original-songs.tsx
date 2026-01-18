@@ -78,8 +78,8 @@ function OriginalSongsRankingPage() {
 								className="group flex items-center gap-3 px-4 py-3 transition-all duration-300 hover:bg-base-content/5"
 							>
 								<RankBadge rank={rank} medal={medal} />
-								<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary/10">
-									<Music className="size-5 text-secondary" aria-hidden="true" />
+								<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-content">
+									<Music className="size-5" aria-hidden="true" />
 								</div>
 								<div className="min-w-0 flex-1">
 									<span className="block truncate font-medium transition-colors group-hover:text-primary">

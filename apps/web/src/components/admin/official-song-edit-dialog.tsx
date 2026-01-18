@@ -386,7 +386,7 @@ export function OfficialSongEditDialog({
 					</DialogHeader>
 					<DialogBody className="grid gap-4 py-4">
 						{displayError && (
-							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 								{displayError}
 							</div>
 						)}

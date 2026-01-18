@@ -453,7 +453,7 @@ function EventsPage() {
 				/>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
+					<div className="border-base-300 border-b bg-error p-4 text-error-content text-sm">
 						{displayError}
 					</div>
 				)}
@@ -712,7 +712,7 @@ function EventsPage() {
 							/>
 						</div>
 						{createSeriesMutation.error && (
-							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 								{createSeriesMutation.error instanceof Error
 									? createSeriesMutation.error.message
 									: "シリーズの作成に失敗しました"}
@@ -987,7 +987,7 @@ function EventsPage() {
 							/>
 						</div>
 						{createDayMutation.error || updateDayMutation.error ? (
-							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 								{getErrorMessage(
 									createDayMutation.error || updateDayMutation.error,
 									"開催日の保存に失敗しました",

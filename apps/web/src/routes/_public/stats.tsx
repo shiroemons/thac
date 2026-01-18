@@ -72,7 +72,7 @@ function StatCard({
 					<Icon className="size-5" aria-hidden="true" />
 				</div>
 				{trend !== undefined && (
-					<div className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-success text-xs">
+					<div className="flex items-center gap-1 rounded-full bg-success px-2 py-1 text-success-content text-xs">
 						<TrendingUp className="size-3" aria-hidden="true" />
 						<span>+{trend}%</span>
 					</div>
@@ -311,7 +311,7 @@ function RecentUpdatesSection() {
 											NEW
 										</span>
 									) : (
-										<span className="inline-flex items-center gap-1 rounded-full bg-secondary/10 px-2.5 py-1 text-secondary text-xs">
+										<span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-secondary-content text-xs">
 											<PenLine className="size-3" aria-hidden="true" />
 											更新
 										</span>

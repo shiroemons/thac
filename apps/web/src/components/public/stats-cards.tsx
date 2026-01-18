@@ -29,7 +29,7 @@ function StatCard({ icon: Icon, count, label, href, trend }: StatCardProps) {
 				{trend !== undefined && (
 					<Badge
 						variant="success"
-						className="flex items-center gap-1 bg-success/10 text-success"
+						className="flex items-center gap-1 bg-success text-success-content"
 					>
 						<TrendingUp className="size-3" aria-hidden="true" />
 						<span>+{trend}%</span>

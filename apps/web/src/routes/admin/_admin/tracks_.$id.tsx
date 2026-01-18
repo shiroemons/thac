@@ -1642,7 +1642,7 @@ function TrackDetailPage() {
 						</div>
 					</div>
 					{creditCreateMutation.error && (
-						<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+						<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 							{getErrorMessage(creditCreateMutation.error)}
 						</div>
 					)}
@@ -1751,7 +1751,7 @@ function TrackDetailPage() {
 						</div>
 					</div>
 					{creditUpdateMutation.error ? (
-						<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+						<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 							{getErrorMessage(creditUpdateMutation.error)}
 						</div>
 					) : null}
@@ -1891,7 +1891,7 @@ function TrackDetailPage() {
 							? officialSongUpdateMutation.error
 							: officialSongCreateMutation.error
 					) ? (
-						<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+						<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 							{getErrorMessage(
 								editingOfficialSong
 									? officialSongUpdateMutation.error
@@ -1972,7 +1972,7 @@ function TrackDetailPage() {
 						</div>
 					</div>
 					{derivationCreateMutation.error && (
-						<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+						<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 							{getErrorMessage(derivationCreateMutation.error)}
 						</div>
 					)}
@@ -2049,7 +2049,7 @@ function TrackDetailPage() {
 							? publicationUpdateMutation.error
 							: publicationCreateMutation.error
 					) ? (
-						<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+						<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 							{getErrorMessage(
 								editingPublication
 									? publicationUpdateMutation.error
@@ -2144,7 +2144,7 @@ function TrackDetailPage() {
 							? isrcUpdateMutation.error
 							: isrcCreateMutation.error
 					) ? (
-						<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+						<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 							{getErrorMessage(
 								editingIsrc
 									? isrcUpdateMutation.error

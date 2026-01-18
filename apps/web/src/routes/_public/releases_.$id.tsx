@@ -301,7 +301,7 @@ function TrackCardList({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 						className="group flex min-h-16 items-start gap-3 p-4 transition-colors duration-300 hover:bg-base-200/50 sm:min-h-14 sm:items-center"
 					>
 						{/* トラック番号バッジ */}
-						<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-bold font-mono text-primary transition-all duration-300 group-hover:bg-primary group-hover:text-primary-content sm:size-9">
+						<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary font-bold font-mono text-primary-content transition-all duration-300 group-hover:bg-primary group-hover:text-primary-content sm:size-9">
 							{track.trackNumber.toString().padStart(2, "0")}
 						</div>
 

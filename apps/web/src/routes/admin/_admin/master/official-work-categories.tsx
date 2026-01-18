@@ -262,7 +262,7 @@ function OfficialWorkCategoriesPage() {
 				/>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
+					<div className="border-base-300 border-b bg-error p-4 text-error-content text-sm">
 						{displayError}
 					</div>
 				)}

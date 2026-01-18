@@ -454,7 +454,7 @@ function SearchPage() {
 										key={term}
 										type="button"
 										onClick={() => handleHistoryClick(term)}
-										className="min-h-[32px] rounded-full bg-base-content/5 px-3 py-1.5 text-base-content/70 text-xs transition-all duration-300 hover:bg-primary/10 hover:text-primary hover:shadow-sm"
+										className="min-h-[32px] rounded-full bg-base-content/5 px-3 py-1.5 text-base-content/70 text-xs transition-all duration-300 hover:bg-primary hover:text-primary-content hover:shadow-sm"
 									>
 										{term}
 									</button>
@@ -620,7 +620,7 @@ function SearchPage() {
 							<Link
 								to="/circles"
 								preload="intent"
-								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-primary/5 p-4 transition-all duration-300 hover:bg-primary/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-primary/5 p-4 transition-all duration-300 hover:bg-primary hover:text-primary-content hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 							>
 								<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-content transition-transform duration-300 group-hover:scale-110">
 									<Disc3 className="size-5" aria-hidden="true" />
@@ -635,7 +635,7 @@ function SearchPage() {
 							<Link
 								to="/artists"
 								preload="intent"
-								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-accent/5 p-4 transition-all duration-300 hover:bg-accent/10 hover:shadow-lg hover:ring-2 hover:ring-accent/10"
+								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-accent/5 p-4 transition-all duration-300 hover:bg-accent hover:text-accent-content hover:shadow-lg hover:ring-2 hover:ring-accent/10"
 							>
 								<div className="flex size-12 items-center justify-center rounded-xl bg-accent text-accent-content transition-transform duration-300 group-hover:scale-110">
 									<Users className="size-5" aria-hidden="true" />
@@ -650,7 +650,7 @@ function SearchPage() {
 							<Link
 								to="/original-songs"
 								preload="intent"
-								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-secondary/5 p-4 transition-all duration-300 hover:bg-secondary/10 hover:shadow-lg hover:ring-2 hover:ring-secondary/10"
+								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-secondary/5 p-4 transition-all duration-300 hover:bg-secondary hover:text-secondary-content hover:shadow-lg hover:ring-2 hover:ring-secondary/10"
 							>
 								<div className="flex size-12 items-center justify-center rounded-xl bg-secondary text-secondary-content transition-transform duration-300 group-hover:scale-110">
 									<Music className="size-5" aria-hidden="true" />
