@@ -343,4 +343,68 @@ import { formatNumber } from "@/lib/format";
 - その他数値をフォーマットする箇所
 
 ---
+
+## Infinite Scroll with SSR
+
+### 概要
+
+Infinite Scrollパターンでも初回データをSSRでプリフェッチ可能。
+`useInfiniteQuery`と`ensureInfiniteQueryData`を組み合わせる。
+
+### queryOptionsファクトリ
+
+```typescript
+import { infiniteQueryOptions } from "@tanstack/react-query";
+
+export const itemsInfiniteQueryOptions = (filters?: Filters) =>
+  infiniteQueryOptions({
+    queryKey: ["items", "infinite", filters],
+    queryFn: ({ pageParam }) =>
+      ssrFetch<CursorPaginatedResponse<Item>>(
+        `/api/public/items?cursor=${pageParam ?? ""}&limit=20`
+      ),
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: undefined as string | undefined,
+    staleTime: STALE_TIME.SHORT,
+  });
+```
+
+### ルートでの使用
+
+```typescript
+export const Route = createFileRoute("/_public/items")({
+  loader: ({ context }) =>
+    context.queryClient.ensureInfiniteQueryData(itemsInfiniteQueryOptions()),
+  component: ItemsPage,
+});
+
+function ItemsPage() {
+  const {
+    data,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery(itemsInfiniteQueryOptions());
+
+  const items = data?.pages.flatMap((page) => page.items) ?? [];
+
+  return (
+    <InfiniteScroll
+      hasMore={hasNextPage}
+      isLoading={isFetchingNextPage}
+      onLoadMore={fetchNextPage}
+    >
+      {items.map((item) => <ItemCard key={item.id} item={item} />)}
+    </InfiniteScroll>
+  );
+}
+```
+
+### SSRの初回データ
+
+- 初回ページロード時は最初のページのみSSRでプリフェッチ
+- スクロールで追加データをクライアント側でフェッチ
+- キャッシュは自動的に同期される
+
+---
 _Last updated: 2026-01_

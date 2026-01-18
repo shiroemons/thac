@@ -83,7 +83,15 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 **Location**: `/apps/web/src/hooks/`
 **Purpose**: 再利用可能なReactカスタムフック
 **Naming**: `use-{name}.ts`（kebab-case）
-**Example**: `use-debounce.ts`, `use-column-visibility.ts`
+**Core Hooks**:
+- `use-debounce.ts` - 入力デバウンス
+- `use-column-visibility.ts` - テーブルカラム表示制御（localStorage永続化）
+- `use-row-selection.ts` - テーブル行選択（ページまたぎ対応）
+- `use-sortable-table.ts` - ソート状態管理（3段階ソート対応）
+- `use-form-dirty.ts` - フォーム変更検知（テスト付き）
+- `use-unsaved-changes-guard.ts` - ナビゲーションガード（テスト付き）
+- `use-conflict-handler.ts` - 楽観的更新コンフリクト解決
+- `use-banner.ts` - Bannerコンポーネント状態管理
 
 ### Client Middleware (`apps/web/src/middleware/`)
 **Location**: `/apps/web/src/middleware/`

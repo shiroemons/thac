@@ -1076,6 +1076,214 @@ const [isDeleting, setIsDeleting] = useState(false);
 
 ---
 
+## Infinite Scroll
+
+### 概要
+
+従来のページネーションに加え、Infinite Scrollパターンをサポート。
+大量データの閲覧時にスムーズなUXを提供する。
+
+### InfiniteScrollコンポーネント
+
+`components/ui/infinite-scroll.tsx`
+
+```tsx
+import { InfiniteScroll } from "@/components/ui/infinite-scroll";
+
+<InfiniteScroll
+  hasMore={hasNextPage}
+  isLoading={isFetchingNextPage}
+  onLoadMore={fetchNextPage}
+  threshold={200}  // トリガー距離（px）
+>
+  {items.map((item) => (
+    <Card key={item.id}>{item.name}</Card>
+  ))}
+</InfiniteScroll>
+```
+
+### TanStack Query連携
+
+```tsx
+import { useInfiniteQuery } from "@tanstack/react-query";
+
+const {
+  data,
+  hasNextPage,
+  fetchNextPage,
+  isFetchingNextPage,
+} = useInfiniteQuery({
+  queryKey: ["items"],
+  queryFn: ({ pageParam }) => api.list({ cursor: pageParam }),
+  getNextPageParam: (lastPage) => lastPage.nextCursor,
+  initialPageParam: undefined,
+});
+
+const items = data?.pages.flatMap((page) => page.items) ?? [];
+```
+
+### 使い分け
+
+| パターン | 用途 |
+|---------|------|
+| ページネーション | 管理画面の一覧（正確なページ管理が必要） |
+| Infinite Scroll | 公開ページ、カード一覧（閲覧重視） |
+
+---
+
+## Drag & Drop（並べ替え）
+
+### 概要
+
+@dnd-kit を使用したドラッグ&ドロップ並べ替え機能。
+マスタデータや順序が重要なリストに適用。
+
+### 依存パッケージ
+
+- `@dnd-kit/core`
+- `@dnd-kit/sortable`
+
+### 基本パターン
+
+```tsx
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+function SortableItem({ id, children }: Props) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      {children}
+    </div>
+  );
+}
+
+function SortableList({ items, onReorder }: Props) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = items.findIndex((i) => i.id === active.id);
+      const newIndex = items.findIndex((i) => i.id === over.id);
+      onReorder(arrayMove(items, oldIndex, newIndex));
+    }
+  };
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+        {items.map((item) => (
+          <SortableItem key={item.id} id={item.id}>
+            {item.name}
+          </SortableItem>
+        ))}
+      </SortableContext>
+    </DndContext>
+  );
+}
+```
+
+### アクセシビリティ
+
+- `KeyboardSensor`でキーボード操作をサポート
+- 矢印キーでの移動、スペース/Enterで選択・確定
+
+### ReorderButtonsとの併用
+
+DnDが使いにくい環境（タッチデバイス等）向けに、
+`ReorderButtons`コンポーネントとの併用を推奨。
+
+---
+
+## チャート・グラフ
+
+### 概要
+
+統計・ランキングページで@nivoチャートライブラリを使用。
+
+### 依存パッケージ
+
+- `@nivo/core`
+- `@nivo/bar`
+
+### BarChartパターン
+
+```tsx
+import { ResponsiveBar } from "@nivo/bar";
+
+function StatsBarChart({ data }: { data: BarDatum[] }) {
+  return (
+    <div className="h-[400px]">
+      <ResponsiveBar
+        data={data}
+        keys={["value"]}
+        indexBy="label"
+        margin={{ top: 20, right: 20, bottom: 60, left: 60 }}
+        padding={0.3}
+        colors={{ scheme: "category10" }}
+        axisBottom={{
+          tickRotation: -45,
+          truncateTickAt: 10,
+        }}
+        labelSkipWidth={12}
+        labelSkipHeight={12}
+      />
+    </div>
+  );
+}
+```
+
+### テーマ対応
+
+```tsx
+// daisyUIテーマと連携
+const theme = {
+  textColor: "hsl(var(--bc))",  // base-content
+  gridLineColor: "hsl(var(--b2))",  // base-200
+};
+
+<ResponsiveBar theme={theme} ... />
+```
+
+### 適用ページ
+
+- `/admin/stats` - 管理ダッシュボード統計
+- `/_public/stats/ranking` - 公開ランキングページ
+
+---
+
 ## 検索・フィルター
 
 ### デバウンス
