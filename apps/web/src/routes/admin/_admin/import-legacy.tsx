@@ -1185,7 +1185,7 @@ function ImportingStep({
 								key={s}
 								className={`flex items-center justify-between rounded-lg p-4 text-sm ${
 									isCurrent
-										? "bg-primary/10 text-primary"
+										? "bg-primary text-primary-content"
 										: stageCompleted
 											? "text-success"
 											: "text-base-content/40"

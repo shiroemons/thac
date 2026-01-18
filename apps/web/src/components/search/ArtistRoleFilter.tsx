@@ -214,7 +214,8 @@ export function ArtistRoleFilter({
 											onClick={() => toggleArtist(artist)}
 											className={cn(
 												"flex w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-base-200",
-												isSelected && "bg-accent/10 font-medium text-accent",
+												isSelected &&
+													"bg-accent font-medium text-accent-content",
 											)}
 										>
 											<div

@@ -153,7 +153,7 @@ export function SearchableGroupedSelect({
 											className={cn(
 												"w-full px-4 py-2 text-left transition-colors hover:bg-base-200",
 												value === option.value &&
-													"bg-primary/10 font-medium text-primary",
+													"bg-primary font-medium text-primary-content",
 											)}
 										>
 											{option.label}

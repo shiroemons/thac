@@ -317,7 +317,7 @@ export function NestedGroupedSearchableSelect({
 														className={cn(
 															"flex w-full items-center gap-2 py-2 pr-4 pl-10 text-left transition-colors hover:bg-base-200",
 															value === option.value &&
-																"bg-primary/10 font-medium text-primary",
+																"bg-primary font-medium text-primary-content",
 														)}
 													>
 														{value === option.value && (

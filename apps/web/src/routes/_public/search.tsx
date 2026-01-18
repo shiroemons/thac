@@ -228,11 +228,11 @@ function getResultIcon(type: SearchResult["type"]): React.ReactNode {
 function getResultIconColor(type: SearchResult["type"]): string {
 	switch (type) {
 		case "artist":
-			return "bg-accent/10 text-accent";
+			return "bg-accent text-accent-content";
 		case "circle":
-			return "bg-primary/10 text-primary";
+			return "bg-primary text-primary-content";
 		case "track":
-			return "bg-secondary/10 text-secondary";
+			return "bg-secondary text-secondary-content";
 	}
 }
 
@@ -637,7 +637,7 @@ function SearchPage() {
 								preload="intent"
 								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-accent/5 p-4 transition-all duration-300 hover:bg-accent/10 hover:shadow-lg hover:ring-2 hover:ring-accent/10"
 							>
-								<div className="flex size-12 items-center justify-center rounded-xl bg-accent/10 text-accent transition-transform duration-300 group-hover:scale-110">
+								<div className="flex size-12 items-center justify-center rounded-xl bg-accent text-accent-content transition-transform duration-300 group-hover:scale-110">
 									<Users className="size-5" aria-hidden="true" />
 								</div>
 								<div>
@@ -652,7 +652,7 @@ function SearchPage() {
 								preload="intent"
 								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-secondary/5 p-4 transition-all duration-300 hover:bg-secondary/10 hover:shadow-lg hover:ring-2 hover:ring-secondary/10"
 							>
-								<div className="flex size-12 items-center justify-center rounded-xl bg-secondary/10 text-secondary transition-transform duration-300 group-hover:scale-110">
+								<div className="flex size-12 items-center justify-center rounded-xl bg-secondary text-secondary-content transition-transform duration-300 group-hover:scale-110">
 									<Music className="size-5" aria-hidden="true" />
 								</div>
 								<div>

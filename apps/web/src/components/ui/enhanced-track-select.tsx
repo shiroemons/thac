@@ -285,20 +285,25 @@ function TrackOptionCard({
 			onClick={onSelect}
 			className={cn(
 				"w-full p-3 text-left transition-colors hover:bg-base-200",
-				isSelected && "bg-primary/10",
+				isSelected && "bg-primary text-primary-content",
 			)}
 		>
 			<span className="flex items-start gap-2">
 				{/* 選択チェック */}
 				<span className="mt-0.5 w-5 shrink-0">
-					{isSelected && <Check className="h-4 w-4 text-primary" />}
+					{isSelected && <Check className="h-4 w-4 text-primary-content" />}
 				</span>
 
 				{/* トラック情報 */}
 				<span className="block min-w-0 flex-1 space-y-1">
 					{/* トラック名 + 番号 */}
 					<span className="flex items-center gap-2">
-						<span className={cn("font-medium", isSelected && "text-primary")}>
+						<span
+							className={cn(
+								"font-medium",
+								isSelected && "text-primary-content",
+							)}
+						>
 							{track.name}
 						</span>
 						<span className="shrink-0 rounded bg-base-300 px-1.5 py-0.5 font-mono text-xs">

@@ -39,7 +39,7 @@ function ArtistsRankingPage() {
 			<div className="glass-card relative overflow-hidden rounded-2xl p-6 md:p-8">
 				<div className="gradient-mesh absolute inset-0" />
 				<div className="relative flex items-center gap-4">
-					<div className="flex size-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+					<div className="flex size-14 items-center justify-center rounded-2xl bg-accent text-accent-content">
 						<Sparkles className="size-7" aria-hidden="true" />
 					</div>
 					<div>
