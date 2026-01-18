@@ -60,6 +60,8 @@ import {
 	tracksApi,
 } from "@/lib/api-client";
 import {
+	OFFICIAL_WORK_CATEGORY_LABELS,
+	OFFICIAL_WORK_CATEGORY_ORDER,
 	PLATFORM_CATEGORY_LABELS,
 	PLATFORM_CATEGORY_ORDER,
 } from "@/lib/constants";
@@ -318,21 +320,14 @@ function TrackDetailPage() {
 		return songOptions;
 	}, [officialSongsData?.data]);
 
-	// 公式楽曲のグループ順序（カテゴリのsortOrder順）
-	const officialSongGroupOrder = useMemo(() => {
-		const songs = officialSongsData?.data ?? [];
-		const categories = new Map<string, number>();
-		for (const song of songs) {
-			const name = song.workCategoryName || "その他";
-			const order = song.workCategorySortOrder ?? 999;
-			if (!categories.has(name)) {
-				categories.set(name, order);
-			}
-		}
-		return Array.from(categories.entries())
-			.sort((a, b) => a[1] - b[1])
-			.map(([name]) => name);
-	}, [officialSongsData?.data]);
+	// 公式楽曲のグループ順序（共通定数から生成）
+	const officialSongGroupOrder = useMemo(
+		() =>
+			OFFICIAL_WORK_CATEGORY_ORDER.map(
+				(key) => OFFICIAL_WORK_CATEGORY_LABELS[key],
+			),
+		[],
+	);
 
 	// ロール別クレジット抽出
 	const roleSummary = useMemo(() => {

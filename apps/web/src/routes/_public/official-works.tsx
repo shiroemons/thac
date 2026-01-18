@@ -7,6 +7,7 @@ import {
 	type ViewMode,
 	ViewToggle,
 } from "@/components/public";
+import { OFFICIAL_WORK_CATEGORY_ORDER } from "@/lib/constants";
 import { createPageHead } from "@/lib/head";
 import {
 	type PublicCategory,
@@ -200,21 +201,36 @@ function OfficialWorksPage() {
 					>
 						すべて
 					</button>
-					{categories.map((cat: PublicCategory) => {
-						const config = getCategoryConfig(cat.code);
-						return (
-							<button
-								key={cat.code}
-								type="button"
-								className={`btn btn-sm gap-1 ${type === cat.code ? "btn-primary" : "btn-ghost"}`}
-								onClick={() => handleTypeChange(cat.code)}
-								aria-pressed={type === cat.code}
-							>
-								{config.icon}
-								{cat.name}
-							</button>
-						);
-					})}
+					{[...categories]
+						.sort((a, b) => {
+							const aIndex = OFFICIAL_WORK_CATEGORY_ORDER.indexOf(
+								a.code as (typeof OFFICIAL_WORK_CATEGORY_ORDER)[number],
+							);
+							const bIndex = OFFICIAL_WORK_CATEGORY_ORDER.indexOf(
+								b.code as (typeof OFFICIAL_WORK_CATEGORY_ORDER)[number],
+							);
+							// 定義されていないカテゴリは末尾に
+							const aOrder =
+								aIndex === -1 ? OFFICIAL_WORK_CATEGORY_ORDER.length : aIndex;
+							const bOrder =
+								bIndex === -1 ? OFFICIAL_WORK_CATEGORY_ORDER.length : bIndex;
+							return aOrder - bOrder;
+						})
+						.map((cat: PublicCategory) => {
+							const config = getCategoryConfig(cat.code);
+							return (
+								<button
+									key={cat.code}
+									type="button"
+									className={`btn btn-sm gap-1 ${type === cat.code ? "btn-primary" : "btn-ghost"}`}
+									onClick={() => handleTypeChange(cat.code)}
+									aria-pressed={type === cat.code}
+								>
+									{config.icon}
+									{cat.name}
+								</button>
+							);
+						})}
 				</div>
 			</div>
 

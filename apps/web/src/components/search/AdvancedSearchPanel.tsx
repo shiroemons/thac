@@ -1,6 +1,10 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import {
+	OFFICIAL_WORK_CATEGORY_LABELS,
+	OFFICIAL_WORK_CATEGORY_ORDER,
+} from "@/lib/constants";
+import {
 	publicArtistsAllListOptions,
 	publicCirclesAllListOptions,
 	publicEventSeriesListOptions,
@@ -114,9 +118,6 @@ export function AdvancedSearchPanel({
 			})),
 		[songsData],
 	);
-
-	// カテゴリの表示順序
-	const categoryOrder = ["PC-98", "Windows", "CD", "書籍", "その他"] as const;
 
 	const [sectionState, setSectionState] = useState<FilterSectionState>(
 		DEFAULT_SECTION_STATE,
@@ -295,7 +296,9 @@ export function AdvancedSearchPanel({
 							onFiltersChange({ ...filters, originalSongs: songs })
 						}
 						options={originalSongs}
-						categoryOrder={categoryOrder}
+						categoryOrder={OFFICIAL_WORK_CATEGORY_ORDER.map(
+							(key) => OFFICIAL_WORK_CATEGORY_LABELS[key],
+						)}
 					/>
 				</FilterSection>
 

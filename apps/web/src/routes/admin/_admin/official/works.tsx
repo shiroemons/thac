@@ -31,6 +31,7 @@ import {
 	type OfficialWork,
 	officialWorkCategoriesApi,
 } from "@/lib/api-client";
+import { OFFICIAL_WORK_CATEGORY_ORDER } from "@/lib/constants";
 import { createPageHead } from "@/lib/head";
 import { officialWorkMutations } from "@/lib/mutation-options";
 import { officialWorksListQueryOptions } from "@/lib/query-options";
@@ -123,11 +124,28 @@ function OfficialWorksPage() {
 		staleTime: 60_000,
 	});
 
-	const categoryOptions =
-		categoriesData?.data.map((c) => ({
-			value: c.code,
-			label: c.name,
-		})) ?? [];
+	const categoryOptions = useMemo(() => {
+		const options =
+			categoriesData?.data.map((c) => ({
+				value: c.code,
+				label: c.name,
+			})) ?? [];
+		// OFFICIAL_WORK_CATEGORY_ORDER の順序でソート
+		return options.sort((a, b) => {
+			const indexA = OFFICIAL_WORK_CATEGORY_ORDER.indexOf(
+				a.value as (typeof OFFICIAL_WORK_CATEGORY_ORDER)[number],
+			);
+			const indexB = OFFICIAL_WORK_CATEGORY_ORDER.indexOf(
+				b.value as (typeof OFFICIAL_WORK_CATEGORY_ORDER)[number],
+			);
+			// 定義されていない場合は末尾に
+			const orderA =
+				indexA === -1 ? OFFICIAL_WORK_CATEGORY_ORDER.length : indexA;
+			const orderB =
+				indexB === -1 ? OFFICIAL_WORK_CATEGORY_ORDER.length : indexB;
+			return orderA - orderB;
+		});
+	}, [categoriesData?.data]);
 
 	const { data, isPending, isFetching, error } = useQuery(
 		officialWorksListQueryOptions({
