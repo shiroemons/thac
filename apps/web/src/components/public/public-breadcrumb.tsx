@@ -104,47 +104,50 @@ export function PublicBreadcrumb({
 		...items,
 	];
 
-	// モバイル省略表示の計算
+	// モバイル省略表示の判定
 	const shouldCollapse = collapsible && allItems.length > maxVisibleItems;
-	const visibleItems = shouldCollapse
-		? [
-				allItems[0], // 最初（ホーム）
-				{ label: "...", href: undefined } as BreadcrumbItemData, // 省略マーカー
-				...allItems.slice(-2), // 最後2つ
-			]
-		: allItems;
 
 	return (
 		<Breadcrumb className="mb-4">
 			<BreadcrumbList>
-				{visibleItems.map((item, index) => {
-					const isLast = index === visibleItems.length - 1;
+				{allItems.map((item, index) => {
 					const isHome = index === 0;
-					const isEllipsis = item.label === "...";
+					const isLast = index === allItems.length - 1;
+					// 最後の2項目かどうか（モバイルでも表示する）
+					const isLastTwo = index >= allItems.length - 2;
 
-					const icon = isEllipsis ? null : getItemIcon(item, isHome);
+					// 中間項目かどうか（モバイルで非表示にする対象）
+					// ホームと最後の2項目以外が中間項目
+					const isMiddleItem = shouldCollapse && !isHome && !isLastTwo;
+
+					const icon = getItemIcon(item, isHome);
+
+					// モバイルでの表示順序を制御
+					// ホーム: order-1, 最後の2項目: order-3, 中間項目: hidden
+					const orderClass = shouldCollapse
+						? isHome
+							? "order-1 sm:order-none"
+							: isLastTwo
+								? "order-3 sm:order-none"
+								: ""
+						: "";
 
 					return (
 						<BreadcrumbItem
 							key={`${item.label}-${index}`}
-							className={
-								shouldCollapse && !isHome && !isLast ? "hidden sm:flex" : ""
-							}
+							className={`${isMiddleItem ? "hidden sm:flex" : ""} ${orderClass}`.trim()}
 						>
+							{/* セパレータ */}
 							{index > 0 && (
 								<BreadcrumbSeparator
-									className={
-										shouldCollapse && !isHome && !isLast ? "hidden sm:flex" : ""
-									}
+									className={isMiddleItem ? "hidden sm:flex" : ""}
 								>
 									<ChevronRight className="size-4 text-base-content/50" />
 								</BreadcrumbSeparator>
 							)}
-							{isEllipsis ? (
-								<span className="flex items-center px-1 text-base-content/50 sm:hidden">
-									<MoreHorizontal className="size-4" />
-								</span>
-							) : isLast || !item.href ? (
+
+							{/* アイテム本体 */}
+							{isLast || !item.href ? (
 								<BreadcrumbPage className="flex items-center gap-1.5 font-medium text-base-content">
 									{icon}
 									<span className="line-clamp-1">{item.label}</span>
@@ -161,6 +164,18 @@ export function PublicBreadcrumb({
 						</BreadcrumbItem>
 					);
 				})}
+
+				{/* モバイル用省略マーカー（ホームと最後の2項目の間に表示） */}
+				{shouldCollapse && (
+					<BreadcrumbItem className="order-2 sm:hidden">
+						<BreadcrumbSeparator>
+							<ChevronRight className="size-4 text-base-content/50" />
+						</BreadcrumbSeparator>
+						<span className="flex items-center px-1 text-base-content/50">
+							<MoreHorizontal className="size-4" />
+						</span>
+					</BreadcrumbItem>
+				)}
 			</BreadcrumbList>
 		</Breadcrumb>
 	);
