@@ -381,7 +381,7 @@ function SearchPage() {
 
 					{/* Search form with enhanced visibility */}
 					<form onSubmit={handleSearch} className="mx-auto max-w-2xl">
-						<div className="flex gap-2">
+						<div className="flex items-center gap-2">
 							{/* Search input - enhanced visibility with glass effect */}
 							<div className="group relative flex-1">
 								<div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5">
@@ -395,7 +395,7 @@ function SearchPage() {
 									value={inputValue}
 									onChange={(e) => setInputValue(e.target.value)}
 									placeholder="検索キーワードを入力..."
-									className="min-h-[56px] w-full rounded-xl border-2 border-base-content/10 bg-base-100/70 py-4 pr-12 pl-14 text-lg shadow-lg backdrop-blur-sm transition-all duration-300 placeholder:text-base-content/40 hover:border-primary/30 hover:shadow-xl focus:border-primary focus:bg-base-100 focus:shadow-xl focus:outline-none focus:ring-4 focus:ring-primary/20"
+									className="input input-bordered input-lg w-full rounded-xl border-2 border-base-content/10 bg-base-100/70 pr-12 pl-14 shadow-lg backdrop-blur-sm transition-all duration-300 placeholder:text-base-content/40 hover:border-primary/30 hover:shadow-xl focus:border-primary focus:bg-base-100 focus:shadow-xl focus:outline-none focus:ring-4 focus:ring-primary/20"
 									aria-label="検索キーワード"
 								/>
 								{inputValue && (
@@ -414,8 +414,9 @@ function SearchPage() {
 							<Button
 								type="button"
 								variant={activeFilterCount > 0 ? "primary" : "outline"}
+								size="lg"
 								onClick={openAdvancedSearch}
-								className="min-h-[56px] min-w-[56px] gap-2 rounded-xl px-4 py-2 transition-all duration-300 hover:shadow-lg"
+								className="min-w-12 gap-2 rounded-xl px-4 transition-all duration-300 hover:shadow-lg"
 								aria-label="詳細検索を開く"
 							>
 								<SlidersHorizontal className="size-5" />
