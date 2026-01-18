@@ -1,11 +1,11 @@
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Calendar, Disc3, Loader2, MapPin, Music, Users } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
 	EntityDetailHeader,
-	Pagination,
 	PublicBreadcrumb,
 	type StatItem,
 	StatsCardGrid,
@@ -15,6 +15,7 @@ import {
 	WorkStatsSection,
 	WorkStatsSkeleton,
 } from "@/components/public";
+import { InfiniteScroll } from "@/components/ui/infinite-scroll";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import {
 	type EventDetailTab,
@@ -22,8 +23,9 @@ import {
 	TAB_LABELS,
 } from "@/lib/detail-tab-utils";
 import { createPublicEventHead } from "@/lib/head";
-import { type PublicEventRelease, publicApi } from "@/lib/public-api";
+import { publicApi } from "@/lib/public-api";
 import {
+	publicEventReleasesInfiniteQueryOptions,
 	publicWorkStatsSimpleQueryOptions,
 	publicWorkStatsStackedQueryOptions,
 } from "@/lib/public-query-options";
@@ -103,12 +105,24 @@ function EventDetailPage() {
 		}
 	}, [activeTab, contentTab]);
 
-	// 作品一覧の状態
-	const [releases, setReleases] = useState<PublicEventRelease[]>([]);
-	const [releasesTotal, setReleasesTotal] = useState(0);
-	const [releasesPage, setReleasesPage] = useState(1);
-	const [releasesLoading, setReleasesLoading] = useState(false);
-	const [releasesLoaded, setReleasesLoaded] = useState(false);
+	// 作品一覧の無限スクロール
+	const {
+		data: releasesData,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+		isLoading: releasesLoading,
+	} = useInfiniteQuery({
+		...publicEventReleasesInfiniteQueryOptions({
+			eventId: id,
+			limit: PAGE_SIZE,
+		}),
+		enabled: activeTab === "releases" && !!event,
+	});
+
+	// ページデータをフラット化
+	const releases = releasesData?.pages.flatMap((page) => page.data) ?? [];
+	const releasesTotal = releasesData?.pages[0]?.total ?? 0;
 
 	// ビューモードの保存
 	useEffect(() => {
@@ -130,36 +144,6 @@ function EventDetailPage() {
 		});
 	};
 
-	// 作品一覧を取得
-	const fetchReleases = useCallback(
-		async (page: number) => {
-			if (!event) return;
-			setReleasesLoading(true);
-			try {
-				const res = await publicApi.events.releases(id, {
-					page,
-					limit: PAGE_SIZE,
-				});
-				setReleases(res.data);
-				setReleasesTotal(res.total);
-				setReleasesPage(page);
-				setReleasesLoaded(true);
-			} catch {
-				// エラー時は空配列
-			} finally {
-				setReleasesLoading(false);
-			}
-		},
-		[event, id],
-	);
-
-	// タブ切替時に遅延読み込み
-	useEffect(() => {
-		if (activeTab === "releases" && !releasesLoaded && event) {
-			fetchReleases(1);
-		}
-	}, [activeTab, releasesLoaded, event, fetchReleases]);
-
 	// イベントが見つからない場合
 	if (!event) {
 		return (
@@ -179,8 +163,6 @@ function EventDetailPage() {
 			</div>
 		);
 	}
-
-	const releasesTotalPages = Math.ceil(releasesTotal / PAGE_SIZE);
 
 	// 日程表示
 	const formatDateRange = () => {
@@ -239,15 +221,15 @@ function EventDetailPage() {
 	// 統計項目
 	const statsItems: StatItem[] = [
 		{
-			label: "作品",
-			value: event.stats.releaseCount,
-			icon: <Disc3 className="size-5" />,
-			iconColorClass: "text-primary",
-		},
-		{
 			label: "サークル",
 			value: event.stats.circleCount,
 			icon: <Users className="size-5" />,
+			iconColorClass: "text-primary",
+		},
+		{
+			label: "作品",
+			value: event.stats.releaseCount,
+			icon: <Disc3 className="size-5" />,
 			iconColorClass: "text-secondary",
 		},
 		{
@@ -402,14 +384,14 @@ function EventDetailPage() {
 						</div>
 					)}
 
-					{/* ページネーション */}
-					{releasesTotalPages > 1 && (
-						<Pagination
-							currentPage={releasesPage}
-							totalPages={releasesTotalPages}
-							onPageChange={fetchReleases}
-						/>
-					)}
+					{/* 無限スクロール */}
+					<InfiniteScroll
+						onLoadMore={fetchNextPage}
+						isLoading={isFetchingNextPage}
+						hasMore={hasNextPage ?? false}
+						loadedCount={releases.length}
+						totalCount={releasesTotal}
+					/>
 				</>
 			)}
 

@@ -10,6 +10,7 @@ import {
 	type PaginatedResponse,
 	type PublicArtistItem,
 	type PublicCircleItem,
+	type PublicEventRelease,
 	publicApi,
 	type SongStatsResponse,
 	type StackedWorkStatsResponse,
@@ -376,5 +377,56 @@ export const artistsRankingInfiniteQueryOptions = (limit = 20) => {
 			return hasMore ? lastPage.page + 1 : undefined;
 		},
 		staleTime: STALE_TIME_PUBLIC.RANKINGS,
+	});
+};
+
+// =============================================================================
+// イベント詳細ページ用無限スクロールクエリオプション
+// =============================================================================
+
+/** イベント作品一覧無限スクロール用パラメータ */
+interface PublicEventReleasesInfiniteParams {
+	eventId: string;
+	limit?: number;
+	search?: string;
+	sortBy?: string;
+	sortOrder?: string;
+}
+
+/**
+ * イベント作品一覧の無限スクロールクエリオプション
+ * イベント詳細ページでの作品一覧表示に使用
+ */
+export const publicEventReleasesInfiniteQueryOptions = (
+	params: PublicEventReleasesInfiniteParams,
+) => {
+	return infiniteQueryOptions({
+		queryKey: [
+			"public",
+			"events",
+			params.eventId,
+			"releases",
+			"infinite",
+			{
+				limit: params.limit,
+				search: params.search,
+				sortBy: params.sortBy,
+				sortOrder: params.sortOrder,
+			},
+		],
+		queryFn: ({ pageParam }) =>
+			publicApi.events.releases(params.eventId, {
+				page: pageParam,
+				limit: params.limit || 20,
+				search: params.search,
+				sortBy: params.sortBy,
+				sortOrder: params.sortOrder,
+			}),
+		initialPageParam: 1,
+		getNextPageParam: (lastPage: PaginatedResponse<PublicEventRelease>) => {
+			const hasMore = lastPage.page * lastPage.limit < lastPage.total;
+			return hasMore ? lastPage.page + 1 : undefined;
+		},
+		staleTime: STALE_TIME_PUBLIC.STATS,
 	});
 };

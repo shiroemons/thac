@@ -351,6 +351,7 @@ export interface PublicEventItem {
 	totalDays: number | null;
 	venue: string | null;
 	releaseCount: number;
+	trackCount: number;
 }
 
 /** イベント日 */
@@ -889,11 +890,17 @@ export const publicApi = {
 			params?: {
 				page?: number;
 				limit?: number;
+				search?: string;
+				sortBy?: string;
+				sortOrder?: string;
 			},
 		) => {
 			const sp = new URLSearchParams();
 			if (params?.page) sp.set("page", String(params.page));
 			if (params?.limit) sp.set("limit", String(params.limit));
+			if (params?.search) sp.set("search", params.search);
+			if (params?.sortBy) sp.set("sortBy", params.sortBy);
+			if (params?.sortOrder) sp.set("sortOrder", params.sortOrder);
 			const query = sp.toString();
 			return publicFetch<PaginatedResponse<PublicEventRelease>>(
 				`/api/public/events/${id}/releases${query ? `?${query}` : ""}`,

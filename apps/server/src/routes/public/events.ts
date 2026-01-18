@@ -94,6 +94,13 @@ eventsRouter.get("/", async (c) => {
 			.from(releases)
 			.where(eq(releases.eventId, events.id));
 
+		// trackCountサブクエリ（N+1回避）
+		const trackCountSubquery = db
+			.select({ count: count() })
+			.from(tracks)
+			.innerJoin(releases, eq(tracks.releaseId, releases.id))
+			.where(eq(releases.eventId, events.id));
+
 		// ソート条件を構築
 		const sortColumn =
 			sortBy === "name"
@@ -118,6 +125,7 @@ eventsRouter.get("/", async (c) => {
 					totalDays: events.totalDays,
 					venue: events.venue,
 					releaseCount: sql<number>`(${releaseCountSubquery})`,
+					trackCount: sql<number>`(${trackCountSubquery})`,
 				})
 				.from(events)
 				.leftJoin(eventSeries, eq(events.eventSeriesId, eventSeries.id))
