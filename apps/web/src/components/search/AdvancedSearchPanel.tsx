@@ -1,6 +1,9 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
-import { OFFICIAL_WORK_CATEGORY_ORDER } from "@/lib/constants";
+import {
+	OFFICIAL_WORK_CATEGORY_LABELS,
+	OFFICIAL_WORK_CATEGORY_ORDER,
+} from "@/lib/constants";
 import {
 	publicArtistsAllListOptions,
 	publicCirclesAllListOptions,
@@ -293,7 +296,9 @@ export function AdvancedSearchPanel({
 							onFiltersChange({ ...filters, originalSongs: songs })
 						}
 						options={originalSongs}
-						categoryOrder={OFFICIAL_WORK_CATEGORY_ORDER}
+						categoryOrder={OFFICIAL_WORK_CATEGORY_ORDER.map(
+							(key) => OFFICIAL_WORK_CATEGORY_LABELS[key],
+						)}
 					/>
 				</FilterSection>
 
