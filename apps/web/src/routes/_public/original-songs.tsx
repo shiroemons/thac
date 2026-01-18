@@ -250,29 +250,37 @@ function OriginalSongsPage() {
 			<PublicBreadcrumb items={[{ label: "原曲" }]} />
 
 			{/* ヘッダー */}
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<h1 className="font-bold text-3xl">原曲一覧</h1>
-					<p className="mt-1 text-base-content/70">
-						東方Project公式楽曲 · {works.length}作品 · {totalSongCount}曲
-					</p>
-				</div>
-				<div className="flex gap-2">
-					{/* モバイルフィルターボタン */}
-					<FilterDrawerTrigger
-						onClick={() => setIsFilterDrawerOpen(true)}
-						activeFilterCount={activeFilterCount}
-					/>
-					<Link
-						to="/official-works"
-						preload="intent"
-						className="btn btn-outline btn-sm gap-1"
-					>
-						<Music className="size-4" />
-						<span className="xs:inline hidden">公式作品一覧</span>
-						<span className="xs:hidden">公式作品</span>
-						<ChevronRight className="size-4" />
-					</Link>
+			<div className="glass-card relative overflow-hidden rounded-2xl p-6 md:p-8">
+				<div className="gradient-mesh absolute inset-0" />
+				<div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex items-center gap-4">
+						<div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-content">
+							<Music className="size-7" aria-hidden="true" />
+						</div>
+						<div>
+							<h1 className="font-bold text-2xl md:text-3xl">原曲一覧</h1>
+							<p className="mt-1 text-base-content/60">
+								東方Project公式楽曲 · {works.length}作品 · {totalSongCount}曲
+							</p>
+						</div>
+					</div>
+					<div className="flex gap-2">
+						{/* モバイルフィルターボタン */}
+						<FilterDrawerTrigger
+							onClick={() => setIsFilterDrawerOpen(true)}
+							activeFilterCount={activeFilterCount}
+						/>
+						<Link
+							to="/official-works"
+							preload="intent"
+							className="btn btn-outline btn-sm gap-1"
+						>
+							<Music className="size-4" />
+							<span className="xs:inline hidden">公式作品一覧</span>
+							<span className="xs:hidden">公式作品</span>
+							<ChevronRight className="size-4" />
+						</Link>
+					</div>
 				</div>
 			</div>
 

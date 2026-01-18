@@ -203,20 +203,28 @@ function CirclesPage() {
 			<PublicBreadcrumb items={[{ label: "サークル" }]} />
 
 			{/* ヘッダー */}
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<h1 className="font-bold text-3xl">サークル一覧</h1>
-					<p className="mt-1 text-base-content/70">
-						同人サークル · {formatNumber(total)}件
-					</p>
-				</div>
-				<div className="flex items-center gap-2">
-					{/* モバイル用フィルタートリガー（md未満で表示） */}
-					<FilterDrawerTrigger
-						onClick={() => setIsFilterDrawerOpen(true)}
-						activeFilterCount={activeFilterCount}
-					/>
-					<ViewToggle value={view} onChange={handleViewChange} />
+			<div className="glass-card relative overflow-hidden rounded-2xl p-6 md:p-8">
+				<div className="gradient-mesh absolute inset-0" />
+				<div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex items-center gap-4">
+						<div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-content">
+							<Users className="size-7" aria-hidden="true" />
+						</div>
+						<div>
+							<h1 className="font-bold text-2xl md:text-3xl">サークル一覧</h1>
+							<p className="mt-1 text-base-content/60">
+								東方アレンジを制作するサークル · {formatNumber(total)}件
+							</p>
+						</div>
+					</div>
+					<div className="flex items-center gap-2">
+						{/* モバイル用フィルタートリガー（md未満で表示） */}
+						<FilterDrawerTrigger
+							onClick={() => setIsFilterDrawerOpen(true)}
+							activeFilterCount={activeFilterCount}
+						/>
+						<ViewToggle value={view} onChange={handleViewChange} />
+					</div>
 				</div>
 			</div>
 
