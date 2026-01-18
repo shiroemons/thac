@@ -1,7 +1,57 @@
 import { Check, Copy, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { searchSyntaxHelp } from "./mock-data";
+
+/** 検索構文のヘルプ情報 */
+interface SearchSyntaxItem {
+	keyword: string;
+	description: string;
+	example: string;
+}
+
+/** 検索構文ヘルプデータ（静的なドキュメント情報） */
+const searchSyntaxHelp: SearchSyntaxItem[] = [
+	{
+		keyword: "arranger:",
+		description: "編曲者で検索",
+		example: "arranger:ARM",
+	},
+	{
+		keyword: "vocalist:",
+		description: "ボーカルで検索",
+		example: "vocalist:miko",
+	},
+	{
+		keyword: "lyricist:",
+		description: "作詞者で検索",
+		example: "lyricist:夕野ヨシミ",
+	},
+	{
+		keyword: "circle:",
+		description: "サークル名で検索",
+		example: "circle:IOSYS",
+	},
+	{
+		keyword: "originalsong:",
+		description: "原曲名で検索",
+		example: "originalsong:大吉キトゥン",
+	},
+	{
+		keyword: "year:",
+		description: "リリース年で検索",
+		example: "year:2023",
+	},
+	{
+		keyword: "songcount:",
+		description: "原曲数で検索",
+		example: "songcount:2",
+	},
+	{
+		keyword: "songcount:>=",
+		description: "原曲数（以上）で検索",
+		example: "songcount:>=3",
+	},
+];
 
 interface SearchSyntaxHelpProps {
 	/** カスタムクラス名 */

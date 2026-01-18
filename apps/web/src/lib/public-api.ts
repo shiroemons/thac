@@ -331,6 +331,13 @@ export interface PublicArtistTrack {
 	originalSong: { id: string; name: string | null } | null;
 }
 
+/** イベントシリーズ一覧項目 */
+export interface PublicEventSeriesItem {
+	id: string;
+	name: string;
+	sortOrder: number;
+}
+
 /** イベント一覧項目 */
 export interface PublicEventItem {
 	id: string;
@@ -780,6 +787,14 @@ export const publicApi = {
 				`/api/public/artists/${id}/stats/works${query ? `?${query}` : ""}`,
 			);
 		},
+	},
+
+	eventSeries: {
+		/** イベントシリーズ一覧を取得 */
+		list: () =>
+			publicFetch<{ data: PublicEventSeriesItem[] }>(
+				"/api/public/event-series",
+			),
 	},
 
 	events: {

@@ -10,26 +10,6 @@ export { DateRangeFilter } from "./DateRangeFilter";
 export { EventFilter } from "./EventFilter";
 export { createFilterChip, FilterChips } from "./FilterChips";
 export { FilterSection } from "./FilterSection";
-// Mock Data (for development)
-export type {
-	MockArtist,
-	MockCircle,
-	MockEvent,
-	MockEventSeries,
-	MockSearchResult,
-	SearchSyntaxItem,
-} from "./mock-data";
-export {
-	mockArtists,
-	mockCircles,
-	mockEventSeries,
-	mockEvents,
-	mockOriginalSongs,
-	mockSearchResults,
-	originalSongCategoryOrder,
-	popularSearches,
-	searchSyntaxHelp,
-} from "./mock-data";
 export { OriginalSongCountFilter } from "./OriginalSongCountFilter";
 export { OriginalSongFilter } from "./OriginalSongFilter";
 export { RoleCountFilter } from "./RoleCountFilter";

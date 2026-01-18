@@ -46,11 +46,18 @@ export function FilterSection({
 	return (
 		<div className={cn("border-base-300 border-b last:border-b-0", className)}>
 			{/* ヘッダー（クリック可能） */}
-			<button
-				type="button"
+			<div
+				role="button"
+				tabIndex={0}
 				onClick={onToggle}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						onToggle();
+					}
+				}}
 				aria-expanded={isOpen}
-				className="flex w-full items-center justify-between gap-2 px-6 py-3 text-left transition-colors hover:bg-base-200/50"
+				className="flex w-full cursor-pointer items-center justify-between gap-2 px-6 py-3 text-left transition-colors hover:bg-base-200/50"
 			>
 				<div className="flex items-center gap-2">
 					{/* 展開アイコン */}
@@ -84,19 +91,19 @@ export function FilterSection({
 						クリア
 					</Button>
 				)}
-			</button>
+			</div>
 
 			{/* コンテンツ（展開時のみ表示） */}
 			<div
 				className={cn(
-					"grid transition-[grid-template-rows] duration-200 ease-out",
-					isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+					"transition-all duration-200 ease-out",
+					isOpen
+						? "max-h-[2000px] overflow-visible opacity-100"
+						: "max-h-0 overflow-hidden opacity-0",
 					"motion-reduce:transition-none",
 				)}
 			>
-				<div className="overflow-hidden">
-					<div className="px-6 pb-4">{children}</div>
-				</div>
+				<div className="px-6 pb-4">{children}</div>
 			</div>
 		</div>
 	);

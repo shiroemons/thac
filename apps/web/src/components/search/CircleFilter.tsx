@@ -1,8 +1,7 @@
 import { Check, Disc3, Plus, Search, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { MockCircle } from "./mock-data";
-import type { SelectedCircle } from "./types";
+import type { CircleOption, SelectedCircle } from "./types";
 
 interface CircleFilterProps {
 	/** 選択中のサークルリスト */
@@ -10,7 +9,7 @@ interface CircleFilterProps {
 	/** 選択変更ハンドラ */
 	onChange: (circles: SelectedCircle[]) => void;
 	/** 選択可能なサークルオプション */
-	options: MockCircle[];
+	options: CircleOption[];
 	/** カスタムクラス名 */
 	className?: string;
 }
@@ -37,20 +36,24 @@ export function CircleFilter({
 		[selectedCircles],
 	);
 
-	// 検索でフィルタリング
+	// 検索でフィルタリング＆ソート
 	const filteredOptions = useMemo(() => {
-		if (!search) return options;
-		const lowerSearch = search.toLowerCase();
-		return options.filter(
-			(o) =>
-				o.name.toLowerCase().includes(lowerSearch) ||
-				o.nameJa?.toLowerCase().includes(lowerSearch),
-		);
+		let result = options;
+		if (search) {
+			const lowerSearch = search.toLowerCase();
+			result = options.filter(
+				(o) =>
+					o.name.toLowerCase().includes(lowerSearch) ||
+					o.nameJa?.toLowerCase().includes(lowerSearch),
+			);
+		}
+		// サークル名でソート
+		return [...result].sort((a, b) => a.name.localeCompare(b.name, "ja"));
 	}, [options, search]);
 
 	// サークルを選択/解除
 	const toggleCircle = useCallback(
-		(circle: MockCircle) => {
+		(circle: CircleOption) => {
 			if (selectedIds.has(circle.id)) {
 				onChange(selectedCircles.filter((c) => c.id !== circle.id));
 			} else {
@@ -79,7 +82,7 @@ export function CircleFilter({
 							className="badge badge-primary gap-1 pr-1 transition-all hover:opacity-80"
 						>
 							<Disc3 className="h-3 w-3" />
-							<span className="max-w-[120px] truncate">{circle.name}</span>
+							<span>{circle.name}</span>
 							<button
 								type="button"
 								onClick={() => removeCircle(circle.id)}

@@ -101,7 +101,7 @@ interface NameEntry {
 artistsRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
-		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
+		const limit = Math.min(Number(c.req.query("limit")) || 20, 5000);
 		const initialScript = c.req.query("initialScript");
 		const initial = c.req.query("initial");
 		const row = c.req.query("row");

@@ -47,7 +47,7 @@ const originalSongsRouter = new Hono();
 originalSongsRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
-		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
+		const limit = Math.min(Number(c.req.query("limit")) || 20, 5000);
 		const workId = c.req.query("workId");
 		const category = c.req.query("category");
 		const search = c.req.query("search");
