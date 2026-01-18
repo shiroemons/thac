@@ -423,9 +423,9 @@ function ArtistsPage() {
 							>
 								<MobileCardItem>
 									<div className="flex items-center gap-3">
-										<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/10">
+										<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
 											<Users
-												className="size-5 text-accent"
+												className="size-5 text-accent-content"
 												aria-hidden="true"
 											/>
 										</div>
@@ -473,9 +473,9 @@ function ArtistsPage() {
 								>
 									<div className="card-body p-4">
 										<div className="flex items-center gap-3">
-											<div className="flex size-12 items-center justify-center rounded-full bg-accent/10">
+											<div className="flex size-12 items-center justify-center rounded-full bg-accent">
 												<Users
-													className="size-6 text-accent"
+													className="size-6 text-accent-content"
 													aria-hidden="true"
 												/>
 											</div>
@@ -531,9 +531,9 @@ function ArtistsPage() {
 													preload="intent"
 													className="flex items-center gap-3 hover:text-primary"
 												>
-													<div className="flex size-8 items-center justify-center rounded-full bg-accent/10">
+													<div className="flex size-8 items-center justify-center rounded-full bg-accent">
 														<Users
-															className="size-4 text-accent"
+															className="size-4 text-accent-content"
 															aria-hidden="true"
 														/>
 													</div>

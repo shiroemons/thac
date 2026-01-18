@@ -195,7 +195,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
 	return (
 		<>
 			{text.slice(0, index)}
-			<mark className="rounded bg-primary/20 px-0.5 text-inherit">
+			<mark className="rounded bg-primary/30 px-0.5 text-inherit">
 				{text.slice(index, index + query.length)}
 			</mark>
 			{text.slice(index + query.length)}
@@ -574,7 +574,7 @@ function SearchPage() {
 								type="button"
 								variant="ghost"
 								onClick={openAdvancedSearch}
-								className="mt-4 gap-2 transition-all duration-300 hover:bg-primary/10 hover:text-primary"
+								className="mt-4 gap-2 transition-all duration-300 hover:bg-primary hover:text-primary-content"
 							>
 								<SlidersHorizontal className="size-4" />
 								詳細検索を開く
@@ -597,7 +597,7 @@ function SearchPage() {
 										key={historyItem}
 										type="button"
 										onClick={() => handleHistoryClick(historyItem)}
-										className="flex min-h-[44px] items-center gap-2 rounded-full bg-base-content/5 px-4 py-2 text-sm transition-all duration-300 hover:bg-primary/10 hover:text-primary hover:shadow-md"
+										className="flex min-h-[44px] items-center gap-2 rounded-full bg-base-content/5 px-4 py-2 text-sm transition-all duration-300 hover:bg-primary hover:text-primary-content hover:shadow-md"
 									>
 										<Clock
 											className="size-3 text-base-content/40"
@@ -620,7 +620,7 @@ function SearchPage() {
 							<Link
 								to="/circles"
 								preload="intent"
-								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-primary/5 p-4 transition-all duration-300 hover:bg-primary hover:text-primary-content hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-base-200 p-4 transition-all duration-300 hover:bg-primary hover:text-primary-content hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 							>
 								<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-content transition-transform duration-300 group-hover:scale-110">
 									<Disc3 className="size-5" aria-hidden="true" />
@@ -635,7 +635,7 @@ function SearchPage() {
 							<Link
 								to="/artists"
 								preload="intent"
-								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-accent/5 p-4 transition-all duration-300 hover:bg-accent hover:text-accent-content hover:shadow-lg hover:ring-2 hover:ring-accent/10"
+								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-base-200 p-4 transition-all duration-300 hover:bg-accent hover:text-accent-content hover:shadow-lg hover:ring-2 hover:ring-accent/10"
 							>
 								<div className="flex size-12 items-center justify-center rounded-xl bg-accent text-accent-content transition-transform duration-300 group-hover:scale-110">
 									<Users className="size-5" aria-hidden="true" />
@@ -650,7 +650,7 @@ function SearchPage() {
 							<Link
 								to="/original-songs"
 								preload="intent"
-								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-secondary/5 p-4 transition-all duration-300 hover:bg-secondary hover:text-secondary-content hover:shadow-lg hover:ring-2 hover:ring-secondary/10"
+								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-base-200 p-4 transition-all duration-300 hover:bg-secondary hover:text-secondary-content hover:shadow-lg hover:ring-2 hover:ring-secondary/10"
 							>
 								<div className="flex size-12 items-center justify-center rounded-xl bg-secondary text-secondary-content transition-transform duration-300 group-hover:scale-110">
 									<Music className="size-5" aria-hidden="true" />

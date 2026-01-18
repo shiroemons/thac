@@ -446,7 +446,7 @@ export function WorkStatsSection({
 	// エラー表示
 	if (error) {
 		return (
-			<Card className="bg-error/5 p-8 text-center shadow-sm">
+			<Card className="bg-base-200 p-8 text-center shadow-sm">
 				<div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-error">
 					<BarChart3 className="size-8 text-error-content" />
 				</div>
