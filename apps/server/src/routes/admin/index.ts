@@ -48,7 +48,7 @@ adminRouter.route("/event-series", eventSeriesRouter);
 // イベント管理ルート
 adminRouter.route("/events", eventsAdminRouter);
 
-// リリース管理ルート
+// 作品管理ルート
 adminRouter.route("/releases", releasesAdminRouter);
 
 // トラック管理ルート

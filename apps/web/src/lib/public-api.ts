@@ -232,7 +232,7 @@ export interface PublicCircleDetail {
 	};
 }
 
-/** サークルリリース */
+/** サークル作品 */
 export interface PublicCircleRelease {
 	id: string;
 	name: string;
@@ -378,7 +378,7 @@ export interface PublicEventDetail {
 	};
 }
 
-/** イベントリリース */
+/** イベント作品 */
 export interface PublicEventRelease {
 	id: string;
 	name: string;
@@ -393,7 +393,7 @@ export interface PublicEventRelease {
 	}>;
 }
 
-/** リリース詳細 */
+/** 作品詳細 */
 export interface PublicReleaseDetail {
 	id: string;
 	name: string;
@@ -464,7 +464,7 @@ export interface OriginalSongRankingItem {
 	count: number;
 }
 
-/** サークルリリース数ランキング項目 */
+/** サークル作品数ランキング項目 */
 export interface CircleRankingItem {
 	id: string;
 	name: string;
@@ -599,7 +599,7 @@ export const publicApi = {
 				`/api/public/stats/rankings/original-songs${query ? `?${query}` : ""}`,
 			);
 		},
-		/** サークルリリース数ランキング（ページネーション対応） */
+		/** サークル作品数ランキング（ページネーション対応） */
 		circlesRanking: (params?: { page?: number; limit?: number }) => {
 			const sp = new URLSearchParams();
 			if (params?.page) sp.set("page", String(params.page));
@@ -725,7 +725,7 @@ export const publicApi = {
 		get: (id: string) =>
 			publicFetch<PublicCircleDetail>(`/api/public/circles/${id}`),
 
-		/** サークルのリリース一覧を取得 */
+		/** サークルの作品一覧を取得 */
 		releases: (
 			id: string,
 			params?: {
@@ -882,7 +882,7 @@ export const publicApi = {
 		get: (id: string) =>
 			publicFetch<PublicEventDetail>(`/api/public/events/${id}`),
 
-		/** イベントのリリース一覧を取得 */
+		/** イベントの作品一覧を取得 */
 		releases: (
 			id: string,
 			params?: {
@@ -918,7 +918,7 @@ export const publicApi = {
 	},
 
 	releases: {
-		/** リリース詳細を取得 */
+		/** 作品詳細を取得 */
 		get: (id: string) =>
 			publicFetch<PublicReleaseDetail>(`/api/public/releases/${id}`),
 	},

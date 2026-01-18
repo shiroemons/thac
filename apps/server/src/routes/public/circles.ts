@@ -291,7 +291,7 @@ circlesRouter.get("/:id", async (c) => {
 
 /**
  * GET /api/public/circles/:id/releases
- * サークルのリリース一覧を取得（遅延読み込み用）
+ * サークルの作品一覧を取得（遅延読み込み用）
  */
 circlesRouter.get("/:id/releases", async (c) => {
 	try {

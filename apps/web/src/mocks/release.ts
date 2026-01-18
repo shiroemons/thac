@@ -1,5 +1,5 @@
 /**
- * リリース・トラックのモックデータ
+ * 作品・トラックのモックデータ
  * データソース: packages/db/src/schema/release.ts, track.ts
  */
 
@@ -17,7 +17,7 @@ import type {
 } from "@/types/release";
 
 // ============================================
-// モックリリース
+// モック作品
 // ============================================
 export const mockReleases: Release[] = [
 	{
@@ -106,7 +106,7 @@ export const mockDiscs: Disc[] = [
 ];
 
 // ============================================
-// モックリリース-サークル関連
+// モック作品-サークル関連
 // ============================================
 export const mockReleaseCircles: ReleaseCircle[] = [
 	// IOSYS album
@@ -525,14 +525,14 @@ export const mockEvents: Record<string, { id: string; name: string }> = {
 // ============================================
 
 /**
- * リリースIDからリリースを取得
+ * 作品IDから作品を取得
  */
 export function getReleaseById(id: string): Release | undefined {
 	return mockReleases.find((r) => r.id === id);
 }
 
 /**
- * リリースIDからサークル一覧を取得
+ * 作品IDからサークル一覧を取得
  */
 export function getCirclesByReleaseId(releaseId: string): ReleaseCircle[] {
 	// 実際にはDBから取得するが、モックでは固定マッピング
@@ -557,7 +557,7 @@ export function getCirclesByReleaseId(releaseId: string): ReleaseCircle[] {
 }
 
 /**
- * リリースIDからディスク一覧を取得
+ * 作品IDからディスク一覧を取得
  */
 export function getDiscsByReleaseId(releaseId: string): Disc[] {
 	return mockDiscs
@@ -566,7 +566,7 @@ export function getDiscsByReleaseId(releaseId: string): Disc[] {
 }
 
 /**
- * リリースIDからトラック一覧を取得
+ * 作品IDからトラック一覧を取得
  */
 export function getTracksByReleaseId(releaseId: string): Track[] {
 	return mockTracks
@@ -628,7 +628,7 @@ export function getTrackWithCredits(track: Track): TrackWithCredits {
 }
 
 /**
- * リリース詳細を取得（統計・関連データ含む）
+ * 作品詳細を取得（統計・関連データ含む）
  */
 export function getReleaseWithDetails(
 	id: string,
@@ -661,7 +661,7 @@ export function getReleaseWithDetails(
 }
 
 /**
- * トラック詳細を取得（リリース・派生関係含む）
+ * トラック詳細を取得（作品・派生関係含む）
  */
 export function getTrackWithDetails(id: string): TrackWithDetails | undefined {
 	const track = getTrackById(id);

@@ -1024,9 +1024,7 @@ function TrackDetailPage() {
 						<div className="border-base-300 border-t pt-4">
 							<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 								<div>
-									<p className="text-base-content/70 text-sm">
-										リリース年/月/日
-									</p>
+									<p className="text-base-content/70 text-sm">頒布年/月/日</p>
 									<p>
 										{track.release?.releaseYear ?? "-"} /{" "}
 										{track.release?.releaseMonth ?? "-"} /{" "}

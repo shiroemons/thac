@@ -24,7 +24,7 @@ export interface Publication {
 	url: string;
 }
 
-/** リリースの配信リンク */
+/** 作品の配信リンク */
 export interface ReleasePublication extends Publication {
 	releaseId: string;
 }

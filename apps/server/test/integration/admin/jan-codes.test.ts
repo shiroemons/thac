@@ -61,7 +61,7 @@ describe("Admin JAN Codes API", () => {
 	});
 
 	describe("GET /:releaseId/jan-codes - JANコード一覧取得", () => {
-		test("存在しないリリースは404を返す", async () => {
+		test("存在しない作品は404を返す", async () => {
 			const res = await app.request("/rel_nonexistent/jan-codes");
 			await expectNotFound(res);
 		});
@@ -102,7 +102,7 @@ describe("Admin JAN Codes API", () => {
 	});
 
 	describe("POST /:releaseId/jan-codes - JANコード追加", () => {
-		test("存在しないリリースは404を返す", async () => {
+		test("存在しない作品は404を返す", async () => {
 			const res = await app.request(
 				"/rel_nonexistent/jan-codes",
 				postJson({
@@ -171,7 +171,7 @@ describe("Admin JAN Codes API", () => {
 				isPrimary: true,
 			});
 
-			// 異なるリリースで同じJANコードを追加しようとする
+			// 異なる作品で同じJANコードを追加しようとする
 			const res = await app.request(
 				"/rel_test_002/jan-codes",
 				postJson({
@@ -184,7 +184,7 @@ describe("Admin JAN Codes API", () => {
 			await expectConflict(res);
 		});
 
-		test("同一リリース内で複数のprimaryは409を返す", async () => {
+		test("同一作品内で複数のprimaryは409を返す", async () => {
 			await db
 				.insert(releases)
 				.values(createTestRelease({ id: "rel_test_001" }));
@@ -207,7 +207,7 @@ describe("Admin JAN Codes API", () => {
 			await expectConflict(res);
 		});
 
-		test("同一リリース内で非primaryは複数追加可能", async () => {
+		test("同一作品内で非primaryは複数追加可能", async () => {
 			await db
 				.insert(releases)
 				.values(createTestRelease({ id: "rel_test_001" }));

@@ -102,7 +102,7 @@ circlesRouter.get("/", async (c) => {
 	}
 });
 
-// 統合取得（基本情報 + リンク + 参加アーティスト + リリース）
+// 統合取得（基本情報 + リンク + 参加アーティスト + 作品）
 circlesRouter.get("/:id/full", async (c) => {
 	try {
 		const id = c.req.param("id");
@@ -136,7 +136,7 @@ circlesRouter.get("/:id/full", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.CIRCLE_NOT_FOUND }, 404);
 		}
 
-		// リリース数を計算（参加形態別データからフラット化）
+		// 作品数を計算（参加形態別データからフラット化）
 		const totalReleaseCount = releasesData.reduce(
 			(sum, group) => sum + group.releases.length,
 			0,

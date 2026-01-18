@@ -321,9 +321,9 @@ function AdvancedSearchModalContent({
 					/>
 				</FilterSection>
 
-				{/* リリース日フィルター */}
+				{/* 頒布日フィルター */}
 				<FilterSection
-					title="リリース日"
+					title="頒布日"
 					selectedCount={hasDateRange ? 1 : 0}
 					isOpen={sectionState.dateRange}
 					onToggle={() => toggleSection("dateRange")}

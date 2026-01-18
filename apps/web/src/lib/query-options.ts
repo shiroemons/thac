@@ -380,7 +380,7 @@ export const circleArtistsQueryOptions = (id: string) =>
 	});
 
 /**
- * サークルのリリース一覧のqueryOptions
+ * サークルの作品一覧のqueryOptions
  */
 export const circleReleasesQueryOptions = (id: string) =>
 	queryOptions({
@@ -392,7 +392,7 @@ export const circleReleasesQueryOptions = (id: string) =>
 
 /**
  * サークル詳細（統合）のqueryOptions
- * 基本情報 + リンク + 参加アーティスト + リリース一覧を一括取得
+ * 基本情報 + リンク + 参加アーティスト + 作品一覧を一括取得
  */
 export const circleFullQueryOptions = (id: string) =>
 	queryOptions({
@@ -459,7 +459,7 @@ export type { GroupedSelectOptions, SelectOption } from "./select-helpers";
 
 /**
  * イベント選択オプションのqueryOptions（select変換付き）
- * リリース編集ダイアログなどで使用
+ * 作品編集ダイアログなどで使用
  */
 export const eventSelectOptionsQueryOptions = () =>
 	queryOptions({
@@ -546,7 +546,7 @@ export const eventSeriesDetailQueryOptions = (id: string) =>
 		staleTime: STALE_TIME.SHORT,
 	});
 
-// ===== リリース =====
+// ===== 作品 =====
 
 interface ReleaseListParams {
 	page: number;
@@ -558,7 +558,7 @@ interface ReleaseListParams {
 }
 
 /**
- * リリース一覧のqueryOptions
+ * 作品一覧のqueryOptions
  */
 export const releasesListQueryOptions = (params: ReleaseListParams) => {
 	const searchParams = new URLSearchParams();
@@ -588,7 +588,7 @@ export const releasesListQueryOptions = (params: ReleaseListParams) => {
 };
 
 /**
- * リリース詳細のqueryOptions
+ * 作品詳細のqueryOptions
  */
 export const releaseDetailQueryOptions = (id: string) =>
 	queryOptions({
@@ -598,7 +598,7 @@ export const releaseDetailQueryOptions = (id: string) =>
 	});
 
 /**
- * リリースのトラック一覧のqueryOptions
+ * 作品のトラック一覧のqueryOptions
  */
 export const releaseTracksQueryOptions = (releaseId: string) =>
 	queryOptions({
@@ -611,7 +611,7 @@ export const releaseTracksQueryOptions = (releaseId: string) =>
 	});
 
 /**
- * リリース詳細（統合）のqueryOptions
+ * 作品詳細（統合）のqueryOptions
  * 基本情報 + ディスク + トラック + サークル + 公開リンク + JANコード + イベント情報を一括取得
  */
 export const releaseFullQueryOptions = (id: string) =>

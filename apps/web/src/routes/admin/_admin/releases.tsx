@@ -75,7 +75,7 @@ const COLUMN_CONFIGS = [
 	{ key: "id", label: "ID", defaultVisible: false },
 	{ key: "name", label: "作品名" },
 	{ key: "releaseType", label: "タイプ" },
-	{ key: "releaseDate", label: "発売日" },
+	{ key: "releaseDate", label: "頒布日" },
 	{ key: "event", label: "イベント" },
 	{ key: "eventDay", label: "イベント日" },
 	{ key: "discCount", label: "ディスク数" },
@@ -526,7 +526,7 @@ function ReleasesPage() {
 											onClick={() => handleSort("releaseDate")}
 										>
 											<span className="inline-flex items-center gap-1">
-												発売日
+												頒布日
 												<SortIcon
 													sortBy={sortBy}
 													sortOrder={sortOrder}
@@ -866,7 +866,7 @@ function ReleasesPage() {
 							/>
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="create-releaseDate">発売日</Label>
+							<Label htmlFor="create-releaseDate">頒布日</Label>
 							<Input
 								id="create-releaseDate"
 								type="date"

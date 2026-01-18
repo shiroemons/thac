@@ -381,7 +381,7 @@ function CirclesPage() {
 										<div className="mt-3 flex items-center gap-4 text-base-content/70 text-sm">
 											<span className="flex items-center gap-1">
 												<Disc className="size-4" aria-hidden="true" />
-												{formatNumber(circle.releaseCount)}リリース
+												{formatNumber(circle.releaseCount)}作品
 											</span>
 											<span className="flex items-center gap-1">
 												<Music className="size-4" aria-hidden="true" />
@@ -400,7 +400,7 @@ function CirclesPage() {
 									<tr>
 										<th>サークル名</th>
 										<th>読み</th>
-										<th>リリース数</th>
+										<th>作品数</th>
 										<th>曲数</th>
 									</tr>
 								</thead>

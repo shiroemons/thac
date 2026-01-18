@@ -14,7 +14,7 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
 /**
- * リリースの公開リンク一覧を取得する関数
+ * 作品の公開リンク一覧を取得する関数
  * 統合エンドポイント用にロジックを分離
  */
 export async function getReleasePublications(releaseId: string) {
@@ -36,12 +36,12 @@ export async function getReleasePublications(releaseId: string) {
 
 const releasePublicationsRouter = new Hono<AdminContext>();
 
-// リリースの公開リンク一覧取得
+// 作品の公開リンク一覧取得
 releasePublicationsRouter.get("/:releaseId/publications", async (c) => {
 	try {
 		const releaseId = c.req.param("releaseId");
 
-		// リリース存在チェック
+		// 作品存在チェック
 		const existingRelease = await db
 			.select()
 			.from(releases)
@@ -69,7 +69,7 @@ releasePublicationsRouter.post("/:releaseId/publications", async (c) => {
 		const releaseId = c.req.param("releaseId");
 		const body = await c.req.json();
 
-		// リリース存在チェック
+		// 作品存在チェック
 		const existingRelease = await db
 			.select()
 			.from(releases)

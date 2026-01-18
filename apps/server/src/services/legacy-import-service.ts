@@ -187,7 +187,7 @@ function countUniqueEntities(records: LegacyCSVRecord[]): EntityProgressMap {
 			}
 		}
 
-		// リリース（サークル名:アルバムベース名）
+		// 作品（サークル名:アルバムベース名）
 		const discInfo = parseDiscInfo(record.album);
 		const primaryCircle = normalizeFullWidthSymbols(
 			circleNames[0]?.trim() || "",
@@ -226,7 +226,7 @@ interface CachedEventDayInfo {
 }
 
 /**
- * リリースのキャッシュ情報（イベント情報含む）
+ * 作品のキャッシュ情報（イベント情報含む）
  */
 interface CachedReleaseInfo {
 	id: string;
@@ -325,7 +325,7 @@ function extractUniqueEntities(records: LegacyCSVRecord[]): ExtractedEntities {
 			}
 		}
 
-		// リリース
+		// 作品
 		const discInfo = parseDiscInfo(record.album);
 		const primaryCircle = normalizeFullWidthSymbols(
 			circleNameList[0]?.trim() || "",
@@ -471,7 +471,7 @@ async function prefetchExistingEntities(
 		}
 	}
 
-	// リリース一括取得（名前で検索し、後でサークルと照合）
+	// 作品一括取得（名前で検索し、後でサークルと照合）
 	const albumNames = [
 		...new Set([...extracted.releaseKeys.values()].map((r) => r.albumBaseName)),
 	];
@@ -492,7 +492,7 @@ async function prefetchExistingEntities(
 			.leftJoin(releaseCircles, eq(releases.id, releaseCircles.releaseId))
 			.where(inArray(releases.name, albumNames));
 
-		// リリースID -> サークルID & イベント情報のマップを構築
+		// 作品ID -> サークルID & イベント情報のマップを構築
 		const releaseCircleMap = new Map<string, Set<string>>();
 		const releaseInfoMap = new Map<
 			string,
@@ -527,7 +527,7 @@ async function prefetchExistingEntities(
 			const primaryCircleName = data.circleNames[0] || "";
 			const primaryCircleInfo = cache.circles.get(primaryCircleName);
 
-			// 同名リリースでサークルが一致するものを探す
+			// 同名作品でサークルが一致するものを探す
 			for (const r of existingReleases) {
 				if (r.name === data.albumBaseName) {
 					const circleIds = releaseCircleMap.get(r.id);
@@ -730,8 +730,8 @@ async function batchInsertArtists(
 }
 
 /**
- * 新規リリースを一括挿入（releaseCirclesも同時作成）
- * イベント日がある場合は発売日をイベント日に設定
+ * 新規作品を一括挿入（releaseCirclesも同時作成）
+ * イベント日がある場合は頒布日をイベント日に設定
  */
 async function batchInsertReleases(
 	tx: DbTransaction,
@@ -804,7 +804,7 @@ async function batchInsertReleases(
 			}
 		}
 
-		// 発売日から年/月/日を分解
+		// 頒布日から年/月/日を分解
 		let releaseYear: number | null = null;
 		let releaseMonth: number | null = null;
 		let releaseDay: number | null = null;
@@ -1538,7 +1538,7 @@ export async function executeLegacyImport(
 				`アーティスト: ${entityProgress.artists.processed}/${entityProgress.artists.total}件`,
 			);
 
-			// Phase 6: リリースを一括挿入
+			// Phase 6: 作品を一括挿入
 			notifyProgress(
 				"releases",
 				0,
@@ -1781,7 +1781,7 @@ async function processNewEvent(
 			.onConflictDoNothing();
 		result.eventDays.created++;
 
-		// 1日目のイベント日をキャッシュに追加（リリースの発売日に使用）
+		// 1日目のイベント日をキャッシュに追加（作品の頒布日に使用）
 		if (dayNumber === 1) {
 			cache.eventDays.set(newEventId, {
 				id: eventDayId,

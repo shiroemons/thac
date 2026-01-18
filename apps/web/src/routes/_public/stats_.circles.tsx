@@ -14,7 +14,7 @@ import { circlesRankingInfiniteQueryOptions } from "@/lib/public-query-options";
 const PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/_public/stats_/circles")({
-	head: () => createPageHead("サークルリリース数ランキング"),
+	head: () => createPageHead("サークル作品数ランキング"),
 	component: CirclesRankingPage,
 });
 
@@ -31,7 +31,7 @@ function CirclesRankingPage() {
 			<PublicBreadcrumb
 				items={[
 					{ label: "統計", href: "/stats" },
-					{ label: "サークルリリース数ランキング" },
+					{ label: "サークル作品数ランキング" },
 				]}
 			/>
 
@@ -44,10 +44,10 @@ function CirclesRankingPage() {
 					</div>
 					<div>
 						<h1 className="font-bold text-2xl md:text-3xl">
-							サークルリリース数ランキング
+							サークル作品数ランキング
 						</h1>
 						<p className="mt-1 text-base-content/60">
-							リリース数が多いサークル · {formatNumber(total)}件
+							作品数が多いサークル · {formatNumber(total)}件
 						</p>
 					</div>
 				</div>
@@ -90,7 +90,7 @@ function CirclesRankingPage() {
 									</span>
 								</div>
 								<span className="whitespace-nowrap rounded-full bg-base-content/5 px-2.5 py-1 text-base-content/60 text-xs">
-									{formatNumber(circle.count)} リリース
+									{formatNumber(circle.count)} 作品
 								</span>
 							</Link>
 						)}

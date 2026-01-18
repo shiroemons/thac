@@ -10,12 +10,12 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
 /**
- * サークルのリリース一覧を取得する関数
+ * サークルの作品一覧を取得する関数
  * 統合エンドポイント用にロジックを分離
  * 参加形態別にグループ化して返す
  */
 export async function getCircleReleases(circleId: string) {
-	// リリースを参加形態別に取得
+	// 作品を参加形態別に取得
 	const data = await db
 		.select({
 			releaseId: releases.id,
@@ -57,7 +57,7 @@ export async function getCircleReleases(circleId: string) {
 
 const circleReleasesRouter = new Hono<AdminContext>();
 
-// サークルのリリース一覧取得（参加形態別にグループ化）
+// サークルの作品一覧取得（参加形態別にグループ化）
 circleReleasesRouter.get("/:circleId/releases", async (c) => {
 	try {
 		const circleId = c.req.param("circleId");

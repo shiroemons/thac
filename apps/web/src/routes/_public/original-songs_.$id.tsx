@@ -236,7 +236,7 @@ function OriginalSongDetailPage() {
 									<th>タイトル</th>
 									<th>サークル</th>
 									<th className="hidden md:table-cell">アーティスト</th>
-									<th className="hidden sm:table-cell">発売日</th>
+									<th className="hidden sm:table-cell">頒布日</th>
 								</tr>
 							</thead>
 							<tbody>

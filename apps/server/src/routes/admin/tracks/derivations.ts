@@ -30,7 +30,7 @@ trackDerivationsRouter.get("/:trackId/derivations", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
-		// 派生関係一覧取得（派生元トラック情報・リリース情報を結合）
+		// 派生関係一覧取得（派生元トラック情報・作品情報を結合）
 		const derivations = await db
 			.select({
 				derivation: trackDerivations,

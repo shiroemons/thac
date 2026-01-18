@@ -19,7 +19,7 @@ import { handleDbError } from "../../../utils/api-error";
  * 経路: circle → releaseCircles → releases → tracks → trackCredits → artists
  */
 export async function getCircleArtists(circleId: string) {
-	// サークルのリリース一覧からリリースIDを取得
+	// サークルの作品一覧から作品IDを取得
 	const releaseCirclesResult = await db
 		.select({
 			releaseId: releaseCircles.releaseId,
@@ -48,7 +48,7 @@ export async function getCircleArtists(circleId: string) {
 
 	const releaseIds = [...new Set(releaseCirclesResult.map((r) => r.releaseId))];
 
-	// リリースからトラックIDを取得
+	// 作品からトラックIDを取得
 	const tracksResult = await db
 		.select({
 			id: tracks.id,
@@ -124,7 +124,7 @@ export async function getCircleArtists(circleId: string) {
 		.where(inArray(artists.id, artistIds))
 		.orderBy(artists.name);
 
-	// トラックとリリースのマッピング
+	// トラックと作品のマッピング
 	const trackToReleaseMap = new Map<string, string>();
 	for (const track of tracksResult) {
 		if (track.releaseId) {
@@ -132,7 +132,7 @@ export async function getCircleArtists(circleId: string) {
 		}
 	}
 
-	// アーティストごとにトラック数、リリース数、役割を集計
+	// アーティストごとにトラック数、作品数、役割を集計
 	const artistStats = new Map<
 		string,
 		{
@@ -179,7 +179,7 @@ export async function getCircleArtists(circleId: string) {
 		};
 	});
 
-	// リリース日情報を取得して活動期間を計算
+	// 作品日情報を取得して活動期間を計算
 	const releasesData = await db
 		.select({
 			releaseDate: releases.releaseDate,

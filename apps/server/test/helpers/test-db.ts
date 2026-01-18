@@ -32,7 +32,7 @@ const schema = {
 	eventSeries: dbExports.eventSeries,
 	events: dbExports.events,
 	eventDays: dbExports.eventDays,
-	// リリース・ディスク
+	// 作品・ディスク
 	releases: dbExports.releases,
 	releaseCircles: dbExports.releaseCircles,
 	discs: dbExports.discs,

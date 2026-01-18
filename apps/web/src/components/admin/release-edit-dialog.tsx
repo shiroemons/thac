@@ -231,7 +231,7 @@ export function ReleaseEditDialog({
 			<Dialog open={open} onOpenChange={guardedOnOpenChange}>
 				<DialogContent className="sm:max-w-[600px]">
 					<DialogHeader>
-						<DialogTitle>リリースの編集</DialogTitle>
+						<DialogTitle>作品の編集</DialogTitle>
 					</DialogHeader>
 					<DialogBody className="grid gap-4 py-4">
 						{mutationError && !isConflictError(mutationError) ? (
@@ -345,7 +345,7 @@ export function ReleaseEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="release-date">発売日</Label>
+								<Label htmlFor="release-date">頒布日</Label>
 								<Input
 									id="release-date"
 									type="date"

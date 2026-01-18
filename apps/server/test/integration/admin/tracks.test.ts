@@ -102,7 +102,7 @@ afterAll(() => {
 	sqlite.close();
 });
 
-// ヘルパー: テスト用リリースを作成
+// ヘルパー: テスト用作品を作成
 async function setupTestRelease(
 	overrides?: Parameters<typeof createTestRelease>[0],
 ) {
@@ -174,7 +174,7 @@ describe("Admin Tracks API (Standalone)", () => {
 			expectPagination(json, { length: 2, total: 2, page: 1, limit: 10 });
 		});
 
-		test("リリースIDでフィルタリングできる", async () => {
+		test("作品IDでフィルタリングできる", async () => {
 			const app = createTestAdminApp(tracksAdminRouter);
 
 			const release1 = await setupTestRelease({ name: "Release 1" });

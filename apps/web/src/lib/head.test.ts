@@ -333,7 +333,7 @@ const mockTrack: PublicTrackDetail = {
 
 const mockTrackNoRelease: PublicTrackDetail = {
 	id: "track-2",
-	name: "リリースなしトラック",
+	name: "作品なしトラック",
 	nameJa: null,
 	nameEn: null,
 	trackNumber: 1,
@@ -948,7 +948,7 @@ describe("head.ts", () => {
 
 			// Title should only have track name
 			expect(findMetaByTitle(result.meta)).toBe(
-				"トラック：リリースなしトラック | 東方編曲録",
+				"トラック：作品なしトラック | 東方編曲録",
 			);
 
 			// Description should be empty (no release, no credits)

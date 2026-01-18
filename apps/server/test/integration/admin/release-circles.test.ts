@@ -68,7 +68,7 @@ describe("Admin Release Circles API", () => {
 	});
 
 	describe("GET /:releaseId/circles - 作品の関連サークル一覧取得", () => {
-		test("存在しないリリースは404を返す", async () => {
+		test("存在しない作品は404を返す", async () => {
 			const res = await app.request("/rel_nonexistent/circles");
 			await expectNotFound(res);
 		});
@@ -146,7 +146,7 @@ describe("Admin Release Circles API", () => {
 	});
 
 	describe("POST /:releaseId/circles - サークル関連付け追加", () => {
-		test("存在しないリリースは404を返す", async () => {
+		test("存在しない作品は404を返す", async () => {
 			const res = await app.request(
 				"/rel_nonexistent/circles",
 				postJson({
@@ -225,7 +225,7 @@ describe("Admin Release Circles API", () => {
 			expect(json.position).toBeGreaterThan(0);
 		});
 
-		test("同一リリース・サークル・参加形態の重複は409を返す", async () => {
+		test("同一作品・サークル・参加形態の重複は409を返す", async () => {
 			await db
 				.insert(releases)
 				.values(createTestRelease({ id: "rel_test_001" }));

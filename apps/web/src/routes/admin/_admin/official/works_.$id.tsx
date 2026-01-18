@@ -179,7 +179,7 @@ function OfficialWorkDetailPage() {
 							<p>{work.numberInSeries ?? "-"}</p>
 						</div>
 						<div>
-							<Label className="text-base-content/70">発売日</Label>
+							<Label className="text-base-content/70">頒布日</Label>
 							<p>
 								{work.releaseDate
 									? format(new Date(work.releaseDate), "yyyy年M月d日", {

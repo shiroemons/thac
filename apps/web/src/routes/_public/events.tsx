@@ -295,7 +295,7 @@ function EventsPage() {
 												</div>
 												<div className="flex items-center gap-1 text-base-content/60 text-sm">
 													<Disc className="size-3.5" aria-hidden="true" />
-													{formatNumber(event.releaseCount)}リリース
+													{formatNumber(event.releaseCount)}作品
 												</div>
 											</div>
 										</div>
@@ -351,7 +351,7 @@ function EventsPage() {
 													</div>
 													<span className="flex items-center gap-1 text-base-content/70 text-sm">
 														<Disc className="size-4" aria-hidden="true" />
-														{formatNumber(event.releaseCount)}リリース
+														{formatNumber(event.releaseCount)}作品
 													</span>
 												</Link>
 											))}
@@ -446,7 +446,7 @@ function EventsPage() {
 																			className="size-3.5"
 																			aria-hidden="true"
 																		/>
-																		{formatNumber(event.releaseCount)}リリース
+																		{formatNumber(event.releaseCount)}作品
 																	</div>
 																</div>
 															</div>
@@ -472,7 +472,7 @@ function EventsPage() {
 														<th>月</th>
 														<th>イベント名</th>
 														<th>開催日</th>
-														<th>リリース数</th>
+														<th>作品数</th>
 													</tr>
 												</thead>
 												<tbody>

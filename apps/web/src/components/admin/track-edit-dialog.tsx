@@ -475,9 +475,9 @@ export function TrackEditDialog({
 							)}
 						</div>
 
-						{/* リリース日 */}
+						{/* 頒布日 */}
 						<div className="grid gap-2">
-							<Label htmlFor="releaseDate">リリース日</Label>
+							<Label htmlFor="releaseDate">頒布日</Label>
 							<Input
 								id="releaseDate"
 								type="date"
@@ -489,7 +489,7 @@ export function TrackEditDialog({
 							/>
 							{!isReleaseDateEditable && (
 								<p className="text-base-content/50 text-sm">
-									※イベント日が設定されている場合、リリース日は自動設定されます
+									※イベント日が設定されている場合、頒布日は自動設定されます
 								</p>
 							)}
 						</div>

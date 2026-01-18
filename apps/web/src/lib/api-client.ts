@@ -1556,7 +1556,7 @@ export const releasesApi = {
 		}),
 };
 
-// リリース統合レスポンス
+// 作品統合レスポンス
 export interface ReleaseEventInfo {
 	id: string;
 	name: string;
@@ -1706,7 +1706,7 @@ export const releaseCirclesApi = {
 		),
 };
 
-// ===== サークルのリリース一覧 =====
+// ===== サークルの作品一覧 =====
 
 export interface CircleReleaseItem {
 	id: string;
@@ -2224,7 +2224,7 @@ export const trackIsrcsApi = {
 		),
 };
 
-// Release Publications (リリース公開リンク)
+// Release Publications (作品公開リンク)
 export interface ReleasePublication {
 	id: string;
 	releaseId: string;

@@ -220,7 +220,7 @@ export function OfficialWorkCategoryEditDialog({
 								onChange={(e) =>
 									setForm({ ...form, description: e.target.value || null })
 								}
-								placeholder="例: Windows向けにリリースされた作品"
+								placeholder="例: Windows向けに頒布された作品"
 								rows={3}
 								disabled={isPending}
 								autoComplete="off"

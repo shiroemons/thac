@@ -130,7 +130,7 @@ describe("Admin Circle Subroutes API", () => {
 			await db.insert(releases).values(release);
 			await db.insert(tracks).values(track);
 
-			// サークルとリリースを関連付け
+			// サークルと作品を関連付け
 			await db.insert(releaseCircles).values({
 				releaseId: "rel_test_001",
 				circleId: "ci_test_001",
@@ -204,7 +204,7 @@ describe("Admin Circle Subroutes API", () => {
 			expect(json.artists[0]?.roles).toContain("arranger");
 		});
 
-		test("複数のリリースにまたがるアーティスト統計を返す", async () => {
+		test("複数の作品にまたがるアーティスト統計を返す", async () => {
 			// 基本データを作成
 			await db.insert(circles).values(createTestCircle({ id: "ci_test_001" }));
 			await db
@@ -274,8 +274,8 @@ describe("Admin Circle Subroutes API", () => {
 		});
 	});
 
-	describe("GET /:circleId/releases - サークルのリリース一覧取得", () => {
-		test("関連リリースがない場合は空配列を返す", async () => {
+	describe("GET /:circleId/releases - サークルの作品一覧取得", () => {
+		test("関連作品がない場合は空配列を返す", async () => {
 			await db.insert(circles).values(createTestCircle({ id: "ci_test_001" }));
 
 			const res = await releasesApp.request("/ci_test_001/releases");
@@ -283,7 +283,7 @@ describe("Admin Circle Subroutes API", () => {
 			expect(json).toEqual([]);
 		});
 
-		test("参加形態別にグループ化されたリリースを返す", async () => {
+		test("参加形態別にグループ化された作品を返す", async () => {
 			await db.insert(circles).values(createTestCircle({ id: "ci_test_001" }));
 			await db.insert(releases).values([
 				createTestRelease({
@@ -325,7 +325,7 @@ describe("Admin Circle Subroutes API", () => {
 			expect(guestGroup?.releases[0]?.name).toBe("Guest Release");
 		});
 
-		test("同一参加形態で複数のリリースを返す", async () => {
+		test("同一参加形態で複数の作品を返す", async () => {
 			await db.insert(circles).values(createTestCircle({ id: "ci_test_001" }));
 			await db.insert(releases).values([
 				createTestRelease({

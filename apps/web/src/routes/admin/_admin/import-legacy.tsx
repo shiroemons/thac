@@ -775,7 +775,7 @@ function EventRegistrationStep({
 					<div className="text-center">
 						<h3 className="font-semibold text-lg">イベント日の選択</h3>
 						<p className="text-base-content/70 text-sm">
-							以下のイベントは複数日開催されています。リリースを紐付ける日を選択してください
+							以下のイベントは複数日開催されています。作品を紐付ける日を選択してください
 						</p>
 					</div>
 					{existingEventsWithDays.map((event) => (
@@ -1226,7 +1226,7 @@ function ResultStep({ result, onReset }: ResultStepProps) {
 		circles: "サークル",
 		artists: "アーティスト",
 		artistAliases: "アーティスト名義",
-		releases: "リリース",
+		releases: "作品",
 		discs: "ディスク",
 		tracks: "トラック",
 		credits: "クレジット",
@@ -1314,7 +1314,7 @@ function ResultStep({ result, onReset }: ResultStepProps) {
 					新しいインポートを開始
 				</button>
 				<Link to="/admin/releases" className="btn btn-ghost">
-					リリース一覧へ
+					作品一覧へ
 				</Link>
 			</div>
 		</div>

@@ -138,7 +138,7 @@ statsRouter.get("/rankings", async (c) => {
 					.orderBy(desc(count(trackOfficialSongs.trackId)))
 					.limit(5),
 
-				// アクティブサークル: release_circlesをcircle_idでグループ化し、リリース数で降順ソート
+				// アクティブサークル: release_circlesをcircle_idでグループ化し、作品数で降順ソート
 				db
 					.select({
 						id: circles.id,
@@ -298,7 +298,7 @@ statsRouter.get("/rankings/original-songs", async (c) => {
 
 /**
  * GET /api/public/stats/rankings/circles
- * サークルリリース数ランキング（ページネーション対応）
+ * サークル作品数ランキング（ページネーション対応）
  */
 statsRouter.get("/rankings/circles", async (c) => {
 	try {
@@ -319,7 +319,7 @@ statsRouter.get("/rankings/circles", async (c) => {
 
 		const total = totalResult[0]?.count ?? 0;
 
-		// リリース数でソートしたランキングを取得
+		// 作品数でソートしたランキングを取得
 		const rankingResult = await db
 			.select({
 				id: circles.id,
@@ -457,7 +457,7 @@ statsRouter.get("/recent-updates", async (c) => {
 			return c.json(cached);
 		}
 
-		// 最新のリリースを取得し、サークル情報をJOIN
+		// 最新の作品を取得し、サークル情報をJOIN
 		const recentReleasesResult = await db
 			.select({
 				id: releases.id,

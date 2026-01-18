@@ -488,7 +488,7 @@ export function OfficialWorkEditDialog({
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor={`${mode}-work-releaseDate`}>発売日</Label>
+								<Label htmlFor={`${mode}-work-releaseDate`}>頒布日</Label>
 								<Input
 									id={`${mode}-work-releaseDate`}
 									type="date"

@@ -318,7 +318,7 @@ function ReleaseDetailPage() {
 		staleTime: 300_000,
 	});
 
-	// イベント日一覧（リリースのeventIdを直接使用）
+	// イベント日一覧（作品のeventIdを直接使用）
 	const { data: eventDaysData } = useQuery({
 		queryKey: ["events", release?.eventId, "days"],
 		queryFn: () =>
@@ -999,7 +999,7 @@ function ReleaseDetailPage() {
 							</p>
 						</div>
 						<div>
-							<Label className="text-base-content/70">発売日</Label>
+							<Label className="text-base-content/70">頒布日</Label>
 							<p>
 								{release.releaseDate
 									? format(new Date(release.releaseDate), "yyyy年M月d日", {
@@ -2401,7 +2401,7 @@ function ReleaseDetailPage() {
 				</DialogContent>
 			</Dialog>
 
-			{/* リリース編集ダイアログ */}
+			{/* 作品編集ダイアログ */}
 			<ReleaseEditDialog
 				open={isEditDialogOpen}
 				onOpenChange={setIsEditDialogOpen}

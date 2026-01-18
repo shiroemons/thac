@@ -43,7 +43,7 @@ export const EVENT_DETAIL_TABS: readonly EventDetailTab[] = [
 
 /** タブラベル */
 export const TAB_LABELS = {
-	releases: "リリース一覧",
+	releases: "作品一覧",
 	tracks: "曲一覧",
 	stats: "統計",
 } as const;

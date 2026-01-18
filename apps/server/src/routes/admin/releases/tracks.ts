@@ -22,7 +22,7 @@ import { handleDbError } from "../../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 
 /**
- * リリースのトラック一覧を取得する関数
+ * 作品のトラック一覧を取得する関数
  * 統合エンドポイント用にロジックを分離
  */
 export async function getReleaseTracks(releaseId: string) {
@@ -122,12 +122,12 @@ export async function getReleaseTracks(releaseId: string) {
 
 const tracksRouter = new Hono<AdminContext>();
 
-// リリースのトラック一覧取得（ディスク・トラック番号順）
+// 作品のトラック一覧取得（ディスク・トラック番号順）
 tracksRouter.get("/:releaseId/tracks", async (c) => {
 	try {
 		const releaseId = c.req.param("releaseId");
 
-		// リリース存在チェック
+		// 作品存在チェック
 		const existingRelease = await db
 			.select()
 			.from(releases)
@@ -166,7 +166,7 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 			);
 		}
 
-		// リリース存在チェック（releaseIdが指定されている場合のみ）
+		// 作品存在チェック（releaseIdが指定されている場合のみ）
 		if (parsed.data.releaseId) {
 			const existingRelease = await db
 				.select()
@@ -228,7 +228,7 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 				)
 				.limit(1);
 		} else if (parsed.data.releaseId) {
-			// ディスクなし（単曲）の場合、リリース内でトラック番号の一意性チェック
+			// ディスクなし（単曲）の場合、作品内でトラック番号の一意性チェック
 			duplicateCheck = await db
 				.select()
 				.from(tracks)
@@ -256,7 +256,7 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 			);
 		}
 
-		// 親リリースから日付・イベント情報を取得して自動設定（releaseIdがある場合のみ）
+		// 親作品から日付・イベント情報を取得して自動設定（releaseIdがある場合のみ）
 		let insertData = { ...parsed.data };
 		if (parsed.data.releaseId) {
 			const release = await db

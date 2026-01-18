@@ -283,7 +283,7 @@ function ArtistAliasDetailPage() {
 									</p>
 								</div>
 								<div className="rounded-lg bg-base-200/50 p-4">
-									<Label className="text-base-content/70">参加リリース数</Label>
+									<Label className="text-base-content/70">参加作品数</Label>
 									<p className="font-bold text-2xl">
 										{tracksData.statistics.releaseCount}
 										<span className="text-base-content/70 text-sm"> 作品</span>
@@ -348,7 +348,7 @@ function ArtistAliasDetailPage() {
 									<TableRow className="hover:bg-transparent">
 										<TableHead>サークル名</TableHead>
 										<TableHead className="w-[160px]">参加形態</TableHead>
-										<TableHead className="w-[100px]">リリース数</TableHead>
+										<TableHead className="w-[100px]">作品数</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>
@@ -416,7 +416,7 @@ function ArtistAliasDetailPage() {
 											<TableHead>作品</TableHead>
 											<TableHead className="w-[60px]">No.</TableHead>
 											<TableHead>トラック名</TableHead>
-											<TableHead className="w-[120px]">リリース日</TableHead>
+											<TableHead className="w-[120px]">頒布日</TableHead>
 											<TableHead>サークル</TableHead>
 										</TableRow>
 									</TableHeader>
