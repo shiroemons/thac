@@ -60,7 +60,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
 				{/* Badge */}
 				<Badge
 					variant="primary"
-					className="mb-6 inline-flex items-center gap-2 bg-primary/10 px-4 py-2 text-primary"
+					className="mb-6 inline-flex items-center gap-2 bg-primary px-4 py-2 text-primary-content"
 				>
 					<Sparkles className="size-4" aria-hidden="true" />
 					<span>東方アレンジ楽曲データベース</span>

@@ -23,7 +23,7 @@ function StatCard({ icon: Icon, count, label, href, trend }: StatCardProps) {
 	const content = (
 		<Card className="group flex flex-col gap-3 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
 			<div className="flex items-center justify-between">
-				<div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
+				<div className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-content transition-transform duration-300 group-hover:scale-110">
 					<Icon className="size-5" aria-hidden="true" />
 				</div>
 				{trend !== undefined && (

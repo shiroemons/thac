@@ -114,7 +114,7 @@ export function SearchSyntaxHelp({ className }: SearchSyntaxHelpProps) {
 										</td>
 										<td className="text-base-content/70">{item.description}</td>
 										<td>
-											<code className="rounded bg-primary/10 px-1.5 py-0.5 text-primary text-xs">
+											<code className="rounded bg-primary px-1.5 py-0.5 text-primary-content text-xs">
 												{item.example}
 											</code>
 										</td>

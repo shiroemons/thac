@@ -150,7 +150,7 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 	const location = useLocation();
 
 	const activeItemClasses =
-		"border-l-3 border-primary bg-primary/10 text-primary font-medium";
+		"border-l-3 border-primary bg-primary text-primary-content font-medium";
 	const inactiveItemClasses =
 		"border-l-3 border-transparent hover:bg-base-content/5";
 
