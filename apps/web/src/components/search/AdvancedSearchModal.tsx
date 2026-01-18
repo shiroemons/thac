@@ -10,6 +10,10 @@ import {
 	useState,
 } from "react";
 import {
+	OFFICIAL_WORK_CATEGORY_LABELS,
+	OFFICIAL_WORK_CATEGORY_ORDER,
+} from "@/lib/constants";
+import {
 	publicArtistsAllListOptions,
 	publicCirclesAllListOptions,
 	publicEventSeriesListOptions,
@@ -170,8 +174,14 @@ function AdvancedSearchModalContent({
 		[songsData],
 	);
 
-	// カテゴリの表示順序
-	const categoryOrder = ["PC-98", "Windows", "CD", "書籍", "その他"] as const;
+	// カテゴリの表示順序（共通定数から生成）
+	const categoryOrder = useMemo(
+		() =>
+			OFFICIAL_WORK_CATEGORY_ORDER.map(
+				(key) => OFFICIAL_WORK_CATEGORY_LABELS[key],
+			),
+		[],
+	);
 
 	// セクション開閉の切り替え
 	const toggleSection = useCallback((key: keyof FilterSectionState) => {

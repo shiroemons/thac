@@ -171,8 +171,8 @@ export function OfficialSongEditDialog({
 
 		// カテゴリ順にソートしてグループ配列を作成
 		const categoryOrder = [
-			"pc98",
 			"windows",
+			"pc98",
 			"zuns_music_collection",
 			"akyus_untouched_score",
 			"commercial_books",
