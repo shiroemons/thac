@@ -306,7 +306,7 @@ function RecentUpdatesSection() {
 							>
 								<td className="px-5 py-4">
 									{update.type === "new" ? (
-										<span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-primary text-xs">
+										<span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-primary-content text-xs">
 											<Sparkles className="size-3" aria-hidden="true" />
 											NEW
 										</span>
@@ -364,7 +364,7 @@ function StatsPage() {
 			<div className="glass-card relative overflow-hidden rounded-2xl p-6 md:p-8">
 				<div className="gradient-mesh absolute inset-0" />
 				<div className="relative flex items-center gap-4">
-					<div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+					<div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-content">
 						<BarChart3 className="size-7" aria-hidden="true" />
 					</div>
 					<div>

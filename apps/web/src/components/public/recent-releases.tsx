@@ -135,7 +135,7 @@ export function RecentReleases() {
 			<div className="mb-6 flex items-center justify-between">
 				<div className="flex items-center gap-3">
 					<h2 className="font-bold text-xl">最近のリリース</h2>
-					<Badge variant="primary" className="bg-primary/10 text-primary">
+					<Badge variant="primary" className="bg-primary text-primary-content">
 						{mockReleases.length}件
 					</Badge>
 				</div>

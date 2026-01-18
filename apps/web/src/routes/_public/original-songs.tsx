@@ -504,7 +504,7 @@ function WorkAccordion({
 								<td className="hidden text-base-content/70 sm:table-cell">
 									{song.composerName || "-"}
 								</td>
-								<td className="text-right text-primary">
+								<td className="text-right font-medium text-base-content">
 									{formatNumber(song.arrangeCount)}
 								</td>
 							</tr>

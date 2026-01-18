@@ -57,7 +57,7 @@ export function FeaturesSection() {
 							key={feature.title}
 							className="group rounded-2xl p-8 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 						>
-							<div className="mb-4 flex size-14 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
+							<div className="mb-4 flex size-14 items-center justify-center rounded-xl bg-primary text-primary-content transition-transform duration-300 group-hover:scale-110">
 								<feature.icon className="size-7" aria-hidden="true" />
 							</div>
 							<h3 className="mb-2 font-bold text-xl">{feature.title}</h3>

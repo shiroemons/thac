@@ -39,7 +39,7 @@ function CirclesRankingPage() {
 			<div className="glass-card relative overflow-hidden rounded-2xl p-6 md:p-8">
 				<div className="gradient-mesh absolute inset-0" />
 				<div className="relative flex items-center gap-4">
-					<div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+					<div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-content">
 						<Crown className="size-7" aria-hidden="true" />
 					</div>
 					<div>

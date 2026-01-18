@@ -622,7 +622,7 @@ function SearchPage() {
 								preload="intent"
 								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-primary/5 p-4 transition-all duration-300 hover:bg-primary/10 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 							>
-								<div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
+								<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-content transition-transform duration-300 group-hover:scale-110">
 									<Disc3 className="size-5" aria-hidden="true" />
 								</div>
 								<div>
