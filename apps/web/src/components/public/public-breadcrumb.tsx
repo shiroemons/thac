@@ -1,4 +1,6 @@
 import {
+	BarChart3,
+	Calendar,
 	ChevronRight,
 	Disc3,
 	Home,
@@ -26,7 +28,8 @@ export type EntityType =
 	| "track"
 	| "event"
 	| "original-song"
-	| "official-work";
+	| "official-work"
+	| "stats";
 
 /** エンティティタイプ別アイコンマッピング */
 const ENTITY_ICONS: Record<EntityType, LucideIcon> = {
@@ -34,9 +37,10 @@ const ENTITY_ICONS: Record<EntityType, LucideIcon> = {
 	circle: Users,
 	release: Disc3,
 	track: Music,
-	event: Disc3, // イベントはDisc3を流用
+	event: Calendar,
 	"original-song": Music,
 	"official-work": Disc3,
+	stats: BarChart3,
 };
 
 /** ラベルからエンティティタイプを推定 */
@@ -49,6 +53,7 @@ function inferEntityType(label: string): EntityType | null {
 		イベント: "event",
 		原曲: "original-song",
 		原作: "official-work",
+		統計: "stats",
 	};
 	return labelToType[label] ?? null;
 }

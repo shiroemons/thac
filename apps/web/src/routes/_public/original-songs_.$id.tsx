@@ -5,9 +5,8 @@ import {
 	ChevronRight,
 	Disc3,
 	ExternalLink as ExternalLinkIcon,
-	Mic,
 	Music,
-	TrendingUp,
+	UserRound,
 	Users,
 } from "lucide-react";
 import { ExternalLink, PublicBreadcrumb } from "@/components/public";
@@ -165,7 +164,7 @@ function OriginalSongDetailPage() {
 				<div className="mt-6 grid grid-cols-3 gap-4">
 					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-primary">
-							<TrendingUp className="size-5" />
+							<Music className="size-5" />
 							<span className="font-bold text-2xl">
 								{formatNumber(song.arrangeCount)}
 							</span>
@@ -183,7 +182,7 @@ function OriginalSongDetailPage() {
 					</div>
 					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-primary">
-							<Mic className="size-5" />
+							<UserRound className="size-5" />
 							<span className="font-bold text-2xl">
 								{formatNumber(song.artistCount)}
 							</span>
@@ -287,7 +286,7 @@ function OriginalSongDetailPage() {
 														preload="intent"
 														className="inline-flex items-center gap-1 hover:text-primary"
 													>
-														<Users className="size-3" />
+														<UserRound className="size-3" />
 														<span>{artist.creditName}</span>
 														{artist.roles.length > 0 && (
 															<span className="text-base-content/60 text-xs">

@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import {
 	Calendar,
-	Disc3,
 	type LucideIcon,
 	Music,
 	TrendingUp,
@@ -108,7 +107,7 @@ export function StatsCards() {
 					href="/artists"
 				/>
 				<StatCard
-					icon={Disc3}
+					icon={Music}
 					count={mockStats.tracks}
 					label="トラック"
 					href="/stats"

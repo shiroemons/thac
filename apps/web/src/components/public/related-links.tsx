@@ -1,4 +1,8 @@
-import { ExternalLink as ExternalLinkIcon, Mic, Users } from "lucide-react";
+import {
+	ExternalLink as ExternalLinkIcon,
+	UserRound,
+	Users,
+} from "lucide-react";
 import type { ArtistLinkDisplay, CircleLinkDisplay } from "@/types/publication";
 import { ExternalLink } from "./external-link";
 
@@ -63,7 +67,7 @@ export function RelatedLinks({
 			{filteredArtistLinks.length > 0 && (
 				<div className="space-y-2">
 					<h4 className="flex items-center gap-2 font-medium text-base-content/70 text-sm">
-						<Mic className="size-4" />
+						<UserRound className="size-4" />
 						アーティスト
 					</h4>
 					<div className="flex flex-wrap gap-2">

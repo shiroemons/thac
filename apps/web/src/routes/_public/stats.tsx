@@ -11,6 +11,7 @@ import {
 	Sparkles,
 	TrendingUp,
 	Trophy,
+	UserRound,
 	Users,
 } from "lucide-react";
 import { Suspense } from "react";
@@ -413,7 +414,7 @@ function StatsPage() {
 						color="text-primary"
 					/>
 					<StatCard
-						icon={Users}
+						icon={UserRound}
 						count={displayStats.artists}
 						label="アーティスト"
 						href="/artists"
@@ -426,7 +427,7 @@ function StatsPage() {
 						color="text-warning"
 					/>
 					<StatCard
-						icon={Disc3}
+						icon={Music}
 						count={displayStats.tracks}
 						label="アレンジ"
 						color="text-success"

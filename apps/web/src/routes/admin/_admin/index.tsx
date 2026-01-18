@@ -10,7 +10,7 @@ import {
 	MonitorSmartphone,
 	Music,
 	UserCog,
-	UserPen,
+	UserRound,
 	Users,
 } from "lucide-react";
 import { statsApi } from "@/lib/api-client";
@@ -90,7 +90,7 @@ function AdminDashboard() {
 		{
 			title: "アーティスト",
 			value: data?.artists,
-			icon: <UserPen className="h-4 w-4" />,
+			icon: <UserRound className="h-4 w-4" />,
 			href: "/admin/artists" as const,
 		},
 		{

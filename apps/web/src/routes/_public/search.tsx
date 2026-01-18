@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
 	Clock,
-	Disc3,
 	Music,
 	Search,
 	SlidersHorizontal,
 	Sparkles,
 	TrendingUp,
 	UserRound,
+	Users,
 	X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -154,7 +154,7 @@ const categoryConfig: Record<
 	},
 	circle: {
 		label: "サークル",
-		icon: <Disc3 className="size-4" aria-hidden="true" />,
+		icon: <Users className="size-4" aria-hidden="true" />,
 		color: "text-primary",
 	},
 	track: {
@@ -219,7 +219,7 @@ function getResultIcon(type: SearchResult["type"]): React.ReactNode {
 		case "artist":
 			return <UserRound className="size-5" aria-hidden="true" />;
 		case "circle":
-			return <Disc3 className="size-5" aria-hidden="true" />;
+			return <Users className="size-5" aria-hidden="true" />;
 		case "track":
 			return <Music className="size-5" aria-hidden="true" />;
 	}
@@ -623,7 +623,7 @@ function SearchPage() {
 								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-base-200 p-4 transition-all duration-300 hover:bg-primary hover:text-primary-content hover:shadow-lg hover:ring-2 hover:ring-primary/10"
 							>
 								<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-content transition-transform duration-300 group-hover:scale-110">
-									<Disc3 className="size-5" aria-hidden="true" />
+									<Users className="size-5" aria-hidden="true" />
 								</div>
 								<div>
 									<div className="font-medium transition-colors duration-300 group-hover:text-primary">

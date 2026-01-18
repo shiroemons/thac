@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
 	Calendar,
 	Disc3,
+	Music,
 	Search,
 	Sparkles,
 	UserRound,
@@ -158,7 +159,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
 					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
 					{/* アレンジ（リンクなし） */}
 					<div className="flex items-center gap-2">
-						<Disc3 className="size-4 text-primary" aria-hidden="true" />
+						<Music className="size-4 text-primary" aria-hidden="true" />
 						<span>
 							<span className="font-semibold text-base-content">
 								{displayStats.tracks.toLocaleString()}

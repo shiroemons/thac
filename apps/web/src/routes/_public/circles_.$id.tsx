@@ -1,5 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Calendar, Disc3, Loader2, Music, Users } from "lucide-react";
+import {
+	Calendar,
+	Disc3,
+	Loader2,
+	Music,
+	UserRound,
+	Users,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	DetailTabs,
@@ -531,7 +538,7 @@ function CircleDetailPage() {
 															preload="intent"
 															className="inline-flex min-h-[44px] items-center gap-1 transition-colors duration-300 hover:text-primary"
 														>
-															<Users className="size-3" />
+															<UserRound className="size-3" />
 															<span>{artist.creditName}</span>
 															<span className="text-base-content/60 text-xs">
 																(

@@ -1,11 +1,11 @@
 import {
 	Calendar,
-	Disc3,
 	Hash,
 	Music,
 	Search,
 	UserCheck,
 	UserRound,
+	Users,
 	X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,7 +28,7 @@ const CHIP_ICONS: Record<FilterChipType, React.ElementType> = {
 	textSearch: Search,
 	originalSong: Music,
 	artist: UserRound,
-	circle: Disc3,
+	circle: Users,
 	roleCount: UserCheck,
 	songCount: Hash,
 	date: Calendar,
