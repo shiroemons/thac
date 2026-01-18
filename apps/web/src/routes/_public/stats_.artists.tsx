@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Sparkles, User } from "lucide-react";
+import { Sparkles, UserRound } from "lucide-react";
 import {
 	EmptyState,
 	PublicBreadcrumb,
@@ -79,7 +79,7 @@ function ArtistsRankingPage() {
 							>
 								<RankBadge rank={rank} medal={medal} />
 								<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent">
-									<User
+									<UserRound
 										className="size-5 text-accent-content"
 										aria-hidden="true"
 									/>

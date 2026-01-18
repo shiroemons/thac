@@ -50,7 +50,7 @@ export interface EntityDetailHeaderProps {
  * // アーティスト詳細ページでの使用例
  * <EntityDetailHeader
  *   gradientClass="gradient-artist"
- *   icon={<User className="size-10 text-primary sm:size-12" />}
+ *   icon={<UserRound className="size-10 text-primary sm:size-12" />}
  *   iconRingClass="ring-primary/20"
  *   title={artist.name}
  *   subtitle={!artist.isMainName ? artist.artistName : undefined}
@@ -64,7 +64,7 @@ export interface EntityDetailHeaderProps {
  * // サークル詳細ページでの使用例
  * <EntityDetailHeader
  *   gradientClass="gradient-circle"
- *   icon={<Building2 className="size-10 text-info sm:size-12" />}
+ *   icon={<Users className="size-10 text-info sm:size-12" />}
  *   iconRingClass="ring-info/20"
  *   title={circle.name}
  *   subtitle={circle.nameJa !== circle.name ? circle.nameJa : undefined}

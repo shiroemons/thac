@@ -2,7 +2,6 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
 	Calendar,
 	Database,
-	Disc,
 	Disc3,
 	FolderOpen,
 	Import,
@@ -62,12 +61,12 @@ const navItems: NavEntry[] = [
 	},
 	{
 		label: "公式管理",
-		icon: Disc,
+		icon: Disc3,
 		items: [
 			{
 				to: "/admin/official/works",
 				label: "公式作品",
-				icon: Disc,
+				icon: Disc3,
 			},
 			{
 				to: "/admin/official/songs",

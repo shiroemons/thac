@@ -5,6 +5,7 @@ import {
 	type LucideIcon,
 	Music,
 	TrendingUp,
+	UserRound,
 	Users,
 } from "lucide-react";
 import { formatNumber } from "../../lib/format";
@@ -101,7 +102,7 @@ export function StatsCards() {
 					href="/circles"
 				/>
 				<StatCard
-					icon={Users}
+					icon={UserRound}
 					count={mockStats.artists}
 					label="アーティスト"
 					href="/artists"

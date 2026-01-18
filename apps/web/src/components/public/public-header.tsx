@@ -7,6 +7,7 @@ import {
 	Menu,
 	Music,
 	Search,
+	UserRound,
 	Users,
 	X,
 } from "lucide-react";
@@ -17,7 +18,7 @@ import UserMenu from "../user-menu";
 const navLinks = [
 	{ to: "/original-songs", label: "原曲", icon: Music },
 	{ to: "/circles", label: "サークル", icon: Users },
-	{ to: "/artists", label: "アーティスト", icon: Users },
+	{ to: "/artists", label: "アーティスト", icon: UserRound },
 	{ to: "/events", label: "イベント", icon: Calendar },
 	{ to: "/stats", label: "統計", icon: BarChart3 },
 ] as const;

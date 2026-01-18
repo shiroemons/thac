@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Calendar, ChevronDown, ChevronRight, Disc } from "lucide-react";
+import { Calendar, ChevronDown, ChevronRight, Disc3 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
 	EmptyState,
@@ -294,7 +294,7 @@ function EventsPage() {
 													)}
 												</div>
 												<div className="flex items-center gap-1 text-base-content/60 text-sm">
-													<Disc className="size-3.5" aria-hidden="true" />
+													<Disc3 className="size-3.5" aria-hidden="true" />
 													{formatNumber(event.releaseCount)}作品
 												</div>
 											</div>
@@ -350,7 +350,7 @@ function EventsPage() {
 														</span>
 													</div>
 													<span className="flex items-center gap-1 text-base-content/70 text-sm">
-														<Disc className="size-4" aria-hidden="true" />
+														<Disc3 className="size-4" aria-hidden="true" />
 														{formatNumber(event.releaseCount)}作品
 													</span>
 												</Link>
@@ -442,7 +442,7 @@ function EventsPage() {
 																		</span>
 																	</div>
 																	<div className="flex items-center gap-1 text-base-content/60 text-sm">
-																		<Disc
+																		<Disc3
 																			className="size-3.5"
 																			aria-hidden="true"
 																		/>
@@ -509,7 +509,7 @@ function EventsPage() {
 																</td>
 																<td className="text-base-content/70">
 																	<span className="flex items-center gap-1">
-																		<Disc
+																		<Disc3
 																			className="size-4"
 																			aria-hidden="true"
 																		/>

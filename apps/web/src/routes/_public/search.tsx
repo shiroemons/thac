@@ -7,7 +7,7 @@ import {
 	SlidersHorizontal,
 	Sparkles,
 	TrendingUp,
-	Users,
+	UserRound,
 	X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -149,7 +149,7 @@ const categoryConfig: Record<
 	all: { label: "すべて", icon: null, color: "" },
 	artist: {
 		label: "アーティスト",
-		icon: <Users className="size-4" aria-hidden="true" />,
+		icon: <UserRound className="size-4" aria-hidden="true" />,
 		color: "text-accent",
 	},
 	circle: {
@@ -217,7 +217,7 @@ function getResultHref(result: SearchResult): string {
 function getResultIcon(type: SearchResult["type"]): React.ReactNode {
 	switch (type) {
 		case "artist":
-			return <Users className="size-5" aria-hidden="true" />;
+			return <UserRound className="size-5" aria-hidden="true" />;
 		case "circle":
 			return <Disc3 className="size-5" aria-hidden="true" />;
 		case "track":
@@ -638,7 +638,7 @@ function SearchPage() {
 								className="group flex min-h-[72px] items-center gap-3 rounded-xl bg-base-200 p-4 transition-all duration-300 hover:bg-accent hover:text-accent-content hover:shadow-lg hover:ring-2 hover:ring-accent/10"
 							>
 								<div className="flex size-12 items-center justify-center rounded-xl bg-accent text-accent-content transition-transform duration-300 group-hover:scale-110">
-									<Users className="size-5" aria-hidden="true" />
+									<UserRound className="size-5" aria-hidden="true" />
 								</div>
 								<div>
 									<div className="font-medium transition-colors duration-300 group-hover:text-accent">

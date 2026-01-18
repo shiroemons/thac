@@ -1,4 +1,4 @@
-import { Database, Music, Search, Users } from "lucide-react";
+import { Database, Music, Search, UserRound } from "lucide-react";
 import { Card } from "../ui/card";
 
 const features = [
@@ -15,7 +15,7 @@ const features = [
 			"東方アレンジ楽曲の詳細な情報を網羅。原曲との関連付けも完備しています。",
 	},
 	{
-		icon: Users,
+		icon: UserRound,
 		title: "アーティスト情報",
 		description:
 			"サークルやアーティストの活動情報を一覧できます。関連作品も簡単に辿れます。",

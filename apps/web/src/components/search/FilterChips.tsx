@@ -5,7 +5,7 @@ import {
 	Music,
 	Search,
 	UserCheck,
-	Users,
+	UserRound,
 	X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,7 @@ interface FilterChipsProps {
 const CHIP_ICONS: Record<FilterChipType, React.ElementType> = {
 	textSearch: Search,
 	originalSong: Music,
-	artist: Users,
+	artist: UserRound,
 	circle: Disc3,
 	roleCount: UserCheck,
 	songCount: Hash,

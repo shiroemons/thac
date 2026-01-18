@@ -1,4 +1,4 @@
-import { Check, Plus, Search, Users, X } from "lucide-react";
+import { Check, Plus, Search, UserRound, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { ArtistOption, CreditRole, SelectedArtist } from "./types";
@@ -110,7 +110,7 @@ export function ArtistRoleFilter({
 							key={`${artist.role}-${artist.id}`}
 							className="badge badge-accent gap-1 pr-1 transition-all hover:opacity-80"
 						>
-							<Users className="h-3 w-3" />
+							<UserRound className="h-3 w-3" />
 							<span className="max-w-[100px] truncate">
 								{ROLE_LABELS[artist.role]}: {artist.name}
 							</span>

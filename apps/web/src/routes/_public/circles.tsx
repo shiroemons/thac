@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Building2, Disc, Music, Users } from "lucide-react";
+import { Disc3, Music, Users } from "lucide-react";
 import { useRef, useState } from "react";
 import {
 	EmptyState,
@@ -317,7 +317,7 @@ function CirclesPage() {
 								<MobileCardItem>
 									<div className="flex items-center gap-3">
 										<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary">
-											<Building2
+											<Users
 												className="size-6 text-primary-content"
 												aria-hidden="true"
 											/>
@@ -333,7 +333,7 @@ function CirclesPage() {
 											)}
 											<div className="mt-2 flex items-center gap-4 text-base-content/70 text-sm">
 												<span className="flex items-center gap-1">
-													<Disc className="size-4" aria-hidden="true" />
+													<Disc3 className="size-4" aria-hidden="true" />
 													{formatNumber(circle.releaseCount)}
 												</span>
 												<span className="flex items-center gap-1">
@@ -380,7 +380,7 @@ function CirclesPage() {
 										</div>
 										<div className="mt-3 flex items-center gap-4 text-base-content/70 text-sm">
 											<span className="flex items-center gap-1">
-												<Disc className="size-4" aria-hidden="true" />
+												<Disc3 className="size-4" aria-hidden="true" />
 												{formatNumber(circle.releaseCount)}作品
 											</span>
 											<span className="flex items-center gap-1">

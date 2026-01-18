@@ -1,12 +1,12 @@
 import {
-	Building2,
 	ChevronRight,
-	Disc,
+	Disc3,
 	Home,
 	type LucideIcon,
 	MoreHorizontal,
 	Music,
-	User,
+	UserRound,
+	Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import {
@@ -30,13 +30,13 @@ export type EntityType =
 
 /** エンティティタイプ別アイコンマッピング */
 const ENTITY_ICONS: Record<EntityType, LucideIcon> = {
-	artist: User,
-	circle: Building2,
-	release: Disc,
+	artist: UserRound,
+	circle: Users,
+	release: Disc3,
 	track: Music,
-	event: Disc, // イベントはDiscを流用
+	event: Disc3, // イベントはDisc3を流用
 	"original-song": Music,
-	"official-work": Disc,
+	"official-work": Disc3,
 };
 
 /** ラベルからエンティティタイプを推定 */

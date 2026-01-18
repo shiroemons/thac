@@ -4,7 +4,6 @@ import {
 	BarChart3,
 	Calendar,
 	Crown,
-	Disc,
 	Disc3,
 	type LucideIcon,
 	Music,
@@ -421,7 +420,7 @@ function StatsPage() {
 						color="text-accent"
 					/>
 					<StatCard
-						icon={Disc}
+						icon={Disc3}
 						count={displayStats.releases}
 						label="作品"
 						color="text-warning"

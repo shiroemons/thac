@@ -1,12 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-	Building2,
-	Calendar,
-	Disc3,
-	Loader2,
-	Music,
-	Users,
-} from "lucide-react";
+import { Calendar, Disc3, Loader2, Music, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	DetailTabs,
@@ -265,7 +258,7 @@ function CircleDetailPage() {
 			{/* ヘッダー - EntityDetailHeader使用 */}
 			<EntityDetailHeader
 				gradientClass="gradient-circle"
-				icon={<Building2 className="size-10 text-info sm:size-12" />}
+				icon={<Users className="size-10 text-info sm:size-12" />}
 				iconRingClass="ring-info/20"
 				title={circle.name}
 				subtitle={

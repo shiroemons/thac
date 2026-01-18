@@ -3,7 +3,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	Calendar,
 	CircleUser,
-	Disc,
 	Disc3,
 	FolderOpen,
 	Home,
@@ -76,7 +75,7 @@ function AdminDashboard() {
 		{
 			title: "公式作品",
 			value: data?.officialWorks,
-			icon: <Disc className="h-4 w-4" />,
+			icon: <Disc3 className="h-4 w-4" />,
 			href: "/admin/official/works" as const,
 		},
 		{
