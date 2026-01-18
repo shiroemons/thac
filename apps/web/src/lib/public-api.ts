@@ -452,6 +452,34 @@ export interface PublicReleaseDetail {
 }
 
 // =============================================================================
+// ランキングAPI型定義
+// =============================================================================
+
+/** 原曲アレンジ数ランキング項目 */
+export interface OriginalSongRankingItem {
+	id: string;
+	name: string;
+	workId: string | null;
+	workName: string | null;
+	count: number;
+}
+
+/** サークルリリース数ランキング項目 */
+export interface CircleRankingItem {
+	id: string;
+	name: string;
+	count: number;
+}
+
+/** アーティスト楽曲数ランキング項目 */
+export interface ArtistRankingItem {
+	id: string;
+	name: string;
+	artistId: string;
+	count: number;
+}
+
+// =============================================================================
 // 統計API型定義
 // =============================================================================
 
@@ -561,6 +589,36 @@ export const publicApi = {
 		/** 最近の更新 */
 		recentUpdates: () =>
 			publicFetch<PublicStatsRecentUpdates>("/api/public/stats/recent-updates"),
+		/** 原曲アレンジ数ランキング（ページネーション対応） */
+		originalSongsRanking: (params?: { page?: number; limit?: number }) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<OriginalSongRankingItem>>(
+				`/api/public/stats/rankings/original-songs${query ? `?${query}` : ""}`,
+			);
+		},
+		/** サークルリリース数ランキング（ページネーション対応） */
+		circlesRanking: (params?: { page?: number; limit?: number }) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<CircleRankingItem>>(
+				`/api/public/stats/rankings/circles${query ? `?${query}` : ""}`,
+			);
+		},
+		/** アーティスト楽曲数ランキング（ページネーション対応） */
+		artistsRanking: (params?: { page?: number; limit?: number }) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<ArtistRankingItem>>(
+				`/api/public/stats/rankings/artists${query ? `?${query}` : ""}`,
+			);
+		},
 	}),
 
 	/** カテゴリマスタ一覧を取得 */

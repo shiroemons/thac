@@ -59,6 +59,14 @@ export {
 export { PublicFooter } from "./public-footer";
 export { PublicHeader } from "./public-header";
 export { PublicationLinks } from "./publication-links";
+export {
+	calculateRanks,
+	getMedalOrRank,
+	RankBadge,
+	type RankBadgeProps,
+	RankingList,
+	type RankingListProps,
+} from "./ranking-list";
 export { RecentReleases } from "./recent-releases";
 export { RelatedLinks } from "./related-links";
 export {

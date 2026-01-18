@@ -4,6 +4,9 @@
  */
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import {
+	type ArtistRankingItem,
+	type CircleRankingItem,
+	type OriginalSongRankingItem,
 	type PaginatedResponse,
 	type PublicArtistItem,
 	type PublicCircleItem,
@@ -318,3 +321,60 @@ export const publicRecentUpdatesQueryOptions = () =>
 		queryFn: () => publicApi.stats.recentUpdates(),
 		staleTime: STALE_TIME_PUBLIC.RECENT_UPDATES,
 	});
+
+// =============================================================================
+// ランキング無限スクロール用クエリオプション
+// =============================================================================
+
+/**
+ * 原曲アレンジ数ランキングの無限スクロールクエリオプション
+ */
+export const originalSongsRankingInfiniteQueryOptions = (limit = 20) => {
+	return infiniteQueryOptions({
+		queryKey: ["public", "stats", "rankings", "original-songs", limit],
+		queryFn: ({ pageParam }) =>
+			publicApi.stats.originalSongsRanking({ page: pageParam, limit }),
+		initialPageParam: 1,
+		getNextPageParam: (
+			lastPage: PaginatedResponse<OriginalSongRankingItem>,
+		) => {
+			const hasMore = lastPage.page * lastPage.limit < lastPage.total;
+			return hasMore ? lastPage.page + 1 : undefined;
+		},
+		staleTime: STALE_TIME_PUBLIC.RANKINGS,
+	});
+};
+
+/**
+ * サークルリリース数ランキングの無限スクロールクエリオプション
+ */
+export const circlesRankingInfiniteQueryOptions = (limit = 20) => {
+	return infiniteQueryOptions({
+		queryKey: ["public", "stats", "rankings", "circles", limit],
+		queryFn: ({ pageParam }) =>
+			publicApi.stats.circlesRanking({ page: pageParam, limit }),
+		initialPageParam: 1,
+		getNextPageParam: (lastPage: PaginatedResponse<CircleRankingItem>) => {
+			const hasMore = lastPage.page * lastPage.limit < lastPage.total;
+			return hasMore ? lastPage.page + 1 : undefined;
+		},
+		staleTime: STALE_TIME_PUBLIC.RANKINGS,
+	});
+};
+
+/**
+ * アーティスト楽曲数ランキングの無限スクロールクエリオプション
+ */
+export const artistsRankingInfiniteQueryOptions = (limit = 20) => {
+	return infiniteQueryOptions({
+		queryKey: ["public", "stats", "rankings", "artists", limit],
+		queryFn: ({ pageParam }) =>
+			publicApi.stats.artistsRanking({ page: pageParam, limit }),
+		initialPageParam: 1,
+		getNextPageParam: (lastPage: PaginatedResponse<ArtistRankingItem>) => {
+			const hasMore = lastPage.page * lastPage.limit < lastPage.total;
+			return hasMore ? lastPage.page + 1 : undefined;
+		},
+		staleTime: STALE_TIME_PUBLIC.RANKINGS,
+	});
+};
