@@ -40,6 +40,7 @@ export interface PublicStats {
 	artists: number;
 	tracks: number;
 	originalSongs: number;
+	releases: number;
 }
 
 /** ランキング項目 */

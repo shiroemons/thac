@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, Disc3, Search, Sparkles, Users } from "lucide-react";
+import { Calendar, Disc, Disc3, Search, Sparkles, Users } from "lucide-react";
 import type { PublicStats } from "@/lib/public-api";
 import { Badge } from "../ui/badge";
 
@@ -10,6 +10,7 @@ const defaultStats: PublicStats = {
 	artists: 0,
 	tracks: 0,
 	originalSongs: 0,
+	releases: 0,
 };
 
 interface HeroSectionProps {
@@ -140,17 +141,27 @@ export function HeroSection({ stats }: HeroSectionProps) {
 						}
 					/>
 					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
-					<StatLink
-						href="/stats"
-						count={displayStats.tracks}
-						label="トラック"
-						icon={
-							<Disc3
-								className="size-4 text-primary group-hover:text-primary"
-								aria-hidden="true"
-							/>
-						}
-					/>
+					{/* 作品（リンクなし） */}
+					<div className="flex items-center gap-2">
+						<Disc className="size-4 text-primary" aria-hidden="true" />
+						<span>
+							<span className="font-semibold text-base-content">
+								{displayStats.releases.toLocaleString()}
+							</span>{" "}
+							作品
+						</span>
+					</div>
+					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
+					{/* アレンジ（リンクなし） */}
+					<div className="flex items-center gap-2">
+						<Disc3 className="size-4 text-primary" aria-hidden="true" />
+						<span>
+							<span className="font-semibold text-base-content">
+								{displayStats.tracks.toLocaleString()}
+							</span>{" "}
+							アレンジ
+						</span>
+					</div>
 				</div>
 			</div>
 		</section>

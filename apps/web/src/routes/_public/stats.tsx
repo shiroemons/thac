@@ -4,6 +4,7 @@ import {
 	BarChart3,
 	Calendar,
 	Crown,
+	Disc,
 	Disc3,
 	type LucideIcon,
 	Music,
@@ -380,7 +381,7 @@ function StatsPage() {
 
 			{/* Stats cards */}
 			<section>
-				<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+				<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
 					<StatCard
 						icon={Music}
 						count={stats.originalSongs}
@@ -389,7 +390,14 @@ function StatsPage() {
 						color="text-secondary"
 					/>
 					<StatCard
-						icon={Disc3}
+						icon={Calendar}
+						count={stats.events}
+						label="イベント"
+						href="/events"
+						color="text-info"
+					/>
+					<StatCard
+						icon={Users}
 						count={stats.circles}
 						label="サークル"
 						href="/circles"
@@ -403,16 +411,15 @@ function StatsPage() {
 						color="text-accent"
 					/>
 					<StatCard
-						icon={Calendar}
-						count={stats.events}
-						label="イベント"
-						href="/events"
-						color="text-info"
+						icon={Disc}
+						count={stats.releases}
+						label="作品"
+						color="text-warning"
 					/>
 					<StatCard
-						icon={Music}
+						icon={Disc3}
 						count={stats.tracks}
-						label="トラック"
+						label="アレンジ"
 						color="text-success"
 					/>
 				</div>
