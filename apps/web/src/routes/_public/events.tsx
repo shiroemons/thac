@@ -209,32 +209,40 @@ function EventsPage() {
 			<PublicBreadcrumb items={[{ label: "イベント" }]} />
 
 			{/* ヘッダー */}
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<h1 className="font-bold text-3xl">イベント一覧</h1>
-					<p className="mt-1 text-base-content/70">
-						同人即売会 · {formatNumber(total)}件
-					</p>
-				</div>
+			<div className="glass-card relative overflow-hidden rounded-2xl p-6 md:p-8">
+				<div className="gradient-mesh absolute inset-0" />
+				<div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex items-center gap-4">
+						<div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-content">
+							<Calendar className="size-7" aria-hidden="true" />
+						</div>
+						<div>
+							<h1 className="font-bold text-2xl md:text-3xl">イベント一覧</h1>
+							<p className="mt-1 text-base-content/60">
+								東方同人即売会イベント · {formatNumber(total)}件
+							</p>
+						</div>
+					</div>
 
-				{/* 表示モード切替 */}
-				<div className="flex gap-1 rounded-lg bg-base-200 p-1">
-					<button
-						type="button"
-						className={`btn btn-sm ${viewMode === "series" ? "btn-primary" : "btn-ghost"}`}
-						onClick={() => setViewMode("series")}
-						aria-pressed={viewMode === "series"}
-					>
-						シリーズ別
-					</button>
-					<button
-						type="button"
-						className={`btn btn-sm ${viewMode === "year" ? "btn-primary" : "btn-ghost"}`}
-						onClick={() => setViewMode("year")}
-						aria-pressed={viewMode === "year"}
-					>
-						年別
-					</button>
+					{/* 表示モード切替 */}
+					<div className="flex gap-1 rounded-lg bg-base-200 p-1">
+						<button
+							type="button"
+							className={`btn btn-sm ${viewMode === "series" ? "btn-primary" : "btn-ghost"}`}
+							onClick={() => setViewMode("series")}
+							aria-pressed={viewMode === "series"}
+						>
+							シリーズ別
+						</button>
+						<button
+							type="button"
+							className={`btn btn-sm ${viewMode === "year" ? "btn-primary" : "btn-ghost"}`}
+							onClick={() => setViewMode("year")}
+							aria-pressed={viewMode === "year"}
+						>
+							年別
+						</button>
+					</div>
 				</div>
 			</div>
 
