@@ -90,9 +90,7 @@ function ReleaseDetailPage() {
 	if (!release) {
 		return (
 			<div className="space-y-6">
-				<PublicBreadcrumb
-					items={[{ label: "作品", href: "/releases" }, { label: id }]}
-				/>
+				<PublicBreadcrumb items={[{ label: "作品" }, { label: id }]} />
 				<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
 					<h1 className="font-bold text-2xl">作品が見つかりません</h1>
 					<p className="mt-2 text-base-content/70">
@@ -105,9 +103,7 @@ function ReleaseDetailPage() {
 
 	return (
 		<div className="space-y-6">
-			<PublicBreadcrumb
-				items={[{ label: "作品", href: "/releases" }, { label: release.name }]}
-			/>
+			<PublicBreadcrumb items={[{ label: "作品" }, { label: release.name }]} />
 
 			{/* ヘッダー - EntityDetailHeader + StatsCardGrid */}
 			<EntityDetailHeader

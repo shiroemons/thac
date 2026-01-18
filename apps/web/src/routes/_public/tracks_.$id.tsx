@@ -85,9 +85,7 @@ function TrackDetailPage() {
 	if (!track) {
 		return (
 			<div className="space-y-6">
-				<PublicBreadcrumb
-					items={[{ label: "作品", href: "/releases" }, { label: id }]}
-				/>
+				<PublicBreadcrumb items={[{ label: "作品" }, { label: id }]} />
 				<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
 					<h1 className="font-bold text-2xl">トラックが見つかりません</h1>
 					<p className="mt-2 text-base-content/70">
@@ -102,7 +100,7 @@ function TrackDetailPage() {
 		<div className="space-y-6">
 			<PublicBreadcrumb
 				items={[
-					{ label: "作品", href: "/releases" },
+					{ label: "作品" },
 					...(track.release
 						? [
 								{
