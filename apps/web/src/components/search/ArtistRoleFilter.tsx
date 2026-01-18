@@ -1,8 +1,7 @@
 import { Check, Plus, Search, Users, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { MockArtist } from "./mock-data";
-import type { CreditRole, SelectedArtist } from "./types";
+import type { ArtistOption, CreditRole, SelectedArtist } from "./types";
 import { ROLE_LABELS } from "./types";
 
 interface ArtistRoleFilterProps {
@@ -11,7 +10,7 @@ interface ArtistRoleFilterProps {
 	/** 選択変更ハンドラ */
 	onChange: (artists: SelectedArtist[]) => void;
 	/** 選択可能なアーティストオプション */
-	options: MockArtist[];
+	options: ArtistOption[];
 	/** カスタムクラス名 */
 	className?: string;
 }
@@ -70,7 +69,7 @@ export function ArtistRoleFilter({
 
 	// アーティストを選択/解除
 	const toggleArtist = useCallback(
-		(artist: MockArtist) => {
+		(artist: ArtistOption) => {
 			const existingIndex = selectedArtists.findIndex(
 				(a) => a.id === artist.id && a.role === activeRole,
 			);

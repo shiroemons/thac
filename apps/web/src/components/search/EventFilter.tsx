@@ -1,8 +1,7 @@
 import { Calendar, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { MockEvent, MockEventSeries } from "./mock-data";
-import type { SelectedEvent } from "./types";
+import type { EventOption, EventSeriesOption, SelectedEvent } from "./types";
 
 interface EventFilterProps {
 	/** 選択中のイベント */
@@ -10,9 +9,9 @@ interface EventFilterProps {
 	/** イベント変更ハンドラ */
 	onChange: (event: SelectedEvent | null) => void;
 	/** イベントシリーズのリスト */
-	eventSeries: MockEventSeries[];
+	eventSeries: EventSeriesOption[];
 	/** イベントのリスト */
-	events: MockEvent[];
+	events: EventOption[];
 	/** カスタムクラス名 */
 	className?: string;
 }
@@ -40,18 +39,41 @@ export function EventFilter({
 
 	const handleSeriesChange = (seriesId: string) => {
 		setSelectedSeriesId(seriesId);
-		// シリーズ変更時は選択をクリア
-		if (selectedEvent?.seriesName) {
-			const series = eventSeries.find((s) => s.id === seriesId);
-			if (series?.name !== selectedEvent.seriesName) {
-				onChange(null);
+		if (!seriesId) {
+			// シリーズ未選択の場合はクリア
+			onChange(null);
+			return;
+		}
+		// シリーズ選択時にデフォルトで「（すべて）」を選択状態にする
+		const series = eventSeries.find((s) => s.id === seriesId);
+		if (series) {
+			// 別のシリーズを選択した場合、または初回選択の場合
+			if (selectedEvent?.seriesId !== seriesId) {
+				onChange({
+					id: "",
+					name: "（すべて）",
+					seriesId: series.id,
+					seriesName: series.name,
+				});
 			}
 		}
 	};
 
 	const handleEventChange = (eventId: string) => {
+		// シリーズが選択されていない場合は何もしない
+		if (!selectedSeriesId) return;
+
+		const series = eventSeries.find((s) => s.id === selectedSeriesId);
+		if (!series) return;
+
 		if (!eventId) {
-			onChange(null);
+			// 「（すべて）」を選択した場合、シリーズのみの選択状態にする
+			onChange({
+				id: "",
+				name: "（すべて）",
+				seriesId: series.id,
+				seriesName: series.name,
+			});
 			return;
 		}
 		const event = events.find((e) => e.id === eventId);
@@ -59,6 +81,7 @@ export function EventFilter({
 			onChange({
 				id: event.id,
 				name: event.name,
+				seriesId: event.seriesId,
 				seriesName: event.seriesName,
 			});
 		}
@@ -77,7 +100,8 @@ export function EventFilter({
 					<div className="badge badge-info gap-1 pr-1">
 						<Calendar className="h-3 w-3" />
 						<span>
-							{selectedEvent.seriesName}: {selectedEvent.name}
+							{selectedEvent.seriesName}
+							{selectedEvent.id ? `: ${selectedEvent.name}` : "（すべて）"}
 						</span>
 						<button
 							type="button"
@@ -119,7 +143,7 @@ export function EventFilter({
 							onChange={(e) => handleEventChange(e.target.value)}
 							className="select select-sm select-bordered flex-1"
 						>
-							<option value="">選択してください</option>
+							<option value="">（すべて）</option>
 							{filteredEvents.map((event) => (
 								<option key={event.id} value={event.id}>
 									{event.name}

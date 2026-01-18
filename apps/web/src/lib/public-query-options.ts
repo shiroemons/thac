@@ -231,6 +231,69 @@ export const publicArtistsInfiniteQueryOptions = (
 };
 
 // =============================================================================
+// イベントシリーズ一覧用クエリオプション
+// =============================================================================
+
+/**
+ * イベントシリーズ一覧のクエリオプション
+ * 詳細検索のイベント選択で使用
+ */
+export const publicEventSeriesListOptions = () =>
+	queryOptions({
+		queryKey: ["public", "event-series", "list"],
+		queryFn: () => publicApi.eventSeries.list(),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+// =============================================================================
+// 詳細検索用マスターデータ クエリオプション
+// =============================================================================
+
+/**
+ * アーティスト全件一覧のクエリオプション
+ * 詳細検索のアーティスト選択で使用
+ */
+export const publicArtistsAllListOptions = () =>
+	queryOptions({
+		queryKey: ["public", "artists", "all"],
+		queryFn: () => publicApi.artists.list({ limit: 10000 }),
+		staleTime: STALE_TIME_PUBLIC.RANKINGS,
+	});
+
+/**
+ * サークル全件一覧のクエリオプション
+ * 詳細検索のサークル選択で使用
+ */
+export const publicCirclesAllListOptions = () =>
+	queryOptions({
+		queryKey: ["public", "circles", "all"],
+		queryFn: () => publicApi.circles.list({ limit: 10000 }),
+		staleTime: STALE_TIME_PUBLIC.RANKINGS,
+	});
+
+/**
+ * イベント全件一覧のクエリオプション
+ * 詳細検索のイベント選択で使用
+ */
+export const publicEventsAllListOptions = () =>
+	queryOptions({
+		queryKey: ["public", "events", "all"],
+		queryFn: () => publicApi.events.list({ limit: 10000 }),
+		staleTime: STALE_TIME_PUBLIC.RANKINGS,
+	});
+
+/**
+ * 原曲全件一覧のクエリオプション
+ * 詳細検索の原曲選択で使用
+ */
+export const publicSongsAllListOptions = () =>
+	queryOptions({
+		queryKey: ["public", "original-songs", "all"],
+		queryFn: () => publicApi.songs.list({ limit: 10000 }),
+		staleTime: STALE_TIME_PUBLIC.RANKINGS,
+	});
+
+// =============================================================================
 // 統計ランキング・最近の更新用クエリオプション
 // =============================================================================
 

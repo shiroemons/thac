@@ -1,4 +1,12 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
+import {
+	publicArtistsAllListOptions,
+	publicCirclesAllListOptions,
+	publicEventSeriesListOptions,
+	publicEventsAllListOptions,
+	publicSongsAllListOptions,
+} from "@/lib/public-query-options";
 import { cn } from "@/lib/utils";
 import { ArtistRoleFilter } from "./ArtistRoleFilter";
 import { CircleFilter } from "./CircleFilter";
@@ -6,14 +14,6 @@ import { DateRangeFilter } from "./DateRangeFilter";
 import { EventFilter } from "./EventFilter";
 import { createFilterChip, FilterChips } from "./FilterChips";
 import { FilterSection } from "./FilterSection";
-import {
-	mockArtists,
-	mockCircles,
-	mockEventSeries,
-	mockEvents,
-	mockOriginalSongs,
-	originalSongCategoryOrder,
-} from "./mock-data";
 import { OriginalSongCountFilter } from "./OriginalSongCountFilter";
 import { OriginalSongFilter } from "./OriginalSongFilter";
 import { SearchSyntaxHelp } from "./SearchSyntaxHelp";
@@ -49,6 +49,75 @@ export function AdvancedSearchPanel({
 	isOpen,
 	className,
 }: AdvancedSearchPanelProps) {
+	// DBからマスターデータを取得
+	const { data: artistsData } = useSuspenseQuery(publicArtistsAllListOptions());
+	const { data: circlesData } = useSuspenseQuery(publicCirclesAllListOptions());
+	const { data: eventSeriesData } = useSuspenseQuery(
+		publicEventSeriesListOptions(),
+	);
+	const { data: eventsData } = useSuspenseQuery(publicEventsAllListOptions());
+	const { data: songsData } = useSuspenseQuery(publicSongsAllListOptions());
+
+	// アーティストデータを変換
+	const artists = useMemo(
+		() =>
+			artistsData.data.map((a) => ({
+				id: a.id,
+				name: a.name,
+				nameJa: a.artistName !== a.name ? a.artistName : undefined,
+			})),
+		[artistsData],
+	);
+
+	// サークルデータを変換
+	const circles = useMemo(
+		() =>
+			circlesData.data.map((c) => ({
+				id: c.id,
+				name: c.name,
+				nameJa: c.nameJa || undefined,
+			})),
+		[circlesData],
+	);
+
+	// イベントシリーズデータを変換
+	const eventSeries = useMemo(
+		() =>
+			eventSeriesData.data.map((es) => ({
+				id: es.id,
+				name: es.name,
+			})),
+		[eventSeriesData],
+	);
+
+	// イベントデータを変換
+	const events = useMemo(
+		() =>
+			eventsData.data.map((e) => ({
+				id: e.id,
+				name: e.name,
+				seriesId: e.eventSeriesId || "",
+				seriesName: e.eventSeriesName || "",
+				date: e.startDate?.substring(0, 7) || undefined, // YYYY-MM形式
+			})),
+		[eventsData],
+	);
+
+	// 原曲データをNestedOption形式に変換
+	const originalSongs = useMemo(
+		() =>
+			songsData.data.map((s) => ({
+				value: s.id,
+				label: s.nameJa,
+				category: s.workCategoryName || "その他",
+				subgroup: s.workName || "作品なし",
+			})),
+		[songsData],
+	);
+
+	// カテゴリの表示順序
+	const categoryOrder = ["PC-98", "Windows", "CD", "書籍", "その他"] as const;
+
 	const [sectionState, setSectionState] = useState<FilterSectionState>(
 		DEFAULT_SECTION_STATE,
 	);
@@ -225,8 +294,8 @@ export function AdvancedSearchPanel({
 						onChange={(songs) =>
 							onFiltersChange({ ...filters, originalSongs: songs })
 						}
-						options={mockOriginalSongs}
-						categoryOrder={originalSongCategoryOrder}
+						options={originalSongs}
+						categoryOrder={categoryOrder}
 					/>
 				</FilterSection>
 
@@ -241,7 +310,7 @@ export function AdvancedSearchPanel({
 					<ArtistRoleFilter
 						selectedArtists={filters.artists}
 						onChange={(artists) => onFiltersChange({ ...filters, artists })}
-						options={mockArtists}
+						options={artists}
 					/>
 				</FilterSection>
 
@@ -256,7 +325,7 @@ export function AdvancedSearchPanel({
 					<CircleFilter
 						selectedCircles={filters.circles}
 						onChange={(circles) => onFiltersChange({ ...filters, circles })}
-						options={mockCircles}
+						options={circles}
 					/>
 				</FilterSection>
 
@@ -285,8 +354,8 @@ export function AdvancedSearchPanel({
 					<EventFilter
 						selectedEvent={filters.event}
 						onChange={(event) => onFiltersChange({ ...filters, event })}
-						eventSeries={mockEventSeries}
-						events={mockEvents}
+						eventSeries={eventSeries}
+						events={events}
 					/>
 				</FilterSection>
 

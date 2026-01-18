@@ -34,6 +34,7 @@ export const CACHE_TTL = {
 	EVENT_DETAIL: 5 * 60, // 5分
 	EVENT_RELEASES: 5 * 60, // 5分
 	EVENT_STATS: 5 * 60, // 5分
+	EVENT_SERIES_LIST: 5 * 60, // 5分
 	RELEASE_DETAIL: 5 * 60, // 5分
 	TRACK_DETAIL: 5 * 60, // 5分
 	PUBLIC_STATS: 5 * 60, // 5分
@@ -250,6 +251,8 @@ export const cacheKeys = {
 		workId?: string;
 	}) =>
 		`public:events:${params.eventId}:stats:stacked=${params.stacked || ""}:workId=${params.workId || ""}`,
+
+	eventSeriesList: () => "public:event-series",
 
 	releaseDetail: (releaseId: string) => `public:releases:${releaseId}`,
 

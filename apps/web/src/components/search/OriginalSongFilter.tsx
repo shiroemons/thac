@@ -157,7 +157,7 @@ export function OriginalSongFilter({
 							className="badge badge-secondary gap-1 pr-1 transition-all hover:opacity-80"
 						>
 							<Music className="h-3 w-3" />
-							<span className="max-w-[120px] truncate">{song.name}</span>
+							<span>{song.name}</span>
 							<button
 								type="button"
 								onClick={() => removeSong(song.id)}

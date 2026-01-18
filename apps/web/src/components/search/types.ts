@@ -2,6 +2,43 @@
  * 詳細検索フィルターの型定義
  */
 
+// =============================================================================
+// フィルターオプションの共通型（APIデータ変換後の汎用型）
+// =============================================================================
+
+/** アーティスト選択オプション */
+export interface ArtistOption {
+	id: string;
+	name: string;
+	nameJa?: string;
+}
+
+/** サークル選択オプション */
+export interface CircleOption {
+	id: string;
+	name: string;
+	nameJa?: string;
+}
+
+/** イベントシリーズ選択オプション */
+export interface EventSeriesOption {
+	id: string;
+	name: string;
+}
+
+/** イベント選択オプション */
+export interface EventOption {
+	id: string;
+	name: string;
+	seriesId: string;
+	seriesName: string;
+	date?: string;
+}
+
+// =============================================================================
+// 検索カテゴリと役割
+// =============================================================================
+
 /** 検索カテゴリ */
 export type SearchCategory = "all" | "artist" | "circle" | "track";
 
@@ -41,8 +78,9 @@ export interface SelectedArtist {
 
 /** 選択されたイベント */
 export interface SelectedEvent {
-	id: string;
-	name: string;
+	id: string; // イベントID（シリーズのみの場合は空文字）
+	name: string; // イベント名（シリーズのみの場合は「（すべて）」）
+	seriesId?: string; // シリーズID
 	seriesName?: string;
 }
 
