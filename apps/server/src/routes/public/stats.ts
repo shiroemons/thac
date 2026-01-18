@@ -217,6 +217,233 @@ statsRouter.get("/rankings", async (c) => {
 });
 
 /**
+ * GET /api/public/stats/rankings/original-songs
+ * 原曲アレンジ数ランキング（ページネーション対応）
+ */
+statsRouter.get("/rankings/original-songs", async (c) => {
+	try {
+		const page = Number(c.req.query("page")) || 1;
+		const limit = Number(c.req.query("limit")) || 20;
+		const offset = (page - 1) * limit;
+
+		const cacheKey = cacheKeys.originalSongsRanking({ page, limit });
+
+		const cached = getCache<unknown>(cacheKey);
+		if (cached) {
+			setCacheHeaders(c, { maxAge: CACHE_TTL.STATS_RANKINGS });
+			return c.json(cached);
+		}
+
+		// 総件数を取得（「その他」を除外）
+		const totalResult = await db
+			.select({ count: count() })
+			.from(officialSongs)
+			.innerJoin(
+				officialWorks,
+				eq(officialSongs.officialWorkId, officialWorks.id),
+			)
+			.where(ne(officialWorks.id, "0799"));
+
+		const total = totalResult[0]?.count ?? 0;
+
+		// アレンジ数でソートしたランキングを取得
+		const rankingResult = await db
+			.select({
+				id: officialSongs.id,
+				name: officialSongs.name,
+				workId: officialSongs.officialWorkId,
+				workName: officialWorks.name,
+				count: count(trackOfficialSongs.trackId),
+			})
+			.from(officialSongs)
+			.innerJoin(
+				officialWorks,
+				eq(officialSongs.officialWorkId, officialWorks.id),
+			)
+			.leftJoin(
+				trackOfficialSongs,
+				eq(officialSongs.id, trackOfficialSongs.officialSongId),
+			)
+			.where(ne(officialWorks.id, "0799"))
+			.groupBy(officialSongs.id, officialWorks.id)
+			.orderBy(desc(count(trackOfficialSongs.trackId)))
+			.limit(limit)
+			.offset(offset);
+
+		const response = {
+			data: rankingResult.map((row) => ({
+				id: row.id,
+				name: row.name,
+				workId: row.workId,
+				workName: row.workName,
+				count: row.count,
+			})),
+			total,
+			page,
+			limit,
+		};
+
+		setCache(cacheKey, response, CACHE_TTL.STATS_RANKINGS);
+		setCacheHeaders(c, { maxAge: CACHE_TTL.STATS_RANKINGS });
+
+		return c.json(response);
+	} catch (error) {
+		return handleDbError(
+			c,
+			error,
+			"GET /api/public/stats/rankings/original-songs",
+		);
+	}
+});
+
+/**
+ * GET /api/public/stats/rankings/circles
+ * サークルリリース数ランキング（ページネーション対応）
+ */
+statsRouter.get("/rankings/circles", async (c) => {
+	try {
+		const page = Number(c.req.query("page")) || 1;
+		const limit = Number(c.req.query("limit")) || 20;
+		const offset = (page - 1) * limit;
+
+		const cacheKey = cacheKeys.circlesRanking({ page, limit });
+
+		const cached = getCache<unknown>(cacheKey);
+		if (cached) {
+			setCacheHeaders(c, { maxAge: CACHE_TTL.STATS_RANKINGS });
+			return c.json(cached);
+		}
+
+		// 総件数を取得
+		const totalResult = await db.select({ count: count() }).from(circles);
+
+		const total = totalResult[0]?.count ?? 0;
+
+		// リリース数でソートしたランキングを取得
+		const rankingResult = await db
+			.select({
+				id: circles.id,
+				name: circles.name,
+				count: countDistinct(releaseCircles.releaseId),
+			})
+			.from(circles)
+			.leftJoin(releaseCircles, eq(circles.id, releaseCircles.circleId))
+			.groupBy(circles.id)
+			.orderBy(desc(countDistinct(releaseCircles.releaseId)))
+			.limit(limit)
+			.offset(offset);
+
+		const response = {
+			data: rankingResult.map((row) => ({
+				id: row.id,
+				name: row.name,
+				count: row.count,
+			})),
+			total,
+			page,
+			limit,
+		};
+
+		setCache(cacheKey, response, CACHE_TTL.STATS_RANKINGS);
+		setCacheHeaders(c, { maxAge: CACHE_TTL.STATS_RANKINGS });
+
+		return c.json(response);
+	} catch (error) {
+		return handleDbError(c, error, "GET /api/public/stats/rankings/circles");
+	}
+});
+
+/**
+ * GET /api/public/stats/rankings/artists
+ * アーティスト楽曲数ランキング（ページネーション対応）
+ */
+statsRouter.get("/rankings/artists", async (c) => {
+	try {
+		const page = Number(c.req.query("page")) || 1;
+		const limit = Number(c.req.query("limit")) || 20;
+		const offset = (page - 1) * limit;
+
+		const cacheKey = cacheKeys.artistsRanking({ page, limit });
+
+		const cached = getCache<unknown>(cacheKey);
+		if (cached) {
+			setCacheHeaders(c, { maxAge: CACHE_TTL.STATS_RANKINGS });
+			return c.json(cached);
+		}
+
+		// 総件数を取得（名義単位でカウント）
+		const totalResult = await db
+			.select({
+				count: countDistinct(
+					sql`CASE
+						WHEN ${trackCredits.artistAliasId} IS NULL
+						THEN ${trackCredits.artistId} || '__main__'
+						ELSE ${trackCredits.artistAliasId}
+					END`,
+				),
+			})
+			.from(trackCredits);
+
+		const total = totalResult[0]?.count ?? 0;
+
+		// 楽曲数でソートしたランキングを取得（名義単位）
+		const rankingResult = await db
+			.select({
+				id: sql<string>`CASE
+					WHEN ${trackCredits.artistAliasId} IS NULL
+					THEN ${trackCredits.artistId} || '__main__'
+					ELSE ${trackCredits.artistAliasId}
+				END`,
+				name: sql<string>`CASE
+					WHEN ${trackCredits.artistAliasId} IS NULL
+					THEN ${artists.name}
+					ELSE ${artistAliases.name}
+				END`,
+				artistId: trackCredits.artistId,
+				count: countDistinct(trackCredits.trackId),
+			})
+			.from(trackCredits)
+			.innerJoin(artists, eq(trackCredits.artistId, artists.id))
+			.leftJoin(artistAliases, eq(trackCredits.artistAliasId, artistAliases.id))
+			.groupBy(
+				sql`CASE
+					WHEN ${trackCredits.artistAliasId} IS NULL
+					THEN ${trackCredits.artistId} || '__main__'
+					ELSE ${trackCredits.artistAliasId}
+				END`,
+				sql`CASE
+					WHEN ${trackCredits.artistAliasId} IS NULL
+					THEN ${artists.name}
+					ELSE ${artistAliases.name}
+				END`,
+				trackCredits.artistId,
+			)
+			.orderBy(desc(countDistinct(trackCredits.trackId)))
+			.limit(limit)
+			.offset(offset);
+
+		const response = {
+			data: rankingResult.map((row) => ({
+				id: row.id,
+				name: row.name,
+				artistId: row.artistId,
+				count: row.count,
+			})),
+			total,
+			page,
+			limit,
+		};
+
+		setCache(cacheKey, response, CACHE_TTL.STATS_RANKINGS);
+		setCacheHeaders(c, { maxAge: CACHE_TTL.STATS_RANKINGS });
+
+		return c.json(response);
+	} catch (error) {
+		return handleDbError(c, error, "GET /api/public/stats/rankings/artists");
+	}
+});
+
+/**
  * GET /api/public/stats/recent-updates
  * 最近の更新情報を取得
  */

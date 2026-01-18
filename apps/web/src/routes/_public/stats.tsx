@@ -186,7 +186,7 @@ function RankingsSection() {
 						<h2 className="font-bold">原曲アレンジ数</h2>
 					</div>
 					<Link
-						to="/original-songs"
+						to="/stats/original-songs"
 						preload="intent"
 						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary"
 					>
@@ -218,7 +218,7 @@ function RankingsSection() {
 						<h2 className="font-bold">サークルリリース数</h2>
 					</div>
 					<Link
-						to="/circles"
+						to="/stats/circles"
 						preload="intent"
 						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary"
 					>
@@ -250,7 +250,7 @@ function RankingsSection() {
 						<h2 className="font-bold">アーティスト楽曲数</h2>
 					</div>
 					<Link
-						to="/artists"
+						to="/stats/artists"
 						preload="intent"
 						className="group flex items-center gap-1 text-primary text-sm transition-colors hover:text-primary"
 					>

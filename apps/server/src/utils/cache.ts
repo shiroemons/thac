@@ -261,4 +261,11 @@ export const cacheKeys = {
 	publicStats: () => "public:stats",
 	publicStatsRankings: () => "public:stats:rankings",
 	publicStatsRecentUpdates: () => "public:stats:recent-updates",
+
+	originalSongsRanking: (params: { page: number; limit: number }) =>
+		`public:stats:rankings:original-songs:page=${params.page}:limit=${params.limit}`,
+	circlesRanking: (params: { page: number; limit: number }) =>
+		`public:stats:rankings:circles:page=${params.page}:limit=${params.limit}`,
+	artistsRanking: (params: { page: number; limit: number }) =>
+		`public:stats:rankings:artists:page=${params.page}:limit=${params.limit}`,
 };
