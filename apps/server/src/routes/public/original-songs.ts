@@ -469,7 +469,7 @@ originalSongsRouter.get("/:id/tracks", async (c) => {
 		]);
 
 		// Step 4: メモリ上でマージ
-		// サークルをリリースIDでグルーピング
+		// サークルを作品IDでグルーピング
 		const circlesByRelease = new Map<
 			string,
 			Array<{ id: string; name: string }>

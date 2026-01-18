@@ -31,7 +31,7 @@ const participationTypeBadgeColors: Record<string, string> = {
 	split_partner: "badge-accent",
 };
 
-// リリースタイプの表示名マッピング
+// 作品タイプの表示名マッピング
 const releaseTypeNames: Record<string, string> = {
 	album: "アルバム",
 	single: "シングル",
@@ -40,7 +40,7 @@ const releaseTypeNames: Record<string, string> = {
 	video: "映像作品",
 };
 
-// リリースタイプのバッジカラーマッピング
+// 作品タイプのバッジカラーマッピング
 const releaseTypeBadgeColors: Record<string, string> = {
 	album: "badge-primary",
 	single: "badge-secondary",
@@ -86,17 +86,17 @@ function ReleaseDetailPage() {
 	// マルチディスクかどうか
 	const isMultiDisc = release ? release.discs.length > 1 : false;
 
-	// リリースが見つからない場合
+	// 作品が見つからない場合
 	if (!release) {
 		return (
 			<div className="space-y-6">
 				<PublicBreadcrumb
-					items={[{ label: "リリース", href: "/releases" }, { label: id }]}
+					items={[{ label: "作品", href: "/releases" }, { label: id }]}
 				/>
 				<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
-					<h1 className="font-bold text-2xl">リリースが見つかりません</h1>
+					<h1 className="font-bold text-2xl">作品が見つかりません</h1>
 					<p className="mt-2 text-base-content/70">
-						指定されたIDのリリースは存在しません
+						指定されたIDの作品は存在しません
 					</p>
 				</div>
 			</div>
@@ -106,10 +106,7 @@ function ReleaseDetailPage() {
 	return (
 		<div className="space-y-6">
 			<PublicBreadcrumb
-				items={[
-					{ label: "リリース", href: "/releases" },
-					{ label: release.name },
-				]}
+				items={[{ label: "作品", href: "/releases" }, { label: release.name }]}
 			/>
 
 			{/* ヘッダー - EntityDetailHeader + StatsCardGrid */}
@@ -145,7 +142,7 @@ function ReleaseDetailPage() {
 					</div>
 				)}
 
-				{/* イベント・発売日 */}
+				{/* イベント・頒布日 */}
 				<div className="flex flex-wrap items-center gap-4 text-base-content/60 text-sm">
 					{release.event && (
 						<Link
@@ -231,7 +228,7 @@ function ReleaseDetailPage() {
 					<EmptyState
 						type="empty"
 						title="トラックがありません"
-						description="このリリースにはまだトラックが登録されていません"
+						description="この作品にはまだトラックが登録されていません"
 					/>
 				)}
 			</div>

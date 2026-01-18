@@ -63,13 +63,13 @@ const mockSearchResults: SearchResult[] = [
 		id: "iosys",
 		type: "circle",
 		title: "IOSYS",
-		subtitle: "156リリース · 1,234トラック",
+		subtitle: "156作品 · 1,234トラック",
 	},
 	{
 		id: "sound-holic",
 		type: "circle",
 		title: "SOUND HOLIC",
-		subtitle: "134リリース · 1,567トラック",
+		subtitle: "134作品 · 1,567トラック",
 	},
 	{
 		id: "arm",
@@ -117,7 +117,7 @@ const mockSearchResults: SearchResult[] = [
 		id: "alstroemeria",
 		type: "circle",
 		title: "Alstroemeria Records",
-		subtitle: "89リリース · 892トラック",
+		subtitle: "89作品 · 892トラック",
 	},
 	{
 		id: "kouki",
@@ -129,7 +129,7 @@ const mockSearchResults: SearchResult[] = [
 		id: "tamaonsen",
 		type: "circle",
 		title: "魂音泉",
-		subtitle: "87リリース · 523トラック",
+		subtitle: "87作品 · 523トラック",
 	},
 ];
 

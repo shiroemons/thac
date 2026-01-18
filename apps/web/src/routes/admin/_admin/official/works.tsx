@@ -70,7 +70,7 @@ const COLUMN_CONFIGS = [
 	{ key: "shortNameJa", label: "短縮名", defaultVisible: false },
 	{ key: "categoryCode", label: "カテゴリ" },
 	{ key: "numberInSeries", label: "シリーズ番号", defaultVisible: false },
-	{ key: "releaseDate", label: "発売日", defaultVisible: false },
+	{ key: "releaseDate", label: "頒布日", defaultVisible: false },
 	{ key: "position", label: "表示順", defaultVisible: false },
 	{ key: "officialOrganization", label: "発行元", defaultVisible: false },
 	{ key: "createdAt", label: "作成日時", defaultVisible: false },
@@ -361,7 +361,7 @@ function OfficialWorksPage() {
 											onClick={() => handleSort("releaseDate")}
 										>
 											<span className="flex items-center gap-1">
-												発売日
+												頒布日
 												<SortIcon
 													sortBy={sortBy}
 													sortOrder={sortOrder}

@@ -134,7 +134,7 @@ export function RecentReleases() {
 		<section className="py-8">
 			<div className="mb-6 flex items-center justify-between">
 				<div className="flex items-center gap-3">
-					<h2 className="font-bold text-xl">最近のリリース</h2>
+					<h2 className="font-bold text-xl">最近の作品</h2>
 					<Badge variant="primary" className="bg-primary text-primary-content">
 						{mockReleases.length}件
 					</Badge>

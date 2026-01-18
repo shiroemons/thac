@@ -77,7 +77,7 @@ export async function getArtistTracks(artistId: string) {
 		.where(inArray(tracks.id, trackIds))
 		.orderBy(tracks.name);
 
-	// リリース情報を取得（nullを除外）
+	// 作品情報を取得（nullを除外）
 	const releaseIds = [
 		...new Set(
 			trackList
@@ -96,7 +96,7 @@ export async function getArtistTracks(artistId: string) {
 
 	const releaseMap = new Map(releaseList.map((r) => [r.id, r]));
 
-	// リリースサークル情報を取得
+	// 作品サークル情報を取得
 	const releaseCirclesList =
 		releaseIds.length > 0
 			? await db
@@ -123,7 +123,7 @@ export async function getArtistTracks(artistId: string) {
 
 	const circleMap = new Map(circleList.map((c) => [c.id, c.name]));
 
-	// リリースIDからサークル名一覧へのマップを作成
+	// 作品IDからサークル名一覧へのマップを作成
 	const releaseCircleNamesMap = new Map<string, string[]>();
 	for (const rc of releaseCirclesList) {
 		const circleName = circleMap.get(rc.circleId);

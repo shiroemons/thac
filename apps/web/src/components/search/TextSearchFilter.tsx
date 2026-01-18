@@ -51,7 +51,7 @@ function InputField({
  * 直接入力で検索できるフィールド群:
  * - アーティスト名（名義）
  * - サークル名
- * - 作品名（リリース名）
+ * - 作品名
  * - トラック名
  */
 export function TextSearchFilter({

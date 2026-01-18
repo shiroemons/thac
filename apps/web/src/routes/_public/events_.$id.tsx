@@ -103,7 +103,7 @@ function EventDetailPage() {
 		}
 	}, [activeTab, contentTab]);
 
-	// リリース一覧の状態
+	// 作品一覧の状態
 	const [releases, setReleases] = useState<PublicEventRelease[]>([]);
 	const [releasesTotal, setReleasesTotal] = useState(0);
 	const [releasesPage, setReleasesPage] = useState(1);
@@ -130,7 +130,7 @@ function EventDetailPage() {
 		});
 	};
 
-	// リリース一覧を取得
+	// 作品一覧を取得
 	const fetchReleases = useCallback(
 		async (page: number) => {
 			if (!event) return;
@@ -239,7 +239,7 @@ function EventDetailPage() {
 	// 統計項目
 	const statsItems: StatItem[] = [
 		{
-			label: "リリース",
+			label: "作品",
 			value: event.stats.releaseCount,
 			icon: <Disc3 className="size-5" />,
 			iconColorClass: "text-primary",
@@ -289,7 +289,7 @@ function EventDetailPage() {
 				)}
 			</div>
 
-			{/* リリース一覧 */}
+			{/* 作品一覧 */}
 			{contentTab === "releases" && (
 				<>
 					{releasesLoading ? (
@@ -357,7 +357,7 @@ function EventDetailPage() {
 									<tr>
 										<th>タイトル</th>
 										<th>サークル</th>
-										<th className="hidden sm:table-cell">発売日</th>
+										<th className="hidden sm:table-cell">頒布日</th>
 										<th>曲数</th>
 									</tr>
 								</thead>

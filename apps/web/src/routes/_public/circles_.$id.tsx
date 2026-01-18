@@ -134,7 +134,7 @@ function CircleDetailPage() {
 		}
 	}, [activeTab, contentTab]);
 
-	// リリース一覧の状態
+	// 作品一覧の状態
 	const [releases, setReleases] = useState<PublicCircleRelease[]>([]);
 	const [releasesTotal, setReleasesTotal] = useState(0);
 	const [releasesPage, setReleasesPage] = useState(1);
@@ -168,7 +168,7 @@ function CircleDetailPage() {
 		});
 	};
 
-	// リリース一覧を取得
+	// 作品一覧を取得
 	const fetchReleases = useCallback(
 		async (page: number) => {
 			if (!circle) return;
@@ -302,7 +302,7 @@ function CircleDetailPage() {
 				items={
 					[
 						{
-							label: "リリース",
+							label: "作品",
 							value: circle.stats.releaseCount,
 							icon: <Disc3 className="size-5" />,
 							iconColorClass: "text-primary",
@@ -331,7 +331,7 @@ function CircleDetailPage() {
 				)}
 			</div>
 
-			{/* リリース一覧 */}
+			{/* 作品一覧 */}
 			{contentTab === "releases" && (
 				<>
 					{releasesLoading ? (
@@ -339,7 +339,7 @@ function CircleDetailPage() {
 							<Loader2 className="size-8 animate-spin text-primary" />
 						</div>
 					) : releases.length === 0 ? (
-						<EmptyState type="empty" title="リリースがありません" />
+						<EmptyState type="empty" title="作品がありません" />
 					) : viewMode === "grid" ? (
 						<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
 							{releases.map((release) => (
@@ -408,7 +408,7 @@ function CircleDetailPage() {
 										<th>タイトル</th>
 										<th>イベント</th>
 										<th className="hidden sm:table-cell">参加種別</th>
-										<th className="hidden sm:table-cell">発売日</th>
+										<th className="hidden sm:table-cell">頒布日</th>
 										<th>曲数</th>
 									</tr>
 								</thead>
@@ -493,7 +493,7 @@ function CircleDetailPage() {
 								<thead>
 									<tr>
 										<th>曲名</th>
-										<th>リリース</th>
+										<th>作品</th>
 										<th className="hidden md:table-cell">アーティスト</th>
 										<th className="hidden sm:table-cell">原曲</th>
 									</tr>

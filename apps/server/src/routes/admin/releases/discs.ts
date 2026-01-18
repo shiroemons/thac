@@ -15,12 +15,12 @@ import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 
 const discsRouter = new Hono<AdminContext>();
 
-// リリースのディスク一覧取得（ディスク番号順）
+// 作品のディスク一覧取得（ディスク番号順）
 discsRouter.get("/:releaseId/discs", async (c) => {
 	try {
 		const releaseId = c.req.param("releaseId");
 
-		// リリース存在チェック
+		// 作品存在チェック
 		const existingRelease = await db
 			.select()
 			.from(releases)
@@ -49,7 +49,7 @@ discsRouter.post("/:releaseId/discs", async (c) => {
 		const releaseId = c.req.param("releaseId");
 		const body = await c.req.json();
 
-		// リリース存在チェック
+		// 作品存在チェック
 		const existingRelease = await db
 			.select()
 			.from(releases)
@@ -86,7 +86,7 @@ discsRouter.post("/:releaseId/discs", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.ID_ALREADY_EXISTS }, 409);
 		}
 
-		// ディスク番号重複チェック（同一リリース内）
+		// ディスク番号重複チェック（同一作品内）
 		const existingDiscNumber = await db
 			.select()
 			.from(discs)
@@ -156,7 +156,7 @@ discsRouter.put("/:releaseId/discs/:discId", async (c) => {
 			);
 		}
 
-		// ディスク番号重複チェック（同一リリース内、自身以外）
+		// ディスク番号重複チェック（同一作品内、自身以外）
 		if (parsed.data.discNumber !== undefined) {
 			const existingDiscNumber = await db
 				.select()

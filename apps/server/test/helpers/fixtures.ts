@@ -337,7 +337,7 @@ export function createTestArtistAlias(
 }
 
 /**
- * テスト用リリースデータを生成
+ * テスト用作品データを生成
  */
 export function createTestRelease(
 	overrides?: Partial<{

@@ -227,7 +227,7 @@ function ArtistDetailPage() {
 								iconColorClass: "text-primary",
 							},
 							{
-								label: "リリース",
+								label: "作品",
 								value: artist.stats.releaseCount,
 								icon: <Disc3 className="size-5" />,
 								iconColorClass: "text-secondary",
@@ -358,7 +358,7 @@ function ArtistDetailPage() {
 									<tr>
 										<th>曲名</th>
 										<th className="hidden md:table-cell">役割</th>
-										<th className="hidden sm:table-cell">リリース</th>
+										<th className="hidden sm:table-cell">作品</th>
 										<th className="hidden lg:table-cell">原曲</th>
 									</tr>
 								</thead>

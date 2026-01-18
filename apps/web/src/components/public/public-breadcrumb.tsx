@@ -44,11 +44,11 @@ function inferEntityType(label: string): EntityType | null {
 	const labelToType: Record<string, EntityType> = {
 		アーティスト: "artist",
 		サークル: "circle",
-		リリース: "release",
+		作品: "release",
 		トラック: "track",
 		イベント: "event",
 		原曲: "original-song",
-		作品: "official-work",
+		原作: "official-work",
 	};
 	return labelToType[label] ?? null;
 }

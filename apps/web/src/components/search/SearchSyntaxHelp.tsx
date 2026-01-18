@@ -38,7 +38,7 @@ const searchSyntaxHelp: SearchSyntaxItem[] = [
 	},
 	{
 		keyword: "year:",
-		description: "リリース年で検索",
+		description: "頒布年で検索",
 		example: "year:2023",
 	},
 	{

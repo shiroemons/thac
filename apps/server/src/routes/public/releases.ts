@@ -34,7 +34,7 @@ const releasesRouter = new Hono();
 
 /**
  * GET /api/public/releases/:id
- * リリース詳細を取得（サークル、ディスク、トラック、クレジット、原曲、配信リンク含む）
+ * 作品詳細を取得（サークル、ディスク、トラック、クレジット、原曲、配信リンク含む）
  */
 releasesRouter.get("/:id", async (c) => {
 	try {
@@ -48,7 +48,7 @@ releasesRouter.get("/:id", async (c) => {
 			return c.json(cached);
 		}
 
-		// Step 1: リリース基本情報を取得（JOINでイベント情報も一括取得）
+		// Step 1: 作品基本情報を取得（JOINでイベント情報も一括取得）
 		const releaseResult = await db
 			.select({
 				id: releases.id,

@@ -89,7 +89,7 @@ tracksAdminRouter.get("/", async (c) => {
 		const orderByClause =
 			sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
 
-		// トラック一覧取得（リリース名、ディスク番号、イベント情報付き）
+		// トラック一覧取得（作品名、ディスク番号、イベント情報付き）
 		const result = await db
 			.select({
 				track: tracks,
@@ -214,7 +214,7 @@ tracksAdminRouter.get("/", async (c) => {
 			}
 		}
 
-		// リリースIDリスト（サークル情報取得用）
+		// 作品IDリスト（サークル情報取得用）
 		const releaseIds = [
 			...new Set(result.map((r) => r.track.releaseId).filter(Boolean)),
 		] as string[];
@@ -239,7 +239,7 @@ tracksAdminRouter.get("/", async (c) => {
 						.orderBy(releaseCircles.position)
 				: [];
 
-		// リリースごとのサークル情報をマップに集約
+		// 作品ごとのサークル情報をマップに集約
 		const circlesByRelease = new Map<string, string[]>();
 		for (const circle of circlesData) {
 			if (!circlesByRelease.has(circle.releaseId)) {

@@ -77,7 +77,7 @@ export const mockPlatforms = {
 } as const;
 
 // ============================================
-// リリースの配信リンク
+// 作品の配信リンク
 // ============================================
 export const mockReleasePublications: Record<
 	string,
@@ -283,7 +283,7 @@ export const mockTrackPublications: Record<string, PublicationWithPlatform[]> =
 // ============================================
 
 /**
- * リリースIDから配信リンクを取得
+ * 作品IDから配信リンクを取得
  */
 export function getPublicationsForRelease(
 	releaseId: string,

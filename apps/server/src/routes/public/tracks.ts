@@ -35,7 +35,7 @@ const tracksRouter = new Hono();
 
 /**
  * GET /api/public/tracks/:id
- * トラック詳細を取得（リリース、クレジット、原曲、派生関係、前後トラック、配信リンク含む）
+ * トラック詳細を取得（作品、クレジット、原曲、派生関係、前後トラック、配信リンク含む）
  */
 tracksRouter.get("/:id", async (c) => {
 	try {
@@ -49,7 +49,7 @@ tracksRouter.get("/:id", async (c) => {
 			return c.json(cached);
 		}
 
-		// Step 1: トラック基本情報を取得（JOINでリリース・ディスク・イベント情報も一括取得）
+		// Step 1: トラック基本情報を取得（JOINで作品・ディスク・イベント情報も一括取得）
 		const trackResult = await db
 			.select({
 				id: tracks.id,
@@ -153,7 +153,7 @@ tracksRouter.get("/:id", async (c) => {
 				)
 				.where(eq(trackPublications.trackId, id)),
 
-			// 前後トラック（同じリリース内）
+			// 前後トラック（同じ作品内）
 			(() => {
 				const releaseId = track.releaseId;
 				if (!releaseId) return Promise.resolve([[], []]);

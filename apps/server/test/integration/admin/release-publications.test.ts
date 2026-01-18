@@ -67,7 +67,7 @@ describe("Admin Release Publications API", () => {
 	});
 
 	describe("GET /:releaseId/publications - 公開リンク一覧取得", () => {
-		test("存在しないリリースは404を返す", async () => {
+		test("存在しない作品は404を返す", async () => {
 			const res = await app.request("/rel_nonexistent/publications");
 			await expectNotFound(res);
 		});
@@ -105,7 +105,7 @@ describe("Admin Release Publications API", () => {
 	});
 
 	describe("POST /:releaseId/publications - 公開リンク追加", () => {
-		test("存在しないリリースは404を返す", async () => {
+		test("存在しない作品は404を返す", async () => {
 			await db
 				.insert(platforms)
 				.values(createTestPlatform({ code: "spotify" }));
@@ -202,7 +202,7 @@ describe("Admin Release Publications API", () => {
 				url: "https://open.spotify.com/album/same",
 			});
 
-			// 異なるリリースで同じURLを追加しようとする
+			// 異なる作品で同じURLを追加しようとする
 			const res = await app.request(
 				"/rel_test_002/publications",
 				postJson({

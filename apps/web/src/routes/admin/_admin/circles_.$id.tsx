@@ -606,7 +606,7 @@ function CircleDetailPage() {
 				</div>
 			</div>
 
-			{/* 参加形態別リリース一覧カード */}
+			{/* 参加形態別作品一覧カード */}
 			<div className="card border border-base-300 bg-base-100">
 				<div className="card-body">
 					<h2 className="card-title">参加作品一覧</h2>
@@ -634,7 +634,7 @@ function CircleDetailPage() {
 											<TableHeader>
 												<TableRow className="hover:bg-transparent">
 													<TableHead>作品名</TableHead>
-													<TableHead className="w-[120px]">発売日</TableHead>
+													<TableHead className="w-[120px]">頒布日</TableHead>
 													<TableHead className="w-[100px]">タイプ</TableHead>
 												</TableRow>
 											</TableHeader>
@@ -825,7 +825,7 @@ function CircleDetailPage() {
 					<div>
 						<p>「{circle?.name}」を削除しますか？</p>
 						<p className="mt-2 text-error text-sm">
-							※関連するリリースやリンクも削除されます。この操作は取り消せません。
+							※関連する作品やリンクも削除されます。この操作は取り消せません。
 						</p>
 						{deleteMutation.error && (
 							<p className="mt-2 text-error text-sm">

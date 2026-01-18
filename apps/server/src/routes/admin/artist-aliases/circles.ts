@@ -33,7 +33,7 @@ aliasCirclesRouter.get("/:aliasId/circles", async (c) => {
 
 		const trackIds = [...new Set(creditsResult.map((c) => c.trackId))];
 
-		// トラックからリリースIDを取得
+		// トラックから作品IDを取得
 		const tracksResult = await db
 			.select({
 				releaseId: tracks.releaseId,
@@ -53,7 +53,7 @@ aliasCirclesRouter.get("/:aliasId/circles", async (c) => {
 			return c.json([]);
 		}
 
-		// リリースサークル情報を取得
+		// 作品サークル情報を取得
 		const releaseCirclesResult = await db
 			.select({
 				releaseId: releaseCircles.releaseId,
@@ -80,7 +80,7 @@ aliasCirclesRouter.get("/:aliasId/circles", async (c) => {
 			.where(inArray(circles.id, circleIds))
 			.orderBy(circles.name);
 
-		// サークルごとにリリース数と参加形態を集計
+		// サークルごとに作品数と参加形態を集計
 		const circleStats = new Map<
 			string,
 			{
@@ -94,7 +94,7 @@ aliasCirclesRouter.get("/:aliasId/circles", async (c) => {
 				releaseCount: 0,
 				participationTypes: new Set<string>(),
 			};
-			// 同じサークルでも異なるリリースをカウント
+			// 同じサークルでも異なる作品をカウント
 			if (!circleStats.has(rc.circleId)) {
 				stats.releaseCount = 0;
 			}

@@ -6,7 +6,7 @@ import { formatNumber } from "../../lib/format";
  * 統計情報の1項目を表すオブジェクト
  */
 export interface StatItem {
-	/** 統計ラベル（例: "トラック"、"リリース"） */
+	/** 統計ラベル（例: "トラック"、"作品"） */
 	label: string;
 	/** 統計値（数値または文字列） */
 	value: string | number;
@@ -35,7 +35,7 @@ export interface StatsCardGridProps {
  * <StatsCardGrid
  *   items={[
  *     { label: "トラック", value: 1234, icon: <Music className="size-5" />, iconColorClass: "text-primary" },
- *     { label: "リリース", value: 567, icon: <Disc3 className="size-5" />, iconColorClass: "text-secondary" },
+ *     { label: "作品", value: 567, icon: <Disc3 className="size-5" />, iconColorClass: "text-secondary" },
  *   ]}
  * />
  * ```

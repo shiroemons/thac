@@ -13,7 +13,7 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 
 /**
- * リリースのJANコード一覧を取得する関数
+ * 作品のJANコード一覧を取得する関数
  * 統合エンドポイント用にロジックを分離
  */
 export async function getReleaseJanCodes(releaseId: string) {
@@ -28,12 +28,12 @@ export async function getReleaseJanCodes(releaseId: string) {
 
 const releaseJanCodesRouter = new Hono<AdminContext>();
 
-// リリースのJANコード一覧取得
+// 作品のJANコード一覧取得
 releaseJanCodesRouter.get("/:releaseId/jan-codes", async (c) => {
 	try {
 		const releaseId = c.req.param("releaseId");
 
-		// リリース存在チェック
+		// 作品存在チェック
 		const existingRelease = await db
 			.select()
 			.from(releases)
@@ -57,7 +57,7 @@ releaseJanCodesRouter.post("/:releaseId/jan-codes", async (c) => {
 		const releaseId = c.req.param("releaseId");
 		const body = await c.req.json();
 
-		// リリース存在チェック
+		// 作品存在チェック
 		const existingRelease = await db
 			.select()
 			.from(releases)
@@ -105,7 +105,7 @@ releaseJanCodesRouter.post("/:releaseId/jan-codes", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.JAN_CODE_ALREADY_EXISTS }, 409);
 		}
 
-		// isPrimary制約チェック（同一リリース内でisPrimaryは1件のみ）
+		// isPrimary制約チェック（同一作品内でisPrimaryは1件のみ）
 		if (parsed.data.isPrimary) {
 			const primaryCheck = await db
 				.select()

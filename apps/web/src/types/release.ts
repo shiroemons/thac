@@ -1,9 +1,9 @@
 /**
- * リリース・トラック関連の型定義
+ * 作品・トラック関連の型定義
  * DBスキーマ（packages/db/src/schema/release.ts, track.ts）に準拠
  */
 
-// リリースタイプ
+// 作品タイプ
 export const RELEASE_TYPES = [
 	"album",
 	"single",
@@ -23,7 +23,7 @@ export const PARTICIPATION_TYPES = [
 ] as const;
 export type ParticipationType = (typeof PARTICIPATION_TYPES)[number];
 
-// リリース
+// 作品
 export interface Release {
 	id: string;
 	name: string;
@@ -46,7 +46,7 @@ export interface Disc {
 	discName: string | null;
 }
 
-// リリース-サークル関連
+// 作品-サークル関連
 export interface ReleaseCircle {
 	circleId: string;
 	circleName: string;
@@ -103,7 +103,7 @@ export interface TrackWithCredits extends Track {
 	officialSongs: TrackOfficialSong[];
 }
 
-// UI用: リリース詳細（統計・関連データ含む）
+// UI用: 作品詳細（統計・関連データ含む）
 export interface ReleaseWithDetails extends Release {
 	circles: ReleaseCircle[];
 	discs: Disc[];
@@ -113,7 +113,7 @@ export interface ReleaseWithDetails extends Release {
 	artistCount: number;
 }
 
-// UI用: トラック詳細（リリース・派生関係含む）
+// UI用: トラック詳細（作品・派生関係含む）
 export interface TrackWithDetails extends TrackWithCredits {
 	release: Release;
 	disc: Disc | null;

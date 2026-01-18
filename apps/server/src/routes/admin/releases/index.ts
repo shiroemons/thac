@@ -9,10 +9,10 @@ import { trackCreditRolesRouter } from "./track-credit-roles";
 import { trackCreditsRouter } from "./track-credits";
 import { tracksRouter } from "./tracks";
 
-// 統合されたリリース管理ルーター
+// 統合された作品管理ルーター
 const releasesAdminRouter = new Hono<AdminContext>();
 
-// リリースルートにディスク・サークル・トラック・クレジットエンドポイントをマウント
+// 作品ルートにディスク・サークル・トラック・クレジットエンドポイントをマウント
 releasesAdminRouter.route("/", releasesRouter);
 releasesAdminRouter.route("/", discsRouter);
 releasesAdminRouter.route("/", releaseCirclesRouter);

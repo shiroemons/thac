@@ -215,7 +215,7 @@ function RankingsSection() {
 				<div className="flex items-center justify-between border-base-content/10 border-b p-5">
 					<div className="flex items-center gap-2">
 						<Crown className="size-5 text-primary" aria-hidden="true" />
-						<h2 className="font-bold">サークルリリース数</h2>
+						<h2 className="font-bold">サークル作品数</h2>
 					</div>
 					<Link
 						to="/stats/circles"
@@ -235,7 +235,7 @@ function RankingsSection() {
 							rank={activeCirclesRanks[index]}
 							name={circle.name}
 							count={circle.count}
-							unit="リリース"
+							unit="作品"
 							href={`/circles/${circle.id}`}
 						/>
 					))}

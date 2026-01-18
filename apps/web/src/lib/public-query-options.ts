@@ -313,7 +313,7 @@ export const publicStatsRankingsQueryOptions = () =>
 
 /**
  * 最近の更新のクエリオプション
- * 新着・更新リリースの一覧
+ * 新着・更新作品の一覧
  */
 export const publicRecentUpdatesQueryOptions = () =>
 	queryOptions({
@@ -346,7 +346,7 @@ export const originalSongsRankingInfiniteQueryOptions = (limit = 20) => {
 };
 
 /**
- * サークルリリース数ランキングの無限スクロールクエリオプション
+ * サークル作品数ランキングの無限スクロールクエリオプション
  */
 export const circlesRankingInfiniteQueryOptions = (limit = 20) => {
 	return infiniteQueryOptions({

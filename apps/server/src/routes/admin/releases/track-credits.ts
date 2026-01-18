@@ -254,7 +254,7 @@ trackCreditsRouter.put(
 			const creditId = c.req.param("creditId");
 			const body = await c.req.json();
 
-			// クレジット存在チェック（トラック・リリースとの関連確認含む）
+			// クレジット存在チェック（トラック・作品との関連確認含む）
 			const existingCredit = await db
 				.select()
 				.from(trackCredits)
@@ -448,7 +448,7 @@ trackCreditsRouter.delete(
 			const trackId = c.req.param("trackId");
 			const creditId = c.req.param("creditId");
 
-			// クレジット存在チェック（トラック・リリースとの関連確認含む）
+			// クレジット存在チェック（トラック・作品との関連確認含む）
 			const existingCredit = await db
 				.select()
 				.from(trackCredits)

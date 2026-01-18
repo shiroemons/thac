@@ -86,7 +86,7 @@ function TrackDetailPage() {
 		return (
 			<div className="space-y-6">
 				<PublicBreadcrumb
-					items={[{ label: "リリース", href: "/releases" }, { label: id }]}
+					items={[{ label: "作品", href: "/releases" }, { label: id }]}
 				/>
 				<div className="rounded-2xl bg-base-100 p-8 text-center shadow-sm">
 					<h1 className="font-bold text-2xl">トラックが見つかりません</h1>
@@ -102,7 +102,7 @@ function TrackDetailPage() {
 		<div className="space-y-6">
 			<PublicBreadcrumb
 				items={[
-					{ label: "リリース", href: "/releases" },
+					{ label: "作品", href: "/releases" },
 					...(track.release
 						? [
 								{
@@ -139,7 +139,7 @@ function TrackDetailPage() {
 						: []),
 				]}
 			>
-				{/* リリース・イベントへのリンク */}
+				{/* 作品・イベントへのリンク */}
 				<div className="flex flex-wrap gap-2">
 					{track.release && (
 						<Link

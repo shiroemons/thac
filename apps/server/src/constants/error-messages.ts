@@ -12,7 +12,7 @@ export const ERROR_MESSAGES = {
 	EVENT_NOT_FOUND: "イベントが見つかりません",
 	EVENT_SERIES_NOT_FOUND: "イベントシリーズが見つかりません",
 	EVENT_DAY_NOT_FOUND: "イベント日が見つかりません",
-	RELEASE_NOT_FOUND: "リリースが見つかりません",
+	RELEASE_NOT_FOUND: "作品が見つかりません",
 	TRACK_NOT_FOUND: "トラックが見つかりません",
 	CIRCLE_NOT_FOUND: "サークルが見つかりません",
 	ARTIST_NOT_FOUND: "アーティストが見つかりません",
@@ -46,7 +46,7 @@ export const ERROR_MESSAGES = {
 	PRIMARY_ISRC_ALREADY_EXISTS: "プライマリISRCは既にこのトラックに存在します",
 	JAN_CODE_ALREADY_EXISTS: "このJANコードは既に登録されています",
 	PRIMARY_JAN_CODE_ALREADY_EXISTS:
-		"プライマリJANコードは既にこのリリースに存在します",
+		"プライマリJANコードは既にこの作品に存在します",
 	ALIAS_ALREADY_EXISTS: "この別名は既にこのアーティストに登録されています",
 	DAY_NUMBER_ALREADY_EXISTS: "この日番号は既にこのイベントに存在します",
 	DATE_ALREADY_EXISTS: "この日付は既にこのイベントに存在します",
@@ -55,10 +55,10 @@ export const ERROR_MESSAGES = {
 	TRACK_NUMBER_ALREADY_EXISTS_FOR_DISC:
 		"このトラック番号は既にこのディスクに存在します",
 	TRACK_NUMBER_ALREADY_EXISTS_FOR_RELEASE:
-		"このトラック番号は既にこのリリースに存在します",
+		"このトラック番号は既にこの作品に存在します",
 	DERIVATION_ALREADY_EXISTS: "この派生関係は既に存在します",
 	DISC_NUMBER_ALREADY_EXISTS_FOR_RELEASE:
-		"このディスク番号は既にこのリリースに存在します",
+		"このディスク番号は既にこの作品に存在します",
 	CREDIT_ALREADY_EXISTS_FOR_TRACK:
 		"このアーティスト（同一別名義）のクレジットは既にこのトラックに存在します",
 	ROLE_ALREADY_EXISTS_FOR_CREDIT:
@@ -81,7 +81,7 @@ export const ERROR_MESSAGES = {
 	ITEMS_MUST_HAVE_CODE_AND_SORT_ORDER: "各要素にはcodeとsortOrderが必要です",
 	PARTICIPATION_TYPE_REQUIRED: "participationTypeクエリパラメータが必要です",
 	SOURCE_SONG_CANNOT_REFERENCE_ITSELF: "原曲は自身を参照できません",
-	DISC_REQUIRES_RELEASE: "ディスクを設定するにはリリースが必要です",
+	DISC_REQUIRES_RELEASE: "ディスクを設定するには作品が必要です",
 	CANNOT_MOVE_FURTHER: "これ以上移動できません",
 	ALREADY_AT_TOP: "既に先頭です",
 	ALREADY_AT_BOTTOM: "既に末尾です",

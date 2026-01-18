@@ -140,7 +140,7 @@ describe("Admin Artist Alias Subroutes API", () => {
 					createTestTrack({ id: "tr_test_001", releaseId: "rel_test_001" }),
 				);
 
-			// サークルとリリースを関連付け
+			// サークルと作品を関連付け
 			await db.insert(releaseCircles).values({
 				releaseId: "rel_test_001",
 				circleId: "ci_test_001",

@@ -1072,7 +1072,7 @@ export const eventDayMutations = {
 	}),
 };
 
-// ===== リリース =====
+// ===== 作品 =====
 
 type CreateReleaseData = Omit<Release, "createdAt" | "updatedAt">;
 type UpdateReleaseData = Partial<
@@ -1268,7 +1268,7 @@ export const discMutations = {
 			);
 
 			// 3. 楽観的更新
-			// リリース詳細データ
+			// 作品詳細データ
 			if (previousRelease) {
 				queryClient.setQueryData<ReleaseWithDiscs>(
 					["release", variables.releaseId],
@@ -1284,7 +1284,7 @@ export const discMutations = {
 				);
 			}
 
-			// リリース統合データ
+			// 作品統合データ
 			if (previousReleaseFull) {
 				queryClient.setQueryData<ReleaseFullResponse>(
 					["release", variables.releaseId, "full"],
@@ -1466,7 +1466,7 @@ export const trackMutations = {
 				}
 			}
 
-			// リリースのトラック一覧
+			// 作品のトラック一覧
 			if (previousReleaseTracks) {
 				queryClient.setQueryData<TrackWithCreditCount[]>(
 					["release", variables.releaseId, "tracks"],
@@ -1479,7 +1479,7 @@ export const trackMutations = {
 				);
 			}
 
-			// 親リリースの統合データ（トラック一覧を更新）
+			// 親作品の統合データ（トラック一覧を更新）
 			if (previousReleaseFull) {
 				queryClient.setQueryData<ReleaseFullResponse>(
 					["release", variables.releaseId, "full"],
@@ -2343,7 +2343,7 @@ export const officialWorkCategoryMutations = {
 	}),
 };
 
-// ===== リリースサークル（作品とサークルの関連付け） =====
+// ===== 作品サークル（作品とサークルの関連付け） =====
 
 type AddReleaseCircleData = {
 	circleId: string;
@@ -2488,7 +2488,7 @@ export const releaseCircleMutations = {
 	}),
 };
 
-// ===== リリース公開リンク =====
+// ===== 作品公開リンク =====
 
 type CreateReleasePublicationData = {
 	id: string;
@@ -2628,7 +2628,7 @@ export const releasePublicationMutations = {
 	}),
 };
 
-// ===== リリースJANコード =====
+// ===== 作品JANコード =====
 
 type CreateReleaseJanCodeData = {
 	id: string;

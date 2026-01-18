@@ -697,7 +697,7 @@ artistsRouter.get("/:id/tracks", async (c) => {
 			existing.push({ roleCode: r.roleCode, label: r.roleLabel });
 		}
 
-		// サークルをリリースIDでグルーピング
+		// サークルを作品IDでグルーピング
 		const circlesByRelease = new Map<
 			string,
 			Array<{ id: string; name: string }>

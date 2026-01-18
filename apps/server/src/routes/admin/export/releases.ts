@@ -25,7 +25,7 @@ import {
 
 const releaseExportRouter = new Hono<AdminContext>();
 
-// リリースカラム定義
+// 作品カラム定義
 const releaseColumns: ColumnDefinition<{
 	id: string;
 	name: string;
@@ -58,7 +58,7 @@ const releaseColumns: ColumnDefinition<{
 	{ key: "updatedAt", label: "updatedAt" },
 ];
 
-// リリースエクスポート
+// 作品エクスポート
 releaseExportRouter.get("/", async (c) => {
 	try {
 		const format = (c.req.query("format") || "json") as "tsv" | "json";

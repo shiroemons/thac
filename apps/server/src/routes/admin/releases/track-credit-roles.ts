@@ -25,7 +25,7 @@ trackCreditRolesRouter.post(
 			const creditId = c.req.param("creditId");
 			const body = await c.req.json();
 
-			// クレジット存在チェック（トラック・リリースとの関連確認含む）
+			// クレジット存在チェック（トラック・作品との関連確認含む）
 			const existingCredit = await db
 				.select()
 				.from(trackCredits)
@@ -139,7 +139,7 @@ trackCreditRolesRouter.delete(
 				return c.json({ error: ERROR_MESSAGES.INVALID_ROLE_POSITION }, 400);
 			}
 
-			// クレジット存在チェック（トラック・リリースとの関連確認含む）
+			// クレジット存在チェック（トラック・作品との関連確認含む）
 			const existingCredit = await db
 				.select()
 				.from(trackCredits)

@@ -25,7 +25,7 @@ import { getReleasePublications } from "./publications";
 import { getReleaseCircles } from "./release-circles";
 import { getReleaseTracks } from "./tracks";
 
-// リリース日を年月日に分解するヘルパー関数
+// 頒布日を年月日に分解するヘルパー関数
 function parseDateToComponents(
 	dateStr: string | null | undefined,
 ): { year: number; month: number; day: number } | null {
@@ -80,7 +80,7 @@ async function validateEventConsistency(
 
 const releasesRouter = new Hono<AdminContext>();
 
-// リリース一覧取得（ページネーション、検索、フィルタ、ソート対応）
+// 作品一覧取得（ページネーション、検索、フィルタ、ソート対応）
 releasesRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
@@ -281,7 +281,7 @@ releasesRouter.get("/:id/full", async (c) => {
 	}
 });
 
-// リリース個別取得（ディスク情報を含む）
+// 作品個別取得（ディスク情報を含む）
 releasesRouter.get("/:id", async (c) => {
 	try {
 		const id = c.req.param("id");
@@ -312,7 +312,7 @@ releasesRouter.get("/:id", async (c) => {
 	}
 });
 
-// リリース新規作成
+// 作品新規作成
 releasesRouter.post("/", async (c) => {
 	try {
 		const body = await c.req.json();
@@ -372,7 +372,7 @@ releasesRouter.post("/", async (c) => {
 	}
 });
 
-// リリース更新
+// 作品更新
 releasesRouter.put("/:id", async (c) => {
 	try {
 		const id = c.req.param("id");
@@ -440,9 +440,9 @@ releasesRouter.put("/:id", async (c) => {
 			releaseDay: dateComponents?.day ?? parsed.data.releaseDay,
 		};
 
-		// トランザクションでリリースと関連トラックを更新
+		// トランザクションで作品と関連トラックを更新
 		const updatedRelease = await db.transaction(async (tx) => {
-			// リリース更新
+			// 作品更新
 			const result = await tx
 				.update(releases)
 				.set(updateData)
@@ -476,7 +476,7 @@ releasesRouter.put("/:id", async (c) => {
 	}
 });
 
-// リリース削除（ディスクはCASCADE削除）
+// 作品削除（ディスクはCASCADE削除）
 releasesRouter.delete("/:id", async (c) => {
 	try {
 		const id = c.req.param("id");
@@ -501,7 +501,7 @@ releasesRouter.delete("/:id", async (c) => {
 	}
 });
 
-// リリース一括削除
+// 作品一括削除
 releasesRouter.delete("/batch", async (c) => {
 	try {
 		const body = await c.req.json();

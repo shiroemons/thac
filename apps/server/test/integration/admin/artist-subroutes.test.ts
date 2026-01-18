@@ -123,7 +123,7 @@ describe("Admin Artist Subroutes API", () => {
 					createTestTrack({ id: "tr_test_001", releaseId: "rel_test_001" }),
 				);
 
-			// サークルとリリースを関連付け
+			// サークルと作品を関連付け
 			await db.insert(releaseCircles).values({
 				releaseId: "rel_test_001",
 				circleId: "ci_test_001",
@@ -306,7 +306,7 @@ describe("Admin Artist Subroutes API", () => {
 			expect(json.byRole.lyricist).toBe(1); // 1トラックで作詞
 		});
 
-		test("サークル名を含むリリース情報を返す", async () => {
+		test("サークル名を含む作品情報を返す", async () => {
 			await db.insert(artists).values(createTestArtist({ id: "ar_test_001" }));
 			await db
 				.insert(circles)

@@ -241,7 +241,7 @@ eventsRouter.get("/:id", async (c) => {
 
 /**
  * GET /api/public/events/:id/releases
- * イベントのリリース一覧を取得（バッチフェッチでN+1回避）
+ * イベントの作品一覧を取得（バッチフェッチでN+1回避）
  */
 eventsRouter.get("/:id/releases", async (c) => {
 	try {
@@ -277,7 +277,7 @@ eventsRouter.get("/:id/releases", async (c) => {
 			.from(tracks)
 			.where(eq(tracks.releaseId, releases.id));
 
-		// Step 1: リリース一覧を取得
+		// Step 1: 作品一覧を取得
 		const [releasesData, totalResult] = await Promise.all([
 			db
 				.select({
