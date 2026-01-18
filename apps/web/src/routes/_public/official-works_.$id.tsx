@@ -6,7 +6,6 @@ import {
 	Gamepad2,
 	Music,
 	Package,
-	TrendingUp,
 } from "lucide-react";
 import { ExternalLink, PublicBreadcrumb } from "@/components/public";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
@@ -204,7 +203,7 @@ function OfficialWorkDetailPage() {
 					</div>
 					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
 						<div className="flex items-center justify-center gap-2 text-secondary">
-							<TrendingUp className="size-5" />
+							<Music className="size-5" />
 							<span className="font-bold text-2xl">
 								{formatNumber(stats.arrangeCount)}
 							</span>
