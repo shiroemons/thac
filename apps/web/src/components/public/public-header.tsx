@@ -76,7 +76,7 @@ export function PublicHeader() {
 								preload="render"
 								className={`relative transition-all duration-300 hover:bg-base-200/60 ${
 									isActive(to)
-										? "bg-primary/10 font-semibold text-primary after:absolute after:right-2 after:bottom-0 after:left-2 after:h-0.5 after:rounded-full after:bg-primary"
+										? "bg-primary font-semibold text-primary-content after:absolute after:right-2 after:bottom-0 after:left-2 after:h-0.5 after:rounded-full after:bg-primary-content"
 										: "text-base-content/70 hover:text-base-content"
 								}`}
 							>
@@ -139,7 +139,7 @@ export function PublicHeader() {
 									preload="render"
 									className={`flex items-center gap-3 transition-all duration-300 ${
 										location.pathname === "/"
-											? "bg-primary/10 font-semibold text-primary"
+											? "bg-primary font-semibold text-primary-content"
 											: "text-base-content/70 hover:bg-base-200/60 hover:text-base-content"
 									}`}
 									onClick={() => setIsDrawerOpen(false)}
@@ -155,7 +155,7 @@ export function PublicHeader() {
 										preload="render"
 										className={`flex items-center gap-3 transition-all duration-300 ${
 											isActive(to)
-												? "bg-primary/10 font-semibold text-primary"
+												? "bg-primary font-semibold text-primary-content"
 												: "text-base-content/70 hover:bg-base-200/60 hover:text-base-content"
 										}`}
 										onClick={() => setIsDrawerOpen(false)}

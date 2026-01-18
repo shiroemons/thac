@@ -39,7 +39,7 @@ function ArtistsRankingPage() {
 			<div className="glass-card relative overflow-hidden rounded-2xl p-6 md:p-8">
 				<div className="gradient-mesh absolute inset-0" />
 				<div className="relative flex items-center gap-4">
-					<div className="flex size-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+					<div className="flex size-14 items-center justify-center rounded-2xl bg-accent text-accent-content">
 						<Sparkles className="size-7" aria-hidden="true" />
 					</div>
 					<div>
@@ -78,8 +78,11 @@ function ArtistsRankingPage() {
 								className="group flex items-center gap-3 px-4 py-3 transition-all duration-300 hover:bg-base-content/5"
 							>
 								<RankBadge rank={rank} medal={medal} />
-								<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10">
-									<User className="size-5 text-accent" aria-hidden="true" />
+								<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent">
+									<User
+										className="size-5 text-accent-content"
+										aria-hidden="true"
+									/>
 								</div>
 								<div className="min-w-0 flex-1">
 									<span className="block truncate font-medium transition-colors group-hover:text-primary">

@@ -20,7 +20,7 @@ const defaultConfigs: Record<
 		icon: SearchX,
 		title: "該当するデータがありません",
 		description: "フィルター条件を変更してお試しください",
-		bgColor: "bg-warning/5",
+		bgColor: "bg-warning/10",
 	},
 	empty: {
 		icon: Inbox,
@@ -32,13 +32,13 @@ const defaultConfigs: Record<
 		icon: AlertCircle,
 		title: "エラーが発生しました",
 		description: "データの読み込みに失敗しました",
-		bgColor: "bg-error/5",
+		bgColor: "bg-error/10",
 	},
 	search: {
 		icon: Search,
 		title: "検索結果がありません",
 		description: "別のキーワードでお試しください",
-		bgColor: "bg-info/5",
+		bgColor: "bg-info/10",
 	},
 };
 

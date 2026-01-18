@@ -272,9 +272,9 @@ function EventsPage() {
 								>
 									<MobileCardItem className="gradient-event">
 										<div className="flex items-start gap-3">
-											<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning/10 ring-2 ring-warning/20">
+											<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning ring-2 ring-warning/50">
 												<Calendar
-													className="size-5 text-warning"
+													className="size-5 text-warning-content"
 													aria-hidden="true"
 												/>
 											</div>
@@ -414,9 +414,9 @@ function EventsPage() {
 													>
 														<MobileCardItem className="gradient-event">
 															<div className="flex items-start gap-3">
-																<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning/10 ring-2 ring-warning/20">
+																<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning ring-2 ring-warning/50">
 																	<Calendar
-																		className="size-5 text-warning"
+																		className="size-5 text-warning-content"
 																		aria-hidden="true"
 																	/>
 																</div>

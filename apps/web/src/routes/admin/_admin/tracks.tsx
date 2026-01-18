@@ -400,7 +400,7 @@ function TracksPage() {
 				</DataTableActionBar>
 
 				{displayError && (
-					<div className="border-base-300 border-b bg-error/10 p-4 text-error text-sm">
+					<div className="border-base-300 border-b bg-error p-4 text-error-content text-sm">
 						{displayError}
 					</div>
 				)}
@@ -800,7 +800,7 @@ function TracksPage() {
 							/>
 						</div>
 						{createMutation.error && (
-							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 								{createMutation.error instanceof Error
 									? createMutation.error.message
 									: "作成に失敗しました"}

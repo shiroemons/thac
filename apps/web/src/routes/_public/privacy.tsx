@@ -17,8 +17,8 @@ function PrivacyPage() {
 
 			{/* ヘッダー */}
 			<div className="text-center">
-				<div className="mx-auto mb-4 flex size-20 items-center justify-center rounded-full bg-primary/10">
-					<Shield className="size-10 text-primary" aria-hidden="true" />
+				<div className="mx-auto mb-4 flex size-20 items-center justify-center rounded-full bg-primary">
+					<Shield className="size-10 text-primary-content" aria-hidden="true" />
 				</div>
 				<h1 className="font-bold text-3xl">プライバシーポリシー</h1>
 				<p className="mt-2 text-base-content/70 text-lg">Privacy Policy</p>

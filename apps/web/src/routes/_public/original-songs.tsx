@@ -385,8 +385,8 @@ function OriginalSongsPage() {
 					>
 						<MobileCardItem className="gradient-song">
 							<div className="flex items-center gap-3">
-								<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-success/20">
-									<Music className="size-5 text-success" aria-hidden="true" />
+								<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-success text-success-content">
+									<Music className="size-5" aria-hidden="true" />
 								</div>
 								<div className="min-w-0 flex-1">
 									<h3 className="truncate font-bold text-base">
@@ -504,7 +504,7 @@ function WorkAccordion({
 								<td className="hidden text-base-content/70 sm:table-cell">
 									{song.composerName || "-"}
 								</td>
-								<td className="text-right text-primary">
+								<td className="text-right font-medium text-base-content">
 									{formatNumber(song.arrangeCount)}
 								</td>
 							</tr>

@@ -50,7 +50,7 @@ export function PublicFooter() {
 									<Link
 										to={to}
 										preload="render"
-										className="link link-hover inline-flex min-h-11 items-center text-base-content/70 transition-colors hover:text-primary"
+										className="link link-hover inline-flex min-h-11 items-center text-base-content/80 transition-colors hover:text-primary"
 									>
 										{label}
 									</Link>
@@ -68,7 +68,7 @@ export function PublicFooter() {
 									<Link
 										to={to}
 										preload="render"
-										className="link link-hover inline-flex min-h-11 items-center text-base-content/70 transition-colors hover:text-primary"
+										className="link link-hover inline-flex min-h-11 items-center text-base-content/80 transition-colors hover:text-primary"
 									>
 										{label}
 									</Link>

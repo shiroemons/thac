@@ -89,14 +89,14 @@ function FilterChipBadge({ filter, onRemove }: FilterChipBadgeProps) {
 			className={cn(
 				"inline-flex items-center gap-1.5",
 				"rounded-xl px-3 py-1.5",
-				"bg-primary/10 text-primary",
+				"bg-primary text-primary-content",
 				"font-medium text-sm",
 				"transition-all duration-300",
 				"fade-in slide-in-from-left-2 animate-in",
 			)}
 		>
 			{filter.category && (
-				<span className="text-primary/70">{filter.category}:</span>
+				<span className="text-primary-content/70">{filter.category}:</span>
 			)}
 			<span>{filter.label}</span>
 			<button
@@ -106,8 +106,8 @@ function FilterChipBadge({ filter, onRemove }: FilterChipBadgeProps) {
 				className={cn(
 					"rounded-full p-0.5",
 					"transition-all duration-300",
-					"hover:bg-primary/20",
-					"focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+					"hover:bg-primary-content/20",
+					"focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-content",
 				)}
 			>
 				<X className="size-3.5" />

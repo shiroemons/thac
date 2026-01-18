@@ -372,7 +372,7 @@ function EventDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{dayCreateMutation.error || dayUpdateMutation.error ? (
-							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 								{getErrorMessage(
 									dayCreateMutation.error || dayUpdateMutation.error,
 								)}

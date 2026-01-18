@@ -53,13 +53,13 @@ function ConfirmDialog({
 				<DialogHeader>
 					<div className="flex items-center gap-3">
 						{variant === "danger" && (
-							<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-error/10">
-								<AlertTriangle className="h-5 w-5 text-error" />
+							<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-error">
+								<AlertTriangle className="h-5 w-5 text-error-content" />
 							</div>
 						)}
 						{variant === "warning" && (
-							<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-warning/10">
-								<AlertTriangle className="h-5 w-5 text-warning" />
+							<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-warning">
+								<AlertTriangle className="h-5 w-5 text-warning-content" />
 							</div>
 						)}
 						<DialogTitle>{title}</DialogTitle>

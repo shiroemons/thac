@@ -218,7 +218,7 @@ function TrackDetailPage() {
 								>
 									{/* メドレー順序 */}
 									{os.partPosition !== null && (
-										<span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 font-medium text-primary text-sm">
+										<span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary font-medium text-primary-content text-sm">
 											{os.partPosition}
 										</span>
 									)}

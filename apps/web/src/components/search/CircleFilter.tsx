@@ -156,7 +156,8 @@ export function CircleFilter({
 											onClick={() => toggleCircle(circle)}
 											className={cn(
 												"flex w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-base-200",
-												isSelected && "bg-primary/10 font-medium text-primary",
+												isSelected &&
+													"bg-primary font-medium text-primary-content",
 											)}
 										>
 											<div

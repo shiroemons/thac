@@ -316,9 +316,9 @@ function CirclesPage() {
 							>
 								<MobileCardItem>
 									<div className="flex items-center gap-3">
-										<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+										<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary">
 											<Building2
-												className="size-6 text-primary"
+												className="size-6 text-primary-content"
 												aria-hidden="true"
 											/>
 										</div>
@@ -361,9 +361,9 @@ function CirclesPage() {
 								>
 									<div className="card-body p-4">
 										<div className="flex items-center gap-3">
-											<div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
+											<div className="flex size-12 items-center justify-center rounded-full bg-primary">
 												<Users
-													className="size-6 text-primary"
+													className="size-6 text-primary-content"
 													aria-hidden="true"
 												/>
 											</div>
@@ -414,9 +414,9 @@ function CirclesPage() {
 													preload="intent"
 													className="flex items-center gap-3 hover:text-primary"
 												>
-													<div className="flex size-8 items-center justify-center rounded-full bg-primary/10">
+													<div className="flex size-8 items-center justify-center rounded-full bg-primary">
 														<Users
-															className="size-4 text-primary"
+															className="size-4 text-primary-content"
 															aria-hidden="true"
 														/>
 													</div>

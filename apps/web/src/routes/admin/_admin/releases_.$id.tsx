@@ -1635,7 +1635,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{discCreateMutation.error || discUpdateMutation.error ? (
-							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 								{getErrorMessage(
 									discCreateMutation.error || discUpdateMutation.error,
 								)}
@@ -1708,7 +1708,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{circleAddMutation.error && (
-							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 								{getErrorMessage(circleAddMutation.error)}
 							</div>
 						)}
@@ -1779,7 +1779,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{trackCreateMutation.error || trackUpdateMutation.error ? (
-							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 								{getErrorMessage(
 									trackCreateMutation.error || trackUpdateMutation.error,
 								)}
@@ -2033,7 +2033,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{creditCreateMutation.error || creditUpdateMutation.error ? (
-							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 								{getErrorMessage(
 									creditCreateMutation.error || creditUpdateMutation.error,
 								)}
@@ -2185,7 +2185,7 @@ function ReleaseDetailPage() {
 					<div className="grid gap-4 py-4">
 						{publicationCreateMutation.error ||
 						publicationUpdateMutation.error ? (
-							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 								{getErrorMessage(
 									publicationCreateMutation.error ||
 										publicationUpdateMutation.error,
@@ -2279,7 +2279,7 @@ function ReleaseDetailPage() {
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						{janCodeCreateMutation.error || janCodeUpdateMutation.error ? (
-							<div className="rounded-lg bg-error/10 p-4 text-error text-sm">
+							<div className="rounded-lg bg-error p-4 text-error-content text-sm">
 								{getErrorMessage(
 									janCodeCreateMutation.error || janCodeUpdateMutation.error,
 								)}
