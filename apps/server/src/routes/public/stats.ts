@@ -51,6 +51,7 @@ statsRouter.get("/", async (c) => {
 			artistsResult,
 			tracksResult,
 			originalSongsResult,
+			releasesResult,
 		] = await Promise.all([
 			db.select({ count: count() }).from(events),
 			db.select({ count: count() }).from(circles),
@@ -79,6 +80,7 @@ statsRouter.get("/", async (c) => {
 			db
 				.select({ count: count() })
 				.from(officialSongs),
+			db.select({ count: count() }).from(releases),
 		]);
 
 		const response = {
@@ -87,6 +89,7 @@ statsRouter.get("/", async (c) => {
 			artists: artistsResult[0]?.count ?? 0,
 			tracks: tracksResult[0]?.count ?? 0,
 			originalSongs: originalSongsResult[0]?.count ?? 0,
+			releases: releasesResult[0]?.count ?? 0,
 		};
 
 		setCache(cacheKey, response, CACHE_TTL.PUBLIC_STATS);
