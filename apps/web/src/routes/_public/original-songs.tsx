@@ -8,6 +8,7 @@ import {
 	MobileCardList,
 	PublicBreadcrumb,
 } from "@/components/public";
+import { OFFICIAL_WORK_CATEGORY_ORDER } from "@/lib/constants";
 import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
 import {
@@ -84,6 +85,37 @@ function OriginalSongsPage() {
 	const navigate = useNavigate({ from: Route.fullPath });
 	const { type = "all", open } = Route.useSearch();
 	const { categories, works, totalSongCount } = Route.useLoaderData();
+
+	// カテゴリをOFFICIAL_WORK_CATEGORY_ORDERの順序でソート
+	const sortedCategories = useMemo(() => {
+		return [...categories].sort((a, b) => {
+			const indexA = OFFICIAL_WORK_CATEGORY_ORDER.indexOf(
+				a.code as (typeof OFFICIAL_WORK_CATEGORY_ORDER)[number],
+			);
+			const indexB = OFFICIAL_WORK_CATEGORY_ORDER.indexOf(
+				b.code as (typeof OFFICIAL_WORK_CATEGORY_ORDER)[number],
+			);
+			// 定義されていない場合は最後に配置
+			const orderA = indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
+			const orderB = indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
+			return orderA - orderB;
+		});
+	}, [categories]);
+
+	// 作品をカテゴリ順でソート
+	const sortedWorks = useMemo(() => {
+		return [...works].sort((a, b) => {
+			const indexA = OFFICIAL_WORK_CATEGORY_ORDER.indexOf(
+				a.categoryCode as (typeof OFFICIAL_WORK_CATEGORY_ORDER)[number],
+			);
+			const indexB = OFFICIAL_WORK_CATEGORY_ORDER.indexOf(
+				b.categoryCode as (typeof OFFICIAL_WORK_CATEGORY_ORDER)[number],
+			);
+			const orderA = indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
+			const orderB = indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
+			return orderA - orderB;
+		});
+	}, [works]);
 
 	// モバイルフィルタードロワーの状態
 	const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
@@ -260,7 +292,7 @@ function OriginalSongsPage() {
 						>
 							すべて
 						</button>
-						{categories.map((cat: PublicCategory) => (
+						{sortedCategories.map((cat: PublicCategory) => (
 							<button
 								key={cat.code}
 								type="button"
@@ -289,7 +321,7 @@ function OriginalSongsPage() {
 					>
 						すべて
 					</button>
-					{categories.map((cat: PublicCategory) => (
+					{sortedCategories.map((cat: PublicCategory) => (
 						<button
 							key={cat.code}
 							type="button"
@@ -318,13 +350,13 @@ function OriginalSongsPage() {
 				<h2 className="font-medium text-base-content/70 text-sm">
 					作品を選択して楽曲を表示
 				</h2>
-				{works.length === 0 ? (
+				{sortedWorks.length === 0 ? (
 					<p className="text-base-content/60">
 						選択したカテゴリに作品がありません
 					</p>
 				) : (
 					<div className="join join-vertical w-full">
-						{works.map((work: PublicWorkItem) => (
+						{sortedWorks.map((work: PublicWorkItem) => (
 							<WorkAccordion
 								key={work.id}
 								work={work}
@@ -341,7 +373,7 @@ function OriginalSongsPage() {
 
 			{/* Step 2: 作品カードリスト（モバイル） */}
 			<MobileCardList
-				items={works}
+				items={sortedWorks}
 				keyExtractor={(work: PublicWorkItem) => work.id}
 				emptyMessage="選択したカテゴリに作品がありません"
 				renderCard={(work: PublicWorkItem) => (

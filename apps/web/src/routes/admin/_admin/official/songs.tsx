@@ -33,6 +33,7 @@ import {
 	officialWorkCategoriesApi,
 	officialWorksApi,
 } from "@/lib/api-client";
+import { OFFICIAL_WORK_CATEGORY_ORDER } from "@/lib/constants";
 import { createPageHead } from "@/lib/head";
 import { officialSongMutations } from "@/lib/mutation-options";
 import { officialSongsListQueryOptions } from "@/lib/query-options";
@@ -160,22 +161,12 @@ function OfficialSongsPage() {
 		}
 
 		// カテゴリ順にソートしてグループ配列を作成
-		const categoryOrder = [
-			"pc98",
-			"windows",
-			"zuns_music_collection",
-			"akyus_untouched_score",
-			"commercial_books",
-			"tasofro",
-			"other",
-		];
-
-		return categoryOrder
-			.filter((code) => grouped.has(code))
-			.map((code) => ({
+		return OFFICIAL_WORK_CATEGORY_ORDER.filter((code) => grouped.has(code)).map(
+			(code) => ({
 				label: categoryMap.get(code) || code,
 				options: grouped.get(code) || [],
-			}));
+			}),
+		);
 	}, [worksData, categoriesData]);
 
 	const handleDelete = () => {
