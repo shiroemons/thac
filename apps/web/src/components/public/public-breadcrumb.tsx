@@ -1,12 +1,14 @@
 import {
-	Building2,
+	BarChart3,
+	Calendar,
 	ChevronRight,
-	Disc,
+	Disc3,
 	Home,
 	type LucideIcon,
 	MoreHorizontal,
 	Music,
-	User,
+	UserRound,
+	Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import {
@@ -26,17 +28,19 @@ export type EntityType =
 	| "track"
 	| "event"
 	| "original-song"
-	| "official-work";
+	| "official-work"
+	| "stats";
 
 /** エンティティタイプ別アイコンマッピング */
 const ENTITY_ICONS: Record<EntityType, LucideIcon> = {
-	artist: User,
-	circle: Building2,
-	release: Disc,
+	artist: UserRound,
+	circle: Users,
+	release: Disc3,
 	track: Music,
-	event: Disc, // イベントはDiscを流用
+	event: Calendar,
 	"original-song": Music,
-	"official-work": Disc,
+	"official-work": Disc3,
+	stats: BarChart3,
 };
 
 /** ラベルからエンティティタイプを推定 */
@@ -49,6 +53,7 @@ function inferEntityType(label: string): EntityType | null {
 		イベント: "event",
 		原曲: "original-song",
 		原作: "official-work",
+		統計: "stats",
 	};
 	return labelToType[label] ?? null;
 }

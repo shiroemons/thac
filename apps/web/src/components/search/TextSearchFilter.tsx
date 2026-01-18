@@ -1,4 +1,4 @@
-import { Album, Disc3, Music, User } from "lucide-react";
+import { Disc3, Music, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TextSearchFilters } from "./types";
 
@@ -70,7 +70,7 @@ export function TextSearchFilter({
 				placeholder="例: miko、ARM"
 				value={value.artistName}
 				onChange={(v) => handleChange("artistName", v)}
-				icon={<User className="h-3.5 w-3.5" />}
+				icon={<UserRound className="h-3.5 w-3.5" />}
 			/>
 			<InputField
 				label="サークル名"
@@ -84,7 +84,7 @@ export function TextSearchFilter({
 				placeholder="例: 東方紅魔郷アレンジ"
 				value={value.albumName}
 				onChange={(v) => handleChange("albumName", v)}
-				icon={<Album className="h-3.5 w-3.5" />}
+				icon={<Disc3 className="h-3.5 w-3.5" />}
 			/>
 			<InputField
 				label="トラック名"

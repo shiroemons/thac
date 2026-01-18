@@ -3,9 +3,9 @@ import {
 	ArrowRight,
 	BarChart3,
 	Calendar,
-	Disc3,
 	Music,
 	Search,
+	UserRound,
 	Users,
 } from "lucide-react";
 
@@ -40,7 +40,7 @@ const navItems = [
 	},
 	{
 		href: "/artists",
-		icon: Disc3,
+		icon: UserRound,
 		title: "アーティスト",
 		description: "作曲者・編曲者を検索",
 		color: "from-success to-success/70",

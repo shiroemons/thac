@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import {
 	Calendar,
-	Disc3,
 	type LucideIcon,
 	Music,
 	TrendingUp,
+	UserRound,
 	Users,
 } from "lucide-react";
 import { formatNumber } from "../../lib/format";
@@ -101,13 +101,13 @@ export function StatsCards() {
 					href="/circles"
 				/>
 				<StatCard
-					icon={Users}
+					icon={UserRound}
 					count={mockStats.artists}
 					label="アーティスト"
 					href="/artists"
 				/>
 				<StatCard
-					icon={Disc3}
+					icon={Music}
 					count={mockStats.tracks}
 					label="トラック"
 					href="/stats"

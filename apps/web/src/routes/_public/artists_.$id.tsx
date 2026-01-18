@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronDown, Disc3, Loader2, Music, User } from "lucide-react";
+import { ChevronDown, Disc3, Loader2, Music, UserRound } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	DetailTabs,
@@ -197,7 +197,7 @@ function ArtistDetailPage() {
 			{/* プロフィールヘッダー */}
 			<EntityDetailHeader
 				gradientClass="gradient-artist"
-				icon={<User className="size-10 text-primary sm:size-12" />}
+				icon={<UserRound className="size-10 text-primary sm:size-12" />}
 				iconRingClass="ring-primary/20"
 				title={artist.name}
 				subtitle={

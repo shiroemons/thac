@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Calendar, Disc, Disc3, Music, Users } from "lucide-react";
+import { Calendar, Disc3, Music, Users } from "lucide-react";
 import { useMemo } from "react";
 import {
 	EmptyState,
@@ -112,7 +112,7 @@ function ReleaseDetailPage() {
 			{/* ヘッダー - EntityDetailHeader + StatsCardGrid */}
 			<EntityDetailHeader
 				gradientClass="gradient-release"
-				icon={<Disc className="size-10 text-primary/80 sm:size-12" />}
+				icon={<Disc3 className="size-10 text-primary/80 sm:size-12" />}
 				iconRingClass="ring-primary/20"
 				title={release.name}
 				badges={

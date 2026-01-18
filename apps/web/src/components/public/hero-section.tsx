@@ -1,5 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, Disc, Disc3, Search, Sparkles, Users } from "lucide-react";
+import {
+	Calendar,
+	Disc3,
+	Music,
+	Search,
+	Sparkles,
+	UserRound,
+	Users,
+} from "lucide-react";
 import type { PublicStats } from "@/lib/public-api";
 import { Badge } from "../ui/badge";
 
@@ -131,7 +139,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
 						count={displayStats.artists}
 						label="アーティスト"
 						icon={
-							<Users
+							<UserRound
 								className="size-4 text-primary group-hover:text-primary"
 								aria-hidden="true"
 							/>
@@ -140,7 +148,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
 					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
 					{/* 作品（リンクなし） */}
 					<div className="flex items-center gap-2">
-						<Disc className="size-4 text-primary" aria-hidden="true" />
+						<Disc3 className="size-4 text-primary" aria-hidden="true" />
 						<span>
 							<span className="font-semibold text-base-content">
 								{displayStats.releases.toLocaleString()}
@@ -151,7 +159,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
 					<div className="h-4 w-px bg-base-content/20" aria-hidden="true" />
 					{/* アレンジ（リンクなし） */}
 					<div className="flex items-center gap-2">
-						<Disc3 className="size-4 text-primary" aria-hidden="true" />
+						<Music className="size-4 text-primary" aria-hidden="true" />
 						<span>
 							<span className="font-semibold text-base-content">
 								{displayStats.tracks.toLocaleString()}

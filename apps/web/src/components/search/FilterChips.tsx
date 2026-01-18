@@ -1,10 +1,10 @@
 import {
 	Calendar,
-	Disc3,
 	Hash,
 	Music,
 	Search,
 	UserCheck,
+	UserRound,
 	Users,
 	X,
 } from "lucide-react";
@@ -27,8 +27,8 @@ interface FilterChipsProps {
 const CHIP_ICONS: Record<FilterChipType, React.ElementType> = {
 	textSearch: Search,
 	originalSong: Music,
-	artist: Users,
-	circle: Disc3,
+	artist: UserRound,
+	circle: Users,
 	roleCount: UserCheck,
 	songCount: Hash,
 	date: Calendar,

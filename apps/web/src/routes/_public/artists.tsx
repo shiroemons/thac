@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Music, Users } from "lucide-react";
+import { Music, UserRound } from "lucide-react";
 import { useRef, useState } from "react";
 import {
 	EmptyState,
@@ -424,7 +424,7 @@ function ArtistsPage() {
 								<MobileCardItem>
 									<div className="flex items-center gap-3">
 										<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent">
-											<Users
+											<UserRound
 												className="size-5 text-accent-content"
 												aria-hidden="true"
 											/>
@@ -474,7 +474,7 @@ function ArtistsPage() {
 									<div className="card-body p-4">
 										<div className="flex items-center gap-3">
 											<div className="flex size-12 items-center justify-center rounded-full bg-accent">
-												<Users
+												<UserRound
 													className="size-6 text-accent-content"
 													aria-hidden="true"
 												/>
@@ -532,7 +532,7 @@ function ArtistsPage() {
 													className="flex items-center gap-3 hover:text-primary"
 												>
 													<div className="flex size-8 items-center justify-center rounded-full bg-accent">
-														<Users
+														<UserRound
 															className="size-4 text-accent-content"
 															aria-hidden="true"
 														/>

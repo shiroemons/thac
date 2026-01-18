@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
-	Building2,
 	Calendar,
 	Disc3,
 	Loader2,
 	Music,
+	UserRound,
 	Users,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -265,7 +265,7 @@ function CircleDetailPage() {
 			{/* ヘッダー - EntityDetailHeader使用 */}
 			<EntityDetailHeader
 				gradientClass="gradient-circle"
-				icon={<Building2 className="size-10 text-info sm:size-12" />}
+				icon={<Users className="size-10 text-info sm:size-12" />}
 				iconRingClass="ring-info/20"
 				title={circle.name}
 				subtitle={
@@ -538,7 +538,7 @@ function CircleDetailPage() {
 															preload="intent"
 															className="inline-flex min-h-[44px] items-center gap-1 transition-colors duration-300 hover:text-primary"
 														>
-															<Users className="size-3" />
+															<UserRound className="size-3" />
 															<span>{artist.creditName}</span>
 															<span className="text-base-content/60 text-xs">
 																(
