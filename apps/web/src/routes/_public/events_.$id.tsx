@@ -4,8 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
+	EntityDetailHeader,
 	Pagination,
 	PublicBreadcrumb,
+	type StatItem,
+	StatsCardGrid,
 	TabIcons,
 	type ViewMode,
 	ViewToggle,
@@ -18,7 +21,6 @@ import {
 	parseEventDetailTab,
 	TAB_LABELS,
 } from "@/lib/detail-tab-utils";
-import { formatNumber } from "@/lib/format";
 import { createPublicEventHead } from "@/lib/head";
 import { type PublicEventRelease, publicApi } from "@/lib/public-api";
 import {
@@ -189,6 +191,73 @@ function EventDetailPage() {
 		return `${event.startDate} 〜 ${event.endDate}`;
 	};
 
+	// バッジを構築
+	const headerBadges: React.ReactNode[] = [];
+
+	// 日程バッジ
+	const dateRange = formatDateRange();
+	if (dateRange) {
+		headerBadges.push(
+			<span
+				key="date"
+				className="badge badge-warning badge-outline flex items-center gap-1"
+			>
+				<Calendar className="size-3" />
+				{dateRange}
+			</span>,
+		);
+	}
+
+	// 会場バッジ
+	if (event.venue) {
+		headerBadges.push(
+			<span key="venue" className="badge badge-ghost flex items-center gap-1">
+				<MapPin className="size-3" />
+				{event.venue}
+			</span>,
+		);
+	}
+
+	// 開催日数バッジ
+	if (event.totalDays) {
+		headerBadges.push(
+			<span key="days" className="badge badge-outline">
+				{event.totalDays}日間
+			</span>,
+		);
+	}
+
+	// イベント日バッジ
+	for (const day of event.eventDays) {
+		headerBadges.push(
+			<span key={day.id} className="badge badge-ghost">
+				{day.dayNumber}日目: {day.date}
+			</span>,
+		);
+	}
+
+	// 統計項目
+	const statsItems: StatItem[] = [
+		{
+			label: "リリース",
+			value: event.stats.releaseCount,
+			icon: <Disc3 className="size-5" />,
+			iconColorClass: "text-primary",
+		},
+		{
+			label: "サークル",
+			value: event.stats.circleCount,
+			icon: <Users className="size-5" />,
+			iconColorClass: "text-secondary",
+		},
+		{
+			label: "トラック",
+			value: event.stats.trackCount,
+			icon: <Music className="size-5" />,
+			iconColorClass: "text-accent",
+		},
+	];
+
 	return (
 		<div className="space-y-6">
 			<PublicBreadcrumb
@@ -196,77 +265,17 @@ function EventDetailPage() {
 			/>
 
 			{/* ヘッダー */}
-			<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
-				<div className="space-y-3">
-					<div>
-						{event.eventSeriesName && (
-							<p className="text-base-content/60 text-sm">
-								{event.eventSeriesName}
-							</p>
-						)}
-						<h1 className="font-bold text-2xl sm:text-3xl">{event.name}</h1>
-					</div>
-					<div className="flex flex-wrap items-center gap-4 text-base-content/70">
-						{formatDateRange() && (
-							<span className="flex items-center gap-1">
-								<Calendar className="size-4" />
-								{formatDateRange()}
-							</span>
-						)}
-						{event.venue && (
-							<span className="flex items-center gap-1">
-								<MapPin className="size-4" />
-								{event.venue}
-							</span>
-						)}
-						{event.totalDays && (
-							<span className="badge badge-outline">{event.totalDays}日間</span>
-						)}
-					</div>
+			<EntityDetailHeader
+				gradientClass="gradient-event"
+				icon={<Calendar className="size-10 text-warning sm:size-12" />}
+				iconRingClass="ring-warning/20"
+				title={event.name}
+				subtitle={event.eventSeriesName ?? undefined}
+				badges={headerBadges.length > 0 ? headerBadges : undefined}
+			/>
 
-					{/* イベント日 */}
-					{event.eventDays.length > 0 && (
-						<div className="flex flex-wrap gap-2 pt-2">
-							{event.eventDays.map((day) => (
-								<span key={day.id} className="badge badge-ghost">
-									{day.dayNumber}日目: {day.date}
-								</span>
-							))}
-						</div>
-					)}
-				</div>
-
-				{/* 統計カード */}
-				<div className="mt-6 grid grid-cols-3 gap-4">
-					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
-						<div className="flex items-center justify-center gap-2 text-primary">
-							<Disc3 className="size-5" />
-							<span className="font-bold text-2xl">
-								{formatNumber(event.stats.releaseCount)}
-							</span>
-						</div>
-						<p className="mt-1 text-base-content/70 text-sm">リリース</p>
-					</div>
-					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
-						<div className="flex items-center justify-center gap-2 text-secondary">
-							<Users className="size-5" />
-							<span className="font-bold text-2xl">
-								{formatNumber(event.stats.circleCount)}
-							</span>
-						</div>
-						<p className="mt-1 text-base-content/70 text-sm">サークル</p>
-					</div>
-					<div className="rounded-2xl bg-base-200/50 p-4 text-center">
-						<div className="flex items-center justify-center gap-2 text-accent">
-							<Music className="size-5" />
-							<span className="font-bold text-2xl">
-								{formatNumber(event.stats.trackCount)}
-							</span>
-						</div>
-						<p className="mt-1 text-base-content/70 text-sm">トラック</p>
-					</div>
-				</div>
-			</div>
+			{/* 統計カード */}
+			<StatsCardGrid items={statsItems} columns={3} />
 
 			{/* タブ */}
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

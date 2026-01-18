@@ -11,9 +11,12 @@ import { useCallback, useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
+	EntityDetailHeader,
 	ExternalLink,
 	Pagination,
 	PublicBreadcrumb,
+	type StatItem,
+	StatsCardGrid,
 	TabIcons,
 	type ViewMode,
 	ViewToggle,
@@ -26,7 +29,6 @@ import {
 	parseCircleDetailTab,
 	TAB_LABELS,
 } from "@/lib/detail-tab-utils";
-import { formatNumber } from "@/lib/format";
 import { createPublicCircleHead } from "@/lib/head";
 import {
 	type PublicCircleRelease,
@@ -260,74 +262,62 @@ function CircleDetailPage() {
 				]}
 			/>
 
-			{/* ヘッダー - グラデーション背景 */}
-			<div className="gradient-circle rounded-2xl p-6 shadow-sm transition-shadow duration-300 hover:shadow-lg">
-				<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-					<div className="space-y-3">
-						<div className="flex items-center gap-4">
-							{/* アバター - Building2アイコン使用 */}
-							<div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-info/15 ring-2 ring-info/20">
-								<Building2 className="size-10 text-info" />
-							</div>
-							<div className="space-y-1">
-								<h1 className="font-bold text-2xl sm:text-3xl">
-									{circle.name}
-								</h1>
-								{circle.nameJa && circle.nameJa !== circle.name && (
-									<p className="text-base-content/70">{circle.nameJa}</p>
-								)}
-								{circle.nameInitial && (
-									<span className="badge badge-ghost badge-sm">
-										{circle.nameInitial}
-									</span>
-								)}
-							</div>
-						</div>
-						{circle.notes && (
-							<p className="text-base-content/60 text-sm">{circle.notes}</p>
-						)}
-					</div>
+			{/* ヘッダー - EntityDetailHeader使用 */}
+			<EntityDetailHeader
+				gradientClass="gradient-circle"
+				icon={<Building2 className="size-10 text-info sm:size-12" />}
+				iconRingClass="ring-info/20"
+				title={circle.name}
+				subtitle={
+					circle.nameJa && circle.nameJa !== circle.name
+						? circle.nameJa
+						: undefined
+				}
+				badges={
+					circle.nameInitial
+						? [
+								<span key="initial" className="badge badge-ghost badge-sm">
+									{circle.nameInitial}
+								</span>,
+							]
+						: undefined
+				}
+			>
+				{circle.links.length > 0 &&
+					circle.links.map((link) => (
+						<ExternalLink
+							key={link.id}
+							href={link.url}
+							className="btn btn-outline btn-sm gap-1 transition-all duration-300 hover:shadow-md"
+						>
+							{platformNames[link.platformCode] ||
+								link.platformName ||
+								link.platformCode}
+						</ExternalLink>
+					))}
+			</EntityDetailHeader>
 
-					{/* 外部リンク */}
-					{circle.links.length > 0 && (
-						<div className="flex flex-wrap gap-2">
-							{circle.links.map((link) => (
-								<ExternalLink
-									key={link.id}
-									href={link.url}
-									className="btn btn-outline btn-sm gap-1 transition-all duration-300 hover:shadow-md"
-								>
-									{platformNames[link.platformCode] ||
-										link.platformName ||
-										link.platformCode}
-								</ExternalLink>
-							))}
-						</div>
-					)}
-				</div>
-
-				{/* 統計カード - glass-card-light使用 */}
-				<div className="mt-6 grid grid-cols-2 gap-4">
-					<div className="glass-card-light rounded-2xl p-4 text-center transition-all duration-300 hover:shadow-md">
-						<div className="flex items-center justify-center gap-2 text-primary">
-							<Disc3 className="size-5" />
-							<span className="font-bold text-2xl">
-								{formatNumber(circle.stats.releaseCount)}
-							</span>
-						</div>
-						<p className="mt-1 text-base-content/70 text-sm">リリース</p>
-					</div>
-					<div className="glass-card-light rounded-2xl p-4 text-center transition-all duration-300 hover:shadow-md">
-						<div className="flex items-center justify-center gap-2 text-secondary">
-							<Music className="size-5" />
-							<span className="font-bold text-2xl">
-								{formatNumber(circle.stats.trackCount)}
-							</span>
-						</div>
-						<p className="mt-1 text-base-content/70 text-sm">トラック</p>
-					</div>
-				</div>
-			</div>
+			{/* 統計カード - StatsCardGrid使用 */}
+			<StatsCardGrid
+				items={
+					[
+						{
+							label: "リリース",
+							value: circle.stats.releaseCount,
+							icon: <Disc3 className="size-5" />,
+							iconColorClass: "text-primary",
+						},
+						{
+							label: "トラック",
+							value: circle.stats.trackCount,
+							icon: <Music className="size-5" />,
+							iconColorClass: "text-secondary",
+						},
+					] satisfies StatItem[]
+				}
+				columns={2}
+				variant="default"
+			/>
 
 			{/* タブ */}
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

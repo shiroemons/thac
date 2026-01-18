@@ -4,6 +4,10 @@ import { Music, Users } from "lucide-react";
 import { useRef, useState } from "react";
 import {
 	EmptyState,
+	FilterDrawer,
+	FilterDrawerTrigger,
+	MobileCardItem,
+	MobileCardList,
 	PublicBreadcrumb,
 	TwoStageScriptFilter,
 	type ViewMode,
@@ -113,6 +117,8 @@ function ArtistsPage() {
 	// 検索入力のローカルステート（IME対応）
 	const [searchInput, setSearchInput] = useState(search);
 	const isComposingRef = useRef(false);
+	// モバイルフィルタードロワーの状態
+	const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
 	// 型安全なパラメータ
 	const scriptCategory = script as ScriptCategory;
@@ -244,6 +250,21 @@ function ArtistsPage() {
 		});
 	};
 
+	// アクティブフィルターの数を計算（モバイル用）
+	const activeFilterCount =
+		(search ? 1 : 0) +
+		(roleFilter !== "all" ? 1 : 0) +
+		(scriptCategory !== "all" ? 1 : 0);
+
+	// フィルターリセット
+	const handleFilterReset = () => {
+		setSearchInput("");
+		navigate({
+			to: "/artists",
+			search: { view },
+		});
+	};
+
 	return (
 		<div className="space-y-6">
 			<PublicBreadcrumb items={[{ label: "アーティスト" }]} />
@@ -256,11 +277,76 @@ function ArtistsPage() {
 						アーティスト · {formatNumber(total)}件
 					</p>
 				</div>
-				<ViewToggle value={view} onChange={handleViewChange} />
+				<div className="flex items-center gap-2">
+					{/* モバイル用フィルタートリガー */}
+					<FilterDrawerTrigger
+						onClick={() => setIsFilterDrawerOpen(true)}
+						activeFilterCount={activeFilterCount}
+					/>
+					<ViewToggle value={view} onChange={handleViewChange} />
+				</div>
 			</div>
 
-			{/* フィルター */}
-			<div className="space-y-4">
+			{/* モバイル用フィルタードロワー */}
+			<FilterDrawer
+				isOpen={isFilterDrawerOpen}
+				onClose={() => setIsFilterDrawerOpen(false)}
+				title="フィルター"
+				onReset={handleFilterReset}
+			>
+				<div className="space-y-6">
+					{/* キーワード検索 */}
+					<div>
+						<span className="mb-2 block font-medium text-sm">
+							キーワード検索:
+						</span>
+						<SearchInput
+							value={searchInput}
+							onChange={handleSearchChange}
+							onCompositionStart={handleCompositionStart}
+							onCompositionEnd={handleCompositionEnd}
+							placeholder="アーティスト名で検索..."
+							size="sm"
+						/>
+					</div>
+
+					{/* 役割フィルター */}
+					<div>
+						<span className="mb-2 block font-medium text-sm">役割:</span>
+						<div className="flex flex-wrap gap-2">
+							{ROLE_TYPES.map((r) => (
+								<button
+									key={r}
+									type="button"
+									onClick={() => handleRoleChange(r)}
+									className={`btn btn-sm ${
+										roleFilter === r ? "btn-primary" : "btn-ghost"
+									}`}
+									aria-pressed={roleFilter === r}
+								>
+									{roleConfig[r].label}
+								</button>
+							))}
+						</div>
+					</div>
+
+					{/* 文字種フィルター */}
+					<div>
+						<span className="mb-2 block font-medium text-sm">文字種:</span>
+						<TwoStageScriptFilter
+							scriptCategory={scriptCategory}
+							alphabetInitial={alphabetInitial ?? null}
+							kanaRow={kanaRow ?? null}
+							onScriptCategoryChange={handleScriptCategoryChange}
+							onAlphabetInitialChange={handleAlphabetInitialChange}
+							onKanaRowChange={handleKanaRowChange}
+						/>
+					</div>
+				</div>
+			</FilterDrawer>
+
+			{/* デスクトップ用フィルター（md以上で表示） */}
+			<div className="hidden space-y-4 md:block">
 				{/* キーワード検索 */}
 				<div>
 					<span className="mb-2 block font-medium text-sm">
@@ -322,109 +408,167 @@ function ArtistsPage() {
 					title="該当するアーティストがありません"
 					description="フィルター条件を変更してお試しください"
 				/>
-			) : view === "grid" ? (
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{artists.map((artist) => (
-						<Link
-							key={artist.id}
-							to="/artists/$id"
-							params={{ id: artist.id }}
-							preload="intent"
-							className="card bg-base-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
-						>
-							<div className="card-body p-4">
-								<div className="flex items-center gap-3">
-									<div className="flex size-12 items-center justify-center rounded-full bg-accent/10">
-										<Users className="size-6 text-accent" aria-hidden="true" />
+			) : (
+				<>
+					{/* モバイル用カードリスト */}
+					<MobileCardList
+						items={artists}
+						keyExtractor={(artist) => artist.id}
+						renderCard={(artist) => (
+							<Link
+								to="/artists/$id"
+								params={{ id: artist.id }}
+								preload="intent"
+								className="block"
+							>
+								<MobileCardItem>
+									<div className="flex items-center gap-3">
+										<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/10">
+											<Users
+												className="size-5 text-accent"
+												aria-hidden="true"
+											/>
+										</div>
+										<div className="min-w-0 flex-1">
+											<h3 className="truncate font-bold text-base">
+												{artist.name}
+											</h3>
+											{artist.name !== artist.artistName && (
+												<p className="truncate text-base-content/60 text-sm">
+													{artist.artistName}
+												</p>
+											)}
+										</div>
 									</div>
-									<div className="min-w-0 flex-1">
-										<h3 className="truncate font-bold text-base">
-											{artist.name}
-										</h3>
-										{artist.name !== artist.artistName && (
-											<p className="truncate text-base-content/60 text-sm">
-												{artist.artistName}
-											</p>
-										)}
+									{/* 役割バッジ */}
+									<div className="mt-2 flex flex-wrap gap-1">
+										{artist.roles.map((role) => (
+											<span
+												key={role.roleCode}
+												className={`badge badge-sm ${getRoleBadgeClass(role.roleCode)}`}
+											>
+												{role.label}
+											</span>
+										))}
 									</div>
-								</div>
-								{/* 役割バッジ */}
-								<div className="mt-2 flex flex-wrap gap-1">
-									{artist.roles.map((role) => (
-										<span
-											key={role.roleCode}
-											className={`badge badge-sm ${getRoleBadgeClass(role.roleCode)}`}
-										>
-											{role.label}
-										</span>
-									))}
-								</div>
-								<div className="mt-3 flex items-center gap-4 text-base-content/70 text-sm">
-									<span className="flex items-center gap-1">
+									<div className="mt-2 flex items-center gap-1 text-base-content/70 text-sm">
 										<Music className="size-4" aria-hidden="true" />
 										{formatNumber(artist.trackCount)}曲
-									</span>
-								</div>
-							</div>
-						</Link>
-					))}
-				</div>
-			) : (
-				<div className="overflow-x-auto">
-					<table className="table">
-						<thead>
-							<tr>
-								<th>アーティスト</th>
-								<th>役割</th>
-								<th>参加曲数</th>
-							</tr>
-						</thead>
-						<tbody>
+									</div>
+								</MobileCardItem>
+							</Link>
+						)}
+					/>
+
+					{/* デスクトップ用表示（sm以上で表示） */}
+					{view === "grid" ? (
+						<div className="hidden grid-cols-1 gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 							{artists.map((artist) => (
-								<tr key={artist.id} className="hover:bg-base-200/50">
-									<td>
-										<Link
-											to="/artists/$id"
-											params={{ id: artist.id }}
-											preload="intent"
-											className="flex items-center gap-3 hover:text-primary"
-										>
-											<div className="flex size-8 items-center justify-center rounded-full bg-accent/10">
+								<Link
+									key={artist.id}
+									to="/artists/$id"
+									params={{ id: artist.id }}
+									preload="intent"
+									className="card bg-base-100 shadow-sm transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10"
+								>
+									<div className="card-body p-4">
+										<div className="flex items-center gap-3">
+											<div className="flex size-12 items-center justify-center rounded-full bg-accent/10">
 												<Users
-													className="size-4 text-accent"
+													className="size-6 text-accent"
 													aria-hidden="true"
 												/>
 											</div>
-											<div>
-												<span className="font-medium">{artist.name}</span>
+											<div className="min-w-0 flex-1">
+												<h3 className="truncate font-bold text-base">
+													{artist.name}
+												</h3>
 												{artist.name !== artist.artistName && (
-													<div className="text-base-content/60 text-xs">
+													<p className="truncate text-base-content/60 text-sm">
 														{artist.artistName}
-													</div>
+													</p>
 												)}
 											</div>
-										</Link>
-									</td>
-									<td>
-										<div className="flex gap-1">
+										</div>
+										{/* 役割バッジ */}
+										<div className="mt-2 flex flex-wrap gap-1">
 											{artist.roles.map((role) => (
 												<span
 													key={role.roleCode}
-													className={`badge badge-sm whitespace-nowrap ${getRoleBadgeClass(role.roleCode)}`}
+													className={`badge badge-sm ${getRoleBadgeClass(role.roleCode)}`}
 												>
 													{role.label}
 												</span>
 											))}
 										</div>
-									</td>
-									<td className="text-base-content/70">
-										{formatNumber(artist.trackCount)}
-									</td>
-								</tr>
+										<div className="mt-3 flex items-center gap-4 text-base-content/70 text-sm">
+											<span className="flex items-center gap-1">
+												<Music className="size-4" aria-hidden="true" />
+												{formatNumber(artist.trackCount)}曲
+											</span>
+										</div>
+									</div>
+								</Link>
 							))}
-						</tbody>
-					</table>
-				</div>
+						</div>
+					) : (
+						<div className="hidden overflow-x-auto sm:block">
+							<table className="table">
+								<thead>
+									<tr>
+										<th>アーティスト</th>
+										<th>役割</th>
+										<th>参加曲数</th>
+									</tr>
+								</thead>
+								<tbody>
+									{artists.map((artist) => (
+										<tr key={artist.id} className="hover:bg-base-200/50">
+											<td>
+												<Link
+													to="/artists/$id"
+													params={{ id: artist.id }}
+													preload="intent"
+													className="flex items-center gap-3 hover:text-primary"
+												>
+													<div className="flex size-8 items-center justify-center rounded-full bg-accent/10">
+														<Users
+															className="size-4 text-accent"
+															aria-hidden="true"
+														/>
+													</div>
+													<div>
+														<span className="font-medium">{artist.name}</span>
+														{artist.name !== artist.artistName && (
+															<div className="text-base-content/60 text-xs">
+																{artist.artistName}
+															</div>
+														)}
+													</div>
+												</Link>
+											</td>
+											<td>
+												<div className="flex gap-1">
+													{artist.roles.map((role) => (
+														<span
+															key={role.roleCode}
+															className={`badge badge-sm whitespace-nowrap ${getRoleBadgeClass(role.roleCode)}`}
+														>
+															{role.label}
+														</span>
+													))}
+												</div>
+											</td>
+											<td className="text-base-content/70">
+												{formatNumber(artist.trackCount)}
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+				</>
 			)}
 
 			{/* 無限スクロール */}

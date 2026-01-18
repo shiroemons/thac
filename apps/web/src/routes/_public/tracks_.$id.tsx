@@ -8,7 +8,11 @@ import {
 	Music,
 } from "lucide-react";
 import { useMemo } from "react";
-import { PublicationLinks, PublicBreadcrumb } from "@/components/public";
+import {
+	EntityDetailHeader,
+	PublicationLinks,
+	PublicBreadcrumb,
+} from "@/components/public";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPublicTrackHead } from "@/lib/head";
 import { type PublicTrackDetail, publicApi } from "@/lib/public-api";
@@ -112,49 +116,54 @@ function TrackDetailPage() {
 			/>
 
 			{/* ヘッダー */}
-			<div className="rounded-2xl bg-base-100 p-6 shadow-sm">
-				<div className="space-y-3">
-					{/* トラック番号とタイトル */}
-					<div className="flex flex-wrap items-center gap-2">
-						<span className="badge badge-outline badge-lg">
-							Track {track.trackNumber.toString().padStart(2, "0")}
-						</span>
-						<h1 className="font-bold text-2xl sm:text-3xl">{track.name}</h1>
-					</div>
-
-					{/* リリース情報 */}
-					<div className="flex flex-wrap items-center gap-4 text-base-content/60 text-sm">
-						{track.release && (
-							<Link
-								to="/releases/$id"
-								params={{ id: track.release.id }}
-								preload="intent"
-								className="flex items-center gap-1 hover:text-primary"
-							>
-								<Disc3 className="size-4" />
-								{track.release.name}
-							</Link>
-						)}
-						{track.disc && (
-							<span className="flex items-center gap-1">
-								<Disc3 className="size-4" />
-								Disc {track.disc.discNumber}
-								{track.disc.discName && ` - ${track.disc.discName}`}
-							</span>
-						)}
-						{track.event && (
-							<Link
-								to="/events/$id"
-								params={{ id: track.event.id }}
-								preload="intent"
-								className="flex items-center gap-1 hover:text-primary"
-							>
-								{track.event.name}
-							</Link>
-						)}
-					</div>
+			<EntityDetailHeader
+				gradientClass="gradient-track"
+				icon={<Music className="size-10 text-accent sm:size-12" />}
+				iconRingClass="ring-accent/20"
+				title={track.name}
+				badges={[
+					<span
+						key="track-number"
+						className="badge badge-accent badge-outline badge-lg"
+					>
+						Track {track.trackNumber.toString().padStart(2, "0")}
+					</span>,
+					...(track.disc
+						? [
+								<span key="disc" className="badge badge-ghost badge-sm gap-1">
+									<Disc3 className="size-3" />
+									Disc {track.disc.discNumber}
+									{track.disc.discName && ` - ${track.disc.discName}`}
+								</span>,
+							]
+						: []),
+				]}
+			>
+				{/* リリース・イベントへのリンク */}
+				<div className="flex flex-wrap gap-2">
+					{track.release && (
+						<Link
+							to="/releases/$id"
+							params={{ id: track.release.id }}
+							preload="intent"
+							className="btn btn-ghost btn-sm gap-1"
+						>
+							<Disc3 className="size-4" />
+							{track.release.name}
+						</Link>
+					)}
+					{track.event && (
+						<Link
+							to="/events/$id"
+							params={{ id: track.event.id }}
+							preload="intent"
+							className="btn btn-ghost btn-sm"
+						>
+							{track.event.name}
+						</Link>
+					)}
 				</div>
-			</div>
+			</EntityDetailHeader>
 
 			{/* クレジット */}
 			{track.credits.length > 0 && (
