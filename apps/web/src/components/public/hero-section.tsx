@@ -3,16 +3,6 @@ import { Calendar, Disc, Disc3, Search, Sparkles, Users } from "lucide-react";
 import type { PublicStats } from "@/lib/public-api";
 import { Badge } from "../ui/badge";
 
-// フォールバック用のデフォルト値
-const defaultStats: PublicStats = {
-	events: 0,
-	circles: 0,
-	artists: 0,
-	tracks: 0,
-	originalSongs: 0,
-	releases: 0,
-};
-
 interface HeroSectionProps {
 	stats: PublicStats | null;
 }
@@ -43,7 +33,14 @@ function StatLink({ href, count, label, icon }: StatLinkProps) {
 }
 
 export function HeroSection({ stats }: HeroSectionProps) {
-	const displayStats = stats ?? defaultStats;
+	const displayStats: PublicStats = {
+		events: stats?.events ?? 0,
+		circles: stats?.circles ?? 0,
+		artists: stats?.artists ?? 0,
+		tracks: stats?.tracks ?? 0,
+		originalSongs: stats?.originalSongs ?? 0,
+		releases: stats?.releases ?? 0,
+	};
 
 	return (
 		<section className="relative flex h-[calc(100vh-4rem)] flex-col justify-center overflow-hidden px-4 py-12">

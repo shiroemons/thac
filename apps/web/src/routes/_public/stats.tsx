@@ -357,6 +357,16 @@ function RecentUpdatesSection() {
 function StatsPage() {
 	const { stats } = Route.useLoaderData();
 
+	// プロパティレベルでフォールバックを適用
+	const displayStats = {
+		events: stats?.events ?? 0,
+		circles: stats?.circles ?? 0,
+		artists: stats?.artists ?? 0,
+		tracks: stats?.tracks ?? 0,
+		originalSongs: stats?.originalSongs ?? 0,
+		releases: stats?.releases ?? 0,
+	};
+
 	return (
 		<div className="space-y-8">
 			<PublicBreadcrumb items={[{ label: "統計" }]} />
@@ -384,41 +394,41 @@ function StatsPage() {
 				<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
 					<StatCard
 						icon={Music}
-						count={stats.originalSongs}
+						count={displayStats.originalSongs}
 						label="原曲"
 						href="/original-songs"
 						color="text-secondary"
 					/>
 					<StatCard
 						icon={Calendar}
-						count={stats.events}
+						count={displayStats.events}
 						label="イベント"
 						href="/events"
 						color="text-info"
 					/>
 					<StatCard
 						icon={Users}
-						count={stats.circles}
+						count={displayStats.circles}
 						label="サークル"
 						href="/circles"
 						color="text-primary"
 					/>
 					<StatCard
 						icon={Users}
-						count={stats.artists}
+						count={displayStats.artists}
 						label="アーティスト"
 						href="/artists"
 						color="text-accent"
 					/>
 					<StatCard
 						icon={Disc}
-						count={stats.releases}
+						count={displayStats.releases}
 						label="作品"
 						color="text-warning"
 					/>
 					<StatCard
 						icon={Disc3}
-						count={stats.tracks}
+						count={displayStats.tracks}
 						label="アレンジ"
 						color="text-success"
 					/>
