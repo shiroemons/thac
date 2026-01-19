@@ -2494,6 +2494,34 @@ export const releaseJanCodesApi = {
 
 // ===== Search (Meilisearch) =====
 
+export interface IndexSettings {
+	searchableAttributes: string[] | null;
+	filterableAttributes: string[];
+	sortableAttributes: string[];
+	localizedAttributes: Array<{
+		locales: string[];
+		attributePatterns: string[];
+	}> | null;
+	typoTolerance: {
+		enabled: boolean;
+		minWordSizeForTypos: { oneTypo: number; twoTypos: number };
+	} | null;
+	displayedAttributes: string[] | null;
+}
+
+export interface SettingsResponse {
+	success: boolean;
+	settings?: IndexSettings;
+	error?: string;
+}
+
+export interface SettingsUpdateResponse {
+	success: boolean;
+	message?: string;
+	taskUid?: number;
+	error?: string;
+}
+
 export interface IndexStatus {
 	name: string;
 	numberOfDocuments: number;
@@ -2692,4 +2720,27 @@ export const searchApi = {
 
 		return result;
 	},
+
+	/** Get index settings */
+	getSettings: (indexName: string) =>
+		fetchWithAuth<SettingsResponse>(`/api/admin/search/settings/${indexName}`),
+
+	/** Update index settings */
+	updateSettings: (indexName: string, settings: Partial<IndexSettings>) =>
+		fetchWithAuth<SettingsUpdateResponse>(
+			`/api/admin/search/settings/${indexName}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(settings),
+			},
+		),
+
+	/** Reset index settings to default */
+	resetSettings: (indexName: string) =>
+		fetchWithAuth<SettingsUpdateResponse>(
+			`/api/admin/search/settings/${indexName}/reset`,
+			{
+				method: "POST",
+			},
+		),
 };

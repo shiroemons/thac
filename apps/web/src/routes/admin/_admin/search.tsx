@@ -9,6 +9,7 @@ import {
 	RefreshCw,
 	Search,
 	Server,
+	Settings,
 	XCircle,
 } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -367,19 +368,29 @@ function IndexRow({
 				)}
 			</td>
 			<td className="text-right">
-				<button
-					type="button"
-					className="btn btn-ghost btn-sm"
-					onClick={onReindex}
-					disabled={isDisabled}
-				>
-					{isReindexing ? (
-						<Loader2 className="h-4 w-4 animate-spin" />
-					) : (
-						<RefreshCw className="h-4 w-4" />
-					)}
-					<span className="hidden sm:inline">再構築</span>
-				</button>
+				<div className="flex items-center justify-end gap-1">
+					<Link
+						to="/admin/search/settings/$index"
+						params={{ index: index.name }}
+						className="btn btn-ghost btn-sm"
+					>
+						<Settings className="h-4 w-4" />
+						<span className="hidden sm:inline">設定</span>
+					</Link>
+					<button
+						type="button"
+						className="btn btn-ghost btn-sm"
+						onClick={onReindex}
+						disabled={isDisabled}
+					>
+						{isReindexing ? (
+							<Loader2 className="h-4 w-4 animate-spin" />
+						) : (
+							<RefreshCw className="h-4 w-4" />
+						)}
+						<span className="hidden sm:inline">再構築</span>
+					</button>
+				</div>
 			</td>
 		</tr>
 	);
