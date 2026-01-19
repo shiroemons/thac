@@ -12,6 +12,7 @@ import {
 	type PublicCircleItem,
 	type PublicEventRelease,
 	publicApi,
+	type SongPairRankingItem,
 	type SongStatsResponse,
 	type StackedWorkStatsResponse,
 	type WorkStatsResponse,
@@ -373,6 +374,23 @@ export const artistsRankingInfiniteQueryOptions = (limit = 20) => {
 			publicApi.stats.artistsRanking({ page: pageParam, limit }),
 		initialPageParam: 1,
 		getNextPageParam: (lastPage: PaginatedResponse<ArtistRankingItem>) => {
+			const hasMore = lastPage.page * lastPage.limit < lastPage.total;
+			return hasMore ? lastPage.page + 1 : undefined;
+		},
+		staleTime: STALE_TIME_PUBLIC.RANKINGS,
+	});
+};
+
+/**
+ * 原曲2曲組み合わせランキングの無限スクロールクエリオプション
+ */
+export const songPairsRankingInfiniteQueryOptions = (limit = 20) => {
+	return infiniteQueryOptions({
+		queryKey: ["public", "stats", "rankings", "song-pairs", limit],
+		queryFn: ({ pageParam }) =>
+			publicApi.stats.songPairsRanking({ page: pageParam, limit }),
+		initialPageParam: 1,
+		getNextPageParam: (lastPage: PaginatedResponse<SongPairRankingItem>) => {
 			const hasMore = lastPage.page * lastPage.limit < lastPage.total;
 			return hasMore ? lastPage.page + 1 : undefined;
 		},

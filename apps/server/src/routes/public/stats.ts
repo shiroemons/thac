@@ -502,6 +502,176 @@ statsRouter.get("/rankings/artists", async (c) => {
 });
 
 /**
+ * GET /api/public/stats/rankings/song-pairs
+ * 原曲2曲組み合わせランキング（ページネーション対応）
+ * ちょうど2曲の原曲を持つトラックのペアをカウント
+ */
+statsRouter.get("/rankings/song-pairs", async (c) => {
+	try {
+		const page = Number(c.req.query("page")) || 1;
+		const limit = Number(c.req.query("limit")) || 20;
+		const offset = (page - 1) * limit;
+
+		const cacheKey = cacheKeys.songPairsRanking({ page, limit });
+
+		const cached = getCache<unknown>(cacheKey);
+		if (cached) {
+			setCacheHeaders(c, { maxAge: CACHE_TTL.STATS_RANKINGS });
+			return c.json(cached);
+		}
+
+		// ちょうど2曲の原曲を持つトラックIDを取得するサブクエリ
+		const twoSongTracksSubquery = db
+			.select({ trackId: trackOfficialSongs.trackId })
+			.from(trackOfficialSongs)
+			.innerJoin(
+				officialSongs,
+				eq(trackOfficialSongs.officialSongId, officialSongs.id),
+			)
+			.innerJoin(
+				officialWorks,
+				eq(officialSongs.officialWorkId, officialWorks.id),
+			)
+			.where(
+				and(
+					isNotNull(trackOfficialSongs.officialSongId),
+					ne(officialWorks.id, "0799"),
+				),
+			)
+			.groupBy(trackOfficialSongs.trackId)
+			.having(sql`COUNT(DISTINCT ${trackOfficialSongs.officialSongId}) = 2`)
+			.as("two_song_tracks");
+
+		// 総ペア数を取得（ユニークペアの数）
+		// 「その他」(0799)を両方の曲で除外
+		const totalPairsResult = await db
+			.select({
+				count: countDistinct(
+					sql`MIN(${trackOfficialSongs.officialSongId}, t2.official_song_id) || '|' || MAX(${trackOfficialSongs.officialSongId}, t2.official_song_id)`,
+				),
+			})
+			.from(trackOfficialSongs)
+			.innerJoin(
+				officialSongs,
+				eq(trackOfficialSongs.officialSongId, officialSongs.id),
+			)
+			.innerJoin(
+				officialWorks,
+				eq(officialSongs.officialWorkId, officialWorks.id),
+			)
+			.innerJoin(
+				sql`${trackOfficialSongs} AS t2`,
+				sql`${trackOfficialSongs.trackId} = t2.track_id AND ${trackOfficialSongs.officialSongId} < t2.official_song_id`,
+			)
+			.innerJoin(
+				sql`${officialSongs} AS os2`,
+				sql`t2.official_song_id = os2.id`,
+			)
+			.innerJoin(
+				sql`${officialWorks} AS ow2`,
+				sql`os2.official_work_id = ow2.id`,
+			)
+			.innerJoin(
+				twoSongTracksSubquery,
+				eq(trackOfficialSongs.trackId, twoSongTracksSubquery.trackId),
+			)
+			.where(and(ne(officialWorks.id, "0799"), sql`ow2.id != '0799'`));
+
+		const total = totalPairsResult[0]?.count ?? 0;
+
+		// ペアごとのカウントを取得してランキング
+		// 「その他」(0799)を両方の曲で除外
+		const rankingResult = await db
+			.select({
+				song1Id: sql<string>`MIN(${trackOfficialSongs.officialSongId}, t2.official_song_id)`,
+				song2Id: sql<string>`MAX(${trackOfficialSongs.officialSongId}, t2.official_song_id)`,
+				count: count(),
+			})
+			.from(trackOfficialSongs)
+			.innerJoin(
+				officialSongs,
+				eq(trackOfficialSongs.officialSongId, officialSongs.id),
+			)
+			.innerJoin(
+				officialWorks,
+				eq(officialSongs.officialWorkId, officialWorks.id),
+			)
+			.innerJoin(
+				sql`${trackOfficialSongs} AS t2`,
+				sql`${trackOfficialSongs.trackId} = t2.track_id AND ${trackOfficialSongs.officialSongId} < t2.official_song_id`,
+			)
+			.innerJoin(
+				sql`${officialSongs} AS os2`,
+				sql`t2.official_song_id = os2.id`,
+			)
+			.innerJoin(
+				sql`${officialWorks} AS ow2`,
+				sql`os2.official_work_id = ow2.id`,
+			)
+			.innerJoin(
+				twoSongTracksSubquery,
+				eq(trackOfficialSongs.trackId, twoSongTracksSubquery.trackId),
+			)
+			.where(and(ne(officialWorks.id, "0799"), sql`ow2.id != '0799'`))
+			.groupBy(
+				sql`MIN(${trackOfficialSongs.officialSongId}, t2.official_song_id)`,
+				sql`MAX(${trackOfficialSongs.officialSongId}, t2.official_song_id)`,
+			)
+			.orderBy(desc(count()))
+			.limit(limit)
+			.offset(offset);
+
+		// 原曲名を取得するために、必要なIDを収集
+		const songIds = new Set<string>();
+		for (const row of rankingResult) {
+			songIds.add(row.song1Id);
+			songIds.add(row.song2Id);
+		}
+
+		// 原曲名を一括取得
+		const songNames = new Map<string, string>();
+		if (songIds.size > 0) {
+			const songsResult = await db
+				.select({
+					id: officialSongs.id,
+					name: officialSongs.name,
+				})
+				.from(officialSongs)
+				.where(
+					sql`${officialSongs.id} IN (${sql.join(
+						[...songIds].map((id) => sql`${id}`),
+						sql`, `,
+					)})`,
+				);
+
+			for (const song of songsResult) {
+				songNames.set(song.id, song.name);
+			}
+		}
+
+		const response = {
+			data: rankingResult.map((row) => ({
+				song1Id: row.song1Id,
+				song1Name: songNames.get(row.song1Id) ?? "",
+				song2Id: row.song2Id,
+				song2Name: songNames.get(row.song2Id) ?? "",
+				count: row.count,
+			})),
+			total,
+			page,
+			limit,
+		};
+
+		setCache(cacheKey, response, CACHE_TTL.STATS_RANKINGS);
+		setCacheHeaders(c, { maxAge: CACHE_TTL.STATS_RANKINGS });
+
+		return c.json(response);
+	} catch (error) {
+		return handleDbError(c, error, "GET /api/public/stats/rankings/song-pairs");
+	}
+});
+
+/**
  * GET /api/public/stats/recent-updates
  * 最近の更新情報を取得
  */
