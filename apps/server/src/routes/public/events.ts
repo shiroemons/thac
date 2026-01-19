@@ -94,6 +94,13 @@ eventsRouter.get("/", async (c) => {
 			.from(releases)
 			.where(eq(releases.eventId, events.id));
 
+		// trackCountサブクエリ（N+1回避）
+		const trackCountSubquery = db
+			.select({ count: count() })
+			.from(tracks)
+			.innerJoin(releases, eq(tracks.releaseId, releases.id))
+			.where(eq(releases.eventId, events.id));
+
 		// ソート条件を構築
 		const sortColumn =
 			sortBy === "name"
@@ -118,6 +125,7 @@ eventsRouter.get("/", async (c) => {
 					totalDays: events.totalDays,
 					venue: events.venue,
 					releaseCount: sql<number>`(${releaseCountSubquery})`,
+					trackCount: sql<number>`(${trackCountSubquery})`,
 				})
 				.from(events)
 				.leftJoin(eventSeries, eq(events.eventSeriesId, eventSeries.id))
@@ -248,8 +256,18 @@ eventsRouter.get("/:id/releases", async (c) => {
 		const eventId = c.req.param("id");
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
+		const search = c.req.query("search");
+		const sortBy = c.req.query("sortBy") || "name";
+		const sortOrder = c.req.query("sortOrder") || "asc";
 
-		const cacheKey = cacheKeys.eventReleases({ eventId, page, limit });
+		const cacheKey = cacheKeys.eventReleases({
+			eventId,
+			page,
+			limit,
+			search,
+			sortBy,
+			sortOrder,
+		});
 
 		// キャッシュチェック
 		const cached = getCache<unknown>(cacheKey);
@@ -271,11 +289,53 @@ eventsRouter.get("/:id/releases", async (c) => {
 
 		const offset = (page - 1) * limit;
 
+		// 検索条件を構築
+		const conditions = [eq(releases.eventId, eventId)];
+
+		if (search) {
+			const searchPattern = `%${search}%`;
+			// サークル名でも検索できるようにサブクエリ
+			const circleSearchSubquery = db
+				.selectDistinct({ releaseId: releaseCircles.releaseId })
+				.from(releaseCircles)
+				.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
+				.where(like(circles.name, searchPattern));
+
+			const searchCondition = or(
+				like(releases.name, searchPattern),
+				like(releases.nameJa, searchPattern),
+				inArray(releases.id, circleSearchSubquery),
+			);
+			if (searchCondition) {
+				conditions.push(searchCondition);
+			}
+		}
+
+		const whereCondition = and(...conditions);
+
 		// トラック数サブクエリ
 		const trackCountSubquery = db
 			.select({ count: count() })
 			.from(tracks)
 			.where(eq(tracks.releaseId, releases.id));
+
+		// サークル名サブクエリ（最小の名前を取得）
+		const circleNameSubquery = db
+			.select({ minName: sql<string>`MIN(${circles.name})` })
+			.from(circles)
+			.innerJoin(releaseCircles, eq(circles.id, releaseCircles.circleId))
+			.where(eq(releaseCircles.releaseId, releases.id));
+
+		// ソートカラムの決定
+		const sortColumn =
+			sortBy === "circleName"
+				? sql<string>`(${circleNameSubquery})`
+				: sortBy === "trackCount"
+					? sql<number>`(${trackCountSubquery})`
+					: releases.name;
+
+		const orderByClause =
+			sortOrder === "desc" ? desc(sortColumn) : asc(sortColumn);
 
 		// Step 1: 作品一覧を取得
 		const [releasesData, totalResult] = await Promise.all([
@@ -289,14 +349,11 @@ eventsRouter.get("/:id/releases", async (c) => {
 					trackCount: sql<number>`(${trackCountSubquery})`,
 				})
 				.from(releases)
-				.where(eq(releases.eventId, eventId))
-				.orderBy(asc(releases.name))
+				.where(whereCondition)
+				.orderBy(orderByClause)
 				.limit(limit)
 				.offset(offset),
-			db
-				.select({ count: count() })
-				.from(releases)
-				.where(eq(releases.eventId, eventId)),
+			db.select({ count: count() }).from(releases).where(whereCondition),
 		]);
 
 		const total = totalResult[0]?.count ?? 0;

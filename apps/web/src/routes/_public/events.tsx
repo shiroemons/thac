@@ -1,5 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Calendar, ChevronDown, ChevronRight, Disc3 } from "lucide-react";
+import {
+	Calendar,
+	ChevronDown,
+	ChevronRight,
+	Disc3,
+	Music,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
 	EmptyState,
@@ -301,9 +307,15 @@ function EventsPage() {
 														</span>
 													)}
 												</div>
-												<div className="flex items-center gap-1 text-base-content/60 text-sm">
-													<Disc3 className="size-3.5" aria-hidden="true" />
-													{formatNumber(event.releaseCount)}作品
+												<div className="flex items-center gap-3 text-base-content/60 text-sm">
+													<span className="flex items-center gap-1">
+														<Disc3 className="size-3.5" aria-hidden="true" />
+														{formatNumber(event.releaseCount)}作品
+													</span>
+													<span className="flex items-center gap-1">
+														<Music className="size-3.5" aria-hidden="true" />
+														{formatNumber(event.trackCount)}曲
+													</span>
 												</div>
 											</div>
 										</div>
@@ -357,9 +369,15 @@ function EventsPage() {
 															{formatDateRange(event.startDate, event.endDate)}
 														</span>
 													</div>
-													<span className="flex items-center gap-1 text-base-content/70 text-sm">
-														<Disc3 className="size-4" aria-hidden="true" />
-														{formatNumber(event.releaseCount)}作品
+													<span className="flex items-center gap-3 text-base-content/70 text-sm">
+														<span className="flex items-center gap-1">
+															<Disc3 className="size-4" aria-hidden="true" />
+															{formatNumber(event.releaseCount)}作品
+														</span>
+														<span className="flex items-center gap-1">
+															<Music className="size-4" aria-hidden="true" />
+															{formatNumber(event.trackCount)}曲
+														</span>
 													</span>
 												</Link>
 											))}
@@ -449,12 +467,21 @@ function EventsPage() {
 																			)}
 																		</span>
 																	</div>
-																	<div className="flex items-center gap-1 text-base-content/60 text-sm">
-																		<Disc3
-																			className="size-3.5"
-																			aria-hidden="true"
-																		/>
-																		{formatNumber(event.releaseCount)}作品
+																	<div className="flex items-center gap-3 text-base-content/60 text-sm">
+																		<span className="flex items-center gap-1">
+																			<Disc3
+																				className="size-3.5"
+																				aria-hidden="true"
+																			/>
+																			{formatNumber(event.releaseCount)}作品
+																		</span>
+																		<span className="flex items-center gap-1">
+																			<Music
+																				className="size-3.5"
+																				aria-hidden="true"
+																			/>
+																			{formatNumber(event.trackCount)}曲
+																		</span>
 																	</div>
 																</div>
 															</div>
@@ -481,6 +508,7 @@ function EventsPage() {
 														<th>イベント名</th>
 														<th>開催日</th>
 														<th>作品数</th>
+														<th>トラック数</th>
 													</tr>
 												</thead>
 												<tbody>
@@ -522,6 +550,15 @@ function EventsPage() {
 																			aria-hidden="true"
 																		/>
 																		{formatNumber(event.releaseCount)}
+																	</span>
+																</td>
+																<td className="text-base-content/70">
+																	<span className="flex items-center gap-1">
+																		<Music
+																			className="size-4"
+																			aria-hidden="true"
+																		/>
+																		{formatNumber(event.trackCount)}
 																	</span>
 																</td>
 															</tr>
