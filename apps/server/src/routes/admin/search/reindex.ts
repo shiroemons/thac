@@ -75,7 +75,9 @@ async function reindexTracks(
 			message: `Indexing batch of ${batch.length} tracks...`,
 		});
 
-		await index.addDocuments(batch);
+		await index.addDocuments(batch, {
+			primaryKey: tracksIndexConfig.primaryKey,
+		});
 		totalIndexed += batch.length;
 	}
 
