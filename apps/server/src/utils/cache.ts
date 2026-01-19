@@ -275,4 +275,6 @@ export const cacheKeys = {
 		`public:stats:rankings:circles:page=${params.page}:limit=${params.limit}`,
 	artistsRanking: (params: { page: number; limit: number }) =>
 		`public:stats:rankings:artists:page=${params.page}:limit=${params.limit}`,
+	songPairsRanking: (params: { page: number; limit: number }) =>
+		`public:stats:rankings:song-pairs:page=${params.page}:limit=${params.limit}`,
 };

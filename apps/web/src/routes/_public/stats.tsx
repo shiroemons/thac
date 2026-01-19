@@ -5,6 +5,7 @@ import {
 	BarChart3,
 	Calendar,
 	CalendarRange,
+	Combine,
 	Crown,
 	Disc3,
 	ListMusic,
@@ -285,6 +286,33 @@ function RankingsSection() {
 						/>
 					))}
 				</div>
+			</section>
+
+			{/* Song pairs ranking - placeholder card linking to full ranking */}
+			<section className="glass-card overflow-hidden rounded-2xl lg:col-span-3">
+				<Link
+					to="/stats/song-pairs"
+					preload="intent"
+					className="group flex items-center justify-between p-5 transition-all duration-300 hover:bg-base-content/5"
+				>
+					<div className="flex items-center gap-3">
+						<div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500/10 to-purple-500/10 text-pink-500">
+							<Combine className="size-5" aria-hidden="true" />
+						</div>
+						<div>
+							<h2 className="font-bold">原曲2曲組み合わせランキング</h2>
+							<p className="text-base-content/60 text-sm">
+								2曲の原曲を組み合わせたアレンジの統計
+							</p>
+						</div>
+					</div>
+					<span className="flex items-center gap-1 text-primary text-sm transition-colors">
+						すべて見る
+						<span className="transition-transform group-hover:translate-x-0.5">
+							→
+						</span>
+					</span>
+				</Link>
 			</section>
 		</div>
 	);

@@ -486,6 +486,15 @@ export interface ArtistRankingItem {
 	count: number;
 }
 
+/** 原曲2曲組み合わせランキング項目 */
+export interface SongPairRankingItem {
+	song1Id: string;
+	song1Name: string;
+	song2Id: string;
+	song2Name: string;
+	count: number;
+}
+
 // =============================================================================
 // 統計API型定義
 // =============================================================================
@@ -624,6 +633,16 @@ export const publicApi = {
 			const query = sp.toString();
 			return publicFetch<PaginatedResponse<ArtistRankingItem>>(
 				`/api/public/stats/rankings/artists${query ? `?${query}` : ""}`,
+			);
+		},
+		/** 原曲2曲組み合わせランキング（ページネーション対応） */
+		songPairsRanking: (params?: { page?: number; limit?: number }) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<SongPairRankingItem>>(
+				`/api/public/stats/rankings/song-pairs${query ? `?${query}` : ""}`,
 			);
 		},
 	}),
