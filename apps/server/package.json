@@ -16,6 +16,7 @@
 	"dependencies": {
 		"@thac/auth": "workspace:*",
 		"@thac/db": "workspace:*",
+		"@thac/search": "workspace:*",
 		"@thac/utils": "workspace:*",
 		"better-auth": "catalog:",
 		"dotenv": "catalog:",

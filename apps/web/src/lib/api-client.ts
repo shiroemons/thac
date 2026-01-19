@@ -2491,3 +2491,205 @@ export const releaseJanCodesApi = {
 			},
 		),
 };
+
+// ===== Search (Meilisearch) =====
+
+export interface IndexStatus {
+	name: string;
+	numberOfDocuments: number;
+	isIndexing: boolean;
+	lastUpdate: string | null;
+}
+
+export interface SearchHealthResponse {
+	success: boolean;
+	status?: string;
+	version?: string;
+	error?: string;
+}
+
+export interface SearchStatusResponse {
+	success: boolean;
+	indexes: IndexStatus[];
+	error?: string;
+}
+
+export interface ReindexProgress {
+	index: string;
+	phase: "fetching" | "transforming" | "indexing" | "completed" | "error";
+	current: number;
+	total: number;
+	message: string;
+}
+
+export interface ReindexResult {
+	success: boolean;
+	message?: string;
+	error?: string;
+}
+
+export const searchApi = {
+	/** Check Meilisearch connection health */
+	health: () => fetchWithAuth<SearchHealthResponse>("/api/admin/search/health"),
+
+	/** Get all index statuses */
+	status: () => fetchWithAuth<SearchStatusResponse>("/api/admin/search/status"),
+
+	/** Get specific index status */
+	getIndexStatus: (indexName: string) =>
+		fetchWithAuth<{ success: boolean; status: IndexStatus }>(
+			`/api/admin/search/status/${indexName}`,
+		),
+
+	/** Reindex all indexes with SSE progress */
+	reindexWithProgress: async (
+		onProgress: (progress: ReindexProgress) => void,
+	): Promise<ReindexResult> => {
+		const res = await fetch(`${API_BASE_URL}/api/admin/search/reindex`, {
+			method: "POST",
+			credentials: "include",
+			headers: {
+				"Content-Type": "application/json",
+				Accept: "text/event-stream",
+			},
+		});
+
+		if (!res.ok) {
+			const data = await res.json().catch(() => ({}));
+			throw new Error(data.error || `HTTP ${res.status}`);
+		}
+
+		const reader = res.body?.getReader();
+		if (!reader) {
+			throw new Error("ストリーム読み込みに失敗しました");
+		}
+
+		const decoder = new TextDecoder();
+		let buffer = "";
+		let result: ReindexResult | null = null;
+
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+
+			buffer += decoder.decode(value, { stream: true });
+
+			const lines = buffer.split("\n");
+			buffer = lines.pop() || "";
+
+			let eventType = "";
+			let eventData = "";
+
+			for (const line of lines) {
+				if (line.startsWith("event:")) {
+					eventType = line.slice(6).trim();
+				} else if (line.startsWith("data:")) {
+					eventData = line.slice(5).trim();
+				} else if (line === "" && eventData) {
+					try {
+						const parsed = JSON.parse(eventData);
+						if (eventType === "progress") {
+							onProgress(parsed as ReindexProgress);
+						} else if (eventType === "result") {
+							result = parsed as ReindexResult;
+						} else if (eventType === "error") {
+							throw new Error(parsed.error || "Reindex error");
+						}
+					} catch (e) {
+						if (e instanceof SyntaxError) {
+							console.error("SSE parse error:", eventData);
+						} else {
+							throw e;
+						}
+					}
+					eventType = "";
+					eventData = "";
+				}
+			}
+		}
+
+		if (!result) {
+			throw new Error("再インデックス結果を取得できませんでした");
+		}
+
+		return result;
+	},
+
+	/** Reindex specific index with SSE progress */
+	reindexIndexWithProgress: async (
+		indexName: string,
+		onProgress: (progress: ReindexProgress) => void,
+	): Promise<ReindexResult> => {
+		const res = await fetch(
+			`${API_BASE_URL}/api/admin/search/reindex/${indexName}`,
+			{
+				method: "POST",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "text/event-stream",
+				},
+			},
+		);
+
+		if (!res.ok) {
+			const data = await res.json().catch(() => ({}));
+			throw new Error(data.error || `HTTP ${res.status}`);
+		}
+
+		const reader = res.body?.getReader();
+		if (!reader) {
+			throw new Error("ストリーム読み込みに失敗しました");
+		}
+
+		const decoder = new TextDecoder();
+		let buffer = "";
+		let result: ReindexResult | null = null;
+
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+
+			buffer += decoder.decode(value, { stream: true });
+
+			const lines = buffer.split("\n");
+			buffer = lines.pop() || "";
+
+			let eventType = "";
+			let eventData = "";
+
+			for (const line of lines) {
+				if (line.startsWith("event:")) {
+					eventType = line.slice(6).trim();
+				} else if (line.startsWith("data:")) {
+					eventData = line.slice(5).trim();
+				} else if (line === "" && eventData) {
+					try {
+						const parsed = JSON.parse(eventData);
+						if (eventType === "progress") {
+							onProgress(parsed as ReindexProgress);
+						} else if (eventType === "result") {
+							result = parsed as ReindexResult;
+						} else if (eventType === "error") {
+							throw new Error(parsed.error || "Reindex error");
+						}
+					} catch (e) {
+						if (e instanceof SyntaxError) {
+							console.error("SSE parse error:", eventData);
+						} else {
+							throw e;
+						}
+					}
+					eventType = "";
+					eventData = "";
+				}
+			}
+		}
+
+		if (!result) {
+			throw new Error("再インデックス結果を取得できませんでした");
+		}
+
+		return result;
+	},
+};

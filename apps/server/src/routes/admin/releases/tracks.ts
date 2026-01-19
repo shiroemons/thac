@@ -15,6 +15,7 @@ import {
 	tracks,
 	updateTrackSchema,
 } from "@thac/db";
+import { queueTrackDeletion, queueTrackIndexing } from "@thac/search";
 import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
@@ -281,6 +282,13 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 		// 作成
 		const result = await db.insert(tracks).values(insertData).returning();
 
+		// Search index update (non-blocking)
+		if (result[0]) {
+			queueTrackIndexing(result[0].id).catch((err) => {
+				console.error("[SearchHook] Track indexing failed:", err);
+			});
+		}
+
 		return c.json(result[0], 201);
 	} catch (error) {
 		return handleDbError(c, error, "POST /admin/releases/:releaseId/tracks");
@@ -411,6 +419,13 @@ tracksRouter.put("/:releaseId/tracks/:trackId", async (c) => {
 			.where(eq(tracks.id, trackId))
 			.returning();
 
+		// Search index update (non-blocking)
+		if (result[0]) {
+			queueTrackIndexing(result[0].id).catch((err) => {
+				console.error("[SearchHook] Track indexing failed:", err);
+			});
+		}
+
 		return c.json(result[0]);
 	} catch (error) {
 		return handleDbError(
@@ -440,6 +455,9 @@ tracksRouter.delete("/:releaseId/tracks/:trackId", async (c) => {
 
 		// 削除
 		await db.delete(tracks).where(eq(tracks.id, trackId));
+
+		// Search index deletion (non-blocking)
+		queueTrackDeletion(trackId);
 
 		return c.json({ success: true, id: trackId });
 	} catch (error) {

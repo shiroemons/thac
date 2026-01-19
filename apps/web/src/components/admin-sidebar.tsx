@@ -9,6 +9,8 @@ import {
 	LayoutDashboard,
 	MonitorSmartphone,
 	Music,
+	Search,
+	Settings,
 	UserCog,
 	UserRound,
 	UserRoundPen,
@@ -136,6 +138,17 @@ const navItems: NavEntry[] = [
 				to: "/admin/import-legacy",
 				label: "レガシーCSV",
 				icon: Import,
+			},
+		],
+	},
+	{
+		label: "システム",
+		icon: Settings,
+		items: [
+			{
+				to: "/admin/search",
+				label: "検索管理",
+				icon: Search,
 			},
 		],
 	},

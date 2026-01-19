@@ -30,6 +30,7 @@
       "dependencies": {
         "@thac/auth": "workspace:*",
         "@thac/db": "workspace:*",
+        "@thac/search": "workspace:*",
         "@thac/utils": "workspace:*",
         "better-auth": "catalog:",
         "dotenv": "catalog:",
@@ -133,6 +134,18 @@
       "devDependencies": {
         "@thac/config": "workspace:*",
         "drizzle-kit": "^0.31.8",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/search": {
+      "name": "@thac/search",
+      "dependencies": {
+        "@thac/db": "workspace:*",
+        "dotenv": "catalog:",
+        "meilisearch": "^0.49.0",
+      },
+      "devDependencies": {
+        "@thac/config": "workspace:*",
         "typescript": "catalog:",
       },
     },
@@ -678,6 +691,8 @@
 
     "@thac/db": ["@thac/db@workspace:packages/db"],
 
+    "@thac/search": ["@thac/search@workspace:packages/search"],
+
     "@thac/utils": ["@thac/utils@workspace:packages/utils"],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.1", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg=="],
@@ -1215,6 +1230,8 @@
     "markuplint": ["markuplint@4.14.0", "", { "dependencies": { "@markuplint/cli-utils": "4.4.13", "@markuplint/file-resolver": "4.9.17", "@markuplint/html-parser": "4.6.22", "@markuplint/html-spec": "4.16.1", "@markuplint/i18n": "4.7.0", "@markuplint/ml-ast": "4.4.10", "@markuplint/ml-config": "4.8.14", "@markuplint/ml-core": "4.13.2", "@markuplint/ml-spec": "4.10.1", "@markuplint/rules": "4.11.2", "@markuplint/shared": "4.4.12", "@types/debug": "4.1.12", "chokidar": "4.0.3", "debug": "4.4.3", "meow": "13.2.0", "os-locale": "6.0.2", "strict-event-emitter": "0.5.1", "strip-ansi": "7.1.2", "type-fest": "4.41.0" }, "bin": "./bin/markuplint.mjs" }, "sha512-UnO4fZS1mf0CXriC++f7eK2CHyYGqQHRgwpoTwJ+aoj7YWj5+3Nc5Xk/COcRrqQ5v1qDSQeNFBRKqLOJu16lLw=="],
 
     "mdn-data": ["mdn-data@2.12.2", "", {}, "sha512-IEn+pegP1aManZuckezWCO+XZQDplx1366JoVhTpMpBB1sPey/SbveZQUosKiKiGYjg1wH4pMlNgXbCiYgihQA=="],
+
+    "meilisearch": ["meilisearch@0.49.0", "", {}, "sha512-oMJ/e6Or6cz2+owcEKeB11p2OWiWW9NmssqOZC/KIwQB0sBGKLJ7RCpYzf+GhUIZIZ9FRYZ419ox3RGebVQX5g=="],
 
     "meow": ["meow@13.2.0", "", {}, "sha512-pxQJQzB6djGPXh08dacEloMFopsOqGVRKFPYvPOt9XDZ1HasbgDZA74CJGreSU4G3Ak7EFJGoiH2auq+yXISgA=="],
 
