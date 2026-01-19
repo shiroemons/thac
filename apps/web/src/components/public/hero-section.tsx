@@ -48,6 +48,11 @@ export function HeroSection({ stats }: HeroSectionProps) {
 		tracks: stats?.tracks ?? 0,
 		originalSongs: stats?.originalSongs ?? 0,
 		releases: stats?.releases ?? 0,
+		eventSeries: stats?.eventSeries ?? 0,
+		totalTracks: stats?.totalTracks ?? 0,
+		vocalists: stats?.vocalists ?? 0,
+		arrangers: stats?.arrangers ?? 0,
+		lyricists: stats?.lyricists ?? 0,
 	};
 
 	return (

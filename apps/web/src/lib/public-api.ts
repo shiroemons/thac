@@ -41,6 +41,11 @@ export interface PublicStats {
 	tracks: number;
 	originalSongs: number;
 	releases: number;
+	eventSeries: number;
+	totalTracks: number;
+	vocalists: number;
+	arrangers: number;
+	lyricists: number;
 }
 
 /** ランキング項目 */

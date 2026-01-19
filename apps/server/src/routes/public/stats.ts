@@ -8,6 +8,7 @@ import {
 	db,
 	desc,
 	eq,
+	eventSeries,
 	events,
 	isNotNull,
 	ne,
@@ -16,8 +17,10 @@ import {
 	releaseCircles,
 	releases,
 	sql,
+	trackCreditRoles,
 	trackCredits,
 	trackOfficialSongs,
+	tracks,
 } from "@thac/db";
 import { Hono } from "hono";
 import { handleDbError } from "../../utils/api-error";
@@ -45,6 +48,13 @@ statsRouter.get("/", async (c) => {
 			return c.json(cached);
 		}
 
+		// 名義単位のユニーク識別子を生成するSQL式
+		const artistAliasIdentifier = sql`CASE
+			WHEN ${trackCredits.artistAliasId} IS NULL
+			THEN ${trackCredits.artistId} || '__main__'
+			ELSE ${trackCredits.artistAliasId}
+		END`;
+
 		const [
 			eventsResult,
 			circlesResult,
@@ -52,6 +62,11 @@ statsRouter.get("/", async (c) => {
 			tracksResult,
 			originalSongsResult,
 			releasesResult,
+			eventSeriesResult,
+			totalTracksResult,
+			vocalistsResult,
+			arrangersResult,
+			lyricistsResult,
 		] = await Promise.all([
 			db.select({ count: count() }).from(events),
 			db.select({ count: count() }).from(circles),
@@ -81,6 +96,41 @@ statsRouter.get("/", async (c) => {
 				.select({ count: count() })
 				.from(officialSongs),
 			db.select({ count: count() }).from(releases),
+			// イベントシリーズ数を取得
+			db
+				.select({ count: count() })
+				.from(eventSeries),
+			// 全トラック数を取得
+			db
+				.select({ count: count() })
+				.from(tracks),
+			// ボーカリスト数を取得（名義単位でユニークカウント）
+			db
+				.select({ count: countDistinct(artistAliasIdentifier) })
+				.from(trackCredits)
+				.innerJoin(
+					trackCreditRoles,
+					eq(trackCredits.id, trackCreditRoles.trackCreditId),
+				)
+				.where(eq(trackCreditRoles.roleCode, "vocalist")),
+			// アレンジャー数を取得（名義単位でユニークカウント）
+			db
+				.select({ count: countDistinct(artistAliasIdentifier) })
+				.from(trackCredits)
+				.innerJoin(
+					trackCreditRoles,
+					eq(trackCredits.id, trackCreditRoles.trackCreditId),
+				)
+				.where(eq(trackCreditRoles.roleCode, "arranger")),
+			// 作詞者数を取得（名義単位でユニークカウント）
+			db
+				.select({ count: countDistinct(artistAliasIdentifier) })
+				.from(trackCredits)
+				.innerJoin(
+					trackCreditRoles,
+					eq(trackCredits.id, trackCreditRoles.trackCreditId),
+				)
+				.where(eq(trackCreditRoles.roleCode, "lyricist")),
 		]);
 
 		const response = {
@@ -90,6 +140,11 @@ statsRouter.get("/", async (c) => {
 			tracks: tracksResult[0]?.count ?? 0,
 			originalSongs: originalSongsResult[0]?.count ?? 0,
 			releases: releasesResult[0]?.count ?? 0,
+			eventSeries: eventSeriesResult[0]?.count ?? 0,
+			totalTracks: totalTracksResult[0]?.count ?? 0,
+			vocalists: vocalistsResult[0]?.count ?? 0,
+			arrangers: arrangersResult[0]?.count ?? 0,
+			lyricists: lyricistsResult[0]?.count ?? 0,
 		};
 
 		setCache(cacheKey, response, CACHE_TTL.PUBLIC_STATS);
