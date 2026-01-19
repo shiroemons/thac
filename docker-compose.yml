@@ -16,6 +16,8 @@ services:
     environment:
       - BETTER_AUTH_URL=http://localhost:3001
       - CORS_ORIGIN=http://localhost:3000
+      - MEILI_URL=http://meilisearch:7700
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-development_master_key}
     healthcheck:
       test: ["CMD", "bun", "-e", "await fetch('http://localhost:3001').catch(() => process.exit(1))"]
       interval: 30s
