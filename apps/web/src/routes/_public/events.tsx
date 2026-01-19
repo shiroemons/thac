@@ -7,6 +7,7 @@ import {
 	Music,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { SortIcon } from "@/components/admin/sort-icon";
 import {
 	EmptyState,
 	MobileCardItem,
@@ -14,6 +15,7 @@ import {
 	PublicBreadcrumb,
 } from "@/components/public";
 import { SearchInput } from "@/components/ui/search-input";
+import { useSortableTable } from "@/hooks/use-sortable-table";
 import { formatNumber } from "@/lib/format";
 import { createPageHead } from "@/lib/head";
 import { type PublicEventItem, publicApi } from "@/lib/public-api";
@@ -92,6 +94,34 @@ function EventsPage() {
 	const [expandedSeries, setExpandedSeriesState] = useState<Set<string>>(
 		new Set(),
 	);
+
+	const { sortBy, sortOrder, handleSort } = useSortableTable({
+		defaultSortBy: "edition",
+		defaultSortOrder: "desc",
+	});
+
+	const getSortedEvents = (events: PublicEventItem[]) => {
+		if (!sortBy) return events;
+
+		return [...events].sort((a, b) => {
+			let comparison = 0;
+			switch (sortBy) {
+				case "edition":
+					comparison = (a.edition ?? 0) - (b.edition ?? 0);
+					break;
+				case "startDate":
+					comparison = (a.startDate ?? "").localeCompare(b.startDate ?? "");
+					break;
+				case "releaseCount":
+					comparison = a.releaseCount - b.releaseCount;
+					break;
+				case "trackCount":
+					comparison = a.trackCount - b.trackCount;
+					break;
+			}
+			return sortOrder === "desc" ? -comparison : comparison;
+		});
+	};
 
 	useEffect(() => {
 		const savedView = localStorage.getItem(STORAGE_KEY_VIEW) as EventsViewMode;
@@ -334,7 +364,7 @@ function EventsPage() {
 									{/* シリーズヘッダー */}
 									<button
 										type="button"
-										className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-base-200/50"
+										className="flex w-full cursor-pointer items-center justify-between p-4 text-left transition-colors hover:bg-base-200/50"
 										onClick={() => toggleSeries(series.id)}
 										aria-expanded={expandedSeries.has(series.id)}
 									>
@@ -354,33 +384,121 @@ function EventsPage() {
 									{/* イベントリスト */}
 									{expandedSeries.has(series.id) && (
 										<div className="border-base-300 border-t">
-											{series.events.map((event) => (
-												<Link
-													key={event.id}
-													to="/events/$id"
-													params={{ id: event.id }}
-													preload="intent"
-													className="flex items-center justify-between border-base-200 border-b px-4 py-3 pl-12 last:border-b-0 hover:bg-base-200/30"
-												>
-													<div className="flex items-center gap-4">
-														<span className="font-medium">{event.name}</span>
-														<span className="flex items-center gap-1 text-base-content/60 text-sm">
-															<Calendar className="size-4" aria-hidden="true" />
-															{formatDateRange(event.startDate, event.endDate)}
-														</span>
-													</div>
-													<span className="flex items-center gap-3 text-base-content/70 text-sm">
-														<span className="flex items-center gap-1">
-															<Disc3 className="size-4" aria-hidden="true" />
-															{formatNumber(event.releaseCount)}作品
-														</span>
-														<span className="flex items-center gap-1">
-															<Music className="size-4" aria-hidden="true" />
-															{formatNumber(event.trackCount)}曲
-														</span>
-													</span>
-												</Link>
-											))}
+											<div className="overflow-x-auto">
+												<table className="table">
+													<thead>
+														<tr>
+															<th
+																scope="col"
+																className="cursor-pointer select-none"
+																onClick={() => handleSort("edition")}
+															>
+																<span className="inline-flex items-center gap-1">
+																	回次
+																	<SortIcon
+																		sortBy={sortBy}
+																		sortOrder={sortOrder}
+																		column="edition"
+																	/>
+																</span>
+															</th>
+															<th scope="col">イベント名</th>
+															<th
+																scope="col"
+																className="cursor-pointer select-none"
+																onClick={() => handleSort("startDate")}
+															>
+																<span className="inline-flex items-center gap-1">
+																	開催日
+																	<SortIcon
+																		sortBy={sortBy}
+																		sortOrder={sortOrder}
+																		column="startDate"
+																	/>
+																</span>
+															</th>
+															<th
+																scope="col"
+																className="cursor-pointer select-none"
+																onClick={() => handleSort("releaseCount")}
+															>
+																<span className="inline-flex items-center gap-1">
+																	作品数
+																	<SortIcon
+																		sortBy={sortBy}
+																		sortOrder={sortOrder}
+																		column="releaseCount"
+																	/>
+																</span>
+															</th>
+															<th
+																scope="col"
+																className="cursor-pointer select-none"
+																onClick={() => handleSort("trackCount")}
+															>
+																<span className="inline-flex items-center gap-1">
+																	曲数
+																	<SortIcon
+																		sortBy={sortBy}
+																		sortOrder={sortOrder}
+																		column="trackCount"
+																	/>
+																</span>
+															</th>
+														</tr>
+													</thead>
+													<tbody>
+														{getSortedEvents(series.events).map((event) => (
+															<tr
+																key={event.id}
+																className="cursor-pointer transition-colors hover:bg-base-200/50"
+																onClick={() =>
+																	navigate({
+																		to: "/events/$id",
+																		params: { id: event.id },
+																	})
+																}
+															>
+																<td>{event.edition ?? "-"}</td>
+																<td>
+																	<Link
+																		to="/events/$id"
+																		params={{ id: event.id }}
+																		className="cursor-pointer font-medium transition-colors hover:text-primary"
+																		onClick={(e) => e.stopPropagation()}
+																	>
+																		{event.name}
+																	</Link>
+																</td>
+																<td>
+																	{formatDateRange(
+																		event.startDate,
+																		event.endDate,
+																	)}
+																</td>
+																<td>
+																	<span className="flex items-center gap-1">
+																		<Disc3
+																			className="size-4"
+																			aria-hidden="true"
+																		/>
+																		{formatNumber(event.releaseCount)}
+																	</span>
+																</td>
+																<td>
+																	<span className="flex items-center gap-1">
+																		<Music
+																			className="size-4"
+																			aria-hidden="true"
+																		/>
+																		{formatNumber(event.trackCount)}
+																	</span>
+																</td>
+															</tr>
+														))}
+													</tbody>
+												</table>
+											</div>
 										</div>
 									)}
 								</div>
@@ -504,11 +622,11 @@ function EventsPage() {
 											<table className="table">
 												<thead>
 													<tr>
-														<th>月</th>
-														<th>イベント名</th>
-														<th>開催日</th>
-														<th>作品数</th>
-														<th>トラック数</th>
+														<th scope="col">月</th>
+														<th scope="col">イベント名</th>
+														<th scope="col">開催日</th>
+														<th scope="col">作品数</th>
+														<th scope="col">トラック数</th>
 													</tr>
 												</thead>
 												<tbody>
@@ -522,7 +640,13 @@ function EventsPage() {
 														return (
 															<tr
 																key={event.id}
-																className="hover:bg-base-200/50"
+																className="cursor-pointer transition-colors hover:bg-base-200/50"
+																onClick={() =>
+																	navigate({
+																		to: "/events/$id",
+																		params: { id: event.id },
+																	})
+																}
 															>
 																<td className="text-base-content/70">
 																	{month ? `${month}月` : "-"}
@@ -532,7 +656,8 @@ function EventsPage() {
 																		to="/events/$id"
 																		params={{ id: event.id }}
 																		preload="intent"
-																		className="font-medium hover:text-primary"
+																		className="cursor-pointer font-medium transition-colors hover:text-primary"
+																		onClick={(e) => e.stopPropagation()}
 																	>
 																		{event.name}
 																	</Link>
