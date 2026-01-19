@@ -32,6 +32,7 @@ const STORAGE_KEY_EXPANDED = "events-expanded-series";
 
 interface EventsSearchParams {
 	search?: string;
+	view?: EventsViewMode;
 }
 
 export const Route = createFileRoute("/_public/events")({
@@ -57,8 +58,10 @@ export const Route = createFileRoute("/_public/events")({
 	},
 	component: EventsPage,
 	validateSearch: (search: Record<string, unknown>): EventsSearchParams => {
+		const view = search.view;
 		return {
 			search: typeof search.search === "string" ? search.search : undefined,
+			view: view === "series" || view === "year" ? view : undefined,
 		};
 	},
 });
@@ -82,7 +85,7 @@ function getYear(dateStr: string | null): number | null {
 
 function EventsPage() {
 	const navigate = useNavigate();
-	const { search = "" } = Route.useSearch();
+	const { search = "", view: urlView } = Route.useSearch();
 	const { events, total } = Route.useLoaderData();
 
 	// 検索入力のローカルステート（IME対応）
@@ -124,8 +127,15 @@ function EventsPage() {
 	};
 
 	useEffect(() => {
-		const savedView = localStorage.getItem(STORAGE_KEY_VIEW) as EventsViewMode;
-		if (savedView) setViewModeState(savedView);
+		// URLパラメータを優先、なければlocalStorageから復元
+		if (urlView) {
+			setViewModeState(urlView);
+		} else {
+			const savedView = localStorage.getItem(
+				STORAGE_KEY_VIEW,
+			) as EventsViewMode;
+			if (savedView) setViewModeState(savedView);
+		}
 		const savedYear = localStorage.getItem(STORAGE_KEY_YEAR);
 		if (savedYear) setSelectedYearState(Number(savedYear));
 		const savedExpanded = localStorage.getItem(STORAGE_KEY_EXPANDED);
@@ -136,7 +146,7 @@ function EventsPage() {
 				// Keep default
 			}
 		}
-	}, []);
+	}, [urlView]);
 
 	// 初期選択年を設定
 	useEffect(() => {
@@ -155,6 +165,10 @@ function EventsPage() {
 	const setViewMode = (view: EventsViewMode) => {
 		setViewModeState(view);
 		localStorage.setItem(STORAGE_KEY_VIEW, view);
+		navigate({
+			to: "/events",
+			search: (prev) => ({ ...prev, view }),
+		});
 	};
 
 	const setSelectedYear = (year: number) => {

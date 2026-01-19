@@ -1,13 +1,19 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+	ArrowRight,
 	BarChart3,
 	Calendar,
+	CalendarRange,
 	Crown,
 	Disc3,
+	ListMusic,
 	type LucideIcon,
+	Mic2,
 	Music,
 	PenLine,
+	PenTool,
+	Sliders,
 	Sparkles,
 	TrendingUp,
 	Trophy,
@@ -77,6 +83,12 @@ function StatCard({
 						<TrendingUp className="size-3" aria-hidden="true" />
 						<span>+{trend}%</span>
 					</div>
+				)}
+				{href && (
+					<ArrowRight
+						className="size-5 text-base-content/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary"
+						aria-hidden="true"
+					/>
 				)}
 			</div>
 			<div>
@@ -358,14 +370,18 @@ function StatsPage() {
 	const { stats } = Route.useLoaderData();
 
 	// プロパティレベルでフォールバックを適用
-	const displayStats = {
-		events: stats?.events ?? 0,
-		circles: stats?.circles ?? 0,
-		artists: stats?.artists ?? 0,
-		tracks: stats?.tracks ?? 0,
-		originalSongs: stats?.originalSongs ?? 0,
-		releases: stats?.releases ?? 0,
-	};
+	const {
+		events = 0,
+		circles = 0,
+		artists = 0,
+		releases = 0,
+		tracks: arranges = 0,
+		eventSeries = 0,
+		totalTracks = 0,
+		vocalists = 0,
+		arrangers = 0,
+		lyricists = 0,
+	} = stats ?? {};
 
 	return (
 		<div className="space-y-8">
@@ -389,51 +405,102 @@ function StatsPage() {
 				</div>
 			</div>
 
-			{/* Stats cards */}
-			<section>
-				<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-					<StatCard
-						icon={Music}
-						count={displayStats.originalSongs}
-						label="原曲"
-						href="/original-songs"
-						color="text-secondary"
-					/>
-					<StatCard
-						icon={Calendar}
-						count={displayStats.events}
-						label="イベント"
-						href="/events"
-						color="text-info"
-					/>
-					<StatCard
-						icon={Users}
-						count={displayStats.circles}
-						label="サークル"
-						href="/circles"
-						color="text-primary"
-					/>
-					<StatCard
-						icon={UserRound}
-						count={displayStats.artists}
-						label="アーティスト"
-						href="/artists"
-						color="text-accent"
-					/>
-					<StatCard
-						icon={Disc3}
-						count={displayStats.releases}
-						label="作品"
-						color="text-warning"
-					/>
-					<StatCard
-						icon={Music}
-						count={displayStats.tracks}
-						label="アレンジ"
-						color="text-success"
-					/>
-				</div>
-			</section>
+			{/* Stats cards - Category sections */}
+			<div className="space-y-8">
+				{/* 楽曲データ */}
+				<section>
+					<h2 className="mb-3 font-medium text-base-content/60 text-sm">
+						楽曲データ
+					</h2>
+					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+						<StatCard
+							icon={Disc3}
+							count={releases}
+							label="作品"
+							color="text-warning"
+						/>
+						<StatCard
+							icon={ListMusic}
+							count={totalTracks}
+							label="トラック"
+							color="text-secondary"
+						/>
+						<StatCard
+							icon={Music}
+							count={arranges}
+							label="アレンジ"
+							color="text-success"
+						/>
+					</div>
+				</section>
+
+				{/* サークル・イベント */}
+				<section>
+					<h2 className="mb-3 font-medium text-base-content/60 text-sm">
+						サークル・イベント
+					</h2>
+					<div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+						<StatCard
+							icon={Users}
+							count={circles}
+							label="サークル"
+							href="/circles"
+							color="text-primary"
+						/>
+						<StatCard
+							icon={Calendar}
+							count={events}
+							label="イベント"
+							href="/events?view=year"
+							color="text-info"
+						/>
+						<StatCard
+							icon={CalendarRange}
+							count={eventSeries}
+							label="イベントシリーズ"
+							href="/events?view=series"
+							color="text-info"
+						/>
+					</div>
+				</section>
+
+				{/* アーティスト（役割別） */}
+				<section>
+					<h2 className="mb-3 font-medium text-base-content/60 text-sm">
+						アーティスト（役割別）
+					</h2>
+					<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+						<StatCard
+							icon={UserRound}
+							count={artists}
+							label="アーティスト"
+							href="/artists"
+							color="text-accent"
+						/>
+						<StatCard
+							icon={Mic2}
+							count={vocalists}
+							label="ボーカリスト"
+							href="/artists?role=vocalist"
+							color="text-error"
+						/>
+						<StatCard
+							icon={Sliders}
+							count={arrangers}
+							label="編曲者"
+							href="/artists?role=arranger"
+							color="text-purple-500"
+						/>
+						<StatCard
+							icon={PenTool}
+							count={lyricists}
+							label="作詞者"
+							href="/artists?role=lyricist"
+							color="text-orange-500"
+						/>
+					</div>
+				</section>
+			</div>
 
 			{/* Ranking sections with Suspense */}
 			<Suspense fallback={<RankingsSkeleton />}>
