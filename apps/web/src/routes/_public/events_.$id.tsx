@@ -1,7 +1,16 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Calendar, Disc3, Loader2, MapPin, Music, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+	ArrowDownAZ,
+	ArrowUpAZ,
+	Calendar,
+	Disc3,
+	Loader2,
+	MapPin,
+	Music,
+	Users,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
@@ -16,6 +25,7 @@ import {
 	WorkStatsSkeleton,
 } from "@/components/public";
 import { InfiniteScroll } from "@/components/ui/infinite-scroll";
+import { SearchInput } from "@/components/ui/search-input";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import {
 	type EventDetailTab,
@@ -30,8 +40,37 @@ import {
 	publicWorkStatsStackedQueryOptions,
 } from "@/lib/public-query-options";
 
+// ソート項目の型定義
+type ReleaseSortBy = "name" | "circleName" | "trackCount";
+type SortOrder = "asc" | "desc";
+
+// ソート項目のラベル
+const SORT_OPTIONS: { value: ReleaseSortBy; label: string }[] = [
+	{ value: "name", label: "タイトル" },
+	{ value: "circleName", label: "サークル名" },
+	{ value: "trackCount", label: "曲数" },
+];
+
+// ソート状態の解析関数
+function parseReleaseSortBy(value: unknown): ReleaseSortBy {
+	if (value === "circleName" || value === "trackCount") {
+		return value;
+	}
+	return "name";
+}
+
+function parseSortOrder(value: unknown): SortOrder {
+	if (value === "desc") {
+		return "desc";
+	}
+	return "asc";
+}
+
 interface EventDetailSearchParams {
 	tab?: EventDetailTab;
+	search?: string;
+	sortBy?: ReleaseSortBy;
+	sortOrder?: SortOrder;
 }
 
 export const Route = createFileRoute("/_public/events_/$id")({
@@ -39,6 +78,9 @@ export const Route = createFileRoute("/_public/events_/$id")({
 		search: Record<string, unknown>,
 	): EventDetailSearchParams => ({
 		tab: parseEventDetailTab(search.tab),
+		search: typeof search.search === "string" ? search.search : undefined,
+		sortBy: parseReleaseSortBy(search.sortBy),
+		sortOrder: parseSortOrder(search.sortOrder),
 	}),
 	loader: async ({ params, context }) => {
 		try {
@@ -87,9 +129,18 @@ const EVENT_TAB_CONFIGS: {
 function EventDetailPage() {
 	const { id } = Route.useParams();
 	const { event } = Route.useLoaderData();
-	const { tab: activeTab = "releases" } = Route.useSearch();
+	const {
+		tab: activeTab = "releases",
+		search = "",
+		sortBy = "name",
+		sortOrder = "asc",
+	} = Route.useSearch();
 	const navigate = useNavigate();
 	const [viewMode, setViewModeState] = useState<ViewMode>("list");
+
+	// 検索入力のローカルステート（IME対応）
+	const [searchInput, setSearchInput] = useState(search);
+	const isComposingRef = useRef(false);
 
 	// コンテンツ表示用のタブ状態（アニメーション完了後に更新）
 	const [contentTab, setContentTab] = useState(activeTab);
@@ -116,6 +167,9 @@ function EventDetailPage() {
 		...publicEventReleasesInfiniteQueryOptions({
 			eventId: id,
 			limit: PAGE_SIZE,
+			search: search || undefined,
+			sortBy,
+			sortOrder,
 		}),
 		enabled: activeTab === "releases" && !!event,
 	});
@@ -137,10 +191,70 @@ function EventDetailPage() {
 
 	// タブ切り替え
 	const handleTabChange = (tab: EventDetailTab) => {
+		// タブ切り替え時は検索をリセット
+		setSearchInput("");
 		navigate({
 			to: "/events/$id",
 			params: { id },
 			search: { tab },
+		});
+	};
+
+	// 検索ハンドラー
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value;
+		setSearchInput(value);
+		// IME変換中は検索を実行しない
+		if (isComposingRef.current) return;
+		navigate({
+			to: "/events/$id",
+			params: { id },
+			search: { tab: activeTab, search: value || undefined, sortBy, sortOrder },
+		});
+	};
+
+	const handleCompositionStart = () => {
+		isComposingRef.current = true;
+	};
+
+	const handleCompositionEnd = (
+		e: React.CompositionEvent<HTMLInputElement>,
+	) => {
+		isComposingRef.current = false;
+		const value = e.currentTarget.value;
+		navigate({
+			to: "/events/$id",
+			params: { id },
+			search: { tab: activeTab, search: value || undefined, sortBy, sortOrder },
+		});
+	};
+
+	// ソートハンドラー
+	const handleSortByChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		const newSortBy = e.target.value as ReleaseSortBy;
+		navigate({
+			to: "/events/$id",
+			params: { id },
+			search: {
+				tab: activeTab,
+				search: search || undefined,
+				sortBy: newSortBy,
+				sortOrder,
+			},
+		});
+	};
+
+	const handleSortOrderToggle = () => {
+		const newSortOrder: SortOrder = sortOrder === "asc" ? "desc" : "asc";
+		navigate({
+			to: "/events/$id",
+			params: { id },
+			search: {
+				tab: activeTab,
+				search: search || undefined,
+				sortBy,
+				sortOrder: newSortOrder,
+			},
 		});
 	};
 
@@ -271,6 +385,48 @@ function EventDetailPage() {
 				)}
 			</div>
 
+			{/* 検索・ソートコントロール */}
+			{contentTab === "releases" && (
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+					<SearchInput
+						value={searchInput}
+						onChange={handleSearchChange}
+						onCompositionStart={handleCompositionStart}
+						onCompositionEnd={handleCompositionEnd}
+						placeholder="作品名・サークル名で検索..."
+						size="sm"
+						containerClassName="max-w-md"
+					/>
+					<div className="flex items-center gap-2">
+						<select
+							value={sortBy}
+							onChange={handleSortByChange}
+							className="select select-bordered select-sm"
+							aria-label="並び替え項目"
+						>
+							{SORT_OPTIONS.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
+						</select>
+						<button
+							type="button"
+							onClick={handleSortOrderToggle}
+							className="btn btn-square btn-outline btn-sm"
+							aria-label={sortOrder === "asc" ? "降順に切替" : "昇順に切替"}
+							title={sortOrder === "asc" ? "降順に切替" : "昇順に切替"}
+						>
+							{sortOrder === "asc" ? (
+								<ArrowUpAZ className="size-4" />
+							) : (
+								<ArrowDownAZ className="size-4" />
+							)}
+						</button>
+					</div>
+				</div>
+			)}
+
 			{/* 作品一覧 */}
 			{contentTab === "releases" && (
 				<>
@@ -279,7 +435,13 @@ function EventDetailPage() {
 							<Loader2 className="size-8 animate-spin text-primary" />
 						</div>
 					) : releases.length === 0 ? (
-						<EmptyState type="empty" title="頒布物がありません" />
+						<EmptyState
+							type={search ? "filter" : "empty"}
+							title={search ? "該当する作品がありません" : "頒布物がありません"}
+							description={
+								search ? "検索条件を変更してお試しください" : undefined
+							}
+						/>
 					) : viewMode === "grid" ? (
 						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 							{releases.map((release) => (

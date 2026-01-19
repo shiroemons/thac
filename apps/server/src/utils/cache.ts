@@ -242,8 +242,15 @@ export const cacheKeys = {
 
 	eventDetail: (eventId: string) => `public:events:${eventId}`,
 
-	eventReleases: (params: { eventId: string; page: number; limit: number }) =>
-		`public:events:${params.eventId}:releases:page=${params.page}:limit=${params.limit}`,
+	eventReleases: (params: {
+		eventId: string;
+		page: number;
+		limit: number;
+		search?: string;
+		sortBy?: string;
+		sortOrder?: string;
+	}) =>
+		`public:events:${params.eventId}:releases:page=${params.page}:limit=${params.limit}:search=${params.search || ""}:sortBy=${params.sortBy || ""}:sortOrder=${params.sortOrder || ""}`,
 
 	eventStats: (params: {
 		eventId: string;
