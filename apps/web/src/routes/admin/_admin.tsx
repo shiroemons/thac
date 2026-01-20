@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AdminErrorBoundary } from "@/components/admin-error-boundary";
 import { AdminLayout } from "@/components/admin-layout";
+import { AdminNotFound } from "@/components/admin-not-found";
 import ForbiddenPage from "@/components/forbidden-page";
 import { getAdminUser } from "@/functions/get-admin-user";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
@@ -47,6 +48,7 @@ export const Route = createFileRoute("/admin/_admin")({
 	},
 	component: AdminLayoutWrapper,
 	errorComponent: AdminErrorBoundary,
+	notFoundComponent: AdminNotFound,
 });
 
 function AdminLayoutWrapper() {

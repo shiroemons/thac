@@ -45,6 +45,7 @@ export {
 	type MobileCardListProps,
 } from "./mobile-card-list";
 export { NavigationSection } from "./navigation-section";
+export { PublicNotFound } from "./not-found";
 export {
 	calculateTotalPages,
 	DEFAULT_PAGE_SIZE,
