@@ -13,6 +13,7 @@ import { importRouter } from "./import";
 import { masterRouter } from "./master";
 import { officialRouter } from "./official";
 import { releasesAdminRouter } from "./releases";
+import { searchRouter } from "./search";
 import { statsRouter } from "./stats";
 import { tracksAdminRouter } from "./tracks";
 
@@ -59,5 +60,8 @@ adminRouter.route("/import", importRouter);
 
 // エクスポートルート
 adminRouter.route("/export", exportRouter);
+
+// 検索管理ルート
+adminRouter.route("/search", searchRouter);
 
 export { adminRouter };
