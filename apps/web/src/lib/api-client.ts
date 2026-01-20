@@ -2507,6 +2507,9 @@ export interface IndexSettings {
 		minWordSizeForTypos: { oneTypo: number; twoTypos: number };
 	} | null;
 	displayedAttributes: string[] | null;
+	stopWords?: string[];
+	synonyms?: Record<string, string[]>;
+	rankingRules?: string[];
 }
 
 export interface SettingsResponse {

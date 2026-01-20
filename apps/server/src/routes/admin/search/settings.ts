@@ -35,6 +35,9 @@ settingsRouter.get("/:index", async (c) => {
 				localizedAttributes: settings.localizedAttributes,
 				typoTolerance: settings.typoTolerance,
 				displayedAttributes: settings.displayedAttributes,
+				stopWords: settings.stopWords,
+				synonyms: settings.synonyms,
+				rankingRules: settings.rankingRules,
 			},
 		});
 	} catch (error) {
@@ -85,6 +88,15 @@ settingsRouter.put("/:index", async (c) => {
 		}
 		if (body.typoTolerance !== undefined) {
 			updatePayload.typoTolerance = body.typoTolerance;
+		}
+		if (body.stopWords !== undefined) {
+			updatePayload.stopWords = body.stopWords;
+		}
+		if (body.synonyms !== undefined) {
+			updatePayload.synonyms = body.synonyms;
+		}
+		if (body.rankingRules !== undefined) {
+			updatePayload.rankingRules = body.rankingRules;
 		}
 
 		if (Object.keys(updatePayload).length === 0) {
