@@ -3,23 +3,55 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	AlertCircle,
 	CheckCircle,
+	ChevronDown,
 	Database,
 	Home,
 	Loader2,
+	Plus,
 	RefreshCw,
 	Save,
 	Search,
 	Server,
 	Settings,
+	X,
 	XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	type IndexStatus,
 	type ReindexProgress,
 	searchApi,
 } from "@/lib/api-client";
 import { createPageHead } from "@/lib/head";
+
+// ===== Available Attributes Definition =====
+
+/**
+ * TrackSearchDocumentの全フィールドを定義
+ * packages/search/src/types.ts の TrackSearchDocument に基づく
+ */
+const AVAILABLE_ATTRIBUTES = [
+	{ value: "id", label: "ID" },
+	{ value: "name", label: "曲名" },
+	{ value: "nameJa", label: "曲名（日本語）" },
+	{ value: "nameEn", label: "曲名（英語）" },
+	{ value: "releaseId", label: "リリースID" },
+	{ value: "releaseName", label: "リリース名" },
+	{ value: "releaseDate", label: "リリース日" },
+	{ value: "releaseYear", label: "リリース年" },
+	{ value: "trackNumber", label: "トラック番号" },
+	{ value: "discNumber", label: "ディスク番号" },
+	{ value: "eventName", label: "イベント名" },
+	{ value: "circleNames", label: "サークル名" },
+	{ value: "vocalists", label: "ボーカリスト" },
+	{ value: "arrangers", label: "編曲者" },
+	{ value: "lyricists", label: "作詞者" },
+	{ value: "composers", label: "作曲者" },
+	{ value: "originalSongs", label: "原曲" },
+	{ value: "originalWorkNames", label: "原作名" },
+	{ value: "createdAt", label: "作成日時" },
+	{ value: "updatedAt", label: "更新日時" },
+] as const;
 
 export const Route = createFileRoute("/admin/_admin/search")({
 	head: () => createPageHead("検索管理"),
@@ -328,6 +360,137 @@ function SearchManagementPage() {
 	);
 }
 
+// ===== Attribute Selector Component =====
+
+interface AttributeSelectorProps {
+	label: string;
+	englishLabel: string;
+	description: string;
+	selectedAttributes: string[];
+	onAdd: (attr: string) => void;
+	onRemove: (attr: string) => void;
+	badgeColor: "badge-primary" | "badge-secondary" | "badge-accent";
+}
+
+function AttributeSelector({
+	label,
+	englishLabel,
+	description,
+	selectedAttributes,
+	onAdd,
+	onRemove,
+	badgeColor,
+}: AttributeSelectorProps) {
+	const [isOpen, setIsOpen] = useState(false);
+	const dropdownRef = useRef<HTMLDivElement>(null);
+
+	// Filter out already selected attributes
+	const availableToAdd = AVAILABLE_ATTRIBUTES.filter(
+		(attr) => !selectedAttributes.includes(attr.value),
+	);
+
+	// Get label for attribute value
+	const getLabel = (value: string) => {
+		const attr = AVAILABLE_ATTRIBUTES.find((a) => a.value === value);
+		return attr ? attr.label : value;
+	};
+
+	// Close dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (
+				dropdownRef.current &&
+				!dropdownRef.current.contains(event.target as Node)
+			) {
+				setIsOpen(false);
+			}
+		};
+
+		if (isOpen) {
+			document.addEventListener("mousedown", handleClickOutside);
+		}
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, [isOpen]);
+
+	return (
+		<div className="card border border-base-300 bg-base-100">
+			<div className="card-body p-4">
+				<div className="flex items-center gap-2">
+					<h4 className="font-semibold text-sm">{label}</h4>
+					<span className="badge badge-outline badge-xs">{englishLabel}</span>
+				</div>
+				<p className="text-base-content/70 text-xs">{description}</p>
+
+				{/* Selected attributes as badges */}
+				<div className="flex flex-wrap items-center gap-2">
+					{selectedAttributes.length > 0 ? (
+						selectedAttributes.map((attr) => (
+							<span
+								key={attr}
+								className={`badge ${badgeColor} badge-sm gap-1 pr-1`}
+							>
+								{getLabel(attr)}
+								<button
+									type="button"
+									className="btn btn-ghost btn-circle btn-xs hover:bg-base-content/20"
+									onClick={() => onRemove(attr)}
+									aria-label={`${getLabel(attr)}を削除`}
+								>
+									<X className="h-3 w-3" />
+								</button>
+							</span>
+						))
+					) : (
+						<span className="text-base-content/50 text-xs">
+							属性が選択されていません
+						</span>
+					)}
+
+					{/* Add attribute dropdown */}
+					{availableToAdd.length > 0 && (
+						<div className="dropdown dropdown-end" ref={dropdownRef}>
+							<button
+								type="button"
+								className="btn btn-ghost btn-xs gap-1"
+								onClick={() => setIsOpen(!isOpen)}
+							>
+								<Plus className="h-3 w-3" />
+								追加
+								<ChevronDown
+									className={`h-3 w-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
+								/>
+							</button>
+							{isOpen && (
+								<ul className="menu dropdown-content z-[1] max-h-60 w-52 overflow-y-auto rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+									{availableToAdd.map((attr) => (
+										<li key={attr.value}>
+											<button
+												type="button"
+												className="text-sm"
+												onClick={() => {
+													onAdd(attr.value);
+													setIsOpen(false);
+												}}
+											>
+												<span className="font-medium">{attr.label}</span>
+												<span className="text-base-content/50 text-xs">
+													{attr.value}
+												</span>
+											</button>
+										</li>
+									))}
+								</ul>
+							)}
+						</div>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+}
+
 // ===== Settings Modal Component =====
 
 interface IndexSettingsModalProps {
@@ -393,15 +556,21 @@ function IndexSettingsModal({
 		},
 	});
 
-	// Handle attribute changes
-	const handleArrayChange = useCallback(
+	// Handle attribute add
+	const handleAddAttribute = useCallback(
 		(setter: React.Dispatch<React.SetStateAction<string[]>>) =>
-			(value: string) => {
-				const attrs = value
-					.split(",")
-					.map((s) => s.trim())
-					.filter(Boolean);
-				setter(attrs);
+			(attr: string) => {
+				setter((prev) => [...prev, attr]);
+				setHasChanges(true);
+			},
+		[],
+	);
+
+	// Handle attribute remove
+	const handleRemoveAttribute = useCallback(
+		(setter: React.Dispatch<React.SetStateAction<string[]>>) =>
+			(attr: string) => {
+				setter((prev) => prev.filter((a) => a !== attr));
 				setHasChanges(true);
 			},
 		[],
@@ -450,106 +619,37 @@ function IndexSettingsModal({
 				{data?.success && data.settings && (
 					<div className="mt-4 space-y-4">
 						{/* Searchable Attributes */}
-						<div className="card border border-base-300 bg-base-100">
-							<div className="card-body p-4">
-								<div className="flex items-center gap-2">
-									<h4 className="font-semibold text-sm">検索対象属性</h4>
-									<span className="badge badge-outline badge-xs">
-										Searchable Attributes
-									</span>
-								</div>
-								<p className="text-base-content/70 text-xs">
-									キーワード検索時に対象となるフィールドを指定します。ユーザーが検索したキーワードは、ここで指定された属性から検索されます。
-								</p>
-								{searchableAttrs.length > 0 && (
-									<div className="flex flex-wrap gap-1">
-										{searchableAttrs.map((attr) => (
-											<span key={attr} className="badge badge-primary badge-sm">
-												{attr}
-											</span>
-										))}
-									</div>
-								)}
-								<input
-									type="text"
-									className="input input-bordered input-sm w-full"
-									value={searchableAttrs.join(", ")}
-									onChange={(e) =>
-										handleArrayChange(setSearchableAttrs)(e.target.value)
-									}
-									placeholder="name, nameJa, nameEn, ..."
-								/>
-							</div>
-						</div>
+						<AttributeSelector
+							label="検索対象属性"
+							englishLabel="Searchable Attributes"
+							description="キーワード検索時に対象となるフィールドを指定します。ユーザーが検索したキーワードは、ここで指定された属性から検索されます。"
+							selectedAttributes={searchableAttrs}
+							onAdd={handleAddAttribute(setSearchableAttrs)}
+							onRemove={handleRemoveAttribute(setSearchableAttrs)}
+							badgeColor="badge-primary"
+						/>
 
 						{/* Filterable Attributes */}
-						<div className="card border border-base-300 bg-base-100">
-							<div className="card-body p-4">
-								<div className="flex items-center gap-2">
-									<h4 className="font-semibold text-sm">フィルター属性</h4>
-									<span className="badge badge-outline badge-xs">
-										Filterable Attributes
-									</span>
-								</div>
-								<p className="text-base-content/70 text-xs">
-									検索結果を絞り込むためのフィルターとして使用可能なフィールドを指定します。例:「2024年のみ」「特定イベントのみ」など。
-								</p>
-								{filterableAttrs.length > 0 && (
-									<div className="flex flex-wrap gap-1">
-										{filterableAttrs.map((attr) => (
-											<span
-												key={attr}
-												className="badge badge-secondary badge-sm"
-											>
-												{attr}
-											</span>
-										))}
-									</div>
-								)}
-								<input
-									type="text"
-									className="input input-bordered input-sm w-full"
-									value={filterableAttrs.join(", ")}
-									onChange={(e) =>
-										handleArrayChange(setFilterableAttrs)(e.target.value)
-									}
-									placeholder="releaseYear, eventName, ..."
-								/>
-							</div>
-						</div>
+						<AttributeSelector
+							label="フィルター属性"
+							englishLabel="Filterable Attributes"
+							description="検索結果を絞り込むためのフィルターとして使用可能なフィールドを指定します。例:「2024年のみ」「特定イベントのみ」など。"
+							selectedAttributes={filterableAttrs}
+							onAdd={handleAddAttribute(setFilterableAttrs)}
+							onRemove={handleRemoveAttribute(setFilterableAttrs)}
+							badgeColor="badge-secondary"
+						/>
 
 						{/* Sortable Attributes */}
-						<div className="card border border-base-300 bg-base-100">
-							<div className="card-body p-4">
-								<div className="flex items-center gap-2">
-									<h4 className="font-semibold text-sm">ソート属性</h4>
-									<span className="badge badge-outline badge-xs">
-										Sortable Attributes
-									</span>
-								</div>
-								<p className="text-base-content/70 text-xs">
-									検索結果の並び替えに使用可能なフィールドを指定します。例:「新しい順」「名前順」など。
-								</p>
-								{sortableAttrs.length > 0 && (
-									<div className="flex flex-wrap gap-1">
-										{sortableAttrs.map((attr) => (
-											<span key={attr} className="badge badge-accent badge-sm">
-												{attr}
-											</span>
-										))}
-									</div>
-								)}
-								<input
-									type="text"
-									className="input input-bordered input-sm w-full"
-									value={sortableAttrs.join(", ")}
-									onChange={(e) =>
-										handleArrayChange(setSortableAttrs)(e.target.value)
-									}
-									placeholder="releaseDate, name, ..."
-								/>
-							</div>
-						</div>
+						<AttributeSelector
+							label="ソート属性"
+							englishLabel="Sortable Attributes"
+							description="検索結果の並び替えに使用可能なフィールドを指定します。例:「新しい順」「名前順」など。"
+							selectedAttributes={sortableAttrs}
+							onAdd={handleAddAttribute(setSortableAttrs)}
+							onRemove={handleRemoveAttribute(setSortableAttrs)}
+							badgeColor="badge-accent"
+						/>
 
 						{/* Read-only settings */}
 						<div className="card border border-base-300 bg-base-100">
