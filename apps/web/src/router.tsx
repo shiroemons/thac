@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { GlobalErrorComponent } from "./components/error-boundary";
+import { GlobalNotFound } from "./components/global-not-found";
 import Loader from "./components/loader";
 import { routeTree } from "./routeTree.gen";
 
@@ -44,7 +45,7 @@ export const getRouter = () => {
 			queryClient,
 		},
 		defaultPendingComponent: () => <Loader />,
-		defaultNotFoundComponent: () => <div>Not Found</div>,
+		defaultNotFoundComponent: GlobalNotFound,
 		defaultErrorComponent: GlobalErrorComponent,
 		Wrap: ({ children }) => <>{children}</>,
 	});
