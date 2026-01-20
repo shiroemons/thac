@@ -139,7 +139,15 @@ function IndexSettingsPage() {
 					<button
 						type="button"
 						className="btn btn-ghost btn-sm"
-						onClick={() => resetMutation.mutate()}
+						onClick={() => {
+							if (
+								window.confirm(
+									"インデックス設定をデフォルトにリセットします。この操作は取り消せません。続行しますか？",
+								)
+							) {
+								resetMutation.mutate();
+							}
+						}}
 						disabled={resetMutation.isPending}
 					>
 						{resetMutation.isPending ? (
@@ -184,10 +192,24 @@ function IndexSettingsPage() {
 				{/* Searchable Attributes */}
 				<div className="card border border-base-300 bg-base-100">
 					<div className="card-body">
-						<h2 className="card-title text-base">Searchable Attributes</h2>
+						<div className="flex items-center gap-2">
+							<h2 className="card-title text-base">検索対象属性</h2>
+							<span className="badge badge-outline badge-sm">
+								Searchable Attributes
+							</span>
+						</div>
 						<p className="text-base-content/70 text-sm">
-							検索対象となる属性（カンマ区切り）
+							キーワード検索時に対象となるフィールドを指定します。ユーザーが検索したキーワードは、ここで指定された属性から検索されます。
 						</p>
+						{searchableAttrs.length > 0 && (
+							<div className="flex flex-wrap gap-1">
+								{searchableAttrs.map((attr) => (
+									<span key={attr} className="badge badge-primary badge-sm">
+										{attr}
+									</span>
+								))}
+							</div>
+						)}
 						<input
 							type="text"
 							className="input input-bordered w-full"
@@ -203,10 +225,24 @@ function IndexSettingsPage() {
 				{/* Filterable Attributes */}
 				<div className="card border border-base-300 bg-base-100">
 					<div className="card-body">
-						<h2 className="card-title text-base">Filterable Attributes</h2>
+						<div className="flex items-center gap-2">
+							<h2 className="card-title text-base">フィルター属性</h2>
+							<span className="badge badge-outline badge-sm">
+								Filterable Attributes
+							</span>
+						</div>
 						<p className="text-base-content/70 text-sm">
-							フィルタリング可能な属性（カンマ区切り）
+							検索結果を絞り込むためのフィルターとして使用可能なフィールドを指定します。例:「2024年のみ」「特定イベントのみ」など。
 						</p>
+						{filterableAttrs.length > 0 && (
+							<div className="flex flex-wrap gap-1">
+								{filterableAttrs.map((attr) => (
+									<span key={attr} className="badge badge-secondary badge-sm">
+										{attr}
+									</span>
+								))}
+							</div>
+						)}
 						<input
 							type="text"
 							className="input input-bordered w-full"
@@ -222,10 +258,24 @@ function IndexSettingsPage() {
 				{/* Sortable Attributes */}
 				<div className="card border border-base-300 bg-base-100">
 					<div className="card-body">
-						<h2 className="card-title text-base">Sortable Attributes</h2>
+						<div className="flex items-center gap-2">
+							<h2 className="card-title text-base">ソート属性</h2>
+							<span className="badge badge-outline badge-sm">
+								Sortable Attributes
+							</span>
+						</div>
 						<p className="text-base-content/70 text-sm">
-							ソート可能な属性（カンマ区切り）
+							検索結果の並び替えに使用可能なフィールドを指定します。例:「新しい順」「名前順」など。
 						</p>
+						{sortableAttrs.length > 0 && (
+							<div className="flex flex-wrap gap-1">
+								{sortableAttrs.map((attr) => (
+									<span key={attr} className="badge badge-accent badge-sm">
+										{attr}
+									</span>
+								))}
+							</div>
+						)}
 						<input
 							type="text"
 							className="input input-bordered w-full"
@@ -241,7 +291,12 @@ function IndexSettingsPage() {
 				{/* Read-only settings */}
 				<div className="card border border-base-300 bg-base-100">
 					<div className="card-body">
-						<h2 className="card-title text-base">Other Settings (Read-only)</h2>
+						<h2 className="card-title text-base">
+							その他の設定（読み取り専用）
+						</h2>
+						<p className="text-base-content/70 text-sm">
+							これらの設定はコードで定義されており、管理画面からは変更できません。
+						</p>
 						<div className="overflow-x-auto">
 							<pre className="rounded-lg bg-base-200 p-4 text-sm">
 								{JSON.stringify(

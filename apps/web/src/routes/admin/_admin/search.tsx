@@ -7,12 +7,13 @@ import {
 	Home,
 	Loader2,
 	RefreshCw,
+	Save,
 	Search,
 	Server,
 	Settings,
 	XCircle,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	type IndexStatus,
 	type ReindexProgress,
@@ -40,6 +41,9 @@ function SearchManagementPage() {
 	const [reindexingTarget, setReindexingTarget] = useState<string | null>(null);
 	const [reindexProgress, setReindexProgress] =
 		useState<ReindexProgress | null>(null);
+	const [settingsModalIndex, setSettingsModalIndex] = useState<string | null>(
+		null,
+	);
 
 	// Health check query
 	const healthQuery = useQuery({
@@ -297,6 +301,7 @@ function SearchManagementPage() {
 											isReindexing={reindexingTarget === index.name}
 											isDisabled={isReindexing || !isHealthy}
 											onReindex={() => reindexIndexMutation.mutate(index.name)}
+											onOpenSettings={() => setSettingsModalIndex(index.name)}
 										/>
 									))}
 								</tbody>
@@ -310,15 +315,327 @@ function SearchManagementPage() {
 					)}
 				</div>
 			</div>
+
+			{/* Settings Modal */}
+			{settingsModalIndex && (
+				<IndexSettingsModal
+					indexName={settingsModalIndex}
+					isOpen={true}
+					onClose={() => setSettingsModalIndex(null)}
+				/>
+			)}
 		</div>
 	);
 }
+
+// ===== Settings Modal Component =====
+
+interface IndexSettingsModalProps {
+	indexName: string;
+	isOpen: boolean;
+	onClose: () => void;
+}
+
+function IndexSettingsModal({
+	indexName,
+	isOpen,
+	onClose,
+}: IndexSettingsModalProps) {
+	const queryClient = useQueryClient();
+
+	// Local state for editing
+	const [searchableAttrs, setSearchableAttrs] = useState<string[]>([]);
+	const [filterableAttrs, setFilterableAttrs] = useState<string[]>([]);
+	const [sortableAttrs, setSortableAttrs] = useState<string[]>([]);
+	const [hasChanges, setHasChanges] = useState(false);
+
+	// Fetch current settings
+	const { data, isPending, error, refetch } = useQuery({
+		queryKey: ["search-settings", indexName],
+		queryFn: () => searchApi.getSettings(indexName),
+		enabled: isOpen,
+	});
+
+	// Initialize form state from fetched data
+	useEffect(() => {
+		if (data?.settings) {
+			setSearchableAttrs(data.settings.searchableAttributes || []);
+			setFilterableAttrs(data.settings.filterableAttributes || []);
+			setSortableAttrs(data.settings.sortableAttributes || []);
+			setHasChanges(false);
+		}
+	}, [data]);
+
+	// Update mutation
+	const updateMutation = useMutation({
+		mutationFn: () =>
+			searchApi.updateSettings(indexName, {
+				searchableAttributes: searchableAttrs,
+				filterableAttributes: filterableAttrs,
+				sortableAttributes: sortableAttrs,
+			}),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["search-settings", indexName],
+			});
+			setHasChanges(false);
+		},
+	});
+
+	// Reset mutation
+	const resetMutation = useMutation({
+		mutationFn: () => searchApi.resetSettings(indexName),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["search-settings", indexName],
+			});
+			refetch();
+		},
+	});
+
+	// Handle attribute changes
+	const handleArrayChange = useCallback(
+		(setter: React.Dispatch<React.SetStateAction<string[]>>) =>
+			(value: string) => {
+				const attrs = value
+					.split(",")
+					.map((s) => s.trim())
+					.filter(Boolean);
+				setter(attrs);
+				setHasChanges(true);
+			},
+		[],
+	);
+
+	return (
+		<dialog className="modal" open={isOpen}>
+			<div className="modal-box w-11/12 max-w-3xl">
+				<h3 className="flex items-center gap-2 font-bold text-lg">
+					<Settings className="h-5 w-5" />
+					{indexName} インデックス設定
+				</h3>
+
+				{/* Loading state */}
+				{isPending && (
+					<div className="flex justify-center py-8">
+						<Loader2 className="h-8 w-8 animate-spin" />
+					</div>
+				)}
+
+				{/* Error state */}
+				{(error || (data && !data.success)) && (
+					<div className="alert alert-error mt-4">
+						<AlertCircle className="h-4 w-4" />
+						<span>
+							{error?.message || data?.error || "設定の取得に失敗しました"}
+						</span>
+					</div>
+				)}
+
+				{/* Success/Error alerts for mutations */}
+				{updateMutation.isSuccess && (
+					<div className="alert alert-success mt-4">
+						<CheckCircle className="h-4 w-4" />
+						<span>設定を更新しました</span>
+					</div>
+				)}
+				{updateMutation.error && (
+					<div className="alert alert-error mt-4">
+						<AlertCircle className="h-4 w-4" />
+						<span>{updateMutation.error.message}</span>
+					</div>
+				)}
+
+				{/* Settings Form */}
+				{data?.success && data.settings && (
+					<div className="mt-4 space-y-4">
+						{/* Searchable Attributes */}
+						<div className="card border border-base-300 bg-base-100">
+							<div className="card-body p-4">
+								<div className="flex items-center gap-2">
+									<h4 className="font-semibold text-sm">検索対象属性</h4>
+									<span className="badge badge-outline badge-xs">
+										Searchable Attributes
+									</span>
+								</div>
+								<p className="text-base-content/70 text-xs">
+									キーワード検索時に対象となるフィールドを指定します。ユーザーが検索したキーワードは、ここで指定された属性から検索されます。
+								</p>
+								{searchableAttrs.length > 0 && (
+									<div className="flex flex-wrap gap-1">
+										{searchableAttrs.map((attr) => (
+											<span key={attr} className="badge badge-primary badge-sm">
+												{attr}
+											</span>
+										))}
+									</div>
+								)}
+								<input
+									type="text"
+									className="input input-bordered input-sm w-full"
+									value={searchableAttrs.join(", ")}
+									onChange={(e) =>
+										handleArrayChange(setSearchableAttrs)(e.target.value)
+									}
+									placeholder="name, nameJa, nameEn, ..."
+								/>
+							</div>
+						</div>
+
+						{/* Filterable Attributes */}
+						<div className="card border border-base-300 bg-base-100">
+							<div className="card-body p-4">
+								<div className="flex items-center gap-2">
+									<h4 className="font-semibold text-sm">フィルター属性</h4>
+									<span className="badge badge-outline badge-xs">
+										Filterable Attributes
+									</span>
+								</div>
+								<p className="text-base-content/70 text-xs">
+									検索結果を絞り込むためのフィルターとして使用可能なフィールドを指定します。例:「2024年のみ」「特定イベントのみ」など。
+								</p>
+								{filterableAttrs.length > 0 && (
+									<div className="flex flex-wrap gap-1">
+										{filterableAttrs.map((attr) => (
+											<span
+												key={attr}
+												className="badge badge-secondary badge-sm"
+											>
+												{attr}
+											</span>
+										))}
+									</div>
+								)}
+								<input
+									type="text"
+									className="input input-bordered input-sm w-full"
+									value={filterableAttrs.join(", ")}
+									onChange={(e) =>
+										handleArrayChange(setFilterableAttrs)(e.target.value)
+									}
+									placeholder="releaseYear, eventName, ..."
+								/>
+							</div>
+						</div>
+
+						{/* Sortable Attributes */}
+						<div className="card border border-base-300 bg-base-100">
+							<div className="card-body p-4">
+								<div className="flex items-center gap-2">
+									<h4 className="font-semibold text-sm">ソート属性</h4>
+									<span className="badge badge-outline badge-xs">
+										Sortable Attributes
+									</span>
+								</div>
+								<p className="text-base-content/70 text-xs">
+									検索結果の並び替えに使用可能なフィールドを指定します。例:「新しい順」「名前順」など。
+								</p>
+								{sortableAttrs.length > 0 && (
+									<div className="flex flex-wrap gap-1">
+										{sortableAttrs.map((attr) => (
+											<span key={attr} className="badge badge-accent badge-sm">
+												{attr}
+											</span>
+										))}
+									</div>
+								)}
+								<input
+									type="text"
+									className="input input-bordered input-sm w-full"
+									value={sortableAttrs.join(", ")}
+									onChange={(e) =>
+										handleArrayChange(setSortableAttrs)(e.target.value)
+									}
+									placeholder="releaseDate, name, ..."
+								/>
+							</div>
+						</div>
+
+						{/* Read-only settings */}
+						<div className="card border border-base-300 bg-base-100">
+							<div className="card-body p-4">
+								<h4 className="font-semibold text-sm">
+									その他の設定（読み取り専用）
+								</h4>
+								<p className="text-base-content/70 text-xs">
+									これらの設定はコードで定義されており、管理画面からは変更できません。
+								</p>
+								<div className="overflow-x-auto">
+									<pre className="max-h-32 overflow-y-auto rounded-lg bg-base-200 p-2 text-xs">
+										{JSON.stringify(
+											{
+												localizedAttributes: data.settings.localizedAttributes,
+												typoTolerance: data.settings.typoTolerance,
+												displayedAttributes: data.settings.displayedAttributes,
+											},
+											null,
+											2,
+										)}
+									</pre>
+								</div>
+							</div>
+						</div>
+					</div>
+				)}
+
+				{/* Modal Actions */}
+				<div className="modal-action">
+					<button
+						type="button"
+						className="btn btn-ghost btn-sm"
+						onClick={() => {
+							if (
+								window.confirm(
+									"インデックス設定をデフォルトにリセットします。この操作は取り消せません。続行しますか？",
+								)
+							) {
+								resetMutation.mutate();
+							}
+						}}
+						disabled={resetMutation.isPending || isPending}
+					>
+						{resetMutation.isPending ? (
+							<Loader2 className="h-4 w-4 animate-spin" />
+						) : (
+							<RefreshCw className="h-4 w-4" />
+						)}
+						リセット
+					</button>
+					<button type="button" className="btn btn-sm" onClick={onClose}>
+						閉じる
+					</button>
+					<button
+						type="button"
+						className="btn btn-primary btn-sm"
+						onClick={() => updateMutation.mutate()}
+						disabled={!hasChanges || updateMutation.isPending || isPending}
+					>
+						{updateMutation.isPending ? (
+							<Loader2 className="h-4 w-4 animate-spin" />
+						) : (
+							<Save className="h-4 w-4" />
+						)}
+						保存
+					</button>
+				</div>
+			</div>
+			<form method="dialog" className="modal-backdrop">
+				<button type="button" onClick={onClose}>
+					close
+				</button>
+			</form>
+		</dialog>
+	);
+}
+
+// ===== Index Row Component =====
 
 interface IndexRowProps {
 	index: IndexStatus;
 	isReindexing: boolean;
 	isDisabled: boolean;
 	onReindex: () => void;
+	onOpenSettings: () => void;
 }
 
 function IndexRow({
@@ -326,6 +643,7 @@ function IndexRow({
 	isReindexing,
 	isDisabled,
 	onReindex,
+	onOpenSettings,
 }: IndexRowProps) {
 	const formatDate = (dateStr: string | null) => {
 		if (!dateStr) return "-";
@@ -369,14 +687,19 @@ function IndexRow({
 			</td>
 			<td className="text-right">
 				<div className="flex items-center justify-end gap-1">
-					<Link
-						to="/admin/search/settings/$index"
-						params={{ index: index.name }}
-						className="btn btn-ghost btn-sm"
+					<div
+						className="tooltip tooltip-left"
+						data-tip="検索対象・フィルター・ソートの属性を設定"
 					>
-						<Settings className="h-4 w-4" />
-						<span className="hidden sm:inline">設定</span>
-					</Link>
+						<button
+							type="button"
+							className="btn btn-ghost btn-sm"
+							onClick={onOpenSettings}
+						>
+							<Settings className="h-4 w-4" />
+							<span className="hidden sm:inline">設定</span>
+						</button>
+					</div>
 					<button
 						type="button"
 						className="btn btn-ghost btn-sm"
