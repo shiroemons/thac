@@ -24,10 +24,6 @@
 			}
 		]
 	},
-	"statusLine": {
-		"type": "command",
-		"command": "npx -y ccstatusline@latest"
-	},
 	"enabledPlugins": {
 		"hono-skill@hono-skill": true,
 		"design-engineer@design-engineer": true,
