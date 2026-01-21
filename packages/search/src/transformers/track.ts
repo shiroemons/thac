@@ -1,4 +1,5 @@
 import {
+	artistAliases,
 	asc,
 	circles,
 	count,
@@ -10,13 +11,40 @@ import {
 	officialSongs,
 	officialWorks,
 	releaseCircles,
+	releasePublications,
 	releases,
 	trackCreditRoles,
 	trackCredits,
 	trackOfficialSongs,
+	trackPublications,
 	tracks,
 } from "@thac/db";
-import type { TrackSearchDocument } from "../types";
+import type {
+	ArtistRef,
+	CircleRef,
+	OriginalSongRef,
+	Publication,
+	TrackSearchDocument,
+} from "../types";
+
+const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
+	pc98: "01. PC-98作品",
+	windows: "02. Windows作品",
+	zuns_music_collection: "03. ZUN's Music Collection",
+	akyus_untouched_score: "04. 幺樂団の歴史",
+	commercial_books: "05. 商業書籍",
+	tasofro: "06. 黄昏フロンティア作品",
+	other: "07. その他",
+};
+
+const TOUHOU_CATEGORIES = [
+	"pc98",
+	"windows",
+	"zuns_music_collection",
+	"akyus_untouched_score",
+	"commercial_books",
+	"tasofro",
+];
 
 /**
  * Fetch tracks from database for indexing, yielding batches
@@ -35,8 +63,6 @@ export async function* fetchTracksForIndexing(
 			.select({
 				id: tracks.id,
 				name: tracks.name,
-				nameJa: tracks.nameJa,
-				nameEn: tracks.nameEn,
 				releaseId: tracks.releaseId,
 				trackNumber: tracks.trackNumber,
 				releaseDate: tracks.releaseDate,
@@ -46,7 +72,11 @@ export async function* fetchTracksForIndexing(
 				releaseName: releases.name,
 				releaseReleaseDate: releases.releaseDate,
 				releaseReleaseYear: releases.releaseYear,
+				releaseType: releases.releaseType,
+				releaseEventId: releases.eventId,
 				discNumber: discs.discNumber,
+				discName: discs.discName,
+				trackEventId: events.id,
 				trackEventName: events.name,
 			})
 			.from(tracks)
@@ -68,139 +98,256 @@ export async function* fetchTracksForIndexing(
 		] as string[];
 
 		// Step 2: Batch fetch related data
-		const [circlesData, creditsData, officialSongsData, releaseEventsData] =
-			await Promise.all([
-				// Circles via release_circles
-				releaseIds.length > 0
-					? db
-							.select({
-								releaseId: releaseCircles.releaseId,
-								circleName: circles.name,
-							})
-							.from(releaseCircles)
-							.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
-							.where(inArray(releaseCircles.releaseId, releaseIds))
-					: Promise.resolve([]),
+		const [
+			circlesData,
+			creditsData,
+			officialSongsData,
+			releaseEventsData,
+			trackPublicationsData,
+			releasePublicationsData,
+		] = await Promise.all([
+			// Circles via release_circles with full data
+			releaseIds.length > 0
+				? db
+						.select({
+							releaseId: releaseCircles.releaseId,
+							circleId: circles.id,
+							circleName: circles.name,
+						})
+						.from(releaseCircles)
+						.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
+						.where(inArray(releaseCircles.releaseId, releaseIds))
+				: Promise.resolve([]),
 
-				// Credits with roles
-				db
-					.select({
-						trackId: trackCredits.trackId,
-						creditName: trackCredits.creditName,
-						roleCode: trackCreditRoles.roleCode,
-					})
-					.from(trackCredits)
-					.innerJoin(
-						trackCreditRoles,
-						eq(trackCredits.id, trackCreditRoles.trackCreditId),
-					)
-					.where(inArray(trackCredits.trackId, trackIds)),
+			// Credits with roles and artist alias info
+			db
+				.select({
+					trackId: trackCredits.trackId,
+					creditName: trackCredits.creditName,
+					artistAliasId: trackCredits.artistAliasId,
+					aliasName: artistAliases.name,
+					roleCode: trackCreditRoles.roleCode,
+				})
+				.from(trackCredits)
+				.innerJoin(
+					trackCreditRoles,
+					eq(trackCredits.id, trackCreditRoles.trackCreditId),
+				)
+				.leftJoin(
+					artistAliases,
+					eq(trackCredits.artistAliasId, artistAliases.id),
+				)
+				.where(inArray(trackCredits.trackId, trackIds)),
 
-				// Official songs
-				db
-					.select({
-						trackId: trackOfficialSongs.trackId,
-						customSongName: trackOfficialSongs.customSongName,
-						songName: officialSongs.name,
-						workName: officialWorks.name,
-					})
-					.from(trackOfficialSongs)
-					.leftJoin(
-						officialSongs,
-						eq(trackOfficialSongs.officialSongId, officialSongs.id),
-					)
-					.leftJoin(
-						officialWorks,
-						eq(officialSongs.officialWorkId, officialWorks.id),
-					)
-					.where(inArray(trackOfficialSongs.trackId, trackIds)),
+			// Official songs with full data
+			db
+				.select({
+					trackId: trackOfficialSongs.trackId,
+					trackOfficialSongId: trackOfficialSongs.id,
+					customSongName: trackOfficialSongs.customSongName,
+					officialSongId: officialSongs.id,
+					songName: officialSongs.name,
+					songTrackNumber: officialSongs.trackNumber,
+					workId: officialWorks.id,
+					workName: officialWorks.name,
+					categoryCode: officialWorks.categoryCode,
+					shortNameJa: officialWorks.shortNameJa,
+					numberInSeries: officialWorks.numberInSeries,
+				})
+				.from(trackOfficialSongs)
+				.leftJoin(
+					officialSongs,
+					eq(trackOfficialSongs.officialSongId, officialSongs.id),
+				)
+				.leftJoin(
+					officialWorks,
+					eq(officialSongs.officialWorkId, officialWorks.id),
+				)
+				.where(inArray(trackOfficialSongs.trackId, trackIds)),
 
-				// Release events (for tracks without direct event)
-				releaseIds.length > 0
-					? db
-							.select({
-								releaseId: releases.id,
-								eventName: events.name,
-							})
-							.from(releases)
-							.innerJoin(events, eq(releases.eventId, events.id))
-							.where(inArray(releases.id, releaseIds))
-					: Promise.resolve([]),
-			]);
+			// Release events (for tracks without direct event)
+			releaseIds.length > 0
+				? db
+						.select({
+							releaseId: releases.id,
+							eventId: events.id,
+							eventName: events.name,
+						})
+						.from(releases)
+						.innerJoin(events, eq(releases.eventId, events.id))
+						.where(inArray(releases.id, releaseIds))
+				: Promise.resolve([]),
+
+			// Track publications
+			db
+				.select({
+					trackId: trackPublications.trackId,
+					platformCode: trackPublications.platformCode,
+					url: trackPublications.url,
+				})
+				.from(trackPublications)
+				.where(inArray(trackPublications.trackId, trackIds)),
+
+			// Release publications
+			releaseIds.length > 0
+				? db
+						.select({
+							releaseId: releasePublications.releaseId,
+							platformCode: releasePublications.platformCode,
+							url: releasePublications.url,
+						})
+						.from(releasePublications)
+						.where(inArray(releasePublications.releaseId, releaseIds))
+				: Promise.resolve([]),
+		]);
 
 		// Step 3: Build lookup maps
-		const circlesByRelease = new Map<string, string[]>();
+		const circlesByRelease = new Map<string, CircleRef[]>();
 		for (const c of circlesData) {
 			const existing = circlesByRelease.get(c.releaseId) ?? [];
 			if (!circlesByRelease.has(c.releaseId)) {
 				circlesByRelease.set(c.releaseId, existing);
 			}
-			if (!existing.includes(c.circleName)) {
-				existing.push(c.circleName);
+			// Check if circle already exists in the array
+			if (!existing.some((circle) => circle.id === c.circleId)) {
+				existing.push({
+					id: c.circleId,
+					name: c.circleName,
+				});
 			}
 		}
 
 		const creditsByTrack = new Map<
 			string,
 			{
-				vocalists: string[];
-				arrangers: string[];
-				lyricists: string[];
-				composers: string[];
+				vocalists: ArtistRef[];
+				arrangers: ArtistRef[];
+				lyricists: ArtistRef[];
+				composers: ArtistRef[];
+				remixers: ArtistRef[];
 			}
 		>();
 		for (const c of creditsData) {
 			let entry = creditsByTrack.get(c.trackId);
 			if (!entry) {
-				entry = { vocalists: [], arrangers: [], lyricists: [], composers: [] };
+				entry = {
+					vocalists: [],
+					arrangers: [],
+					lyricists: [],
+					composers: [],
+					remixers: [],
+				};
 				creditsByTrack.set(c.trackId, entry);
 			}
+			const artistRef: ArtistRef = {
+				id: c.artistAliasId,
+				name: c.creditName,
+			};
+
+			const addIfNotExists = (arr: ArtistRef[], ref: ArtistRef) => {
+				if (!arr.some((a) => a.name === ref.name)) {
+					arr.push(ref);
+				}
+			};
+
 			switch (c.roleCode) {
 				case "vocalist":
-					if (!entry.vocalists.includes(c.creditName)) {
-						entry.vocalists.push(c.creditName);
-					}
+					addIfNotExists(entry.vocalists, artistRef);
 					break;
 				case "arranger":
-					if (!entry.arrangers.includes(c.creditName)) {
-						entry.arrangers.push(c.creditName);
-					}
+					addIfNotExists(entry.arrangers, artistRef);
 					break;
 				case "lyricist":
-					if (!entry.lyricists.includes(c.creditName)) {
-						entry.lyricists.push(c.creditName);
-					}
+					addIfNotExists(entry.lyricists, artistRef);
 					break;
 				case "composer":
-					if (!entry.composers.includes(c.creditName)) {
-						entry.composers.push(c.creditName);
-					}
+					addIfNotExists(entry.composers, artistRef);
+					break;
+				case "remixer":
+					addIfNotExists(entry.remixers, artistRef);
 					break;
 			}
 		}
 
-		const songsByTrack = new Map<
-			string,
-			{ songs: string[]; works: string[] }
-		>();
+		const songsByTrack = new Map<string, OriginalSongRef[]>();
 		for (const s of officialSongsData) {
 			let entry = songsByTrack.get(s.trackId);
 			if (!entry) {
-				entry = { songs: [], works: [] };
+				entry = [];
 				songsByTrack.set(s.trackId, entry);
 			}
 			const songName = s.customSongName ?? s.songName;
-			if (songName && !entry.songs.includes(songName)) {
-				entry.songs.push(songName);
-			}
-			if (s.workName && !entry.works.includes(s.workName)) {
-				entry.works.push(s.workName);
+			if (songName) {
+				// Check if song already exists
+				if (
+					!entry.some(
+						(song) =>
+							song.name === songName &&
+							song.officialSongId === s.officialSongId,
+					)
+				) {
+					// Generate lvl0/lvl1/lvl2 for hierarchical search
+					const categoryCode = s.categoryCode;
+					const lvl0 = categoryCode
+						? (CATEGORY_DISPLAY_NAMES[categoryCode] ?? null)
+						: null;
+
+					// lvl1: lvl0 + " > " + formatted numberInSeries + ". " + shortNameJa
+					// Format numberInSeries as "NN.N" (e.g., 4.0 -> "04.0", 10.5 -> "10.5")
+					const lvl1 =
+						lvl0 && s.numberInSeries != null && s.shortNameJa
+							? `${lvl0} > ${s.numberInSeries.toFixed(1).padStart(4, "0")}. ${s.shortNameJa}`
+							: null;
+
+					// lvl2: lvl1 + " > " + formatted trackNumber + ". " + name
+					// Format trackNumber as "NN" (e.g., 3 -> "03")
+					const lvl2 =
+						lvl1 && s.songTrackNumber != null
+							? `${lvl1} > ${String(s.songTrackNumber).padStart(2, "0")}. ${songName}`
+							: null;
+
+					entry.push({
+						id: s.trackOfficialSongId,
+						officialSongId: s.officialSongId,
+						name: songName,
+						workId: s.workId,
+						workName: s.workName,
+						categoryCode: s.categoryCode,
+						lvl0,
+						lvl1,
+						lvl2,
+					});
+				}
 			}
 		}
 
-		const eventByRelease = new Map<string, string>();
+		const eventByRelease = new Map<string, { id: string; name: string }>();
 		for (const e of releaseEventsData) {
-			eventByRelease.set(e.releaseId, e.eventName);
+			eventByRelease.set(e.releaseId, { id: e.eventId, name: e.eventName });
+		}
+
+		const trackPublicationsByTrack = new Map<string, Publication[]>();
+		for (const p of trackPublicationsData) {
+			const existing = trackPublicationsByTrack.get(p.trackId) ?? [];
+			if (!trackPublicationsByTrack.has(p.trackId)) {
+				trackPublicationsByTrack.set(p.trackId, existing);
+			}
+			existing.push({
+				platformCode: p.platformCode,
+				url: p.url,
+			});
+		}
+
+		const releasePublicationsByRelease = new Map<string, Publication[]>();
+		for (const p of releasePublicationsData) {
+			const existing = releasePublicationsByRelease.get(p.releaseId) ?? [];
+			if (!releasePublicationsByRelease.has(p.releaseId)) {
+				releasePublicationsByRelease.set(p.releaseId, existing);
+			}
+			existing.push({
+				platformCode: p.platformCode,
+				url: p.url,
+			});
 		}
 
 		// Step 4: Transform to search documents
@@ -210,36 +357,84 @@ export async function* fetchTracksForIndexing(
 				arrangers: [],
 				lyricists: [],
 				composers: [],
+				remixers: [],
 			};
-			const songs = songsByTrack.get(track.id) ?? { songs: [], works: [] };
-			const circleNames = track.releaseId
+			const originalSongs = songsByTrack.get(track.id) ?? [];
+			const circleRefs = track.releaseId
 				? (circlesByRelease.get(track.releaseId) ?? [])
 				: [];
-			const eventName =
-				track.trackEventName ??
-				(track.releaseId
-					? (eventByRelease.get(track.releaseId) ?? null)
-					: null);
+			const releaseEvent = track.releaseId
+				? eventByRelease.get(track.releaseId)
+				: null;
+			const eventId = track.trackEventId ?? releaseEvent?.id ?? null;
+			const eventName = track.trackEventName ?? releaseEvent?.name ?? null;
+
+			const trackPubs = trackPublicationsByTrack.get(track.id) ?? [];
+			const releasePubs = track.releaseId
+				? (releasePublicationsByRelease.get(track.releaseId) ?? [])
+				: [];
+
+			// Determine isTouhouArrange
+			const isTouhouArrange = originalSongs.some(
+				(s) => s.categoryCode && TOUHOU_CATEGORIES.includes(s.categoryCode),
+			);
+
+			// Build search name arrays
+			const circleNames = circleRefs.map((c) => c.name);
+			const vocalistNames = credits.vocalists.map((a) => a.name);
+			const arrangerNames = credits.arrangers.map((a) => a.name);
+			const lyricistNames = credits.lyricists.map((a) => a.name);
+			const composerNames = credits.composers.map((a) => a.name);
+			const remixerNames = credits.remixers.map((a) => a.name);
+			const originalSongNames = originalSongs.map((s) => s.name);
+			const originalWorkNames = [
+				...new Set(
+					originalSongs.map((s) => s.workName).filter(Boolean) as string[],
+				),
+			];
 
 			return {
 				id: track.id,
 				name: track.name,
-				nameJa: track.nameJa,
-				nameEn: track.nameEn,
 				releaseId: track.releaseId,
 				releaseName: track.releaseName,
 				releaseDate: track.releaseDate ?? track.releaseReleaseDate,
 				releaseYear: track.releaseYear ?? track.releaseReleaseYear,
+				releaseType: track.releaseType,
 				trackNumber: track.trackNumber,
 				discNumber: track.discNumber,
+				discName: track.discName,
+				eventId,
 				eventName,
-				circleNames,
+				circles: circleRefs,
 				vocalists: credits.vocalists,
 				arrangers: credits.arrangers,
 				lyricists: credits.lyricists,
 				composers: credits.composers,
-				originalSongs: songs.songs,
-				originalWorkNames: songs.works,
+				remixers: credits.remixers,
+				originalSongs,
+				releasePublications: releasePubs,
+				trackPublications: trackPubs,
+				vocalistCount: credits.vocalists.length,
+				arrangerCount: credits.arrangers.length,
+				lyricistCount: credits.lyricists.length,
+				composerCount: credits.composers.length,
+				remixerCount: credits.remixers.length,
+				circleCount: circleRefs.length,
+				originalSongCount: originalSongs.length,
+				releasePublicationCount: releasePubs.length,
+				trackPublicationCount: trackPubs.length,
+				isTouhouArrange,
+				tags: [],
+				genres: [],
+				circleNames,
+				vocalistNames,
+				arrangerNames,
+				lyricistNames,
+				composerNames,
+				remixerNames,
+				originalSongNames,
+				originalWorkNames,
 				createdAt: track.createdAt.getTime(),
 				updatedAt: track.updatedAt.getTime(),
 			};
@@ -266,8 +461,6 @@ export async function fetchTrackForIndexing(
 		.select({
 			id: tracks.id,
 			name: tracks.name,
-			nameJa: tracks.nameJa,
-			nameEn: tracks.nameEn,
 			releaseId: tracks.releaseId,
 			trackNumber: tracks.trackNumber,
 			releaseDate: tracks.releaseDate,
@@ -277,7 +470,11 @@ export async function fetchTrackForIndexing(
 			releaseName: releases.name,
 			releaseReleaseDate: releases.releaseDate,
 			releaseReleaseYear: releases.releaseYear,
+			releaseType: releases.releaseType,
+			releaseEventId: releases.eventId,
 			discNumber: discs.discNumber,
+			discName: discs.discName,
+			trackEventId: events.id,
 			trackEventName: events.name,
 		})
 		.from(tracks)
@@ -293,141 +490,279 @@ export async function fetchTrackForIndexing(
 	const releaseIds = track.releaseId ? [track.releaseId] : [];
 
 	// Fetch related data
-	const [circlesData, creditsData, officialSongsData, releaseEventsData] =
-		await Promise.all([
-			// Circles
-			releaseIds.length > 0
-				? db
-						.select({
-							releaseId: releaseCircles.releaseId,
-							circleName: circles.name,
-						})
-						.from(releaseCircles)
-						.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
-						.where(inArray(releaseCircles.releaseId, releaseIds))
-				: Promise.resolve([]),
+	const [
+		circlesData,
+		creditsData,
+		officialSongsData,
+		releaseEventsData,
+		trackPublicationsData,
+		releasePublicationsData,
+	] = await Promise.all([
+		// Circles with full data
+		releaseIds.length > 0
+			? db
+					.select({
+						releaseId: releaseCircles.releaseId,
+						circleId: circles.id,
+						circleName: circles.name,
+					})
+					.from(releaseCircles)
+					.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
+					.where(inArray(releaseCircles.releaseId, releaseIds))
+			: Promise.resolve([]),
 
-			// Credits
-			db
-				.select({
-					trackId: trackCredits.trackId,
-					creditName: trackCredits.creditName,
-					roleCode: trackCreditRoles.roleCode,
-				})
-				.from(trackCredits)
-				.innerJoin(
-					trackCreditRoles,
-					eq(trackCredits.id, trackCreditRoles.trackCreditId),
-				)
-				.where(eq(trackCredits.trackId, trackId)),
+		// Credits with artist alias info
+		db
+			.select({
+				trackId: trackCredits.trackId,
+				creditName: trackCredits.creditName,
+				artistAliasId: trackCredits.artistAliasId,
+				aliasName: artistAliases.name,
+				roleCode: trackCreditRoles.roleCode,
+			})
+			.from(trackCredits)
+			.innerJoin(
+				trackCreditRoles,
+				eq(trackCredits.id, trackCreditRoles.trackCreditId),
+			)
+			.leftJoin(artistAliases, eq(trackCredits.artistAliasId, artistAliases.id))
+			.where(eq(trackCredits.trackId, trackId)),
 
-			// Official songs
-			db
-				.select({
-					trackId: trackOfficialSongs.trackId,
-					customSongName: trackOfficialSongs.customSongName,
-					songName: officialSongs.name,
-					workName: officialWorks.name,
-				})
-				.from(trackOfficialSongs)
-				.leftJoin(
-					officialSongs,
-					eq(trackOfficialSongs.officialSongId, officialSongs.id),
-				)
-				.leftJoin(
-					officialWorks,
-					eq(officialSongs.officialWorkId, officialWorks.id),
-				)
-				.where(eq(trackOfficialSongs.trackId, trackId)),
+		// Official songs with full data
+		db
+			.select({
+				trackId: trackOfficialSongs.trackId,
+				trackOfficialSongId: trackOfficialSongs.id,
+				customSongName: trackOfficialSongs.customSongName,
+				officialSongId: officialSongs.id,
+				songName: officialSongs.name,
+				songTrackNumber: officialSongs.trackNumber,
+				workId: officialWorks.id,
+				workName: officialWorks.name,
+				categoryCode: officialWorks.categoryCode,
+				shortNameJa: officialWorks.shortNameJa,
+				numberInSeries: officialWorks.numberInSeries,
+			})
+			.from(trackOfficialSongs)
+			.leftJoin(
+				officialSongs,
+				eq(trackOfficialSongs.officialSongId, officialSongs.id),
+			)
+			.leftJoin(
+				officialWorks,
+				eq(officialSongs.officialWorkId, officialWorks.id),
+			)
+			.where(eq(trackOfficialSongs.trackId, trackId)),
 
-			// Release event
-			releaseIds.length > 0
-				? db
-						.select({
-							releaseId: releases.id,
-							eventName: events.name,
-						})
-						.from(releases)
-						.innerJoin(events, eq(releases.eventId, events.id))
-						.where(inArray(releases.id, releaseIds))
-				: Promise.resolve([]),
-		]);
+		// Release event
+		releaseIds.length > 0
+			? db
+					.select({
+						releaseId: releases.id,
+						eventId: events.id,
+						eventName: events.name,
+					})
+					.from(releases)
+					.innerJoin(events, eq(releases.eventId, events.id))
+					.where(inArray(releases.id, releaseIds))
+			: Promise.resolve([]),
 
-	// Build data
-	const circleNames: string[] = [];
+		// Track publications
+		db
+			.select({
+				trackId: trackPublications.trackId,
+				platformCode: trackPublications.platformCode,
+				url: trackPublications.url,
+			})
+			.from(trackPublications)
+			.where(eq(trackPublications.trackId, trackId)),
+
+		// Release publications
+		releaseIds.length > 0
+			? db
+					.select({
+						releaseId: releasePublications.releaseId,
+						platformCode: releasePublications.platformCode,
+						url: releasePublications.url,
+					})
+					.from(releasePublications)
+					.where(inArray(releasePublications.releaseId, releaseIds))
+			: Promise.resolve([]),
+	]);
+
+	// Build circles
+	const circleRefs: CircleRef[] = [];
 	for (const c of circlesData) {
-		if (!circleNames.includes(c.circleName)) {
-			circleNames.push(c.circleName);
+		if (!circleRefs.some((circle) => circle.id === c.circleId)) {
+			circleRefs.push({
+				id: c.circleId,
+				name: c.circleName,
+			});
 		}
 	}
 
+	// Build credits
 	const credits = {
-		vocalists: [] as string[],
-		arrangers: [] as string[],
-		lyricists: [] as string[],
-		composers: [] as string[],
+		vocalists: [] as ArtistRef[],
+		arrangers: [] as ArtistRef[],
+		lyricists: [] as ArtistRef[],
+		composers: [] as ArtistRef[],
+		remixers: [] as ArtistRef[],
 	};
+
+	const addIfNotExists = (arr: ArtistRef[], ref: ArtistRef) => {
+		if (!arr.some((a) => a.name === ref.name)) {
+			arr.push(ref);
+		}
+	};
+
 	for (const c of creditsData) {
+		const artistRef: ArtistRef = {
+			id: c.artistAliasId,
+			name: c.creditName,
+		};
 		switch (c.roleCode) {
 			case "vocalist":
-				if (!credits.vocalists.includes(c.creditName)) {
-					credits.vocalists.push(c.creditName);
-				}
+				addIfNotExists(credits.vocalists, artistRef);
 				break;
 			case "arranger":
-				if (!credits.arrangers.includes(c.creditName)) {
-					credits.arrangers.push(c.creditName);
-				}
+				addIfNotExists(credits.arrangers, artistRef);
 				break;
 			case "lyricist":
-				if (!credits.lyricists.includes(c.creditName)) {
-					credits.lyricists.push(c.creditName);
-				}
+				addIfNotExists(credits.lyricists, artistRef);
 				break;
 			case "composer":
-				if (!credits.composers.includes(c.creditName)) {
-					credits.composers.push(c.creditName);
-				}
+				addIfNotExists(credits.composers, artistRef);
+				break;
+			case "remixer":
+				addIfNotExists(credits.remixers, artistRef);
 				break;
 		}
 	}
 
-	const songs: string[] = [];
-	const works: string[] = [];
+	// Build original songs
+	const originalSongs: OriginalSongRef[] = [];
 	for (const s of officialSongsData) {
 		const songName = s.customSongName ?? s.songName;
-		if (songName && !songs.includes(songName)) {
-			songs.push(songName);
-		}
-		if (s.workName && !works.includes(s.workName)) {
-			works.push(s.workName);
+		if (songName) {
+			if (
+				!originalSongs.some(
+					(song) =>
+						song.name === songName && song.officialSongId === s.officialSongId,
+				)
+			) {
+				// Generate lvl0/lvl1/lvl2 for hierarchical search
+				const categoryCode = s.categoryCode;
+				const lvl0 = categoryCode
+					? (CATEGORY_DISPLAY_NAMES[categoryCode] ?? null)
+					: null;
+
+				// lvl1: lvl0 + " > " + formatted numberInSeries + ". " + shortNameJa
+				// Format numberInSeries as "NN.N" (e.g., 4.0 -> "04.0", 10.5 -> "10.5")
+				const lvl1 =
+					lvl0 && s.numberInSeries != null && s.shortNameJa
+						? `${lvl0} > ${s.numberInSeries.toFixed(1).padStart(4, "0")}. ${s.shortNameJa}`
+						: null;
+
+				// lvl2: lvl1 + " > " + formatted trackNumber + ". " + name
+				// Format trackNumber as "NN" (e.g., 3 -> "03")
+				const lvl2 =
+					lvl1 && s.songTrackNumber != null
+						? `${lvl1} > ${String(s.songTrackNumber).padStart(2, "0")}. ${songName}`
+						: null;
+
+				originalSongs.push({
+					id: s.trackOfficialSongId,
+					officialSongId: s.officialSongId,
+					name: songName,
+					workId: s.workId,
+					workName: s.workName,
+					categoryCode: s.categoryCode,
+					lvl0,
+					lvl1,
+					lvl2,
+				});
+			}
 		}
 	}
 
-	const eventName =
-		track.trackEventName ??
-		(releaseEventsData.length > 0 ? releaseEventsData[0]?.eventName : null) ??
-		null;
+	// Get event info
+	const releaseEvent =
+		releaseEventsData.length > 0 ? releaseEventsData[0] : null;
+	const eventId = track.trackEventId ?? releaseEvent?.eventId ?? null;
+	const eventName = track.trackEventName ?? releaseEvent?.eventName ?? null;
+
+	// Build publications
+	const trackPubs: Publication[] = trackPublicationsData.map((p) => ({
+		platformCode: p.platformCode,
+		url: p.url,
+	}));
+	const releasePubs: Publication[] = releasePublicationsData.map((p) => ({
+		platformCode: p.platformCode,
+		url: p.url,
+	}));
+
+	// Determine isTouhouArrange
+	const isTouhouArrange = originalSongs.some(
+		(s) => s.categoryCode && TOUHOU_CATEGORIES.includes(s.categoryCode),
+	);
+
+	// Build search name arrays
+	const circleNames = circleRefs.map((c) => c.name);
+	const vocalistNames = credits.vocalists.map((a) => a.name);
+	const arrangerNames = credits.arrangers.map((a) => a.name);
+	const lyricistNames = credits.lyricists.map((a) => a.name);
+	const composerNames = credits.composers.map((a) => a.name);
+	const remixerNames = credits.remixers.map((a) => a.name);
+	const originalSongNames = originalSongs.map((s) => s.name);
+	const originalWorkNames = [
+		...new Set(
+			originalSongs.map((s) => s.workName).filter(Boolean) as string[],
+		),
+	];
 
 	return {
 		id: track.id,
 		name: track.name,
-		nameJa: track.nameJa,
-		nameEn: track.nameEn,
 		releaseId: track.releaseId,
 		releaseName: track.releaseName,
 		releaseDate: track.releaseDate ?? track.releaseReleaseDate,
 		releaseYear: track.releaseYear ?? track.releaseReleaseYear,
+		releaseType: track.releaseType,
 		trackNumber: track.trackNumber,
 		discNumber: track.discNumber,
+		discName: track.discName,
+		eventId,
 		eventName,
-		circleNames,
+		circles: circleRefs,
 		vocalists: credits.vocalists,
 		arrangers: credits.arrangers,
 		lyricists: credits.lyricists,
 		composers: credits.composers,
-		originalSongs: songs,
-		originalWorkNames: works,
+		remixers: credits.remixers,
+		originalSongs,
+		releasePublications: releasePubs,
+		trackPublications: trackPubs,
+		vocalistCount: credits.vocalists.length,
+		arrangerCount: credits.arrangers.length,
+		lyricistCount: credits.lyricists.length,
+		composerCount: credits.composers.length,
+		remixerCount: credits.remixers.length,
+		circleCount: circleRefs.length,
+		originalSongCount: originalSongs.length,
+		releasePublicationCount: releasePubs.length,
+		trackPublicationCount: trackPubs.length,
+		isTouhouArrange,
+		tags: [],
+		genres: [],
+		circleNames,
+		vocalistNames,
+		arrangerNames,
+		lyricistNames,
+		composerNames,
+		remixerNames,
+		originalSongNames,
+		originalWorkNames,
 		createdAt: track.createdAt.getTime(),
 		updatedAt: track.updatedAt.getTime(),
 	};

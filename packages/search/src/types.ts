@@ -5,24 +5,100 @@ export interface SearchDocument {
 	updatedAt: number;
 }
 
+/** 配信URL（idなし） */
+export interface Publication {
+	platformCode: string;
+	url: string;
+}
+
+/** アーティスト参照（artistAliasIdを使用、nullの場合はnull） */
+export interface ArtistRef {
+	id: string | null; // trackCredits.artistAliasId（nullの場合はnull）
+	name: string; // trackCredits.creditName
+}
+
+/** サークル参照 */
+export interface CircleRef {
+	id: string; // circles.id
+	name: string;
+}
+
+/** 原曲参照 */
+export interface OriginalSongRef {
+	id: string | null; // trackOfficialSongs.id（customSongNameのみの場合はnull相当）
+	officialSongId: string | null; // officialSongs.id
+	name: string;
+	workId: string | null; // officialWorks.id
+	workName: string | null;
+	categoryCode: string | null;
+	// 階層検索
+	lvl0: string | null; // カテゴリ表示名
+	lvl1: string | null; // 作品名
+	lvl2: string | null; // 曲名
+}
+
 /** Track search document */
 export interface TrackSearchDocument extends SearchDocument {
+	// 基本情報
 	name: string;
-	nameJa: string | null;
-	nameEn: string | null;
+
+	// リリース情報
 	releaseId: string | null;
 	releaseName: string | null;
 	releaseDate: string | null;
 	releaseYear: number | null;
+	releaseType: string | null;
 	trackNumber: number;
 	discNumber: number | null;
+	discName: string | null;
+
+	// イベント情報
+	eventId: string | null;
 	eventName: string | null;
+
+	// サークル（オブジェクト配列）
+	circles: CircleRef[];
+
+	// クレジット（オブジェクト配列）
+	vocalists: ArtistRef[];
+	arrangers: ArtistRef[];
+	lyricists: ArtistRef[];
+	composers: ArtistRef[];
+	remixers: ArtistRef[];
+
+	// 原曲（オブジェクト配列）
+	originalSongs: OriginalSongRef[];
+
+	// 配信URL
+	releasePublications: Publication[];
+	trackPublications: Publication[];
+
+	// カウント
+	vocalistCount: number;
+	arrangerCount: number;
+	lyricistCount: number;
+	composerCount: number;
+	remixerCount: number;
+	circleCount: number;
+	originalSongCount: number;
+	releasePublicationCount: number;
+	trackPublicationCount: number;
+
+	// フラグ
+	isTouhouArrange: boolean;
+
+	// 未実装（型定義のみ）
+	tags: string[];
+	genres: string[];
+
+	// 検索用名前配列
 	circleNames: string[];
-	vocalists: string[];
-	arrangers: string[];
-	lyricists: string[];
-	composers: string[];
-	originalSongs: string[];
+	vocalistNames: string[];
+	arrangerNames: string[];
+	lyricistNames: string[];
+	composerNames: string[];
+	remixerNames: string[];
+	originalSongNames: string[];
 	originalWorkNames: string[];
 }
 
