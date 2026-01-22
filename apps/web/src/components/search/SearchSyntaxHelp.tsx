@@ -11,10 +11,16 @@ interface SearchSyntaxItem {
 
 /** 検索構文ヘルプデータ（静的なドキュメント情報） */
 const searchSyntaxHelp: SearchSyntaxItem[] = [
+	// --- 人物・サークル検索 ---
 	{
 		keyword: "arranger:",
 		description: "編曲者で検索",
 		example: "arranger:ARM",
+	},
+	{
+		keyword: "composer:",
+		description: "作曲者で検索",
+		example: "composer:ZUN",
 	},
 	{
 		keyword: "vocalist:",
@@ -31,25 +37,47 @@ const searchSyntaxHelp: SearchSyntaxItem[] = [
 		description: "サークル名で検索",
 		example: "circle:IOSYS",
 	},
+	// --- コンテンツ検索 ---
 	{
 		keyword: "originalsong:",
 		description: "原曲名で検索",
 		example: "originalsong:大吉キトゥン",
 	},
 	{
+		keyword: "event:",
+		description: "イベント名で検索",
+		example: "event:例大祭",
+	},
+	// --- 数値フィルター ---
+	{
 		keyword: "year:",
-		description: "頒布年で検索",
+		description: "頒布年で検索（=, >=, <=, >, < 対応）",
 		example: "year:2023",
 	},
 	{
-		keyword: "songcount:",
-		description: "原曲数で検索",
-		example: "songcount:2",
+		keyword: "originalcount:",
+		description: "原曲数で検索（=, >=, <=, >, < 対応）",
+		example: "originalcount:2",
 	},
 	{
-		keyword: "songcount:>=",
-		description: "原曲数（以上）で検索",
-		example: "songcount:>=3",
+		keyword: "vocalistcount:",
+		description: "ボーカル数で検索（=, >=, <=, >, < 対応）",
+		example: "vocalistcount:>=2",
+	},
+	{
+		keyword: "arrangercount:",
+		description: "編曲者数で検索（=, >=, <=, >, < 対応）",
+		example: "arrangercount:1",
+	},
+	{
+		keyword: "lyricistcount:",
+		description: "作詞者数で検索（=, >=, <=, >, < 対応）",
+		example: "lyricistcount:>=1",
+	},
+	{
+		keyword: "composercount:",
+		description: "作曲者数で検索（=, >=, <=, >, < 対応）",
+		example: "composercount:2",
 	},
 ];
 
