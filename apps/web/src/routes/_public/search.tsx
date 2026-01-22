@@ -453,7 +453,10 @@ function SearchPage() {
 		// URLを更新
 		navigate({
 			to: "/search",
-			search: filtersToUrlSearchObject(trimmedQuery || undefined, pendingFilters),
+			search: filtersToUrlSearchObject(
+				trimmedQuery || undefined,
+				pendingFilters,
+			),
 		});
 		modalRef.current?.close();
 	};
@@ -957,8 +960,7 @@ function SearchPage() {
 							<div className="flex flex-wrap gap-2">
 								{searchHistory.map((historyItem, index) => {
 									const filterCount = getActiveFilterCount(historyItem.filters);
-									const displayLabel =
-										historyItem.query || "(フィルターのみ)";
+									const displayLabel = historyItem.query || "(フィルターのみ)";
 									return (
 										<div
 											key={`${historyItem.timestamp}-${index}`}
