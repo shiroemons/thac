@@ -39,7 +39,9 @@ Meilisearchのバージョン確認・アップグレードを自動化するス
 │ Step 4: データ移行（互換性なしの場合）                           │
 │   4-1. コンテナ停止・削除                                        │
 │   4-2. ボリューム削除                                            │
-│   4-3. 新バージョンで --import-dump 付きで起動                   │
+│   4-3. 新しいボリューム作成                                      │
+│   4-4. 新バージョンで --import-dump 付きで起動                   │
+│   4-5. インポート完了後、一時コンテナを停止                      │
 │   → Bash エージェント                                           │
 ├──────────────────────────────────────────────────────────────────┤
 │ Step 5: docker-compose.yml 更新                                  │
@@ -125,13 +127,17 @@ Task 4: データ移行
     Meilisearchのデータを新バージョンに移行してください。
     1. docker compose stop meilisearch && docker compose rm -f meilisearch
     2. docker volume rm thac_meilisearch_data
-    3. docker run --rm \
+    3. docker volume create thac_meilisearch_data
+    4. docker run --rm \
          -v thac_meilisearch_data:/meili_data \
          -v $(pwd)/.meilisearch/dumps:/dumps:ro \
          -e MEILI_MASTER_KEY=development_master_key \
          getmeili/meilisearch:v<新バージョン> \
          meilisearch --import-dump /dumps/<dump_file>
-    4. インポート完了後、Ctrl+Cで停止
+    5. インポート完了のログを確認後、Ctrl+C で一時コンテナを停止
+
+    ※ --import-dump 付きで起動するとインポート後もMeilisearchが稼働し続けます
+    ※ 一時コンテナなので停止してもデータは永続化されています
 ```
 
 ### Step 5: docker-compose.yml 更新
@@ -162,6 +168,38 @@ Task 6: 再起動・検証
 
 **直接 Edit ツールを使用:**
 `.kiro/steering/meilisearch.md` のバージョン記載を更新
+
+## 障害復旧
+
+### 起動失敗（os error 11 - Resource temporarily unavailable）
+
+バージョンアップグレード後にコンテナが起動しない場合の対処法:
+
+```
+Task: データ復旧
+- subagent_type: Bash
+- prompt: |
+    Meilisearchの起動障害を復旧してください。
+    1. docker compose stop meilisearch && docker compose rm -f meilisearch
+    2. ボリュームを使用中のコンテナがあれば削除:
+       docker ps -a --filter volume=thac_meilisearch_data -q | xargs -r docker rm -f
+    3. docker volume rm thac_meilisearch_data
+    4. docker volume create thac_meilisearch_data
+    5. docker run --rm \
+         -v thac_meilisearch_data:/meili_data \
+         -v $(pwd)/.meilisearch/dumps:/dumps:ro \
+         -e MEILI_MASTER_KEY=development_master_key \
+         getmeili/meilisearch:v<現バージョン> \
+         meilisearch --import-dump /dumps/meilisearch-dump.dump
+    6. インポート完了確認後 Ctrl+C で停止
+    7. docker compose up -d meilisearch
+    8. ヘルスチェック確認: curl -s http://localhost:7700/health
+```
+
+この問題は以下の原因で発生します:
+- バージョン間のデータベースフォーマット非互換
+- 一時コンテナがボリュームをロックしたまま残存
+- dump経由の移行が正常に完了していない
 
 ## 重要な注意事項
 
