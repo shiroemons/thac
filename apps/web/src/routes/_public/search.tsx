@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import DOMPurify from "isomorphic-dompurify";
 import {
 	Clock,
 	Music,
@@ -86,8 +87,7 @@ function getFormattedText(
 ): React.ReactNode {
 	if (formatted && typeof window !== "undefined") {
 		// Meilisearch returns HTML with <mark> tags
-		// DOMPurify is loaded asynchronously to sanitize the HTML
-		const DOMPurify = require("isomorphic-dompurify").default;
+		// Content is sanitized with DOMPurify (ALLOWED_TAGS: mark only)
 		const sanitized = DOMPurify.sanitize(formatted, {
 			ALLOWED_TAGS: ["mark"],
 			ALLOWED_ATTR: [],
