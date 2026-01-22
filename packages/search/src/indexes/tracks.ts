@@ -39,6 +39,7 @@ export const tracksIndexConfig: IndexConfig = {
 		"arrangerNames",
 		"lyricistNames",
 		"composerNames",
+		"originalSongNames",
 		"originalWorkNames",
 		// 階層検索（originalSongs内）
 		"originalSongs.lvl0",
@@ -70,6 +71,9 @@ export const tracksIndexConfig: IndexConfig = {
 		"circleCount",
 		"originalSongCount",
 	],
+	// NOTE: locales: ["jpn"] により検索は大文字小文字を区別しない（case-insensitive）
+	// これは日本語検索の精度向上のための意図的な設定
+	// 完全一致検索が必要な場合は将来的な検討が必要
 	locales: ["jpn"],
 	typoTolerance: {
 		minWordSizeForTypos: {

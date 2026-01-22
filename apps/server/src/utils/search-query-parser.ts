@@ -25,6 +25,7 @@ export interface ParsedSearchQuery {
 		lyricistNames?: string[];
 		circleNames?: string[];
 		composerNames?: string[];
+		originalSongNames?: string[];
 		releaseYear?: FilterValue;
 		originalSongCount?: FilterValue;
 		vocalistCount?: FilterValue;
@@ -53,10 +54,10 @@ const FILTER_KEY_MAP: Record<
 	circle: { property: "circleNames", isNumeric: false, isArray: true },
 	composer: { property: "composerNames", isNumeric: false, isArray: true },
 	originalsong: {
-		property: "circleNames",
+		property: "originalSongNames",
 		isNumeric: false,
-		isArray: false,
-		addToFullText: true,
+		isArray: true,
+		addToFullText: false,
 	},
 	year: { property: "releaseYear", isNumeric: true, isArray: false },
 	originalcount: {
@@ -246,7 +247,8 @@ export function parseSearchQuery(query: string): ParsedSearchQuery {
 						| "vocalistNames"
 						| "lyricistNames"
 						| "circleNames"
-						| "composerNames";
+						| "composerNames"
+						| "originalSongNames";
 					const currentArray = result.filters[arrayProp] ?? [];
 					currentArray.push(extractedValue);
 					result.filters[arrayProp] = currentArray;
@@ -312,6 +314,7 @@ export function buildMeilisearchFilter(
 		{ key: "lyricistNames", values: filters.lyricistNames },
 		{ key: "circleNames", values: filters.circleNames },
 		{ key: "composerNames", values: filters.composerNames },
+		{ key: "originalSongNames", values: filters.originalSongNames },
 	];
 
 	for (const { key, values } of arrayFilters) {

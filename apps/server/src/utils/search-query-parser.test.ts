@@ -78,10 +78,21 @@ describe("parseSearchQuery", () => {
 			expect(result.filters.eventName).toBe("コミックマーケット100");
 		});
 
-		it("originalsongはフルテキストに追加される", () => {
-			const result = parseSearchQuery("originalsong:大吉キトゥン");
-			expect(result.fullTextQuery).toBe("大吉キトゥン");
-			expect(result.filters).toEqual({});
+		it("originalsongフィルターを抽出する", () => {
+			const result = parseSearchQuery("originalsong:赤より紅い夢");
+			expect(result.fullTextQuery).toBe("");
+			expect(result.filters.originalSongNames).toEqual(["赤より紅い夢"]);
+		});
+
+		it("同じoriginalsongフィルターを複数回指定する（AND条件）", () => {
+			const result = parseSearchQuery(
+				'originalsong:赤より紅い夢 originalsong:"Bad Apple!!"',
+			);
+			expect(result.fullTextQuery).toBe("");
+			expect(result.filters.originalSongNames).toEqual([
+				"赤より紅い夢",
+				"Bad Apple!!",
+			]);
 		});
 	});
 
@@ -165,7 +176,8 @@ describe("parseSearchQuery", () => {
 			const result = parseSearchQuery(
 				"Bad Apple originalsong:大吉キトゥン circle:IOSYS",
 			);
-			expect(result.fullTextQuery).toBe("Bad Apple 大吉キトゥン");
+			expect(result.fullTextQuery).toBe("Bad Apple");
+			expect(result.filters.originalSongNames).toEqual(["大吉キトゥン"]);
 			expect(result.filters.circleNames).toEqual(["IOSYS"]);
 		});
 
@@ -317,6 +329,22 @@ describe("buildMeilisearchFilter", () => {
 		});
 		expect(filter).toBe(
 			'vocalistCount >= 1 AND arrangerCount = 1 AND eventName = "M3 2023春"',
+		);
+	});
+
+	it("originalSongNamesフィルターを構築する", () => {
+		const filter = buildMeilisearchFilter({
+			originalSongNames: ["赤より紅い夢"],
+		});
+		expect(filter).toBe('originalSongNames = "赤より紅い夢"');
+	});
+
+	it("複数のoriginalSongNamesフィルターを構築する（AND条件）", () => {
+		const filter = buildMeilisearchFilter({
+			originalSongNames: ["赤より紅い夢", "Bad Apple!!"],
+		});
+		expect(filter).toBe(
+			'originalSongNames = "赤より紅い夢" AND originalSongNames = "Bad Apple!!"',
 		);
 	});
 });
