@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
 	Clock,
@@ -20,16 +21,15 @@ import {
 	FilterChips,
 	useFilterChips,
 } from "@/components/search";
+import { buildSearchQueryString } from "@/components/search/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { createPageHead } from "@/lib/head";
-
-type SearchCategory = "all" | "artist" | "circle" | "track";
+import { searchTracksQueryOptions } from "@/lib/public-query-options";
 
 interface SearchParams {
 	q?: string;
-	category?: SearchCategory;
 }
 
 export const Route = createFileRoute("/_public/search")({
@@ -38,100 +38,12 @@ export const Route = createFileRoute("/_public/search")({
 	validateSearch: (search: Record<string, unknown>): SearchParams => {
 		return {
 			q: typeof search.q === "string" ? search.q : undefined,
-			category:
-				typeof search.category === "string" &&
-				["all", "artist", "circle", "track"].includes(search.category)
-					? (search.category as SearchCategory)
-					: "all",
 		};
 	},
 });
 
 const STORAGE_KEY_HISTORY = "search-history";
 const MAX_HISTORY_ITEMS = 5;
-
-interface SearchResult {
-	id: string;
-	type: "artist" | "circle" | "track";
-	title: string;
-	subtitle: string;
-}
-
-// モック検索結果データ
-const mockSearchResults: SearchResult[] = [
-	{
-		id: "iosys",
-		type: "circle",
-		title: "IOSYS",
-		subtitle: "156作品 · 1,234トラック",
-	},
-	{
-		id: "sound-holic",
-		type: "circle",
-		title: "SOUND HOLIC",
-		subtitle: "134作品 · 1,567トラック",
-	},
-	{
-		id: "arm",
-		type: "artist",
-		title: "ARM",
-		subtitle: "編曲 · 456曲参加",
-	},
-	{
-		id: "miko",
-		type: "artist",
-		title: "miko",
-		subtitle: "ボーカル · 234曲参加",
-	},
-	{
-		id: "un-owen",
-		type: "track",
-		title: "U.N.オーエンは彼女なのか？ (Arrange)",
-		subtitle: "東方紅魔郷 · IOSYS",
-	},
-	{
-		id: "night-of-nights",
-		type: "track",
-		title: "ナイト・オブ・ナイツ",
-		subtitle: "東方花映塚 · COOL&CREATE",
-	},
-	{
-		id: "septette",
-		type: "track",
-		title: "亡き王女の為のセプテット (Piano)",
-		subtitle: "東方紅魔郷 · TAMusic",
-	},
-	{
-		id: "bad-apple",
-		type: "track",
-		title: "Bad Apple!! feat. nomico",
-		subtitle: "東方幻想郷 · Alstroemeria Records",
-	},
-	{
-		id: "zun",
-		type: "artist",
-		title: "ZUN",
-		subtitle: "編曲 · 789曲参加",
-	},
-	{
-		id: "alstroemeria",
-		type: "circle",
-		title: "Alstroemeria Records",
-		subtitle: "89作品 · 892トラック",
-	},
-	{
-		id: "kouki",
-		type: "artist",
-		title: "幽閉サテライト",
-		subtitle: "編曲・作詞 · 567曲参加",
-	},
-	{
-		id: "tamaonsen",
-		type: "circle",
-		title: "魂音泉",
-		subtitle: "87作品 · 523トラック",
-	},
-];
 
 // 人気の検索キーワード
 const popularSearches = [
@@ -141,28 +53,6 @@ const popularSearches = [
 	"ZUN",
 	"幽閉サテライト",
 ];
-
-const categoryConfig: Record<
-	SearchCategory,
-	{ label: string; icon: React.ReactNode; color: string }
-> = {
-	all: { label: "すべて", icon: null, color: "" },
-	artist: {
-		label: "アーティスト",
-		icon: <UserRound className="size-4" aria-hidden="true" />,
-		color: "text-accent",
-	},
-	circle: {
-		label: "サークル",
-		icon: <Users className="size-4" aria-hidden="true" />,
-		color: "text-primary",
-	},
-	track: {
-		label: "曲",
-		icon: <Music className="size-4" aria-hidden="true" />,
-		color: "text-secondary",
-	},
-};
 
 function getSearchHistory(): string[] {
 	if (typeof window === "undefined") return [];
@@ -183,61 +73,47 @@ function saveSearchHistory(query: string, history: string[]): string[] {
 	return newHistory;
 }
 
-function highlightMatch(text: string, query: string): React.ReactNode {
-	if (!query) return text;
-
-	const lowerText = text.toLowerCase();
-	const lowerQuery = query.toLowerCase();
-	const index = lowerText.indexOf(lowerQuery);
-
-	if (index === -1) return text;
-
-	return (
-		<>
-			{text.slice(0, index)}
-			<mark className="rounded bg-primary/30 px-0.5 text-inherit">
-				{text.slice(index, index + query.length)}
-			</mark>
-			{text.slice(index + query.length)}
-		</>
-	);
+/**
+ * Meilisearchのハイライト付きテキストを表示
+ * _formatted フィールドがある場合は <mark> タグ付きHTMLを使用
+ */
+function getFormattedText(
+	original: string,
+	formatted: string | null | undefined,
+): React.ReactNode {
+	if (formatted && typeof window !== "undefined") {
+		// Meilisearch returns HTML with <mark> tags
+		// DOMPurify is loaded asynchronously to sanitize the HTML
+		const DOMPurify = require("isomorphic-dompurify").default;
+		const sanitized = DOMPurify.sanitize(formatted, {
+			ALLOWED_TAGS: ["mark"],
+			ALLOWED_ATTR: [],
+		});
+		return (
+			<span
+				className="[&_mark]:rounded [&_mark]:bg-primary/30 [&_mark]:px-0.5 [&_mark]:text-inherit"
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: Content is sanitized with DOMPurify
+				dangerouslySetInnerHTML={{ __html: sanitized }}
+			/>
+		);
+	}
+	return original;
 }
 
-function getResultHref(result: SearchResult): string {
-	switch (result.type) {
-		case "artist":
-			return `/artists/${result.id}`;
-		case "circle":
-			return `/circles/${result.id}`;
-		case "track":
-			return `/original-songs/${result.id}`;
-	}
-}
-
-function getResultIcon(type: SearchResult["type"]): React.ReactNode {
-	switch (type) {
-		case "artist":
-			return <UserRound className="size-5" aria-hidden="true" />;
-		case "circle":
-			return <Users className="size-5" aria-hidden="true" />;
-		case "track":
-			return <Music className="size-5" aria-hidden="true" />;
-	}
-}
-
-function getResultIconColor(type: SearchResult["type"]): string {
-	switch (type) {
-		case "artist":
-			return "bg-accent text-accent-content";
-		case "circle":
-			return "bg-primary text-primary-content";
-		case "track":
-			return "bg-secondary text-secondary-content";
-	}
+/**
+ * 配列の最初の要素のハイライト付きテキストを表示
+ */
+function getFormattedArrayText(
+	originals: string[],
+	formattedArray: string[] | undefined,
+): React.ReactNode {
+	if (originals.length === 0) return null;
+	const formatted = formattedArray?.[0];
+	return getFormattedText(originals[0], formatted);
 }
 
 function SearchPage() {
-	const { q: query = "", category = "all" } = Route.useSearch();
+	const { q: query = "" } = Route.useSearch();
 	const navigate = useNavigate();
 	const [inputValue, setInputValue] = useState(query);
 	const [searchHistory, setSearchHistory] = useState<string[]>([]);
@@ -275,6 +151,25 @@ function SearchPage() {
 		return count;
 	}, [filters]);
 
+	// 検索クエリ文字列を構築（フィルター込み）
+	const searchQueryString = useMemo(() => {
+		if (!query) return "";
+		return buildSearchQueryString(query, filters);
+	}, [query, filters]);
+
+	// Meilisearch APIクエリ
+	const {
+		data: searchData,
+		isLoading,
+		error,
+	} = useQuery(
+		searchTracksQueryOptions({
+			q: searchQueryString,
+			page: 1,
+			limit: 20,
+		}),
+	);
+
 	// モーダルを開く
 	const openAdvancedSearch = () => {
 		modalRef.current?.showModal();
@@ -282,8 +177,8 @@ function SearchPage() {
 
 	// 検索実行（モーダルから呼ばれる）
 	const handleAdvancedSearch = () => {
-		// TODO: フィルターを適用して検索を実行
-		// 現在はモックなので単純にモーダルを閉じるだけ
+		// フィルターが変更されると自動的にクエリが再実行される
+		modalRef.current?.close();
 	};
 
 	useEffect(() => {
@@ -302,7 +197,7 @@ function SearchPage() {
 			setSearchHistory((prev) => saveSearchHistory(trimmedValue, prev));
 			navigate({
 				to: "/search",
-				search: { q: trimmedValue, category },
+				search: { q: trimmedValue },
 			});
 		}
 	};
@@ -311,58 +206,16 @@ function SearchPage() {
 		setInputValue("");
 		navigate({
 			to: "/search",
-			search: { category },
-		});
-	};
-
-	const handleCategoryChange = (newCategory: SearchCategory) => {
-		navigate({
-			to: "/search",
-			search: { q: query, category: newCategory },
+			search: {},
 		});
 	};
 
 	const handleHistoryClick = (historyQuery: string) => {
 		navigate({
 			to: "/search",
-			search: { q: historyQuery, category },
+			search: { q: historyQuery },
 		});
 	};
-
-	const searchResults = useMemo(() => {
-		if (!query) return [];
-
-		const lowerQuery = query.toLowerCase();
-		let results = mockSearchResults.filter(
-			(result) =>
-				result.title.toLowerCase().includes(lowerQuery) ||
-				result.subtitle.toLowerCase().includes(lowerQuery),
-		);
-
-		if (category !== "all") {
-			results = results.filter((result) => result.type === category);
-		}
-
-		return results;
-	}, [query, category]);
-
-	const categoryCounts = useMemo(() => {
-		if (!query) return { all: 0, artist: 0, circle: 0, track: 0 };
-
-		const lowerQuery = query.toLowerCase();
-		const allResults = mockSearchResults.filter(
-			(result) =>
-				result.title.toLowerCase().includes(lowerQuery) ||
-				result.subtitle.toLowerCase().includes(lowerQuery),
-		);
-
-		return {
-			all: allResults.length,
-			artist: allResults.filter((r) => r.type === "artist").length,
-			circle: allResults.filter((r) => r.type === "circle").length,
-			track: allResults.filter((r) => r.type === "track").length,
-		};
-	}, [query]);
 
 	return (
 		<div className="space-y-6">
@@ -473,113 +326,168 @@ function SearchPage() {
 				onSearch={handleAdvancedSearch}
 			/>
 
-			{/* Category tabs - mobile optimized */}
-			{query && (
-				<div className="flex flex-wrap gap-2">
-					{(Object.keys(categoryConfig) as SearchCategory[]).map((cat) => {
-						const config = categoryConfig[cat];
-						const isActive = category === cat;
-						return (
-							<button
-								key={cat}
-								type="button"
-								onClick={() => handleCategoryChange(cat)}
-								className={`flex min-h-[44px] items-center gap-2 rounded-full px-4 py-2 text-sm transition-all duration-300 ${
-									isActive
-										? "bg-primary text-primary-content shadow-md"
-										: "bg-base-100 shadow-sm hover:bg-base-200/70 hover:shadow-md hover:ring-2 hover:ring-primary/10"
-								}`}
-								aria-pressed={isActive}
-							>
-								{config.icon}
-								{config.label}
-								<span
-									className={`rounded-full px-1.5 py-0.5 text-xs transition-colors duration-300 ${
-										isActive
-											? "bg-primary-content/20 text-primary-content"
-											: "bg-base-content/10 text-base-content/60"
-									}`}
-								>
-									{categoryCounts[cat]}
-								</span>
-							</button>
-						);
-					})}
-				</div>
-			)}
-
 			{/* Search results */}
 			{query ? (
 				<div className="space-y-4">
 					<p className="text-base-content/60 text-sm">
 						「<span className="font-medium text-base-content">{query}</span>
 						」の検索結果
+						{searchData && (
+							<span className="ml-1">
+								({searchData.estimatedTotalHits.toLocaleString()}件)
+							</span>
+						)}
 					</p>
 
-					{searchResults.length > 0 ? (
+					{/* Loading state */}
+					{isLoading && (
+						<div className="flex justify-center py-12">
+							<span className="loading loading-spinner loading-lg text-primary" />
+						</div>
+					)}
+
+					{/* Error state */}
+					{error && (
+						<Card className="glass-card-light rounded-2xl p-12 text-center">
+							<p className="text-error">検索中にエラーが発生しました</p>
+							<p className="mt-2 text-base-content/60 text-sm">
+								しばらく経ってから再度お試しください
+							</p>
+						</Card>
+					)}
+
+					{/* Results */}
+					{!isLoading && !error && searchData && searchData.hits.length > 0 ? (
 						<div className="grid gap-3">
-							{searchResults.map((result) => (
-								<Link
-									key={`${result.type}-${result.id}`}
-									to={getResultHref(result)}
-									preload="intent"
-								>
-									<Card className="group flex min-h-[72px] items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:bg-base-200/60 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
-										<div
-											className={`flex size-12 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${getResultIconColor(result.type)}`}
-										>
-											{getResultIcon(result.type)}
-										</div>
-										<div className="min-w-0 flex-1">
-											<div className="mb-1 flex items-center gap-2">
-												<span
-													className={`rounded-full bg-base-content/5 px-2 py-0.5 text-xs ${categoryConfig[result.type].color}`}
-												>
-													{categoryConfig[result.type].label}
-												</span>
+							{searchData.hits.map((hit) => {
+								// サブタイトル: サークル名 / 原曲名
+								const circleText =
+									hit.circleNames.length > 0 ? hit.circleNames.join(", ") : "";
+								const originalSongText =
+									hit.originalSongNames.length > 0
+										? hit.originalSongNames.slice(0, 2).join(", ") +
+											(hit.originalSongNames.length > 2
+												? ` 他${hit.originalSongNames.length - 2}曲`
+												: "")
+										: "";
+								const subtitle = [circleText, originalSongText]
+									.filter(Boolean)
+									.join(" / ");
+
+								return (
+									<Link
+										key={hit.id}
+										to="/tracks/$id"
+										params={{ id: hit.id }}
+										preload="intent"
+									>
+										<Card className="group flex min-h-[72px] items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:bg-base-200/60 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+											<div className="flex size-12 flex-shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-content transition-transform duration-300 group-hover:scale-110">
+												<Music className="size-5" aria-hidden="true" />
 											</div>
-											<h3 className="font-semibold transition-colors duration-300 group-hover:text-primary">
-												{highlightMatch(result.title, query)}
-											</h3>
-											<p className="mt-0.5 text-base-content/60 text-sm">
-												{highlightMatch(result.subtitle, query)}
-											</p>
-										</div>
-										<div className="hidden text-base-content/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary sm:block">
-											→
-										</div>
-									</Card>
-								</Link>
-							))}
+											<div className="min-w-0 flex-1">
+												<div className="mb-1 flex flex-wrap items-center gap-2">
+													<span className="rounded-full bg-base-content/5 px-2 py-0.5 text-secondary text-xs">
+														トラック
+													</span>
+													{hit.releaseName && (
+														<span className="truncate text-base-content/50 text-xs">
+															{getFormattedText(
+																hit.releaseName,
+																hit._formatted?.releaseName,
+															)}
+														</span>
+													)}
+												</div>
+												<h3 className="font-semibold transition-colors duration-300 group-hover:text-primary">
+													{getFormattedText(hit.name, hit._formatted?.name)}
+												</h3>
+												<p className="mt-0.5 line-clamp-1 text-base-content/60 text-sm">
+													{hit._formatted?.circleNames?.[0] ||
+													hit._formatted?.originalSongNames?.[0] ? (
+														<>
+															{getFormattedArrayText(
+																hit.circleNames,
+																hit._formatted?.circleNames,
+															)}
+															{circleText && originalSongText && " / "}
+															{getFormattedArrayText(
+																hit.originalSongNames,
+																hit._formatted?.originalSongNames,
+															)}
+															{hit.originalSongNames.length > 1 && (
+																<span className="text-base-content/40">
+																	{" "}
+																	他{hit.originalSongNames.length - 1}曲
+																</span>
+															)}
+														</>
+													) : (
+														subtitle
+													)}
+												</p>
+												{/* アーティスト情報 */}
+												{(hit.vocalistNames.length > 0 ||
+													hit.arrangerNames.length > 0) && (
+													<p className="mt-1 text-base-content/50 text-xs">
+														{hit.vocalistNames.length > 0 && (
+															<span>
+																Vo: {hit.vocalistNames.slice(0, 2).join(", ")}
+																{hit.vocalistNames.length > 2 && " ..."}
+															</span>
+														)}
+														{hit.vocalistNames.length > 0 &&
+															hit.arrangerNames.length > 0 &&
+															" / "}
+														{hit.arrangerNames.length > 0 && (
+															<span>
+																Arr: {hit.arrangerNames.slice(0, 2).join(", ")}
+																{hit.arrangerNames.length > 2 && " ..."}
+															</span>
+														)}
+													</p>
+												)}
+											</div>
+											<div className="hidden text-base-content/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary sm:block">
+												→
+											</div>
+										</Card>
+									</Link>
+								);
+							})}
 						</div>
 					) : (
-						<Card className="glass-card-light rounded-2xl p-12 text-center">
-							<div className="mx-auto mb-4 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-base-content/5 to-base-content/10">
-								<Search
-									className="size-10 text-base-content/30"
-									aria-hidden="true"
-								/>
-							</div>
-							<h3 className="mb-2 font-semibold text-base-content/70 text-lg">
-								結果が見つかりませんでした
-							</h3>
-							<p className="text-base-content/60">
-								「<span className="font-medium text-base-content">{query}</span>
-								」に一致する結果はありません
-							</p>
-							<p className="mt-4 text-base-content/50 text-sm">
-								別のキーワードで検索するか、詳細検索をお試しください
-							</p>
-							<Button
-								type="button"
-								variant="ghost"
-								onClick={openAdvancedSearch}
-								className="mt-4 gap-2 transition-all duration-300 hover:bg-primary hover:text-primary-content"
-							>
-								<SlidersHorizontal className="size-4" />
-								詳細検索を開く
-							</Button>
-						</Card>
+						!isLoading &&
+						!error && (
+							<Card className="glass-card-light rounded-2xl p-12 text-center">
+								<div className="mx-auto mb-4 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-base-content/5 to-base-content/10">
+									<Search
+										className="size-10 text-base-content/30"
+										aria-hidden="true"
+									/>
+								</div>
+								<h3 className="mb-2 font-semibold text-base-content/70 text-lg">
+									結果が見つかりませんでした
+								</h3>
+								<p className="text-base-content/60">
+									「
+									<span className="font-medium text-base-content">{query}</span>
+									」に一致する結果はありません
+								</p>
+								<p className="mt-4 text-base-content/50 text-sm">
+									別のキーワードで検索するか、詳細検索をお試しください
+								</p>
+								<Button
+									type="button"
+									variant="ghost"
+									onClick={openAdvancedSearch}
+									className="mt-4 gap-2 transition-all duration-300 hover:bg-primary hover:text-primary-content"
+								>
+									<SlidersHorizontal className="size-4" />
+									詳細検索を開く
+								</Button>
+							</Card>
+						)
 					)}
 				</div>
 			) : (

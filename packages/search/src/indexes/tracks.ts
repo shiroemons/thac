@@ -28,12 +28,17 @@ export const tracksIndexConfig: IndexConfig = {
 		// ID
 		"releaseId",
 		"eventId",
+		"eventName",
 		// 年・日付
 		"releaseYear",
 		"releaseDate",
 		"releaseType",
 		// 名前配列
 		"circleNames",
+		"vocalistNames",
+		"arrangerNames",
+		"lyricistNames",
+		"composerNames",
 		"originalWorkNames",
 		// 階層検索（originalSongs内）
 		"originalSongs.lvl0",

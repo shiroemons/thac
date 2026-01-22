@@ -7,6 +7,7 @@ import { eventsRouter } from "./events";
 import { officialWorksRouter } from "./official-works";
 import { originalSongsRouter } from "./original-songs";
 import { releasesRouter } from "./releases";
+import { searchRouter } from "./search";
 import { statsRouter } from "./stats";
 import { tracksRouter } from "./tracks";
 
@@ -23,5 +24,6 @@ publicRouter.route("/events", eventsRouter);
 publicRouter.route("/releases", releasesRouter);
 publicRouter.route("/tracks", tracksRouter);
 publicRouter.route("/stats", statsRouter);
+publicRouter.route("/search", searchRouter);
 
 export { publicRouter };
