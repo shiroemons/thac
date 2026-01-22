@@ -58,3 +58,5 @@ temp
 !.claude/CLAUDE.md
 !CLAUDE.md
 .claude/settings.local.json
+# Meilisearch dumps
+.meilisearch/
