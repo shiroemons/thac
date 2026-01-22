@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import DOMPurify from "isomorphic-dompurify";
 import {
+	ChevronRight,
 	Clock,
 	Music,
 	Search,
@@ -104,15 +105,66 @@ function getFormattedText(
 }
 
 /**
- * 配列の最初の要素のハイライト付きテキストを表示
+ * 配列の全要素をハイライト付きで表示（区切り文字で結合）
  */
 function getFormattedArrayText(
 	originals: string[],
 	formattedArray: string[] | undefined,
+	separator = ", ",
 ): React.ReactNode {
 	if (originals.length === 0) return null;
-	const formatted = formattedArray?.[0];
-	return getFormattedText(originals[0], formatted);
+	return originals.map((original, index) => (
+		<span key={original}>
+			{index > 0 && separator}
+			{getFormattedText(original, formattedArray?.[index])}
+		</span>
+	));
+}
+
+/**
+ * サークル配列をリンク付きで表示
+ */
+function renderCircleLinks(
+	items: Array<{ id: string; name: string }>,
+): React.ReactNode {
+	if (items.length === 0) return "-";
+	return items.map((item, index) => (
+		<span key={`${item.name}-${index}`}>
+			{index > 0 && ", "}
+			<Link
+				to="/circles/$id"
+				params={{ id: item.id }}
+				className="transition-colors hover:text-primary"
+			>
+				{item.name}
+			</Link>
+		</span>
+	));
+}
+
+/**
+ * アーティスト配列をリンク付きで表示
+ */
+function renderArtistLinks(
+	items: Array<{ id: string | null; name: string }>,
+): React.ReactNode {
+	if (items.length === 0) return "-";
+	return items.map((item, index) => (
+		<span key={`${item.name}-${index}`}>
+			{index > 0 && ", "}
+			{item.id ? (
+				<Link
+					to="/artists/$id"
+					params={{ id: item.id }}
+					className="transition-colors hover:text-primary"
+				>
+					{item.name}
+				</Link>
+			) : (
+				item.name
+			)}
+		</span>
+	));
 }
 
 function SearchPage() {
@@ -370,104 +422,219 @@ function SearchPage() {
 
 					{/* Results */}
 					{!isLoading && !error && searchData && searchData.hits.length > 0 ? (
-						<div className="grid gap-3">
-							{searchData.hits.map((hit) => {
-								// サブタイトル: サークル名 / 原曲名
-								const circleText =
-									hit.circleNames.length > 0 ? hit.circleNames.join(", ") : "";
-								const originalSongText =
-									hit.originalSongNames.length > 0
-										? hit.originalSongNames.slice(0, 2).join(", ") +
-											(hit.originalSongNames.length > 2
-												? ` 他${hit.originalSongNames.length - 2}曲`
-												: "")
-										: "";
-								const subtitle = [circleText, originalSongText]
-									.filter(Boolean)
-									.join(" / ");
-
-								return (
-									<Link
-										key={hit.id}
-										to="/tracks/$id"
-										params={{ id: hit.id }}
-										preload="intent"
-									>
-										<Card className="group flex min-h-[72px] items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:bg-base-200/60 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
-											<div className="flex size-12 flex-shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-content transition-transform duration-300 group-hover:scale-110">
-												<Music className="size-5" aria-hidden="true" />
-											</div>
-											<div className="min-w-0 flex-1">
-												<div className="mb-1 flex flex-wrap items-center gap-2">
-													<span className="rounded-full bg-base-content/5 px-2 py-0.5 text-secondary text-xs">
-														トラック
-													</span>
-													{hit.releaseName && (
-														<span className="truncate text-base-content/50 text-xs">
+						<>
+							{/* デスクトップ: テーブル表示 */}
+							<div className="hidden overflow-x-auto lg:block">
+								<table className="table table-sm w-full">
+									<thead>
+										<tr className="text-base-content/70">
+											<th className="font-medium">曲名</th>
+											<th className="font-medium">作品名</th>
+											<th className="font-medium">イベント</th>
+											<th className="font-medium">サークル</th>
+											<th className="font-medium">原曲</th>
+											<th className="font-medium">ボーカリスト</th>
+											<th className="font-medium">編曲者</th>
+											<th className="font-medium">作詞者</th>
+											<th className="font-medium">その他</th>
+										</tr>
+									</thead>
+									<tbody>
+										{searchData.hits.map((hit) => (
+											<tr
+												key={hit.id}
+												className="transition-colors hover:bg-base-200/60"
+											>
+												<td className="max-w-[200px]">
+													<Link
+														to="/tracks/$id"
+														params={{ id: hit.id }}
+														className="line-clamp-2 block font-medium transition-colors hover:text-primary"
+													>
+														{getFormattedText(hit.name, hit._formatted?.name)}
+													</Link>
+												</td>
+												<td className="max-w-[150px] text-base-content/70 text-sm">
+													{hit.releaseId ? (
+														<Link
+															to="/releases/$id"
+															params={{ id: hit.releaseId }}
+															className="line-clamp-2 block transition-colors hover:text-primary"
+														>
 															{getFormattedText(
-																hit.releaseName,
+																hit.releaseName ?? "",
 																hit._formatted?.releaseName,
 															)}
+														</Link>
+													) : (
+														<span className="line-clamp-2 block">-</span>
+													)}
+												</td>
+												<td className="max-w-[120px] text-base-content/70 text-sm">
+													{hit.eventId ? (
+														<Link
+															to="/events/$id"
+															params={{ id: hit.eventId }}
+															className="line-clamp-2 block transition-colors hover:text-primary"
+														>
+															{hit.eventName}
+														</Link>
+													) : (
+														<span className="line-clamp-2 block">
+															{hit.eventName ?? "-"}
 														</span>
 													)}
+												</td>
+												<td className="max-w-[120px] text-sm">
+													<div className="line-clamp-2">
+														{renderCircleLinks(hit.circles)}
+													</div>
+												</td>
+												<td className="max-w-[150px] text-base-content/70 text-sm">
+													<div className="line-clamp-2">
+														{hit.originalSongs.length > 0
+															? hit.originalSongs.map((song, index) => (
+																	<span key={`${song.name}-${index}`}>
+																		{index > 0 && ", "}
+																		{song.officialSongId ? (
+																			<Link
+																				to="/original-songs/$id"
+																				params={{ id: song.officialSongId }}
+																				className="transition-colors hover:text-primary"
+																			>
+																				{song.name}
+																			</Link>
+																		) : (
+																			song.name
+																		)}
+																	</span>
+																))
+															: "-"}
+													</div>
+												</td>
+												<td className="max-w-[120px] text-sm">
+													<div className="line-clamp-2">
+														{renderArtistLinks(hit.vocalists)}
+													</div>
+												</td>
+												<td className="max-w-[120px] text-sm">
+													<div className="line-clamp-2">
+														{renderArtistLinks(hit.arrangers)}
+													</div>
+												</td>
+												<td className="max-w-[120px] text-sm">
+													<div className="line-clamp-2">
+														{renderArtistLinks(hit.lyricists)}
+													</div>
+												</td>
+												<td className="max-w-[120px] text-base-content/50 text-xs">
+													<div className="line-clamp-2">
+														{hit.composers.length > 0 || hit.remixers.length > 0
+															? [...hit.composers, ...hit.remixers].map(
+																	(artist, index) => (
+																		<span key={`${artist.name}-${index}`}>
+																			{index > 0 && ", "}
+																			{artist.id ? (
+																				<Link
+																					to="/artists/$id"
+																					params={{ id: artist.id }}
+																					className="transition-colors hover:text-primary"
+																				>
+																					{artist.name}
+																				</Link>
+																			) : (
+																				artist.name
+																			)}
+																		</span>
+																	),
+																)
+															: "-"}
+													</div>
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+
+							{/* モバイル: カード表示 */}
+							<div className="grid gap-3 lg:hidden">
+								{searchData.hits.map((hit) => (
+										<Link
+											key={hit.id}
+											to="/tracks/$id"
+											params={{ id: hit.id }}
+											preload="intent"
+										>
+											<Card className="group flex items-center gap-4 rounded-xl p-4 transition-all duration-300 hover:bg-base-200/60 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+												<div className="flex size-10 flex-shrink-0 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
+													<Music className="size-5" aria-hidden="true" />
 												</div>
-												<h3 className="font-semibold transition-colors duration-300 group-hover:text-primary">
-													{getFormattedText(hit.name, hit._formatted?.name)}
-												</h3>
-												<p className="mt-0.5 line-clamp-1 text-base-content/60 text-sm">
-													{hit._formatted?.circleNames?.[0] ||
-													hit._formatted?.originalSongNames?.[0] ? (
-														<>
+												<div className="min-w-0 flex-1">
+													{(hit.releaseName || hit.eventName) && (
+														<p className="truncate text-base-content/50 text-xs">
+															{hit.releaseName &&
+																getFormattedText(
+																	hit.releaseName,
+																	hit._formatted?.releaseName,
+																)}
+															{hit.releaseName && hit.eventName && " / "}
+															{hit.eventName}
+														</p>
+													)}
+													<h3 className="line-clamp-1 font-semibold transition-colors duration-300 group-hover:text-primary">
+														{getFormattedText(hit.name, hit._formatted?.name)}
+													</h3>
+													{/* サークル名 */}
+													{hit.circleNames.length > 0 && (
+														<p className="line-clamp-1 text-base-content/60 text-sm">
 															{getFormattedArrayText(
 																hit.circleNames,
 																hit._formatted?.circleNames,
 															)}
-															{circleText && originalSongText && " / "}
+														</p>
+													)}
+													{/* 原曲名 */}
+													{hit.originalSongNames.length > 0 && (
+														<p className="line-clamp-1 text-base-content/50 text-xs">
+															♪{" "}
 															{getFormattedArrayText(
 																hit.originalSongNames,
 																hit._formatted?.originalSongNames,
+																" / ",
 															)}
-															{hit.originalSongNames.length > 1 && (
-																<span className="text-base-content/40">
-																	{" "}
-																	他{hit.originalSongNames.length - 1}曲
-																</span>
-															)}
-														</>
-													) : (
-														subtitle
+														</p>
 													)}
-												</p>
-												{/* アーティスト情報 */}
-												{(hit.vocalistNames.length > 0 ||
-													hit.arrangerNames.length > 0) && (
-													<p className="mt-1 text-base-content/50 text-xs">
-														{hit.vocalistNames.length > 0 && (
-															<span>
-																Vo: {hit.vocalistNames.slice(0, 2).join(", ")}
-																{hit.vocalistNames.length > 2 && " ..."}
-															</span>
-														)}
-														{hit.vocalistNames.length > 0 &&
-															hit.arrangerNames.length > 0 &&
-															" / "}
-														{hit.arrangerNames.length > 0 && (
-															<span>
-																Arr: {hit.arrangerNames.slice(0, 2).join(", ")}
-																{hit.arrangerNames.length > 2 && " ..."}
-															</span>
-														)}
-													</p>
-												)}
-											</div>
-											<div className="hidden text-base-content/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary sm:block">
-												→
-											</div>
-										</Card>
-									</Link>
-								);
-							})}
-						</div>
+													{/* アーティスト情報 */}
+													{(hit.vocalistNames.length > 0 ||
+														hit.arrangerNames.length > 0 ||
+														hit.lyricistNames.length > 0) && (
+														<p className="line-clamp-1 text-base-content/50 text-xs">
+															{hit.vocalistNames.length > 0 && (
+																<span>Vo: {hit.vocalistNames.join(", ")}</span>
+															)}
+															{hit.vocalistNames.length > 0 &&
+																hit.arrangerNames.length > 0 &&
+																" / "}
+															{hit.arrangerNames.length > 0 && (
+																<span>Arr: {hit.arrangerNames.join(", ")}</span>
+															)}
+															{(hit.vocalistNames.length > 0 ||
+																hit.arrangerNames.length > 0) &&
+																hit.lyricistNames.length > 0 &&
+																" / "}
+															{hit.lyricistNames.length > 0 && (
+																<span>Ly: {hit.lyricistNames.join(", ")}</span>
+															)}
+														</p>
+													)}
+												</div>
+												<ChevronRight className="hidden size-5 flex-shrink-0 text-base-content/30 transition-colors duration-200 group-hover:text-primary sm:block" />
+											</Card>
+										</Link>
+								))}
+							</div>
+						</>
 					) : (
 						!isLoading &&
 						!error && (
