@@ -21,7 +21,10 @@ import {
 	FilterChips,
 	useFilterChips,
 } from "@/components/search";
-import { buildSearchQueryString } from "@/components/search/utils";
+import {
+	buildSearchQueryString,
+	isFiltersEmpty,
+} from "@/components/search/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -153,8 +156,11 @@ function SearchPage() {
 
 	// 検索クエリ文字列を構築（フィルター込み）
 	const searchQueryString = useMemo(() => {
-		if (!query) return "";
 		return buildSearchQueryString(query, filters);
+	}, [query, filters]);
+
+	const hasActiveSearch = useMemo(() => {
+		return !!query || !isFiltersEmpty(filters);
 	}, [query, filters]);
 
 	// Meilisearch APIクエリ
@@ -295,7 +301,7 @@ function SearchPage() {
 					)}
 
 					{/* Popular searches */}
-					{!query && chips.length === 0 && (
+					{!hasActiveSearch && (
 						<div className="mx-auto mt-6 max-w-2xl">
 							<div className="flex flex-wrap items-center justify-center gap-2">
 								<span className="flex items-center gap-1 text-base-content/60 text-xs">
@@ -327,11 +333,17 @@ function SearchPage() {
 			/>
 
 			{/* Search results */}
-			{query ? (
+			{hasActiveSearch ? (
 				<div className="space-y-4">
 					<p className="text-base-content/60 text-sm">
-						「<span className="font-medium text-base-content">{query}</span>
-						」の検索結果
+						{query ? (
+							<>
+								「<span className="font-medium text-base-content">{query}</span>
+								」の検索結果
+							</>
+						) : (
+							<>フィルター検索の結果</>
+						)}
 						{searchData && (
 							<span className="ml-1">
 								({searchData.estimatedTotalHits.toLocaleString()}件)
@@ -470,9 +482,17 @@ function SearchPage() {
 									結果が見つかりませんでした
 								</h3>
 								<p className="text-base-content/60">
-									「
-									<span className="font-medium text-base-content">{query}</span>
-									」に一致する結果はありません
+									{query ? (
+										<>
+											「
+											<span className="font-medium text-base-content">
+												{query}
+											</span>
+											」に一致する結果はありません
+										</>
+									) : (
+										<>指定された条件に一致する結果はありません</>
+									)}
 								</p>
 								<p className="mt-4 text-base-content/50 text-sm">
 									別のキーワードで検索するか、詳細検索をお試しください

@@ -45,8 +45,8 @@ searchRouter.get("/tracks", async (c) => {
 	const limitParam = c.req.query("limit");
 	const sortParam = c.req.query("sort");
 
-	// クエリパラメータが必須
-	if (!query) {
+	// クエリパラメータが必須（空文字列は許可 - フィルターのみ検索をサポート）
+	if (query === undefined || query === null) {
 		return c.json({ error: "Query parameter 'q' is required" }, 400);
 	}
 
