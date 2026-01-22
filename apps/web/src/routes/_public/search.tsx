@@ -354,6 +354,9 @@ function SearchPage() {
 	const navigate = useNavigate();
 	const [inputValue, setInputValue] = useState(query);
 	const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+	const [expandedOriginalSongs, setExpandedOriginalSongs] = useState<Set<string>>(
+		new Set(),
+	);
 
 	// URLパラメータからフィルターを復元（useState の初期値関数で初回のみ実行）
 	const [filters, setFiltersInternal] = useState<AdvancedSearchFilters>(() =>
@@ -364,6 +367,20 @@ function SearchPage() {
 		() => restoreFiltersFromUrlParams(searchParams),
 	);
 	const modalRef = useRef<AdvancedSearchModalRef>(null);
+
+	const toggleOriginalSongs = (trackId: string, e: React.MouseEvent): void => {
+		e.preventDefault();
+		e.stopPropagation();
+		setExpandedOriginalSongs((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(trackId)) {
+				newSet.delete(trackId);
+			} else {
+				newSet.add(trackId);
+			}
+			return newSet;
+		});
+	};
 
 	// フィルター変更時にURLも更新するラッパー
 	const setFiltersWithUrl = useCallback(
@@ -820,7 +837,7 @@ function SearchPage() {
 							</div>
 
 							{/* モバイル: カード表示 */}
-							<div className="grid gap-3 lg:hidden">
+							<div className="grid gap-4 lg:hidden">
 								{searchData.hits.map((hit) => (
 									<Link
 										key={hit.id}
@@ -828,70 +845,116 @@ function SearchPage() {
 										params={{ id: hit.id }}
 										preload="intent"
 									>
-										<Card className="group flex items-center gap-4 rounded-xl p-4 transition-all duration-300 hover:bg-base-200/60 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
-											<div className="flex size-10 flex-shrink-0 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
-												<Music className="size-5" aria-hidden="true" />
-											</div>
-											<div className="min-w-0 flex-1">
-												{(hit.releaseName || hit.eventName) && (
-													<p className="truncate text-base-content/50 text-xs">
-														{hit.releaseName &&
-															getFormattedText(
-																hit.releaseName,
-																hit._formatted?.releaseName,
+										<Card className="group rounded-xl p-4 transition-all duration-300 hover:bg-base-200/60 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
+											{/* 内部にflexコンテナを追加 */}
+											<div className="flex items-start gap-3">
+												{/* アイコン: サイズ拡大 */}
+												<div className="flex size-12 flex-shrink-0 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
+													<Music className="size-6" aria-hidden="true" />
+												</div>
+
+												{/* コンテンツ */}
+												<div className="min-w-0 flex-1">
+													{/* メタ情報 */}
+													{(hit.releaseName || hit.eventName) && (
+														<p className="text-xs text-base-content/60">
+															{hit.releaseName &&
+																getFormattedText(
+																	hit.releaseName,
+																	hit._formatted?.releaseName,
+																)}
+															{hit.releaseName && hit.eventName && " / "}
+															{hit.eventName}
+														</p>
+													)}
+
+													{/* タイトル: 太字化、2行まで許可 */}
+													<h3 className="line-clamp-2 font-bold text-base transition-colors duration-300 group-hover:text-primary">
+														{getFormattedText(hit.name, hit._formatted?.name)}
+													</h3>
+
+													{/* サークル */}
+													{hit.circleNames.length > 0 && (
+														<p className="text-sm text-base-content/80">
+															{getFormattedArrayText(
+																hit.circleNames,
+																hit._formatted?.circleNames,
 															)}
-														{hit.releaseName && hit.eventName && " / "}
-														{hit.eventName}
-													</p>
-												)}
-												<h3 className="line-clamp-1 font-semibold transition-colors duration-300 group-hover:text-primary">
-													{getFormattedText(hit.name, hit._formatted?.name)}
-												</h3>
-												{/* サークル名 */}
-												{hit.circleNames.length > 0 && (
-													<p className="line-clamp-1 text-base-content/60 text-sm">
-														{getFormattedArrayText(
-															hit.circleNames,
-															hit._formatted?.circleNames,
-														)}
-													</p>
-												)}
-												{/* 原曲名 */}
-												{hit.originalSongNames.length > 0 && (
-													<p className="line-clamp-1 text-base-content/50 text-xs">
-														♪{" "}
-														{getFormattedArrayText(
-															hit.originalSongNames,
-															hit._formatted?.originalSongNames,
-															" / ",
-														)}
-													</p>
-												)}
-												{/* アーティスト情報 */}
-												{(hit.vocalistNames.length > 0 ||
-													hit.arrangerNames.length > 0 ||
-													hit.lyricistNames.length > 0) && (
-													<p className="line-clamp-1 text-base-content/50 text-xs">
-														{hit.vocalistNames.length > 0 && (
-															<span>Vo: {hit.vocalistNames.join(", ")}</span>
-														)}
-														{hit.vocalistNames.length > 0 &&
-															hit.arrangerNames.length > 0 &&
-															" / "}
-														{hit.arrangerNames.length > 0 && (
-															<span>Arr: {hit.arrangerNames.join(", ")}</span>
-														)}
-														{(hit.vocalistNames.length > 0 ||
-															hit.arrangerNames.length > 0) &&
-															hit.lyricistNames.length > 0 &&
-															" / "}
-														{hit.lyricistNames.length > 0 && (
-															<span>Ly: {hit.lyricistNames.join(", ")}</span>
-														)}
-													</p>
-												)}
+														</p>
+													)}
+
+													{/* アーティスト情報 */}
+													{(hit.vocalistNames.length > 0 ||
+														hit.arrangerNames.length > 0 ||
+														hit.lyricistNames.length > 0) && (
+														<p className="text-xs text-base-content/70">
+															{hit.vocalistNames.length > 0 && (
+																<span>Vo: {hit.vocalistNames.join(", ")}</span>
+															)}
+															{hit.vocalistNames.length > 0 &&
+																hit.arrangerNames.length > 0 &&
+																" / "}
+															{hit.arrangerNames.length > 0 && (
+																<span>Arr: {hit.arrangerNames.join(", ")}</span>
+															)}
+															{(hit.vocalistNames.length > 0 ||
+																hit.arrangerNames.length > 0) &&
+																hit.lyricistNames.length > 0 &&
+																" / "}
+															{hit.lyricistNames.length > 0 && (
+																<span>Ly: {hit.lyricistNames.join(", ")}</span>
+															)}
+														</p>
+													)}
+
+													{/* 原曲名（展開/折りたたみ対応） */}
+													{hit.originalSongNames.length > 0 && (
+														<p className="text-xs text-base-content/60">
+															♪{" "}
+															{hit.originalSongNames.length <= 3 ? (
+																getFormattedArrayText(
+																	hit.originalSongNames,
+																	hit._formatted?.originalSongNames,
+																	" / ",
+																)
+															) : expandedOriginalSongs.has(hit.id) ? (
+																<>
+																	{getFormattedArrayText(
+																		hit.originalSongNames,
+																		hit._formatted?.originalSongNames,
+																		" / ",
+																	)}{" "}
+																	<button
+																		type="button"
+																		onClick={(e) => toggleOriginalSongs(hit.id, e)}
+																		className="touch-manipulation rounded px-2 py-1 -mx-2 -my-1 text-primary/80 transition-colors hover:text-primary hover:underline active:bg-primary/10 active:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+																	>
+																		閉じる
+																	</button>
+																</>
+															) : (
+																<>
+																	{getFormattedArrayText(
+																		hit.originalSongNames.slice(0, 3),
+																		hit._formatted?.originalSongNames?.slice(0, 3),
+																		" / ",
+																	)}{" "}
+																	<button
+																		type="button"
+																		onClick={(e) => toggleOriginalSongs(hit.id, e)}
+																		className="touch-manipulation rounded px-2 py-1 -mx-2 -my-1 text-primary/80 transition-colors hover:text-primary hover:underline active:bg-primary/10 active:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+																	>
+																		他{hit.originalSongNames.length - 3}曲を見る
+																	</button>
+																</>
+															)}
+														</p>
+													)}
+												</div>
+
+												{/* 矢印: 常に表示 */}
+												<ChevronRight className="size-5 flex-shrink-0 text-base-content/40 transition-colors duration-200 group-hover:text-primary" />
 											</div>
-											<ChevronRight className="hidden size-5 flex-shrink-0 text-base-content/30 transition-colors duration-200 group-hover:text-primary sm:block" />
 										</Card>
 									</Link>
 								))}
