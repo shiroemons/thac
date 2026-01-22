@@ -134,3 +134,27 @@ export interface IndexStatus {
 	isIndexing: boolean;
 	lastUpdate: string | null;
 }
+
+/** Track search hit with optional highlighting */
+export interface TrackSearchHit extends TrackSearchDocument {
+	/** Highlighted fields from Meilisearch */
+	_formatted?: Partial<TrackSearchDocument>;
+}
+
+/** Track search response from Meilisearch */
+export interface TrackSearchResponse {
+	/** Search results */
+	hits: TrackSearchHit[];
+	/** Original search query */
+	query: string;
+	/** Processing time in milliseconds */
+	processingTimeMs: number;
+	/** Estimated total hits (for pagination) */
+	estimatedTotalHits: number;
+	/** Current page (1-indexed) */
+	page: number;
+	/** Results per page */
+	limit: number;
+	/** Total pages */
+	totalPages: number;
+}

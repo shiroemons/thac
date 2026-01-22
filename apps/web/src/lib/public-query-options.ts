@@ -15,6 +15,7 @@ import {
 	type SongPairRankingItem,
 	type SongStatsResponse,
 	type StackedWorkStatsResponse,
+	type TrackSearchParams,
 	type WorkStatsResponse,
 } from "./public-api";
 
@@ -448,3 +449,22 @@ export const publicEventReleasesInfiniteQueryOptions = (
 		staleTime: STALE_TIME_PUBLIC.STATS,
 	});
 };
+
+// =============================================================================
+// 検索用クエリオプション
+// =============================================================================
+
+/** 検索結果のstaleTime: 30秒（検索結果は頻繁に変わる可能性がある） */
+const STALE_TIME_SEARCH = 30_000;
+
+/**
+ * トラック検索のクエリオプション
+ * 検索ページでの結果表示に使用
+ */
+export const searchTracksQueryOptions = (params: TrackSearchParams) =>
+	queryOptions({
+		queryKey: ["public", "search", "tracks", params],
+		queryFn: () => publicApi.search.tracks(params),
+		staleTime: STALE_TIME_SEARCH,
+		enabled: !!params.q, // クエリが空の場合は実行しない
+	});

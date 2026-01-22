@@ -49,12 +49,14 @@ export interface AdvancedSearchModalRef {
 }
 
 interface AdvancedSearchModalProps {
-	/** フィルター状態 */
+	/** フィルター状態（pendingFilters） */
 	filters: AdvancedSearchFilters;
-	/** フィルター変更ハンドラ */
+	/** フィルター変更ハンドラ（pendingFiltersを更新） */
 	onFiltersChange: (filters: AdvancedSearchFilters) => void;
-	/** 検索実行ハンドラ */
+	/** 検索実行ハンドラ（pendingFiltersを正式に適用） */
 	onSearch: () => void;
+	/** モーダルを閉じるハンドラ（変更を破棄） */
+	onClose: () => void;
 }
 
 interface AdvancedSearchModalContentProps {
@@ -369,10 +371,13 @@ function AdvancedSearchModalContent({
 export const AdvancedSearchModal = forwardRef<
 	AdvancedSearchModalRef,
 	AdvancedSearchModalProps
->(function AdvancedSearchModal({ filters, onFiltersChange, onSearch }, ref) {
+>(function AdvancedSearchModal(
+	{ filters, onFiltersChange, onSearch, onClose },
+	ref,
+) {
 	const dialogRef = useRef<HTMLDialogElement>(null);
 
-	// フィルターチップのロジックをフックから取得
+	// フィルターチップのロジックをフックから取得（pendingFiltersを操作）
 	const { chips, handleRemoveChip, handleClearAll } = useFilterChips(
 		filters,
 		onFiltersChange,
@@ -383,15 +388,14 @@ export const AdvancedSearchModal = forwardRef<
 		close: () => dialogRef.current?.close(),
 	}));
 
-	// 検索実行
+	// 検索実行（pendingFiltersを適用）
 	const handleSearch = () => {
 		onSearch();
-		dialogRef.current?.close();
 	};
 
-	// 閉じる
+	// 閉じる（変更を破棄）
 	const handleClose = () => {
-		dialogRef.current?.close();
+		onClose();
 	};
 
 	return (
@@ -451,9 +455,14 @@ export const AdvancedSearchModal = forwardRef<
 			</div>
 
 			{/* バックドロップ */}
-			<form method="dialog" className="modal-backdrop">
-				<button type="submit">close</button>
-			</form>
+			<div
+				className="modal-backdrop"
+				onClick={handleClose}
+				onKeyDown={(e) => e.key === "Escape" && handleClose()}
+				role="button"
+				tabIndex={-1}
+				aria-label="閉じる"
+			/>
 		</dialog>
 	);
 });

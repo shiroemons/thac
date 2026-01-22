@@ -593,6 +593,109 @@ export interface PublicTrackDetail {
 }
 
 // =============================================================================
+// 検索API型定義
+// =============================================================================
+
+/** アーティスト参照 */
+export interface TrackArtistRef {
+	id: string | null;
+	name: string;
+}
+
+/** サークル参照 */
+export interface TrackCircleRef {
+	id: string;
+	name: string;
+}
+
+/** 原曲参照 */
+export interface TrackOriginalSongRef {
+	id: string | null;
+	officialSongId: string | null;
+	name: string;
+	workId: string | null;
+	workName: string | null;
+	categoryCode: string | null;
+	lvl0: string | null;
+	lvl1: string | null;
+	lvl2: string | null;
+}
+
+/** 配信URL */
+export interface TrackPublication {
+	platformCode: string;
+	url: string;
+}
+
+/** トラック検索結果のヒット */
+export interface TrackSearchHit {
+	id: string;
+	name: string;
+	releaseId: string | null;
+	releaseName: string | null;
+	releaseDate: string | null;
+	releaseYear: number | null;
+	releaseType: string | null;
+	trackNumber: number;
+	discNumber: number | null;
+	discName: string | null;
+	eventId: string | null;
+	eventName: string | null;
+	circles: TrackCircleRef[];
+	vocalists: TrackArtistRef[];
+	arrangers: TrackArtistRef[];
+	lyricists: TrackArtistRef[];
+	composers: TrackArtistRef[];
+	remixers: TrackArtistRef[];
+	originalSongs: TrackOriginalSongRef[];
+	releasePublications: TrackPublication[];
+	trackPublications: TrackPublication[];
+	vocalistCount: number;
+	arrangerCount: number;
+	lyricistCount: number;
+	composerCount: number;
+	remixerCount: number;
+	circleCount: number;
+	originalSongCount: number;
+	releasePublicationCount: number;
+	trackPublicationCount: number;
+	isTouhouArrange: boolean;
+	tags: string[];
+	genres: string[];
+	circleNames: string[];
+	vocalistNames: string[];
+	arrangerNames: string[];
+	lyricistNames: string[];
+	composerNames: string[];
+	remixerNames: string[];
+	originalSongNames: string[];
+	originalWorkNames: string[];
+	createdAt: number;
+	updatedAt: number;
+	/** ハイライト付きフィールド */
+	_formatted?: Partial<TrackSearchHit>;
+}
+
+/** トラック検索レスポンス */
+export interface TrackSearchResponse {
+	hits: TrackSearchHit[];
+	query: string;
+	processingTimeMs: number;
+	estimatedTotalHits: number;
+	page: number;
+	limit: number;
+	totalPages: number;
+}
+
+/** トラック検索パラメータ */
+export interface TrackSearchParams {
+	q: string;
+	page?: number;
+	limit?: number;
+	sort?: string;
+}
+
+// =============================================================================
 // API関数
 // =============================================================================
 
@@ -959,5 +1062,19 @@ export const publicApi = {
 		/** トラック詳細を取得 */
 		get: (id: string) =>
 			publicFetch<PublicTrackDetail>(`/api/public/tracks/${id}`),
+	},
+
+	/** トラック検索 */
+	search: {
+		tracks: (params: TrackSearchParams) => {
+			const sp = new URLSearchParams();
+			sp.set("q", params.q);
+			if (params.page) sp.set("page", String(params.page));
+			if (params.limit) sp.set("limit", String(params.limit));
+			if (params.sort) sp.set("sort", params.sort);
+			return publicFetch<TrackSearchResponse>(
+				`/api/public/search/tracks?${sp.toString()}`,
+			);
+		},
 	},
 };

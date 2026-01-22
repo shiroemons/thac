@@ -7,14 +7,21 @@ interface SearchSyntaxItem {
 	keyword: string;
 	description: string;
 	example: string;
+	tooltip?: string;
 }
 
 /** 検索構文ヘルプデータ（静的なドキュメント情報） */
 const searchSyntaxHelp: SearchSyntaxItem[] = [
+	// --- 人物・サークル検索 ---
 	{
 		keyword: "arranger:",
 		description: "編曲者で検索",
 		example: "arranger:ARM",
+	},
+	{
+		keyword: "composer:",
+		description: "作曲者で検索",
+		example: "composer:ZUN",
 	},
 	{
 		keyword: "vocalist:",
@@ -31,25 +38,65 @@ const searchSyntaxHelp: SearchSyntaxItem[] = [
 		description: "サークル名で検索",
 		example: "circle:IOSYS",
 	},
+	// --- コンテンツ検索 ---
 	{
 		keyword: "originalsong:",
 		description: "原曲名で検索",
 		example: "originalsong:大吉キトゥン",
 	},
 	{
+		keyword: "event:",
+		description: "イベント名で検索",
+		example: "event:例大祭",
+	},
+	// --- 期間検索 ---
+	{
+		keyword: "period:",
+		description: "頒布日で期間検索（YYYY-MM-DD..YYYY-MM-DD形式）",
+		example: "period:2025-01-01..2025-12-31",
+	},
+	{
+		keyword: "date:",
+		description: "頒布日で検索（=, >=, <=, >, < 対応）",
+		example: "date:>=2025-01-01",
+		tooltip: "例: date:2025-01-01（指定日）/ date:>=2025-01-01（以降）/ date:<2025-01-01（より前）",
+	},
+	// --- 数値フィルター ---
+	{
 		keyword: "year:",
-		description: "頒布年で検索",
+		description: "頒布年で検索（=, >=, <=, >, < 対応）",
 		example: "year:2023",
+		tooltip: "例: year:2023（等しい）/ year:>=2020（以上）/ year:<2025（未満）",
 	},
 	{
-		keyword: "songcount:",
-		description: "原曲数で検索",
-		example: "songcount:2",
+		keyword: "originalcount:",
+		description: "原曲数で検索（=, >=, <=, >, < 対応）",
+		example: "originalcount:2",
+		tooltip: "例: originalcount:2（等しい）/ originalcount:>=3（以上）/ originalcount:<5（未満）",
 	},
 	{
-		keyword: "songcount:>=",
-		description: "原曲数（以上）で検索",
-		example: "songcount:>=3",
+		keyword: "vocalistcount:",
+		description: "ボーカル数で検索（=, >=, <=, >, < 対応）",
+		example: "vocalistcount:>=2",
+		tooltip: "例: vocalistcount:1（等しい）/ vocalistcount:>=2（以上）",
+	},
+	{
+		keyword: "arrangercount:",
+		description: "編曲者数で検索（=, >=, <=, >, < 対応）",
+		example: "arrangercount:1",
+		tooltip: "例: arrangercount:1（等しい）/ arrangercount:>=2（以上）",
+	},
+	{
+		keyword: "lyricistcount:",
+		description: "作詞者数で検索（=, >=, <=, >, < 対応）",
+		example: "lyricistcount:>=1",
+		tooltip: "例: lyricistcount:1（等しい）/ lyricistcount:>=1（以上）",
+	},
+	{
+		keyword: "composercount:",
+		description: "作曲者数で検索（=, >=, <=, >, < 対応）",
+		example: "composercount:2",
+		tooltip: "例: composercount:1（等しい）/ composercount:>=2（以上）",
 	},
 ];
 
@@ -112,7 +159,19 @@ export function SearchSyntaxHelp({ className }: SearchSyntaxHelpProps) {
 												{item.keyword}
 											</code>
 										</td>
-										<td className="text-base-content/70">{item.description}</td>
+										<td className="text-base-content/70">
+											{item.tooltip ? (
+												<span
+													className="tooltip tooltip-right cursor-help"
+													data-tip={item.tooltip}
+												>
+													{item.description}
+													<HelpCircle className="ml-1 inline h-3 w-3 text-base-content/40" />
+												</span>
+											) : (
+												item.description
+											)}
+										</td>
 										<td>
 											<code className="rounded bg-primary px-1.5 py-0.5 text-primary-content text-xs">
 												{item.example}
