@@ -48,6 +48,17 @@ const searchSyntaxHelp: SearchSyntaxItem[] = [
 		description: "イベント名で検索",
 		example: "event:例大祭",
 	},
+	// --- 期間検索 ---
+	{
+		keyword: "period:",
+		description: "頒布日で期間検索（YYYY-MM-DD..YYYY-MM-DD形式）",
+		example: "period:2025-01-01..2025-12-31",
+	},
+	{
+		keyword: "date:",
+		description: "頒布日で検索（=, >=, <=, >, < 対応）",
+		example: "date:>=2025-01-01",
+	},
 	// --- 数値フィルター ---
 	{
 		keyword: "year:",

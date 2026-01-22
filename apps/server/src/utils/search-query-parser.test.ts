@@ -220,6 +220,127 @@ describe("parseSearchQuery", () => {
 			expect(result.filters.releaseYear).toBeUndefined();
 		});
 	});
+
+	describe("periodフィルター（日付範囲検索）", () => {
+		it("基本的な範囲検索を処理する", () => {
+			const result = parseSearchQuery("period:2025-01-01..2025-12-31");
+			expect(result.fullTextQuery).toBe("");
+			expect(result.filters.releaseDate).toEqual({
+				from: "2025-01-01",
+				to: "2025-12-31",
+			});
+		});
+
+		it("スラッシュ形式を自動でハイフン形式に変換する", () => {
+			const result = parseSearchQuery("period:2025/01/01..2025/12/31");
+			expect(result.filters.releaseDate).toEqual({
+				from: "2025-01-01",
+				to: "2025-12-31",
+			});
+		});
+
+		it("フルテキストとperiodを組み合わせる", () => {
+			const result = parseSearchQuery("Bad Apple period:2020-01-01..2020-12-31");
+			expect(result.fullTextQuery).toBe("Bad Apple");
+			expect(result.filters.releaseDate).toEqual({
+				from: "2020-01-01",
+				to: "2020-12-31",
+			});
+		});
+
+		it("他のフィルターとperiodを組み合わせる", () => {
+			const result = parseSearchQuery("arranger:ARM period:2023-01-01..2023-12-31");
+			expect(result.filters.arrangerNames).toEqual(["ARM"]);
+			expect(result.filters.releaseDate).toEqual({
+				from: "2023-01-01",
+				to: "2023-12-31",
+			});
+		});
+
+		it("不正な日付形式は無視する", () => {
+			const result = parseSearchQuery("period:20250101..20251231");
+			expect(result.filters.releaseDate).toBeUndefined();
+		});
+
+		it("範囲形式でない値は無視する", () => {
+			const result = parseSearchQuery("period:2025-01-01");
+			expect(result.filters.releaseDate).toBeUndefined();
+		});
+	});
+
+	describe("dateフィルター（単一日付比較）", () => {
+		it("等価の日付検索を処理する", () => {
+			const result = parseSearchQuery("date:2025-01-01");
+			expect(result.fullTextQuery).toBe("");
+			expect(result.filters.releaseDate).toEqual({
+				op: "=",
+				value: "2025-01-01",
+			});
+		});
+
+		it(">=演算子を処理する", () => {
+			const result = parseSearchQuery("date:>=2025-01-01");
+			expect(result.filters.releaseDate).toEqual({
+				op: ">=",
+				value: "2025-01-01",
+			});
+		});
+
+		it("<=演算子を処理する", () => {
+			const result = parseSearchQuery("date:<=2025-12-31");
+			expect(result.filters.releaseDate).toEqual({
+				op: "<=",
+				value: "2025-12-31",
+			});
+		});
+
+		it(">演算子を処理する", () => {
+			const result = parseSearchQuery("date:>2025-01-01");
+			expect(result.filters.releaseDate).toEqual({
+				op: ">",
+				value: "2025-01-01",
+			});
+		});
+
+		it("<演算子を処理する", () => {
+			const result = parseSearchQuery("date:<2025-12-31");
+			expect(result.filters.releaseDate).toEqual({
+				op: "<",
+				value: "2025-12-31",
+			});
+		});
+
+		it("スラッシュ形式を自動でハイフン形式に変換する", () => {
+			const result = parseSearchQuery("date:>=2025/01/01");
+			expect(result.filters.releaseDate).toEqual({
+				op: ">=",
+				value: "2025-01-01",
+			});
+		});
+
+		it("フルテキストとdateを組み合わせる", () => {
+			const result = parseSearchQuery("Bad Apple date:>=2020-01-01");
+			expect(result.fullTextQuery).toBe("Bad Apple");
+			expect(result.filters.releaseDate).toEqual({
+				op: ">=",
+				value: "2020-01-01",
+			});
+		});
+
+		it("他のフィルターとdateを組み合わせる", () => {
+			const result = parseSearchQuery("arranger:ARM date:<2024-01-01");
+			expect(result.filters.arrangerNames).toEqual(["ARM"]);
+			expect(result.filters.releaseDate).toEqual({
+				op: "<",
+				value: "2024-01-01",
+			});
+		});
+
+		it("不正な日付形式は無視する", () => {
+			const result = parseSearchQuery("date:>=20250101");
+			expect(result.filters.releaseDate).toBeUndefined();
+		});
+	});
 });
 
 describe("buildMeilisearchFilter", () => {
@@ -345,6 +466,56 @@ describe("buildMeilisearchFilter", () => {
 		});
 		expect(filter).toBe(
 			'originalSongNames = "赤より紅い夢" AND originalSongNames = "Bad Apple!!"',
+		);
+	});
+
+	it("releaseDateフィルターを構築する", () => {
+		const filter = buildMeilisearchFilter({
+			releaseDate: { from: "2024-01-01", to: "2024-12-31" },
+		});
+		expect(filter).toBe(
+			'releaseDate >= "2024-01-01" AND releaseDate <= "2024-12-31"'
+		);
+	});
+
+	it("releaseDateと他のフィルターを組み合わせる", () => {
+		const filter = buildMeilisearchFilter({
+			releaseDate: { from: "2024-01-01", to: "2024-12-31" },
+			arrangerNames: ["ARM"],
+		});
+		expect(filter).toBe(
+			'arrangerNames = "ARM" AND releaseDate >= "2024-01-01" AND releaseDate <= "2024-12-31"'
+		);
+	});
+
+	it("単一日付フィルター（等価）を構築する", () => {
+		const filter = buildMeilisearchFilter({
+			releaseDate: { op: "=", value: "2025-01-01" },
+		});
+		expect(filter).toBe('releaseDate = "2025-01-01"');
+	});
+
+	it("単一日付フィルター（>=）を構築する", () => {
+		const filter = buildMeilisearchFilter({
+			releaseDate: { op: ">=", value: "2025-01-01" },
+		});
+		expect(filter).toBe('releaseDate >= "2025-01-01"');
+	});
+
+	it("単一日付フィルター（<）を構築する", () => {
+		const filter = buildMeilisearchFilter({
+			releaseDate: { op: "<", value: "2025-12-31" },
+		});
+		expect(filter).toBe('releaseDate < "2025-12-31"');
+	});
+
+	it("単一日付フィルターと他のフィルターを組み合わせる", () => {
+		const filter = buildMeilisearchFilter({
+			releaseDate: { op: ">=", value: "2024-01-01" },
+			circleNames: ["IOSYS"],
+		});
+		expect(filter).toBe(
+			'circleNames = "IOSYS" AND releaseDate >= "2024-01-01"'
 		);
 	});
 });

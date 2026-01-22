@@ -13,6 +13,14 @@ export interface FilterValue {
 }
 
 /**
+ * 範囲フィルター値（日付範囲用）
+ */
+export interface RangeFilterValue {
+	from: string; // 開始日（YYYY-MM-DD形式）
+	to: string; // 終了日（YYYY-MM-DD形式）
+}
+
+/**
  * 解析された検索クエリ
  */
 export interface ParsedSearchQuery {
@@ -33,6 +41,7 @@ export interface ParsedSearchQuery {
 		lyricistCount?: FilterValue;
 		composerCount?: FilterValue;
 		eventName?: string;
+		releaseDate?: RangeFilterValue | FilterValue;
 	};
 }
 
@@ -45,6 +54,8 @@ const FILTER_KEY_MAP: Record<
 		property: keyof ParsedSearchQuery["filters"];
 		isNumeric: boolean;
 		isArray: boolean;
+		isRange?: boolean;
+		isDate?: boolean;
 		addToFullText?: boolean;
 	}
 > = {
@@ -73,6 +84,18 @@ const FILTER_KEY_MAP: Record<
 		property: "eventName",
 		isNumeric: false,
 		isArray: false,
+	},
+	period: {
+		property: "releaseDate",
+		isNumeric: false,
+		isArray: false,
+		isRange: true,
+	},
+	date: {
+		property: "releaseDate",
+		isNumeric: false,
+		isArray: false,
+		isDate: true,
 	},
 };
 
@@ -153,6 +176,29 @@ function extractUnquotedValue(
 }
 
 /**
+ * 範囲値を解析（..で区切られた2つの値）
+ */
+function parseRangeValue(value: string): RangeFilterValue | null {
+	const rangeMatch = value.match(/^(.+)\.\.(.+)$/);
+	if (!rangeMatch || !rangeMatch[1] || !rangeMatch[2]) return null;
+	return { from: rangeMatch[1], to: rangeMatch[2] };
+}
+
+/**
+ * 日付区切り文字を正規化（/ → -）
+ */
+function normalizeDateFormat(dateStr: string): string {
+	return dateStr.replace(/\//g, "-");
+}
+
+/**
+ * 日付形式が有効か検証（YYYY-MM-DD形式）
+ */
+function isValidDateFormat(dateStr: string): boolean {
+	return /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+}
+
+/**
  * 検索クエリを解析
  *
  * @param query - 検索クエリ文字列
@@ -230,6 +276,25 @@ export function parseSearchQuery(query: string): ParsedSearchQuery {
 				// originalsongの場合はフルテキストに追加
 				if (config.addToFullText) {
 					fullTextParts.push(extractedValue);
+				} else if (config.isRange) {
+					// 範囲フィルターの処理（period:用）
+					const rangeValue = parseRangeValue(extractedValue);
+					if (rangeValue) {
+						// 日付形式を正規化
+						const fromDate = normalizeDateFormat(rangeValue.from);
+						const toDate = normalizeDateFormat(rangeValue.to);
+						// 形式検証
+						if (isValidDateFormat(fromDate) && isValidDateFormat(toDate)) {
+							result.filters.releaseDate = { from: fromDate, to: toDate };
+						}
+					}
+				} else if (config.isDate) {
+					// 単一日付フィルターの処理（date:用）
+					const { op, rawValue } = parseComparisonOperator(extractedValue);
+					const normalizedDate = normalizeDateFormat(rawValue);
+					if (isValidDateFormat(normalizedDate)) {
+						result.filters.releaseDate = { op, value: normalizedDate };
+					}
 				} else if (config.isNumeric) {
 					// 数値フィルターの処理
 					const { op, rawValue } = parseComparisonOperator(extractedValue);
@@ -350,6 +415,18 @@ export function buildMeilisearchFilter(
 	if (filters.eventName) {
 		const escapedValue = filters.eventName.replace(/"/g, '\\"');
 		conditions.push(`eventName = "${escapedValue}"`);
+	}
+
+	// 日付フィルター（releaseDate）
+	if (filters.releaseDate) {
+		if ("from" in filters.releaseDate && "to" in filters.releaseDate) {
+			// 範囲フィルター（period:用）
+			conditions.push(`releaseDate >= "${filters.releaseDate.from}"`);
+			conditions.push(`releaseDate <= "${filters.releaseDate.to}"`);
+		} else if ("op" in filters.releaseDate && "value" in filters.releaseDate) {
+			// 単一日付フィルター（date:用）
+			conditions.push(`releaseDate ${filters.releaseDate.op} "${filters.releaseDate.value}"`);
+		}
 	}
 
 	return conditions.join(" AND ");
