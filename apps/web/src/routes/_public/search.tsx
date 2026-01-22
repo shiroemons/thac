@@ -711,7 +711,7 @@ function SearchPage() {
 													<Link
 														to="/tracks/$id"
 														params={{ id: hit.id }}
-														className="line-clamp-2 block font-medium transition-colors hover:text-primary"
+														className="block font-medium transition-colors hover:text-primary"
 													>
 														{getFormattedText(hit.name, hit._formatted?.name)}
 													</Link>
@@ -721,7 +721,7 @@ function SearchPage() {
 														<Link
 															to="/releases/$id"
 															params={{ id: hit.releaseId }}
-															className="line-clamp-2 block transition-colors hover:text-primary"
+															className="block transition-colors hover:text-primary"
 														>
 															{getFormattedText(
 																hit.releaseName ?? "",
@@ -729,7 +729,7 @@ function SearchPage() {
 															)}
 														</Link>
 													) : (
-														<span className="line-clamp-2 block">-</span>
+														<span className="block">-</span>
 													)}
 												</td>
 												<td className="max-w-[120px] text-base-content/70 text-sm">
@@ -737,23 +737,23 @@ function SearchPage() {
 														<Link
 															to="/events/$id"
 															params={{ id: hit.eventId }}
-															className="line-clamp-2 block transition-colors hover:text-primary"
+															className="block transition-colors hover:text-primary"
 														>
 															{hit.eventName}
 														</Link>
 													) : (
-														<span className="line-clamp-2 block">
+														<span className="block">
 															{hit.eventName ?? "-"}
 														</span>
 													)}
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div className="line-clamp-2">
+													<div>
 														{renderCircleLinks(hit.circles)}
 													</div>
 												</td>
-												<td className="max-w-[150px] text-base-content/70 text-sm">
-													<div className="line-clamp-2">
+												<td className="max-w-[250px] text-base-content/70 text-sm">
+													<div>
 														{hit.originalSongs.length > 0
 															? hit.originalSongs.map((song, index) => (
 																	<span key={`${song.name}-${index}`}>
@@ -775,22 +775,22 @@ function SearchPage() {
 													</div>
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div className="line-clamp-2">
+													<div>
 														{renderArtistLinks(hit.vocalists)}
 													</div>
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div className="line-clamp-2">
+													<div>
 														{renderArtistLinks(hit.arrangers)}
 													</div>
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div className="line-clamp-2">
+													<div>
 														{renderArtistLinks(hit.lyricists)}
 													</div>
 												</td>
 												<td className="max-w-[120px] text-base-content/50 text-xs">
-													<div className="line-clamp-2">
+													<div>
 														{hit.composers.length > 0 || hit.remixers.length > 0
 															? [...hit.composers, ...hit.remixers].map(
 																	(artist, index) => (
