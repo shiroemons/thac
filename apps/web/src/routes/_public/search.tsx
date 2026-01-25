@@ -703,14 +703,15 @@ function SearchPage() {
 				onClose={handleCloseModal}
 			/>
 
+			{/* ログイン促進バナー（未認証かつフィルターパラメータあり） */}
+			{/* 検索結果の有無に関わらず表示するため、条件分岐の外に配置 */}
+			{!isAuthenticated && hasFilterParams && (
+				<LoginPromptBanner className="mb-4" />
+			)}
+
 			{/* Search results */}
 			{hasActiveSearch ? (
 				<div className="space-y-4">
-					{/* ログイン促進バナー（未認証かつフィルターパラメータあり） */}
-					{!isAuthenticated && hasFilterParams && (
-						<LoginPromptBanner className="mb-4" />
-					)}
-
 					<p className="text-base-content/60 text-sm">
 						{query ? (
 							<>
