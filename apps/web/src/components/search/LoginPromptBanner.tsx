@@ -1,4 +1,4 @@
-import { Info, X } from "lucide-react";
+import { LogIn, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
@@ -66,42 +66,70 @@ export function LoginPromptBanner({ className }: LoginPromptBannerProps) {
 			role="alert"
 			aria-live="polite"
 			className={cn(
-				"alert alert-info transition-opacity duration-300",
-				isFadingOut && "opacity-0",
+				// グラスモーフィズムベース
+				"glass-card relative overflow-hidden rounded-xl",
+				// レイアウト
+				"flex items-center gap-3 p-4 sm:gap-4 sm:p-5",
+				// アニメーション
+				"transition-all duration-300",
+				isFadingOut && "translate-y-[-8px] opacity-0",
 				className,
 			)}
 		>
-			{/* 情報アイコン */}
-			<Info className="h-5 w-5 shrink-0" />
+			{/* 背景グラデーション装飾 */}
+			<div className="gradient-mesh pointer-events-none absolute inset-0 opacity-60" />
+
+			{/* アイコン */}
+			<div className="relative z-10 flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 sm:size-11">
+				<Sparkles className="size-5 text-primary sm:size-6" />
+			</div>
 
 			{/* メッセージとアクションボタン */}
-			<div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+			<div className="relative z-10 flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
 				{/* 説明テキスト */}
-				<span className="text-sm">
-					ログインすると詳細検索（年代、アーティスト、サークル等のフィルター）が利用できます
-				</span>
+				<div className="min-w-0 flex-1">
+					<p className="text-sm leading-relaxed text-base-content/90 sm:text-base">
+						<span className="font-medium text-base-content">
+							ログインすると詳細検索
+						</span>
+						<span className="hidden sm:inline">
+							（年代、アーティスト、サークル等のフィルター）
+						</span>
+						<span className="sm:hidden">機能</span>
+						が利用できます
+					</p>
+				</div>
 
 				{/* アクションボタン */}
 				{/* /login は新規登録フォームがデフォルト表示、サインインへの切り替えも可能 */}
-				<div className="flex items-center gap-2">
-					<Link
-						to="/login"
-						search={{ returnTo: returnToUrl || undefined }}
-						className="btn btn-primary btn-sm"
-					>
-						ログイン / 新規登録
-					</Link>
-				</div>
+				<Link
+					to="/login"
+					search={{ returnTo: returnToUrl || undefined }}
+					className={cn(
+						"btn btn-primary btn-sm gap-2 shadow-md",
+						"hover:shadow-lg hover:shadow-primary/25",
+						"transition-all duration-200",
+						"shrink-0 sm:btn-md",
+					)}
+				>
+					<LogIn className="size-4" />
+					<span>ログイン / 新規登録</span>
+				</Link>
 			</div>
 
 			{/* 閉じるボタン */}
 			<button
 				type="button"
 				onClick={handleDismiss}
-				className="btn btn-ghost btn-sm btn-circle"
+				className={cn(
+					"btn btn-ghost btn-sm btn-circle",
+					"relative z-10 shrink-0",
+					"text-base-content/50 hover:bg-base-content/10 hover:text-base-content/80",
+					"transition-colors duration-200",
+				)}
 				aria-label="閉じる"
 			>
-				<X className="h-4 w-4" />
+				<X className="size-4" />
 			</button>
 		</div>
 	);
