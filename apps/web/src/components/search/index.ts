@@ -4,6 +4,7 @@ export {
 	type AdvancedSearchModalRef,
 } from "./AdvancedSearchModal";
 export { AdvancedSearchPanel } from "./AdvancedSearchPanel";
+export { LoginPromptBanner } from "./LoginPromptBanner";
 export { ArtistRoleFilter } from "./ArtistRoleFilter";
 export { CircleFilter } from "./CircleFilter";
 export { DateRangeFilter } from "./DateRangeFilter";

@@ -9,11 +9,15 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
+interface SignUpFormProps {
+	onSwitchToSignIn: () => void;
+	returnTo?: string;
+}
+
 export default function SignUpForm({
 	onSwitchToSignIn,
-}: {
-	onSwitchToSignIn: () => void;
-}) {
+	returnTo,
+}: SignUpFormProps) {
 	const navigate = useNavigate({
 		from: "/",
 	});
@@ -36,10 +40,15 @@ export default function SignUpForm({
 				},
 				{
 					onSuccess: () => {
-						navigate({
-							to: "/dashboard",
-						});
-						// 成功通知は不要（リダイレクトで自明）
+						// returnTo があればそこへ、なければ /dashboard へ
+						if (returnTo) {
+							// ルーター外のパスの可能性があるため window.location.assign を使用
+							window.location.assign(returnTo);
+						} else {
+							navigate({
+								to: "/dashboard",
+							});
+						}
 					},
 					onError: (err) => {
 						setError(err.error.message || err.error.statusText);
