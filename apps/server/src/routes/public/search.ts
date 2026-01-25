@@ -6,11 +6,15 @@ import type {
 import { getMeilisearchClient, TRACKS_INDEX_NAME } from "@thac/search";
 import { Hono } from "hono";
 import {
+	optionalAuthMiddleware,
+	type OptionalAuthContext,
+} from "../../middleware/optional-auth";
+import {
 	buildMeilisearchFilter,
 	parseSearchQuery,
 } from "../../utils/search-query-parser";
 
-const searchRouter = new Hono();
+const searchRouter = new Hono<OptionalAuthContext>();
 
 /** Highlight対象のattributes */
 const HIGHLIGHT_ATTRIBUTES = [
@@ -34,12 +38,20 @@ const DEFAULT_PAGE = 1;
  * GET /tracks
  * Meilisearchを使用してトラックを検索
  *
- * @param q - 検索クエリ（必須）。特殊構文をサポート（例: arranger:ARM, year:2023）
+ * 認証状態によって検索動作が異なる:
+ * - 認証済み: 特殊構文（arranger:ARM, year:2023 など）でフィルター検索が可能
+ * - 未認証: クエリをそのままプレーンテキスト検索（構文解析なし、フィルターなし）
+ *
+ * @param q - 検索クエリ（必須）
  * @param page - ページ番号（1始まり、デフォルト: 1）
  * @param limit - 1ページあたりの件数（デフォルト: 20、最大: 100）
  * @param sort - ソートフィールド（例: releaseDate:desc）
  */
-searchRouter.get("/tracks", async (c) => {
+searchRouter.get("/tracks", optionalAuthMiddleware, async (c) => {
+	// オプショナル認証からユーザー情報を取得
+	// 認証済みの場合はユーザーオブジェクト、未認証の場合はnull
+	const user = c.get("user");
+
 	const query = c.req.query("q");
 	const pageParam = c.req.query("page");
 	const limitParam = c.req.query("limit");
@@ -62,23 +74,39 @@ searchRouter.get("/tracks", async (c) => {
 		const client = getMeilisearchClient();
 		const index = client.index<TrackSearchDocument>(TRACKS_INDEX_NAME);
 
-		// クエリを解析
-		const parsed = parseSearchQuery(query);
-		const filterString = buildMeilisearchFilter(parsed.filters);
-
 		// ソートオプションを構築
 		const sort: string[] = sortParam ? [sortParam] : [];
 
-		// Meilisearchで検索
-		const searchResult = await index.search(parsed.fullTextQuery, {
-			filter: filterString || undefined,
-			hitsPerPage: limit,
-			page: page,
-			sort: sort.length > 0 ? sort : undefined,
-			attributesToHighlight: HIGHLIGHT_ATTRIBUTES,
-			highlightPreTag: "<mark>",
-			highlightPostTag: "</mark>",
-		});
+		let searchResult;
+
+		if (user) {
+			// 認証済みユーザー: 特殊構文によるフィルター検索を有効化
+			// parseSearchQuery で "arranger:ARM" 等の構文を解析
+			const parsed = parseSearchQuery(query);
+			const filterString = buildMeilisearchFilter(parsed.filters);
+
+			searchResult = await index.search(parsed.fullTextQuery, {
+				filter: filterString || undefined,
+				hitsPerPage: limit,
+				page: page,
+				sort: sort.length > 0 ? sort : undefined,
+				attributesToHighlight: HIGHLIGHT_ATTRIBUTES,
+				highlightPreTag: "<mark>",
+				highlightPostTag: "</mark>",
+			});
+		} else {
+			// 未認証ユーザー: クエリをそのまま全文検索
+			// 特殊構文の解析やフィルターは適用しない
+			searchResult = await index.search(query, {
+				// filter なし - 未認証ユーザーはフィルター機能を使用できない
+				hitsPerPage: limit,
+				page: page,
+				sort: sort.length > 0 ? sort : undefined,
+				attributesToHighlight: HIGHLIGHT_ATTRIBUTES,
+				highlightPreTag: "<mark>",
+				highlightPostTag: "</mark>",
+			});
+		}
 
 		// 結果をTrackSearchHit形式に変換
 		const hits: TrackSearchHit[] = searchResult.hits.map((hit) => {

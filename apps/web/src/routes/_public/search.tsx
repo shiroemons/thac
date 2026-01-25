@@ -21,8 +21,10 @@ import {
 	type AdvancedSearchModalRef,
 	DEFAULT_FILTERS,
 	FilterChips,
+	LoginPromptBanner,
 	useFilterChips,
 } from "@/components/search";
+import { authClient } from "@/lib/auth-client";
 import {
 	buildSearchQueryString,
 	filtersToSearchParams,
@@ -358,10 +360,24 @@ function SearchPage() {
 		new Set(),
 	);
 
+	// 認証状態を取得
+	const { data: session } = authClient.useSession();
+	const isAuthenticated = !!session?.user;
+
+	// URLにフィルターパラメータがあるかどうか（バナー表示条件）
+	const hasFilterParams = useMemo(() => {
+		const { q, ...filterParams } = searchParams;
+		return Object.values(filterParams).some((v) => v !== undefined);
+	}, [searchParams]);
+
 	// URLパラメータからフィルターを復元（useState の初期値関数で初回のみ実行）
+	// 未認証の場合はデフォルトフィルターを使用
 	const [filters, setFiltersInternal] = useState<AdvancedSearchFilters>(() =>
 		restoreFiltersFromUrlParams(searchParams),
 	);
+
+	// 未認証の場合、フィルターを適用しない
+	const effectiveFilters = isAuthenticated ? filters : DEFAULT_FILTERS;
 	// モーダル内での一時的なフィルター状態（検索ボタンクリックまで適用されない）
 	const [pendingFilters, setPendingFilters] = useState<AdvancedSearchFilters>(
 		() => restoreFiltersFromUrlParams(searchParams),
@@ -397,13 +413,15 @@ function SearchPage() {
 	);
 
 	// フィルターチップのロジック（URLも更新されるsetterを使用）
+	// 未認証の場合はeffectiveFiltersを使用（常にDEFAULT_FILTERSなのでchipsは空になる）
 	const { chips, handleRemoveChip, handleClearAll } = useFilterChips(
-		filters,
+		effectiveFilters,
 		setFiltersWithUrl,
 	);
 
-	// 選択中のフィルター数
+	// 選択中のフィルター数（認証済みの場合のみ計算）
 	const activeFilterCount = useMemo(() => {
+		if (!isAuthenticated) return 0;
 		let count = 0;
 		// テキスト検索
 		count += Object.values(filters.textSearch).filter(Boolean).length;
@@ -424,16 +442,25 @@ function SearchPage() {
 		// イベント
 		if (filters.event) count += 1;
 		return count;
-	}, [filters]);
+	}, [filters, isAuthenticated]);
 
-	// 検索クエリ文字列を構築（フィルター込み）
+	// 検索クエリ文字列を構築（フィルター込み or キーワードのみ）
 	const searchQueryString = useMemo(() => {
-		return buildSearchQueryString(query, filters);
-	}, [query, filters]);
+		if (isAuthenticated) {
+			return buildSearchQueryString(query, filters);
+		}
+		// 未認証: キーワードのみ
+		return query;
+	}, [query, filters, isAuthenticated]);
 
 	const hasActiveSearch = useMemo(() => {
-		return !!query || !isFiltersEmpty(filters);
-	}, [query, filters]);
+		// 認証済み: クエリまたはフィルターがあれば検索中
+		// 未認証: クエリがあれば検索中（フィルターは無視）
+		if (isAuthenticated) {
+			return !!query || !isFiltersEmpty(filters);
+		}
+		return !!query;
+	}, [query, filters, isAuthenticated]);
 
 	// Meilisearch APIクエリ
 	const {
@@ -593,28 +620,41 @@ function SearchPage() {
 								)}
 							</div>
 
-							{/* Advanced search button - mobile optimized */}
-							<Button
-								type="button"
-								variant={activeFilterCount > 0 ? "primary" : "outline"}
-								size="lg"
-								onClick={openAdvancedSearch}
-								className="min-w-12 gap-2 rounded-xl px-4 transition-all duration-300 hover:shadow-lg"
-								aria-label="詳細検索を開く"
-							>
-								<SlidersHorizontal className="size-5" />
-								<span className="hidden sm:inline">詳細検索</span>
-								{activeFilterCount > 0 && (
-									<Badge className="flex size-5 items-center justify-center rounded-full bg-primary-content text-primary">
-										{activeFilterCount}
-									</Badge>
-								)}
-							</Button>
+							{/* 認証済み: 詳細検索ボタン */}
+							{isAuthenticated ? (
+								<Button
+									type="button"
+									variant={activeFilterCount > 0 ? "primary" : "outline"}
+									size="lg"
+									onClick={openAdvancedSearch}
+									className="min-w-12 gap-2 rounded-xl px-4 transition-all duration-300 hover:shadow-lg"
+									aria-label="詳細検索を開く"
+								>
+									<SlidersHorizontal className="size-5" />
+									<span className="hidden sm:inline">詳細検索</span>
+									{activeFilterCount > 0 && (
+										<Badge className="flex size-5 items-center justify-center rounded-full bg-primary-content text-primary">
+											{activeFilterCount}
+										</Badge>
+									)}
+								</Button>
+							) : (
+								/* 未認証: シンプルな検索ボタン */
+								<Button
+									type="submit"
+									variant="primary"
+									size="lg"
+									className="gap-2 rounded-xl px-6 transition-all duration-300 hover:shadow-lg"
+								>
+									<Search className="size-5" />
+									<span className="hidden sm:inline">検索</span>
+								</Button>
+							)}
 						</div>
 					</form>
 
-					{/* 選択中のフィルターチップ */}
-					{chips.length > 0 && (
+					{/* 選択中のフィルターチップ（認証済みのみ） */}
+					{isAuthenticated && chips.length > 0 && (
 						<div className="mx-auto mt-4 max-w-2xl">
 							<FilterChips
 								chips={chips}
@@ -666,6 +706,11 @@ function SearchPage() {
 			{/* Search results */}
 			{hasActiveSearch ? (
 				<div className="space-y-4">
+					{/* ログイン促進バナー（未認証かつフィルターパラメータあり） */}
+					{!isAuthenticated && hasFilterParams && (
+						<LoginPromptBanner className="mb-4" />
+					)}
+
 					<p className="text-base-content/60 text-sm">
 						{query ? (
 							<>
@@ -987,17 +1032,21 @@ function SearchPage() {
 									)}
 								</p>
 								<p className="mt-4 text-base-content/50 text-sm">
-									別のキーワードで検索するか、詳細検索をお試しください
+									{isAuthenticated
+										? "別のキーワードで検索するか、詳細検索をお試しください"
+										: "別のキーワードで検索してください"}
 								</p>
-								<Button
-									type="button"
-									variant="ghost"
-									onClick={openAdvancedSearch}
-									className="mt-4 gap-2 transition-all duration-300 hover:bg-primary hover:text-primary-content"
-								>
-									<SlidersHorizontal className="size-4" />
-									詳細検索を開く
-								</Button>
+								{isAuthenticated && (
+									<Button
+										type="button"
+										variant="ghost"
+										onClick={openAdvancedSearch}
+										className="mt-4 gap-2 transition-all duration-300 hover:bg-primary hover:text-primary-content"
+									>
+										<SlidersHorizontal className="size-4" />
+										詳細検索を開く
+									</Button>
+								)}
 							</Card>
 						)
 					)}
