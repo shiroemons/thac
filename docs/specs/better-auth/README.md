@@ -26,7 +26,7 @@ Issue #245に基づくBetter-Auth拡張検討のための包括的調査結果
 | **magicLink** | パスワードレス認証（メールリンク） | `magicLinkCode`テーブル | `sendMagicLink`, `expiresIn` |
 | **emailOTP** | メールOTP認証 | `emailVerificationOTP`テーブル | `sendVerificationOTP`, `otpLength` |
 | **phoneNumber** | 電話番号OTP認証 | `phoneNumberVerification`テーブル | `sendOTP`, `otpLength`, `expiresIn` |
-| **anonymous** | 匿名ユーザー認証 | TBD | - |
+| **anonymous** | PII不要の匿名ユーザー認証・段階的本登録 | `user.isAnonymous` | `emailDomainName`, `onLinkAccount` |
 | **oneTap** | Google One Tap認証 | なし | Google設定 |
 | **username** | ユーザー名ベース認証 | `user.username` | - |
 | **deviceAuthorization** | IoT/CLI向けRFC 8628準拠 | `deviceCode`テーブル | `verificationURI`, `interval` |
@@ -910,6 +910,108 @@ erDiagram
 
 ---
 
+#### anonymous（匿名ユーザー認証）
+
+##### 概要
+
+Anonymousプラグインは、個人識別情報（PII）を一切要求せずに匿名ユーザーとして認証する機能を提供します。ユーザーは後からメール/パスワードやOAuthなどの認証方法をリンクして本登録できます。
+
+**主な機能**:
+- **PII不要の認証**: メールアドレス、パスワード、OAuthプロバイダーなしで認証可能
+- **段階的な本登録**: 匿名ユーザーが後から正式アカウントにアップグレード
+- **データ継承**: 本登録時に匿名ユーザーのアクティビティ（カート等）を自動継承
+
+**ユースケース**:
+- eコマース: 登録前にカートに商品を追加
+- SaaS: 無料トライアルで匿名アクセス
+- コンテンツプラットフォーム: ログインなしで機能を試用
+
+##### 匿名→本登録フロー
+
+```mermaid
+flowchart TD
+    A[サイトにアクセス] --> B[匿名サインイン<br/>signIn.anonymous]
+    B --> C[匿名セッション確立<br/>isAnonymous: true]
+    C --> D[機能を利用<br/>カート追加等]
+    D --> E{本登録する?}
+    E -->|いいえ| F[匿名のまま継続]
+    E -->|はい| G[signUp.email または<br/>signIn.social]
+    G --> H[onLinkAccountコールバック発動]
+    H --> I[匿名ユーザーのデータを<br/>新ユーザーに移行]
+    I --> J[本登録完了<br/>isAnonymous: false]
+    J --> K[旧匿名アカウント削除<br/>※disableDeleteAnonymousUser=falseの場合]
+```
+
+##### ER図
+
+```mermaid
+erDiagram
+    user {
+        string id PK "ユーザーID"
+        string email UK "メールアドレス（自動生成）"
+        string name "ユーザー名（optional）"
+        boolean emailVerified "メール検証済みフラグ"
+        string image "プロフィール画像URL（optional）"
+        boolean isAnonymous "匿名ユーザーフラグ（プラグインが追加）"
+        datetime createdAt "作成日時"
+        datetime updatedAt "更新日時"
+    }
+```
+
+**フィールドの説明**:
+- **isAnonymous**: `true` の場合、匿名ユーザーとして認証中。本登録完了後は `false` に更新される
+- **email**: 匿名ユーザーには自動生成されたメールアドレス（例: `temp-{id}@example.com`）が設定される
+
+##### 設定オプション
+
+| オプション | 型 | デフォルト | 説明 |
+|---|---|---|---|
+| `emailDomainName` | string | `temp@{id}.com` | 自動生成メールのドメイン |
+| `generateRandomEmail` | function | - | カスタムメール生成関数 |
+| `onLinkAccount` | async function | - | 匿名→本登録時のコールバック |
+| `disableDeleteAnonymousUser` | boolean | false | true で匿名ユーザー削除を無効化 |
+| `generateName` | function | - | 匿名ユーザーの名前生成関数 |
+
+##### 設定例
+
+```typescript
+import { anonymous } from "better-auth/plugins";
+
+export const auth = betterAuth({
+  plugins: [
+    anonymous({
+      emailDomainName: "thac.example.com",
+      onLinkAccount: async ({ anonymousUser, newUser }) => {
+        // 匿名ユーザーのカートを新ユーザーに移行
+        await moveCart(anonymousUser.id, newUser.id);
+      },
+    }),
+  ],
+});
+```
+
+##### クライアント側API
+
+```typescript
+import { anonymousClient } from "better-auth/client/plugins";
+
+const authClient = createAuthClient({
+  plugins: [anonymousClient()],
+});
+
+// 匿名サインイン
+const user = await authClient.signIn.anonymous();
+
+// セッション確認
+const session = await authClient.getSession();
+console.log(session?.user.isAnonymous); // true
+
+// 匿名ユーザー削除
+await authClient.deleteAnonymousUser({});
+```
+
+---
+
 ### 17.3 組織・権限管理プラグイン
 
 #### organization（組織管理）
@@ -1393,6 +1495,7 @@ erDiagram
 | user | `banReason` | string | admin |
 | user | `banExpires` | timestamp | admin |
 | session | `impersonatedBy` | string | admin |
+| user | `isAnonymous` | boolean | anonymous |
 
 #### マイグレーション実行
 
