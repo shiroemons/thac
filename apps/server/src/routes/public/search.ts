@@ -77,36 +77,22 @@ searchRouter.get("/tracks", optionalAuthMiddleware, async (c) => {
 		// ソートオプションを構築
 		const sort: string[] = sortParam ? [sortParam] : [];
 
-		let searchResult;
+		// 認証状態に応じて検索クエリとフィルターを決定
+		// - 認証済み: 特殊構文を解析してフィルター適用
+		// - 未認証: クエリをそのまま全文検索（フィルターなし）
+		const parsed = user ? parseSearchQuery(query) : null;
+		const searchQuery = parsed ? parsed.fullTextQuery : query;
+		const filterString = parsed ? buildMeilisearchFilter(parsed.filters) : null;
 
-		if (user) {
-			// 認証済みユーザー: 特殊構文によるフィルター検索を有効化
-			// parseSearchQuery で "arranger:ARM" 等の構文を解析
-			const parsed = parseSearchQuery(query);
-			const filterString = buildMeilisearchFilter(parsed.filters);
-
-			searchResult = await index.search(parsed.fullTextQuery, {
-				filter: filterString || undefined,
-				hitsPerPage: limit,
-				page: page,
-				sort: sort.length > 0 ? sort : undefined,
-				attributesToHighlight: HIGHLIGHT_ATTRIBUTES,
-				highlightPreTag: "<mark>",
-				highlightPostTag: "</mark>",
-			});
-		} else {
-			// 未認証ユーザー: クエリをそのまま全文検索
-			// 特殊構文の解析やフィルターは適用しない
-			searchResult = await index.search(query, {
-				// filter なし - 未認証ユーザーはフィルター機能を使用できない
-				hitsPerPage: limit,
-				page: page,
-				sort: sort.length > 0 ? sort : undefined,
-				attributesToHighlight: HIGHLIGHT_ATTRIBUTES,
-				highlightPreTag: "<mark>",
-				highlightPostTag: "</mark>",
-			});
-		}
+		const searchResult = await index.search(searchQuery, {
+			filter: filterString || undefined,
+			hitsPerPage: limit,
+			page: page,
+			sort: sort.length > 0 ? sort : undefined,
+			attributesToHighlight: HIGHLIGHT_ATTRIBUTES,
+			highlightPreTag: "<mark>",
+			highlightPostTag: "</mark>",
+		});
 
 		// 結果をTrackSearchHit形式に変換
 		const hits: TrackSearchHit[] = searchResult.hits.map((hit) => {
