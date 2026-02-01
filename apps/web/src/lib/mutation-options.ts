@@ -43,6 +43,8 @@ import {
 	eventDaysApi,
 	eventSeriesApi,
 	eventsApi,
+	type Genre,
+	genresApi,
 	isConflictError,
 	type OfficialSong,
 	type OfficialWork,
@@ -1968,6 +1970,111 @@ export const platformMutations = {
 			platformsApi.reorder(items),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["platforms"] });
+		},
+	}),
+};
+
+// ===== マスターデータ: ジャンル =====
+
+type CreateGenreData = Omit<Genre, "createdAt" | "updatedAt">;
+type UpdateGenreData = Partial<Omit<Genre, "code" | "createdAt" | "updatedAt">> & {
+	updatedAt?: string;
+};
+
+export const genreMutations = {
+	create: (queryClient: QueryClient) => ({
+		mutationFn: (data: CreateGenreData) => genresApi.create(data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["genres"] });
+		},
+	}),
+	update: (queryClient: QueryClient) => ({
+		mutationFn: ({ code, data }: { code: string; data: UpdateGenreData }) =>
+			genresApi.update(code, data),
+
+		onMutate: async (variables: { code: string; data: UpdateGenreData }) => {
+			// 1. 進行中のクエリをキャンセル
+			await queryClient.cancelQueries({ queryKey: ["genres"] });
+			await queryClient.cancelQueries({
+				queryKey: ["genre", variables.code],
+			});
+
+			// 2. 現在のキャッシュを保存（ロールバック用）
+			const previousGenres = queryClient.getQueryData<Genre[]>(["genres"]);
+			const previousDetail = queryClient.getQueryData<Genre>([
+				"genre",
+				variables.code,
+			]);
+
+			// 3. 楽観的更新
+			// 詳細データ
+			if (previousDetail) {
+				queryClient.setQueryData<Genre>(
+					["genre", variables.code],
+					(old) => (old ? { ...old, ...variables.data } : old),
+				);
+			}
+
+			// リストデータ
+			if (previousGenres) {
+				queryClient.setQueryData<Genre[]>(["genres"], (old) =>
+					old
+						? old.map((g) =>
+								g.code === variables.code ? { ...g, ...variables.data } : g,
+							)
+						: old,
+				);
+			}
+
+			return { previousGenres, previousDetail };
+		},
+
+		onError: (
+			err: unknown,
+			variables: { code: string },
+			context:
+				| {
+						previousGenres: Genre[] | undefined;
+						previousDetail: Genre | undefined;
+				  }
+				| undefined,
+		) => {
+			// ConflictErrorの場合はロールバックしない（ConflictDialogで処理するため）
+			if (isConflictError(err)) return;
+
+			// ロールバック処理
+			if (context?.previousGenres) {
+				queryClient.setQueryData(["genres"], context.previousGenres);
+			}
+			if (context?.previousDetail) {
+				queryClient.setQueryData(
+					["genre", variables.code],
+					context.previousDetail,
+				);
+			}
+		},
+
+		onSettled: (
+			_data: Genre | undefined,
+			_error: unknown,
+			variables: { code: string },
+		) => {
+			// 成功・失敗に関わらずサーバーと同期
+			queryClient.invalidateQueries({ queryKey: ["genres"] });
+			queryClient.invalidateQueries({ queryKey: ["genre", variables.code] });
+		},
+	}),
+	delete: (queryClient: QueryClient) => ({
+		mutationFn: (code: string) => genresApi.delete(code),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["genres"] });
+		},
+	}),
+	reorder: (queryClient: QueryClient) => ({
+		mutationFn: (items: Array<{ code: string; sortOrder: number }>) =>
+			genresApi.reorder(items),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["genres"] });
 		},
 	}),
 };

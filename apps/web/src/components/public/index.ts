@@ -19,6 +19,12 @@ export {
 } from "./entity-detail-header";
 export { ExternalLink } from "./external-link";
 export { FeaturesSection } from "./features-section";
+export { GenreBadge, type GenreBadgeProps } from "./genre-badge";
+export {
+	GenreBadgeList,
+	type GenreBadgeListProps,
+	type Genre,
+} from "./genre-badge-list";
 export {
 	FilterBar,
 	FilterBarGroup,

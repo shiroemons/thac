@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -10,6 +10,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { GenreMultiSelect } from "@/components/ui/genre-multi-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -19,10 +20,12 @@ import { useConflictHandler } from "@/hooks/use-conflict-handler";
 import { useFormDirty } from "@/hooks/use-form-dirty";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 import {
+	genresApi,
 	isConflictError,
 	RELEASE_TYPE_LABELS,
 	type Release,
 	type ReleaseType,
+	type TrackGenreInfo,
 } from "@/lib/api-client";
 import { releaseMutations } from "@/lib/mutation-options";
 import {
@@ -50,10 +53,14 @@ interface ReleaseFormData {
 	notes: string | null | undefined;
 }
 
+interface ReleaseWithGenres extends Release {
+	genres?: TrackGenreInfo[];
+}
+
 interface ReleaseEditDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	release: Release;
+	release: ReleaseWithGenres;
 	onSuccess?: () => void;
 }
 
@@ -66,6 +73,9 @@ export function ReleaseEditDialog({
 	const queryClient = useQueryClient();
 	const [editForm, setEditForm] = useState<Partial<Release>>({});
 	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+	// ジャンル選択状態
+	const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+	const [initialGenres, setInitialGenres] = useState<string[]>([]);
 	// 楽観的ロック用: 編集開始時のupdatedAtを記録
 	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
 		null,
@@ -76,6 +86,12 @@ export function ReleaseEditDialog({
 	// フォーム変更検出フック
 	const formDirty = useFormDirty<ReleaseFormData & Record<string, unknown>>();
 
+	// ジャンル変更があるかどうか（早期に計算）
+	const genresChanged = useMemo(() => {
+		if (selectedGenres.length !== initialGenres.length) return true;
+		return selectedGenres.some((code, i) => code !== initialGenres[i]);
+	}, [selectedGenres, initialGenres]);
+
 	// 未保存変更保護フック
 	const {
 		showConfirmDialog,
@@ -83,7 +99,7 @@ export function ReleaseEditDialog({
 		confirmDiscard,
 		guardedOnOpenChange,
 	} = useUnsavedChangesGuard(onOpenChange, {
-		isDirty: formDirty.isDirty,
+		isDirty: formDirty.isDirty || genresChanged,
 		isOpen: open,
 	});
 
@@ -111,6 +127,10 @@ export function ReleaseEditDialog({
 			setEditForm(initialFormData);
 			setSelectedEventId(release.eventId);
 			setOriginalUpdatedAt(release.updatedAt);
+			// ジャンル初期化
+			const genreCodes = release.genres?.map((g) => g.code) ?? [];
+			setSelectedGenres(genreCodes);
+			setInitialGenres(genreCodes);
 			// フォームの初期状態を記録
 			formDirty.setInitialState(
 				initialFormData as ReleaseFormData & Record<string, unknown>,
@@ -125,6 +145,25 @@ export function ReleaseEditDialog({
 		...eventSelectOptionsQueryOptions(),
 		enabled: open,
 	});
+
+	// ジャンル一覧取得
+	const { data: genreOptionsData } = useQuery({
+		queryKey: ["genres", { limit: 100 }],
+		queryFn: () => genresApi.list({ limit: 100 }),
+		staleTime: 300_000,
+		enabled: open,
+	});
+
+	// ジャンルオプション（GenreMultiSelect用）
+	const genreOptions = useMemo(() => {
+		return (genreOptionsData?.data ?? []).map((g) => ({
+			code: g.code,
+			nameJa: g.nameJa,
+			nameEn: g.nameEn,
+			color: g.color,
+			icon: g.icon,
+		}));
+	}, [genreOptionsData?.data]);
 
 	// イベント日一覧取得（生データ：自動設定と日付取得に使用）
 	const { data: eventDaysData } = useQuery({
@@ -167,7 +206,7 @@ export function ReleaseEditDialog({
 	}, [editForm]);
 
 	// 保存
-	const handleSave = (overrideUpdatedAt?: string) => {
+	const handleSave = async (overrideUpdatedAt?: string) => {
 		updateMutation.mutate(
 			{
 				id: release.id,
@@ -185,7 +224,19 @@ export function ReleaseEditDialog({
 				},
 			},
 			{
-				onSuccess: () => {
+				onSuccess: async () => {
+					// ジャンル変更がある場合は更新
+					if (genresChanged) {
+						try {
+							await genresApi.updateReleaseGenres(release.id, selectedGenres);
+							// キャッシュの無効化
+							await queryClient.invalidateQueries({
+								queryKey: ["releases", release.id],
+							});
+						} catch (error) {
+							console.error("Failed to update genres:", error);
+						}
+					}
 					formDirty.reset();
 					onOpenChange(false);
 					onSuccess?.();
@@ -354,6 +405,17 @@ export function ReleaseEditDialog({
 										setEditForm({ ...editForm, releaseDate: e.target.value })
 									}
 									disabled={!!editForm.eventDayId}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="release-genres">ジャンル（最大5件）</Label>
+								<GenreMultiSelect
+									id="release-genres"
+									value={selectedGenres}
+									onChange={setSelectedGenres}
+									options={genreOptions}
+									maxItems={5}
+									placeholder="ジャンルを選択..."
 								/>
 							</div>
 							<div className="grid gap-2">

@@ -17,3 +17,5 @@ export * from "./track";
 export * from "./track.validation";
 export * from "./track-relations";
 export * from "./track-relations.validation";
+export * from "./genre";
+export * from "./genre.validation";

@@ -12,6 +12,8 @@ import {
 	eq,
 	eventDays,
 	events,
+	genreCodesSchema,
+	genres,
 	inArray,
 	officialSongs,
 	or,
@@ -20,6 +22,7 @@ import {
 	sql,
 	trackCreditRoles,
 	trackCredits,
+	trackGenres,
 	trackOfficialSongs,
 	tracks,
 } from "@thac/db";
@@ -394,11 +397,33 @@ tracksAdminRouter.get("/:trackId", async (c) => {
 			roles: rolesByCredit.get(creditRow.credit.id) ?? [],
 		}));
 
+		// ジャンル情報を取得（N+1回避: JOINで一括取得）
+		const trackGenresResult = await db
+			.select({
+				genreCode: trackGenres.genreCode,
+				position: trackGenres.position,
+				genre: genres,
+			})
+			.from(trackGenres)
+			.innerJoin(genres, eq(trackGenres.genreCode, genres.code))
+			.where(eq(trackGenres.trackId, trackId))
+			.orderBy(trackGenres.position);
+
+		const genresList = trackGenresResult.map((g) => ({
+			code: g.genre.code,
+			nameJa: g.genre.nameJa,
+			nameEn: g.genre.nameEn,
+			color: g.genre.color,
+			icon: g.genre.icon,
+			position: g.position,
+		}));
+
 		return c.json({
 			...row.track,
 			release: row.release,
 			disc: row.disc,
 			credits: creditsWithRoles,
+			genres: genresList,
 			eventName: row.eventName ?? null,
 			eventDayNumber: row.eventDayNumber ?? null,
 			eventDayDate: row.eventDayDate ?? null,
@@ -468,6 +493,103 @@ tracksAdminRouter.delete("/batch", async (c) => {
 		});
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/tracks/batch");
+	}
+});
+
+// トラックのジャンル更新API
+tracksAdminRouter.put("/:trackId/genres", async (c) => {
+	try {
+		const trackId = c.req.param("trackId");
+		const body = await c.req.json();
+
+		// バリデーション（最大5件）
+		const parsed = genreCodesSchema.safeParse(body.genreCodes);
+		if (!parsed.success) {
+			return c.json(
+				{
+					error: "ジャンルは最大5件まで設定できます",
+					details: parsed.error.flatten().fieldErrors,
+				},
+				400,
+			);
+		}
+
+		const genreCodes = parsed.data;
+
+		// トラック存在チェック
+		const existingTrack = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, trackId))
+			.limit(1);
+
+		if (existingTrack.length === 0) {
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
+		}
+
+		// ジャンルコードの存在チェック
+		if (genreCodes.length > 0) {
+			const existingGenres = await db
+				.select({ code: genres.code })
+				.from(genres)
+				.where(inArray(genres.code, genreCodes));
+
+			const existingCodes = new Set(existingGenres.map((g) => g.code));
+			const invalidCodes = genreCodes.filter((code) => !existingCodes.has(code));
+
+			if (invalidCodes.length > 0) {
+				return c.json(
+					{
+						error: `存在しないジャンルコードが含まれています: ${invalidCodes.join(", ")}`,
+					},
+					400,
+				);
+			}
+		}
+
+		// トランザクションで既存の紐付けを削除して新規挿入
+		const result = await db.transaction(async (tx) => {
+			// 既存の紐付けを削除
+			await tx.delete(trackGenres).where(eq(trackGenres.trackId, trackId));
+
+			// 新規挿入（position は配列の順序）
+			if (genreCodes.length > 0) {
+				const insertData = genreCodes.map((code, index) => ({
+					trackId,
+					genreCode: code,
+					position: index + 1,
+				}));
+				await tx.insert(trackGenres).values(insertData);
+			}
+
+			// 更新後のジャンル情報を取得
+			const updatedGenres = await tx
+				.select({
+					genreCode: trackGenres.genreCode,
+					position: trackGenres.position,
+					genre: genres,
+				})
+				.from(trackGenres)
+				.innerJoin(genres, eq(trackGenres.genreCode, genres.code))
+				.where(eq(trackGenres.trackId, trackId))
+				.orderBy(trackGenres.position);
+
+			return updatedGenres;
+		});
+
+		return c.json({
+			trackId,
+			genres: result.map((g) => ({
+				genreCode: g.genreCode,
+				position: g.position,
+				nameJa: g.genre.nameJa,
+				nameEn: g.genre.nameEn,
+				color: g.genre.color,
+				icon: g.genre.icon,
+			})),
+		});
+	} catch (error) {
+		return handleDbError(c, error, "PUT /admin/tracks/:trackId/genres");
 	}
 });
 

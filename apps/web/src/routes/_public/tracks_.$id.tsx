@@ -10,6 +10,7 @@ import {
 import { useMemo } from "react";
 import {
 	EntityDetailHeader,
+	GenreBadgeList,
 	PublicationLinks,
 	PublicBreadcrumb,
 } from "@/components/public";
@@ -162,6 +163,13 @@ function TrackDetailPage() {
 					)}
 				</div>
 			</EntityDetailHeader>
+
+			{/* ジャンル */}
+			{track.genres && track.genres.length > 0 && (
+				<div className="mt-4">
+					<GenreBadgeList genres={track.genres} />
+				</div>
+			)}
 
 			{/* クレジット */}
 			{track.credits.length > 0 && (

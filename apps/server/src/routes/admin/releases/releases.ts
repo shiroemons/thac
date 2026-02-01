@@ -8,9 +8,12 @@ import {
 	eq,
 	eventDays,
 	events,
+	genreCodesSchema,
+	genres,
 	inArray,
 	insertReleaseSchema,
 	like,
+	releaseGenres,
 	releases,
 	tracks,
 	updateReleaseSchema,
@@ -236,6 +239,7 @@ releasesRouter.get("/:id/full", async (c) => {
 			circlesData,
 			publicationsData,
 			janCodesData,
+			genresData,
 		] = await Promise.all([
 			db
 				.select()
@@ -246,6 +250,17 @@ releasesRouter.get("/:id/full", async (c) => {
 			getReleaseCircles(id),
 			getReleasePublications(id),
 			getReleaseJanCodes(id),
+			// リリースのジャンル情報を取得（N+1回避: JOINで一括取得）
+			db
+				.select({
+					genreCode: releaseGenres.genreCode,
+					position: releaseGenres.position,
+					genre: genres,
+				})
+				.from(releaseGenres)
+				.innerJoin(genres, eq(releaseGenres.genreCode, genres.code))
+				.where(eq(releaseGenres.releaseId, id))
+				.orderBy(releaseGenres.position),
 		]);
 
 		// イベント情報を整形
@@ -260,6 +275,16 @@ releasesRouter.get("/:id/full", async (c) => {
 					}
 				: null;
 
+		// ジャンル情報を整形
+		const genresList = genresData.map((g) => ({
+			code: g.genre.code,
+			nameJa: g.genre.nameJa,
+			nameEn: g.genre.nameEn,
+			color: g.genre.color,
+			icon: g.genre.icon,
+			position: g.position,
+		}));
+
 		return c.json({
 			release: {
 				...releaseData?.release,
@@ -269,6 +294,7 @@ releasesRouter.get("/:id/full", async (c) => {
 			circles: circlesData,
 			publications: publicationsData,
 			janCodes: janCodesData,
+			genres: genresList,
 			event: eventInfo,
 			stats: {
 				discCount: releaseDiscs.length,
@@ -543,6 +569,105 @@ releasesRouter.delete("/batch", async (c) => {
 		});
 	} catch (error) {
 		return handleDbError(c, error, "DELETE /admin/releases/batch");
+	}
+});
+
+// リリースのジャンル更新API
+releasesRouter.put("/:id/genres", async (c) => {
+	try {
+		const releaseId = c.req.param("id");
+		const body = await c.req.json();
+
+		// バリデーション（最大5件）
+		const parsed = genreCodesSchema.safeParse(body.genreCodes);
+		if (!parsed.success) {
+			return c.json(
+				{
+					error: "ジャンルは最大5件まで設定できます",
+					details: parsed.error.flatten().fieldErrors,
+				},
+				400,
+			);
+		}
+
+		const genreCodes = parsed.data;
+
+		// リリース存在チェック
+		const existingRelease = await db
+			.select()
+			.from(releases)
+			.where(eq(releases.id, releaseId))
+			.limit(1);
+
+		if (existingRelease.length === 0) {
+			return c.json({ error: ERROR_MESSAGES.RELEASE_NOT_FOUND }, 404);
+		}
+
+		// ジャンルコードの存在チェック
+		if (genreCodes.length > 0) {
+			const existingGenres = await db
+				.select({ code: genres.code })
+				.from(genres)
+				.where(inArray(genres.code, genreCodes));
+
+			const existingCodes = new Set(existingGenres.map((g) => g.code));
+			const invalidCodes = genreCodes.filter((code) => !existingCodes.has(code));
+
+			if (invalidCodes.length > 0) {
+				return c.json(
+					{
+						error: `存在しないジャンルコードが含まれています: ${invalidCodes.join(", ")}`,
+					},
+					400,
+				);
+			}
+		}
+
+		// トランザクションで既存の紐付けを削除して新規挿入
+		const result = await db.transaction(async (tx) => {
+			// 既存の紐付けを削除
+			await tx
+				.delete(releaseGenres)
+				.where(eq(releaseGenres.releaseId, releaseId));
+
+			// 新規挿入（position は配列の順序）
+			if (genreCodes.length > 0) {
+				const insertData = genreCodes.map((code, index) => ({
+					releaseId,
+					genreCode: code,
+					position: index + 1,
+				}));
+				await tx.insert(releaseGenres).values(insertData);
+			}
+
+			// 更新後のジャンル情報を取得
+			const updatedGenres = await tx
+				.select({
+					genreCode: releaseGenres.genreCode,
+					position: releaseGenres.position,
+					genre: genres,
+				})
+				.from(releaseGenres)
+				.innerJoin(genres, eq(releaseGenres.genreCode, genres.code))
+				.where(eq(releaseGenres.releaseId, releaseId))
+				.orderBy(releaseGenres.position);
+
+			return updatedGenres;
+		});
+
+		return c.json({
+			releaseId,
+			genres: result.map((g) => ({
+				genreCode: g.genreCode,
+				position: g.position,
+				nameJa: g.genre.nameJa,
+				nameEn: g.genre.nameEn,
+				color: g.genre.color,
+				icon: g.genre.icon,
+			})),
+		});
+	} catch (error) {
+		return handleDbError(c, error, "PUT /admin/releases/:id/genres");
 	}
 });
 

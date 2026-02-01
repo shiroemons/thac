@@ -443,8 +443,10 @@ export interface PublicReleaseDetail {
 			officialSongId: string | null;
 			songName: string;
 		}>;
+		genres?: PublicGenre[];
 	}>;
 	trackCount: number;
+	genres?: PublicGenre[];
 	artistCount: number;
 	publications: Array<{
 		id: string;
@@ -538,6 +540,14 @@ export interface SongStatsResponse {
 	songs: SongStat[];
 }
 
+/** ジャンル情報 */
+export interface PublicGenre {
+	code: string;
+	nameJa: string;
+	color: string;
+	icon?: string;
+}
+
 /** トラック詳細 */
 export interface PublicTrackDetail {
 	id: string;
@@ -590,6 +600,7 @@ export interface PublicTrackDetail {
 			category: "streaming" | "video" | "download" | "shop" | "other";
 		};
 	}>;
+	genres?: PublicGenre[];
 }
 
 // =============================================================================

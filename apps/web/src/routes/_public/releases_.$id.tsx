@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import {
 	EmptyState,
 	EntityDetailHeader,
+	GenreBadgeList,
 	PublicationLinks,
 	PublicBreadcrumb,
 	type StatItem,
@@ -159,6 +160,13 @@ function ReleaseDetailPage() {
 					)}
 				</div>
 			</EntityDetailHeader>
+
+			{/* ジャンル */}
+			{release.genres && release.genres.length > 0 && (
+				<div className="mt-4">
+					<GenreBadgeList genres={release.genres} />
+				</div>
+			)}
 
 			{/* 統計カード */}
 			<StatsCardGrid
@@ -347,6 +355,13 @@ function TrackCardList({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 									</span>
 								)}
 							</div>
+
+							{/* ジャンル */}
+							{track.genres && track.genres.length > 0 && (
+								<div className="mt-1.5">
+									<GenreBadgeList genres={track.genres} />
+								</div>
+							)}
 						</div>
 					</Link>
 				))}
