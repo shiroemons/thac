@@ -28,7 +28,7 @@ import {
 	tracks,
 	trackTags,
 } from "@thac/db";
-import { queueTrackIndexing } from "@thac/search";
+import { getIndexQueue, queueTrackIndexing } from "@thac/search";
 import { Hono } from "hono";
 import { z } from "zod";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
@@ -888,6 +888,33 @@ tracksAdminRouter.delete("/:trackId/tags/:tagId/lock", async (c) => {
 			error,
 			"DELETE /admin/tracks/:trackId/tags/:tagId/lock",
 		);
+	}
+});
+
+// トラックをMeilisearchに即時同期
+tracksAdminRouter.post("/:trackId/sync", async (c) => {
+	try {
+		const trackId = c.req.param("trackId");
+
+		// トラック存在チェック
+		const existingTrack = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, trackId))
+			.limit(1);
+
+		if (existingTrack.length === 0) {
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
+		}
+
+		// 即時同期（キューに追加してすぐにフラッシュ）
+		await queueTrackIndexing(trackId);
+		const queue = getIndexQueue();
+		await queue.flush();
+
+		return c.json({ success: true });
+	} catch (error) {
+		return handleDbError(c, error, "POST /admin/tracks/:trackId/sync");
 	}
 });
 

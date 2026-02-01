@@ -2034,6 +2034,10 @@ export const tracksApi = {
 			method: "DELETE",
 			body: JSON.stringify({ items }),
 		}),
+	syncToSearch: (trackId: string) =>
+		fetchWithAuth<{ success: boolean }>(`/api/admin/tracks/${trackId}/sync`, {
+			method: "POST",
+		}),
 };
 
 // Track Credits

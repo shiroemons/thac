@@ -14,6 +14,7 @@ import {
 	Music,
 	Pencil,
 	Plus,
+	RefreshCw,
 	Tag,
 	Trash2,
 } from "lucide-react";
@@ -355,6 +356,11 @@ function TrackDetailPage() {
 			queryClient.invalidateQueries({ queryKey: ["track-tags", trackId] });
 			setIsTagEditing(false);
 		},
+	});
+
+	// Meilisearch同期mutation
+	const syncMutation = useMutation({
+		mutationFn: () => tracksApi.syncToSearch(trackId),
 	});
 
 	// タグロックmutation
@@ -1020,15 +1026,29 @@ function TrackDetailPage() {
 				<div className="border-base-300 border-b p-4">
 					<div className="flex items-center justify-between">
 						<h2 className="font-bold text-xl">{track.name}</h2>
-						<Button
-							variant="outline"
-							size="sm"
-							className="gap-1"
-							onClick={() => setIsEditDialogOpen(true)}
-						>
-							<Pencil className="h-4 w-4" />
-							編集
-						</Button>
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								className="gap-1"
+								onClick={() => syncMutation.mutate()}
+								disabled={syncMutation.isPending}
+							>
+								<RefreshCw
+									className={`h-4 w-4 ${syncMutation.isPending ? "animate-spin" : ""}`}
+								/>
+								検索同期
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								className="gap-1"
+								onClick={() => setIsEditDialogOpen(true)}
+							>
+								<Pencil className="h-4 w-4" />
+								編集
+							</Button>
+						</div>
 					</div>
 				</div>
 
