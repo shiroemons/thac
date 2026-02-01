@@ -20,8 +20,8 @@ interface TagFilterProps {
  *
  * - テキスト入力でタグを検索（オートコンプリート）
  * - 選択中のタグをバッジで表示
- * - 各タグの使用回数（trackCount）を表示
  * - クリックで選択、×ボタンで削除
+ * - 自由入力でタグを追加可能
  */
 export function TagFilter({
 	tagList,
@@ -39,7 +39,7 @@ export function TagFilter({
 		[selected],
 	);
 
-	// 検索でフィルタリング＆ソート（使用回数が多い順）
+	// 検索でフィルタリング＆ソート（名前順）
 	const filteredTags = useMemo(() => {
 		let result = (tagList ?? []).filter((tag) => !selectedIds.has(tag.id));
 
@@ -50,8 +50,8 @@ export function TagFilter({
 			);
 		}
 
-		// 使用回数が多い順にソート
-		return [...result].sort((a, b) => b.trackCount - a.trackCount);
+		// 名前順にソート
+		return [...result].sort((a, b) => a.name.localeCompare(b.name, "ja"));
 	}, [tagList, selectedIds, search]);
 
 	// タグを選択
@@ -98,9 +98,29 @@ export function TagFilter({
 			if (e.key === "Escape") {
 				setIsDropdownOpen(false);
 				inputRef.current?.blur();
+			} else if (e.key === "Enter" && search.trim()) {
+				e.preventDefault();
+				// 既存のタグがあればそれを選択、なければ自由入力として追加
+				const existingTag = filteredTags.find(
+					(tag) => tag.name.toLowerCase() === search.trim().toLowerCase(),
+				);
+				if (existingTag) {
+					addTag(existingTag);
+				} else {
+					// 自由入力タグとして追加（IDは一時的なもの）
+					onSelectionChange([
+						...(selected ?? []),
+						{
+							id: `custom-${Date.now()}`,
+							name: search.trim(),
+						},
+					]);
+					setSearch("");
+					setIsDropdownOpen(false);
+				}
 			}
 		},
-		[],
+		[search, filteredTags, addTag, onSelectionChange, selected],
 	);
 
 	return (
@@ -185,6 +205,32 @@ export function TagFilter({
 							</div>
 						</div>
 
+						{/* 自由入力ヒント */}
+						{search.trim() &&
+							!filteredTags.some(
+								(t) => t.name.toLowerCase() === search.trim().toLowerCase(),
+							) && (
+								<div className="border-base-300 border-b px-4 py-2 text-sm">
+									<button
+										type="button"
+										onClick={() => {
+											onSelectionChange([
+												...(selected ?? []),
+												{
+													id: `custom-${Date.now()}`,
+													name: search.trim(),
+												},
+											]);
+											setSearch("");
+											setIsDropdownOpen(false);
+										}}
+										className="flex items-center gap-2 text-primary hover:underline"
+									>
+										<Plus className="h-4 w-4" />「{search.trim()}」で検索
+									</button>
+								</div>
+							)}
+
 						{/* オプションリスト */}
 						<div className="max-h-72 overflow-y-auto">
 							{filteredTags.length === 0 ? (
@@ -205,9 +251,6 @@ export function TagFilter({
 											<Tag className="h-4 w-4 text-base-content/60" />
 											<span>{tag.name}</span>
 										</div>
-										<span className="badge badge-ghost badge-sm">
-											{tag.trackCount.toLocaleString()}曲
-										</span>
 									</button>
 								))
 							)}
