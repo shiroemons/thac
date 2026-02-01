@@ -19,6 +19,9 @@ export const tracksIndexConfig: IndexConfig = {
 		"remixerNames",
 		"originalSongNames",
 		"originalWorkNames",
+		// ジャンル・タグ名
+		"genreNames",
+		"tagNames",
 		// 階層検索（originalSongs内）
 		"originalSongs.lvl0",
 		"originalSongs.lvl1",
@@ -41,6 +44,10 @@ export const tracksIndexConfig: IndexConfig = {
 		"composerNames",
 		"originalSongNames",
 		"originalWorkNames",
+		// ジャンル・タグ
+		"genreCodes",
+		"genreNames",
+		"tagNames",
 		// 階層検索（originalSongs内）
 		"originalSongs.lvl0",
 		"originalSongs.lvl1",
@@ -55,6 +62,8 @@ export const tracksIndexConfig: IndexConfig = {
 		"remixerCount",
 		"circleCount",
 		"originalSongCount",
+		"genreCount",
+		"tagCount",
 	],
 	sortableAttributes: [
 		"releaseDate",
@@ -70,6 +79,8 @@ export const tracksIndexConfig: IndexConfig = {
 		"remixerCount",
 		"circleCount",
 		"originalSongCount",
+		"genreCount",
+		"tagCount",
 	],
 	// NOTE: locales: ["jpn"] により検索は大文字小文字を区別しない（case-insensitive）
 	// これは日本語検索の精度向上のための意図的な設定

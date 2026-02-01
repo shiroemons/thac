@@ -23,6 +23,20 @@ export interface CircleRef {
 	name: string;
 }
 
+/** ジャンル参照 */
+export interface GenreRef {
+	code: string; // genres.code
+	nameJa: string;
+	color: string;
+	icon: string;
+}
+
+/** タグ参照 */
+export interface TagRef {
+	id: string; // tags.id
+	name: string;
+}
+
 /** 原曲参照 */
 export interface OriginalSongRef {
 	id: string | null; // trackOfficialSongs.id（customSongNameのみの場合はnull相当）
@@ -87,9 +101,18 @@ export interface TrackSearchDocument extends SearchDocument {
 	// フラグ
 	isTouhouArrange: boolean;
 
-	// 未実装（型定義のみ）
-	tags: string[];
-	genres: string[];
+	// ジャンル・タグ（オブジェクト配列）
+	genres: GenreRef[];
+	tags: TagRef[];
+
+	// ジャンル・タグ検索用
+	genreNames: string[];
+	genreCodes: string[];
+	tagNames: string[];
+
+	// ジャンル・タグカウント
+	genreCount: number;
+	tagCount: number;
 
 	// 検索用名前配列
 	circleNames: string[];

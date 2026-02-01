@@ -18,7 +18,9 @@ import {
 	publicCirclesAllListOptions,
 	publicEventSeriesListOptions,
 	publicEventsAllListOptions,
+	publicGenresListOptions,
 	publicSongsAllListOptions,
+	publicTagsListQueryOptions,
 } from "@/lib/public-query-options";
 import { ArtistRoleFilter } from "./ArtistRoleFilter";
 import { CircleFilter } from "./CircleFilter";
@@ -26,6 +28,8 @@ import { DateRangeFilter } from "./DateRangeFilter";
 import { EventFilter } from "./EventFilter";
 import { FilterChips } from "./FilterChips";
 import { FilterSection } from "./FilterSection";
+import { GenreFilter } from "./GenreFilter";
+import { TagFilter } from "./TagFilter";
 import { OriginalSongCountFilter } from "./OriginalSongCountFilter";
 import { OriginalSongFilter } from "./OriginalSongFilter";
 import { RoleCountFilter } from "./RoleCountFilter";
@@ -73,6 +77,8 @@ const SKELETON_SECTIONS = [
 	"songs",
 	"artists",
 	"circles",
+	"genres",
+	"tags",
 	"events",
 ] as const;
 
@@ -113,6 +119,10 @@ function AdvancedSearchModalContent({
 	);
 	const { data: eventsData } = useSuspenseQuery(publicEventsAllListOptions());
 	const { data: songsData } = useSuspenseQuery(publicSongsAllListOptions());
+	const { data: genresData } = useSuspenseQuery(publicGenresListOptions());
+	const { data: tagsData } = useSuspenseQuery(
+		publicTagsListQueryOptions({ limit: 1000 }),
+	);
 
 	// セクション開閉状態
 	const [sectionState, setSectionState] = useState<FilterSectionState>(
@@ -200,6 +210,8 @@ function AdvancedSearchModalContent({
 	const roleCountCount = Object.values(filters.roleCounts).filter(
 		(v) => v !== "any",
 	).length;
+	const genreCount = filters.genres.length;
+	const tagCount = filters.tags.length;
 	const hasSongCount = filters.songCount !== "any";
 	const hasDateRange = !!filters.dateRange.from || !!filters.dateRange.to;
 	const hasEvent = !!filters.event;
@@ -285,6 +297,38 @@ function AdvancedSearchModalContent({
 						selectedCircles={filters.circles}
 						onChange={(circles) => onFiltersChange({ ...filters, circles })}
 						options={circles}
+					/>
+				</FilterSection>
+
+				{/* ジャンルフィルター */}
+				<FilterSection
+					title="ジャンル"
+					selectedCount={genreCount}
+					isOpen={sectionState.genres}
+					onToggle={() => toggleSection("genres")}
+					onClear={() => onFiltersChange({ ...filters, genres: [] })}
+				>
+					<GenreFilter
+						genreList={genresData.data}
+						selected={filters.genres}
+						onSelectionChange={(genres) =>
+							onFiltersChange({ ...filters, genres })
+						}
+					/>
+				</FilterSection>
+
+				{/* タグフィルター */}
+				<FilterSection
+					title="タグ"
+					selectedCount={tagCount}
+					isOpen={sectionState.tags}
+					onToggle={() => toggleSection("tags")}
+					onClear={() => onFiltersChange({ ...filters, tags: [] })}
+				>
+					<TagFilter
+						tagList={tagsData.data}
+						selected={filters.tags}
+						onSelectionChange={(tags) => onFiltersChange({ ...filters, tags })}
 					/>
 				</FilterSection>
 

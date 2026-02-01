@@ -84,6 +84,18 @@ export function useFilterChips(
 			);
 		}
 
+		// ジャンル
+		for (const genre of filters.genres ?? []) {
+			result.push(
+				createFilterChip("genre", genre.code, genre.name, genre.code),
+			);
+		}
+
+		// タグ
+		for (const tag of filters.tags ?? []) {
+			result.push(createFilterChip("tag", tag.id, tag.name, tag.id));
+		}
+
 		// 役割者数
 		const getMatchSuffix = (matchType: "exact" | "gte" | "lte") => {
 			if (matchType === "gte") return "以上";
@@ -186,6 +198,18 @@ export function useFilterChips(
 					onFiltersChange({
 						...filters,
 						circles: filters.circles.filter((c) => c.id !== chip.value),
+					});
+					break;
+				case "genre":
+					onFiltersChange({
+						...filters,
+						genres: filters.genres.filter((g) => g.code !== chip.value),
+					});
+					break;
+				case "tag":
+					onFiltersChange({
+						...filters,
+						tags: filters.tags.filter((t) => t.id !== chip.value),
 					});
 					break;
 				case "roleCount":

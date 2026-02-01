@@ -687,6 +687,20 @@ export interface TrackPublication {
 	url: string;
 }
 
+/** ジャンル参照（検索結果用） */
+export interface TrackGenreRef {
+	code: string;
+	nameJa: string;
+	color: string;
+	icon: string;
+}
+
+/** タグ参照（検索結果用） */
+export interface TrackTagRef {
+	id: string;
+	name: string;
+}
+
 /** トラック検索結果のヒット */
 export interface TrackSearchHit {
 	id: string;
@@ -720,8 +734,8 @@ export interface TrackSearchHit {
 	releasePublicationCount: number;
 	trackPublicationCount: number;
 	isTouhouArrange: boolean;
-	tags: string[];
-	genres: string[];
+	tags: TrackTagRef[];
+	genres: TrackGenreRef[];
 	circleNames: string[];
 	vocalistNames: string[];
 	arrangerNames: string[];

@@ -1,4 +1,4 @@
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import DOMPurify from "isomorphic-dompurify";
 import {
@@ -37,11 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 import { createPageHead } from "@/lib/head";
-import type { PublicGenreItem } from "@/lib/public-api";
-import {
-	publicGenresListOptions,
-	searchTracksQueryOptions,
-} from "@/lib/public-query-options";
+import { searchTracksQueryOptions } from "@/lib/public-query-options";
 
 interface SearchParams {
 	q?: string;
@@ -66,10 +62,6 @@ interface SearchParams {
 export const Route = createFileRoute("/_public/search")({
 	head: () => createPageHead("検索"),
 	component: SearchPage,
-	loader: async ({ context }) => {
-		// ジャンルマスタをプリフェッチ
-		await context.queryClient.ensureQueryData(publicGenresListOptions());
-	},
 	validateSearch: (search: Record<string, unknown>): SearchParams => {
 		return {
 			q: typeof search.q === "string" ? search.q : undefined,
@@ -175,7 +167,12 @@ function getSearchHistory(): SearchHistoryItem[] {
 					// 旧形式を新形式に変換
 					return { query: item, filters: DEFAULT_FILTERS, timestamp: 0 };
 				}
-				return item as SearchHistoryItem;
+				// genres/tags が存在しない古いフィルター形式をマイグレーション
+				const historyItem = item as SearchHistoryItem;
+				return {
+					...historyItem,
+					filters: mergeFiltersWithDefaults(historyItem.filters),
+				};
 			});
 		}
 		return [];
@@ -359,18 +356,6 @@ function filtersToUrlSearchObject(
 	return result;
 }
 
-/**
- * ジャンルコードからジャンル情報をマップするヘルパー
- */
-function getGenresByCode(
-	codes: string[],
-	genreMap: Map<string, PublicGenreItem>,
-): PublicGenreItem[] {
-	return codes
-		.map((code) => genreMap.get(code))
-		.filter((g): g is PublicGenreItem => g !== undefined);
-}
-
 function SearchPage() {
 	const searchParams = Route.useSearch();
 	const query = searchParams.q ?? "";
@@ -380,18 +365,6 @@ function SearchPage() {
 	const [expandedOriginalSongs, setExpandedOriginalSongs] = useState<
 		Set<string>
 	>(new Set());
-
-	// ジャンルマスタを取得
-	const { data: genresData } = useSuspenseQuery(publicGenresListOptions());
-
-	// ジャンルコード -> ジャンル情報のマップを作成
-	const genreMap = useMemo(() => {
-		const map = new Map<string, PublicGenreItem>();
-		for (const genre of genresData.data) {
-			map.set(genre.code, genre);
-		}
-		return map;
-	}, [genresData.data]);
 
 	// 認証状態を取得
 	const { data: session } = authClient.useSession();
@@ -790,11 +763,12 @@ function SearchPage() {
 											<th className="font-medium">作品名</th>
 											<th className="font-medium">イベント</th>
 											<th className="font-medium">サークル</th>
-											<th className="font-medium">ジャンル</th>
 											<th className="font-medium">原曲</th>
 											<th className="font-medium">ボーカリスト</th>
 											<th className="font-medium">編曲者</th>
 											<th className="font-medium">作詞者</th>
+											<th className="font-medium">ジャンル</th>
+											<th className="font-medium">タグ</th>
 											<th className="font-medium">その他</th>
 										</tr>
 									</thead>
@@ -847,23 +821,6 @@ function SearchPage() {
 												<td className="max-w-[120px] text-sm">
 													<div>{renderCircleLinks(hit.circles)}</div>
 												</td>
-												<td className="max-w-[150px]">
-													{hit.genres && hit.genres.length > 0 && (
-														<div className="flex flex-wrap gap-1">
-															{getGenresByCode(hit.genres, genreMap).map(
-																(genre) => (
-																	<GenreBadge
-																		key={genre.code}
-																		code={genre.code}
-																		name={genre.nameJa}
-																		color={genre.color}
-																		icon={genre.icon}
-																	/>
-																),
-															)}
-														</div>
-													)}
-												</td>
 												<td className="max-w-[250px] text-base-content/70 text-sm">
 													<div>
 														{hit.originalSongs.length > 0
@@ -894,6 +851,40 @@ function SearchPage() {
 												</td>
 												<td className="max-w-[120px] text-sm">
 													<div>{renderArtistLinks(hit.lyricists)}</div>
+												</td>
+												<td className="max-w-[150px]">
+													{hit.genres && hit.genres.length > 0 ? (
+														<div className="flex flex-wrap gap-1">
+															{hit.genres.map((genre) => (
+																<GenreBadge
+																	key={genre.code}
+																	code={genre.code}
+																	name={genre.nameJa}
+																	color={genre.color}
+																	icon={genre.icon}
+																/>
+															))}
+														</div>
+													) : (
+														"-"
+													)}
+												</td>
+												<td className="max-w-[150px]">
+													{hit.tags && hit.tags.length > 0 ? (
+														<div className="flex flex-wrap gap-1">
+															{hit.tags.map((tag) => (
+																<span
+																	key={tag.id}
+																	className="badge badge-ghost badge-sm inline-flex items-center gap-1 text-xs"
+																>
+																	<Hash className="size-3" />
+																	{tag.name}
+																</span>
+															))}
+														</div>
+													) : (
+														"-"
+													)}
 												</td>
 												<td className="max-w-[120px] text-base-content/50 text-xs">
 													<div>
@@ -1050,30 +1041,28 @@ function SearchPage() {
 													{/* ジャンルバッジ */}
 													{hit.genres && hit.genres.length > 0 && (
 														<div className="mt-1 flex flex-wrap gap-1">
-															{getGenresByCode(hit.genres, genreMap).map(
-																(genre) => (
-																	<GenreBadge
-																		key={genre.code}
-																		code={genre.code}
-																		name={genre.nameJa}
-																		color={genre.color}
-																		icon={genre.icon}
-																	/>
-																),
-															)}
+															{hit.genres.map((genre) => (
+																<GenreBadge
+																	key={genre.code}
+																	code={genre.code}
+																	name={genre.nameJa}
+																	color={genre.color}
+																	icon={genre.icon}
+																/>
+															))}
 														</div>
 													)}
 
-													{/* タグ（IDがないためリンクなしバッジ） */}
+													{/* タグ */}
 													{hit.tags && hit.tags.length > 0 && (
 														<div className="mt-1 flex flex-wrap gap-1">
-															{hit.tags.slice(0, 5).map((tagName) => (
+															{hit.tags.slice(0, 5).map((tag) => (
 																<span
-																	key={tagName}
+																	key={tag.id}
 																	className="badge badge-ghost badge-sm inline-flex items-center gap-1 text-xs"
 																>
 																	<Hash className="size-3" />
-																	{tagName}
+																	{tag.name}
 																</span>
 															))}
 															{hit.tags.length > 5 && (

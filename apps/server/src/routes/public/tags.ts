@@ -32,6 +32,7 @@ function calculateWeight(
 /**
  * GET /api/public/tags
  * 全タグ一覧を取得（使用数付き）
+ * マスターテーブルから全タグを取得（使用されていないタグも含む）
  */
 tagsRouter.get("/", async (c) => {
 	try {
@@ -41,22 +42,30 @@ tagsRouter.get("/", async (c) => {
 		const cacheKey = cacheKeys.tagsList({ search, limit });
 
 		// キャッシュチェック
-		const cached = getCache<{ tags: unknown[] }>(cacheKey);
+		const cached = getCache<{
+			data: { id: string; name: string; trackCount: number }[];
+			total: number;
+			page: number;
+			limit: number;
+		}>(cacheKey);
 		if (cached) {
 			setCacheHeaders(c, { maxAge: TAGS_CACHE_TTL });
 			return c.json(cached);
 		}
 
-		// クエリ構築
+		// タグマスターから全件取得するクエリを構築
+		// leftJoinでtrackTagsと結合し、使用数を取得（0件のタグも含む）
 		let query = db
 			.select({
 				id: tags.id,
 				name: tags.name,
-				usageCount: count(trackTags.trackId),
+				usageCount: sql<number>`coalesce(count(${trackTags.trackId}), 0)`.as(
+					"usageCount",
+				),
 			})
 			.from(tags)
 			.leftJoin(trackTags, eq(tags.id, trackTags.tagId))
-			.groupBy(tags.id)
+			.groupBy(tags.id, tags.name)
 			.orderBy(asc(tags.name))
 			.limit(limit)
 			.$dynamic();
@@ -68,12 +77,25 @@ tagsRouter.get("/", async (c) => {
 
 		const data = await query;
 
+		// 合計件数を取得（検索条件付き）
+		let totalQuery = db.select({ count: count() }).from(tags).$dynamic();
+		if (search) {
+			totalQuery = totalQuery.where(like(tags.name, `%${search}%`));
+		}
+		const totalResult = await totalQuery;
+		const total = totalResult[0]?.count ?? 0;
+
+		const page = 1; // 現在ページ（TODO: ページネーションパラメータ対応時に修正）
+
 		const response = {
-			tags: data.map((tag) => ({
+			data: data.map((tag) => ({
 				id: tag.id,
 				name: tag.name,
-				usageCount: tag.usageCount,
+				trackCount: Number(tag.usageCount),
 			})),
+			total,
+			page,
+			limit,
 		};
 
 		// キャッシュに保存
@@ -98,7 +120,9 @@ tagsRouter.get("/cloud", async (c) => {
 		const cacheKey = cacheKeys.tagsCloud({ limit, minCount });
 
 		// キャッシュチェック
-		const cached = getCache<{ tags: unknown[]; meta: unknown }>(cacheKey);
+		const cached = getCache<{
+			data: { id: string; name: string; count: number; weight: number }[];
+		}>(cacheKey);
 		if (cached) {
 			setCacheHeaders(c, { maxAge: TAGS_CACHE_TTL });
 			return c.json(cached);
@@ -118,19 +142,10 @@ tagsRouter.get("/cloud", async (c) => {
 			.orderBy(desc(count(trackTags.trackId)))
 			.limit(limit);
 
-		// 全タグ数を取得
-		const totalResult = await db.select({ count: count() }).from(tags);
-		const totalTags = totalResult[0]?.count ?? 0;
-
 		// 重みを計算
 		if (data.length === 0) {
 			const response = {
-				tags: [],
-				meta: {
-					totalTags,
-					maxCount: 0,
-					minCount: 0,
-				},
+				data: [],
 			};
 
 			setCache(cacheKey, response, TAGS_CACHE_TTL);
@@ -152,12 +167,7 @@ tagsRouter.get("/cloud", async (c) => {
 		}));
 
 		const response = {
-			tags: tagsWithWeight,
-			meta: {
-				totalTags,
-				maxCount: maxUsageCount,
-				minCount: minUsageCount,
-			},
+			data: tagsWithWeight,
 		};
 
 		// キャッシュに保存

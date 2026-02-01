@@ -7,23 +7,29 @@ import {
 	discs,
 	eq,
 	events,
+	genres,
 	inArray,
 	officialSongs,
 	officialWorks,
 	releaseCircles,
 	releasePublications,
 	releases,
+	tags,
 	trackCreditRoles,
 	trackCredits,
+	trackGenres,
 	trackOfficialSongs,
 	trackPublications,
+	trackTags,
 	tracks,
 } from "@thac/db";
 import type {
 	ArtistRef,
 	CircleRef,
+	GenreRef,
 	OriginalSongRef,
 	Publication,
+	TagRef,
 	TrackSearchDocument,
 } from "../types";
 
@@ -105,6 +111,8 @@ export async function* fetchTracksForIndexing(
 			releaseEventsData,
 			trackPublicationsData,
 			releasePublicationsData,
+			genresData,
+			tagsData,
 		] = await Promise.all([
 			// Circles via release_circles with full data
 			releaseIds.length > 0
@@ -199,6 +207,34 @@ export async function* fetchTracksForIndexing(
 						.from(releasePublications)
 						.where(inArray(releasePublications.releaseId, releaseIds))
 				: Promise.resolve([]),
+
+			// Track genres with full genre data
+			db
+				.select({
+					trackId: trackGenres.trackId,
+					genreCode: genres.code,
+					nameJa: genres.nameJa,
+					color: genres.color,
+					icon: genres.icon,
+					position: trackGenres.position,
+				})
+				.from(trackGenres)
+				.innerJoin(genres, eq(trackGenres.genreCode, genres.code))
+				.where(inArray(trackGenres.trackId, trackIds))
+				.orderBy(asc(trackGenres.position)),
+
+			// Track tags with full tag data
+			db
+				.select({
+					trackId: trackTags.trackId,
+					tagId: tags.id,
+					tagName: tags.name,
+					position: trackTags.position,
+				})
+				.from(trackTags)
+				.innerJoin(tags, eq(trackTags.tagId, tags.id))
+				.where(inArray(trackTags.trackId, trackIds))
+				.orderBy(asc(trackTags.position)),
 		]);
 
 		// Step 3: Build lookup maps
@@ -350,6 +386,40 @@ export async function* fetchTracksForIndexing(
 			});
 		}
 
+		const genresByTrack = new Map<string, GenreRef[]>();
+		for (const g of genresData) {
+			let entry = genresByTrack.get(g.trackId);
+			if (!entry) {
+				entry = [];
+				genresByTrack.set(g.trackId, entry);
+			}
+			// Check if genre already exists (shouldn't happen with proper constraints)
+			if (!entry.some((genre) => genre.code === g.genreCode)) {
+				entry.push({
+					code: g.genreCode,
+					nameJa: g.nameJa,
+					color: g.color,
+					icon: g.icon,
+				});
+			}
+		}
+
+		const tagsByTrack = new Map<string, TagRef[]>();
+		for (const t of tagsData) {
+			let entry = tagsByTrack.get(t.trackId);
+			if (!entry) {
+				entry = [];
+				tagsByTrack.set(t.trackId, entry);
+			}
+			// Check if tag already exists (shouldn't happen with proper constraints)
+			if (!entry.some((tag) => tag.id === t.tagId)) {
+				entry.push({
+					id: t.tagId,
+					name: t.tagName,
+				});
+			}
+		}
+
 		// Step 4: Transform to search documents
 		const documents: TrackSearchDocument[] = tracksData.map((track) => {
 			const credits = creditsByTrack.get(track.id) ?? {
@@ -379,6 +449,10 @@ export async function* fetchTracksForIndexing(
 				(s) => s.categoryCode && TOUHOU_CATEGORIES.includes(s.categoryCode),
 			);
 
+			// Get genres and tags for this track
+			const trackGenreRefs = genresByTrack.get(track.id) ?? [];
+			const trackTagRefs = tagsByTrack.get(track.id) ?? [];
+
 			// Build search name arrays
 			const circleNames = circleRefs.map((c) => c.name);
 			const vocalistNames = credits.vocalists.map((a) => a.name);
@@ -392,6 +466,9 @@ export async function* fetchTracksForIndexing(
 					originalSongs.map((s) => s.workName).filter(Boolean) as string[],
 				),
 			];
+			const genreNames = trackGenreRefs.map((g) => g.nameJa);
+			const genreCodes = trackGenreRefs.map((g) => g.code);
+			const tagNames = trackTagRefs.map((t) => t.name);
 
 			return {
 				id: track.id,
@@ -425,8 +502,13 @@ export async function* fetchTracksForIndexing(
 				releasePublicationCount: releasePubs.length,
 				trackPublicationCount: trackPubs.length,
 				isTouhouArrange,
-				tags: [],
-				genres: [],
+				genres: trackGenreRefs,
+				tags: trackTagRefs,
+				genreNames,
+				genreCodes,
+				tagNames,
+				genreCount: trackGenreRefs.length,
+				tagCount: trackTagRefs.length,
 				circleNames,
 				vocalistNames,
 				arrangerNames,
@@ -497,6 +579,8 @@ export async function fetchTrackForIndexing(
 		releaseEventsData,
 		trackPublicationsData,
 		releasePublicationsData,
+		genresData,
+		tagsData,
 	] = await Promise.all([
 		// Circles with full data
 		releaseIds.length > 0
@@ -588,6 +672,32 @@ export async function fetchTrackForIndexing(
 					.from(releasePublications)
 					.where(inArray(releasePublications.releaseId, releaseIds))
 			: Promise.resolve([]),
+
+		// Track genres with full genre data
+		db
+			.select({
+				genreCode: genres.code,
+				nameJa: genres.nameJa,
+				color: genres.color,
+				icon: genres.icon,
+				position: trackGenres.position,
+			})
+			.from(trackGenres)
+			.innerJoin(genres, eq(trackGenres.genreCode, genres.code))
+			.where(eq(trackGenres.trackId, trackId))
+			.orderBy(asc(trackGenres.position)),
+
+		// Track tags with full tag data
+		db
+			.select({
+				tagId: tags.id,
+				tagName: tags.name,
+				position: trackTags.position,
+			})
+			.from(trackTags)
+			.innerJoin(tags, eq(trackTags.tagId, tags.id))
+			.where(eq(trackTags.trackId, trackId))
+			.orderBy(asc(trackTags.position)),
 	]);
 
 	// Build circles
@@ -707,6 +817,18 @@ export async function fetchTrackForIndexing(
 		(s) => s.categoryCode && TOUHOU_CATEGORIES.includes(s.categoryCode),
 	);
 
+	// Build genres and tags refs
+	const genreRefs: GenreRef[] = genresData.map((g) => ({
+		code: g.genreCode,
+		nameJa: g.nameJa,
+		color: g.color,
+		icon: g.icon,
+	}));
+	const tagRefs: TagRef[] = tagsData.map((t) => ({
+		id: t.tagId,
+		name: t.tagName,
+	}));
+
 	// Build search name arrays
 	const circleNames = circleRefs.map((c) => c.name);
 	const vocalistNames = credits.vocalists.map((a) => a.name);
@@ -720,6 +842,9 @@ export async function fetchTrackForIndexing(
 			originalSongs.map((s) => s.workName).filter(Boolean) as string[],
 		),
 	];
+	const genreNames = genreRefs.map((g) => g.nameJa);
+	const genreCodes = genreRefs.map((g) => g.code);
+	const tagNames = tagRefs.map((t) => t.name);
 
 	return {
 		id: track.id,
@@ -753,8 +878,13 @@ export async function fetchTrackForIndexing(
 		releasePublicationCount: releasePubs.length,
 		trackPublicationCount: trackPubs.length,
 		isTouhouArrange,
-		tags: [],
-		genres: [],
+		genres: genreRefs,
+		tags: tagRefs,
+		genreNames,
+		genreCodes,
+		tagNames,
+		genreCount: genreRefs.length,
+		tagCount: tagRefs.length,
 		circleNames,
 		vocalistNames,
 		arrangerNames,

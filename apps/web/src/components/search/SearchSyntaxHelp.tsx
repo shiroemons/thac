@@ -49,6 +49,25 @@ const searchSyntaxHelp: SearchSyntaxItem[] = [
 		description: "イベント名で検索",
 		example: "event:例大祭",
 	},
+	// --- ジャンル・タグ検索 ---
+	{
+		keyword: "genre:",
+		description: "ジャンル名で検索",
+		example: "genre:ロック",
+		tooltip: 'スペースを含む場合: genre:"ポップ ロック"',
+	},
+	{
+		keyword: "#タグ名",
+		description: "タグで検索（ハッシュタグ形式）",
+		example: "#インスト",
+		tooltip: 'スペースを含む場合: #"東方 アレンジ"',
+	},
+	{
+		keyword: "tag:",
+		description: "タグで検索（別構文）",
+		example: "tag:インスト",
+		tooltip: 'スペースを含む場合: tag:"東方 アレンジ"',
+	},
 	// --- 期間検索 ---
 	{
 		keyword: "period:",
