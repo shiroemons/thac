@@ -8,7 +8,6 @@ import {
 	like,
 	max,
 	or,
-	releaseGenres,
 	trackGenres,
 	updateGenreSchema,
 } from "@thac/db";
@@ -216,29 +215,21 @@ genresRouter.delete("/:code", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.NOT_FOUND }, 404);
 		}
 
-		// 使用中チェック（track_genres, release_genresにレコードがある場合は拒否）
-		const [trackUsage, releaseUsage] = await Promise.all([
-			db
-				.select({ count: count() })
-				.from(trackGenres)
-				.where(eq(trackGenres.genreCode, code)),
-			db
-				.select({ count: count() })
-				.from(releaseGenres)
-				.where(eq(releaseGenres.genreCode, code)),
-		]);
+		// 使用中チェック（track_genresにレコードがある場合は拒否）
+		const trackUsage = await db
+			.select({ count: count() })
+			.from(trackGenres)
+			.where(eq(trackGenres.genreCode, code));
 
 		const trackCount = trackUsage[0]?.count ?? 0;
-		const releaseCount = releaseUsage[0]?.count ?? 0;
 
-		if (trackCount > 0 || releaseCount > 0) {
+		if (trackCount > 0) {
 			return c.json(
 				{
 					error:
 						"このジャンルは使用中のため削除できません。先に紐付けを解除してください",
 					usage: {
 						tracks: trackCount,
-						releases: releaseCount,
 					},
 				},
 				409,

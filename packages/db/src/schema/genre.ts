@@ -6,7 +6,6 @@ import {
 	sqliteTable,
 	text,
 } from "drizzle-orm/sqlite-core";
-import { releases } from "./release";
 import { tracks } from "./track";
 
 /**
@@ -61,34 +60,6 @@ export const trackGenres = sqliteTable(
 	],
 );
 
-/**
- * Release Genres table - junction table for release-genre many-to-many relationship
- * Maximum 5 genres per release
- */
-export const releaseGenres = sqliteTable(
-	"release_genres",
-	{
-		releaseId: text("release_id")
-			.notNull()
-			.references(() => releases.id, { onDelete: "cascade" }),
-		genreCode: text("genre_code")
-			.notNull()
-			.references(() => genres.code, { onDelete: "restrict" }),
-		position: integer("position").default(1).notNull(),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-			.notNull(),
-	},
-	(table) => [
-		primaryKey({
-			columns: [table.releaseId, table.genreCode],
-		}),
-		index("idx_release_genres_release").on(table.releaseId),
-		index("idx_release_genres_genre").on(table.genreCode),
-	],
-);
-
 // Type exports for table rows
 export type Genre = InferSelectModel<typeof genres>;
 export type TrackGenre = InferSelectModel<typeof trackGenres>;
-export type ReleaseGenre = InferSelectModel<typeof releaseGenres>;

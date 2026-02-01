@@ -2,8 +2,8 @@
 
 ## 1. 概要
 
-トラック・リリースに音楽ジャンル（Rock, Jazz, Electronic等）を紐付ける機能。
-管理画面でジャンルマスターを管理し、トラック/リリースに紐付け、公開画面でバッジ表示する。
+トラックに音楽ジャンル（Rock, Jazz, Electronic等）を紐付ける機能。
+管理画面でジャンルマスターを管理し、トラックに紐付け、公開画面でバッジ表示する。
 
 ### 1.1 機能要件
 
@@ -12,7 +12,7 @@
 | データ構造 | 名前（日英）+ 色 + アイコン + 説明 |
 | 管理方法 | 管理画面でCRUD可能 |
 | 階層構造 | フラット（親子関係なし） |
-| 紐付け上限 | 1トラック/リリースあたり **最大5件** |
+| 紐付け上限 | 1トラックあたり **最大5件** |
 | 公開画面 | 表示のみ（絞り込み機能なし） |
 | 表示方法 | 全件表示（省略なし） |
 
@@ -41,11 +41,6 @@ erDiagram
         text name
     }
 
-    releases {
-        text id PK
-        text name
-    }
-
     track_genres {
         text track_id FK
         text genre_code FK
@@ -53,17 +48,8 @@ erDiagram
         integer created_at "作成日時"
     }
 
-    release_genres {
-        text release_id FK
-        text genre_code FK
-        integer position "表示順序"
-        integer created_at "作成日時"
-    }
-
     genres ||--o{ track_genres : "has"
     tracks ||--o{ track_genres : "has"
-    genres ||--o{ release_genres : "has"
-    releases ||--o{ release_genres : "has"
 ```
 
 ### 2.2 テーブル定義
@@ -93,17 +79,6 @@ erDiagram
 
 - **PK**: (track_id, genre_code)
 
-#### release_genres（リリース-ジャンル紐付け）
-
-| カラム | 型 | 制約 | 説明 |
-|--------|-----|------|------|
-| release_id | TEXT | FK → releases.id, ON DELETE CASCADE | リリースID |
-| genre_code | TEXT | FK → genres.code, ON DELETE RESTRICT | ジャンルコード |
-| position | INTEGER | NOT NULL, DEFAULT 1 | 表示順序（1〜5） |
-| created_at | INTEGER | NOT NULL | 作成日時（ms） |
-
-- **PK**: (release_id, genre_code)
-
 ### 2.3 インデックス
 
 ```sql
@@ -113,10 +88,6 @@ CREATE INDEX idx_genres_sort_order ON genres(sort_order);
 -- track_genres
 CREATE INDEX idx_track_genres_track ON track_genres(track_id);
 CREATE INDEX idx_track_genres_genre ON track_genres(genre_code);
-
--- release_genres
-CREATE INDEX idx_release_genres_release ON release_genres(release_id);
-CREATE INDEX idx_release_genres_genre ON release_genres(genre_code);
 ```
 
 ---
@@ -135,23 +106,18 @@ graph TB
     subgraph "API (apps/server)"
         E[Genre Routes]
         F[Track Routes]
-        G[Release Routes]
     end
 
     subgraph "Database (packages/db)"
         H[Genre Schema]
         I[Track Schema]
-        J[Release Schema]
     end
 
     B --> E
     D --> F
-    D --> G
     E --> H
     F --> I
-    G --> J
     H --> I
-    H --> J
 ```
 
 ### 3.2 データフロー
@@ -196,7 +162,6 @@ sequenceDiagram
 | DELETE | `/api/admin/genres/:code` | ジャンル削除 | Admin |
 | PATCH | `/api/admin/genres/reorder` | 順序一括更新 | Admin |
 | PUT | `/api/admin/tracks/:id/genres` | トラックのジャンル更新 | Admin |
-| PUT | `/api/admin/releases/:id/genres` | リリースのジャンル更新 | Admin |
 
 ### 4.2 リクエスト/レスポンス例
 
@@ -318,7 +283,6 @@ graph TD
 | ページ | 表示位置 | 表示方法 |
 |--------|----------|----------|
 | トラック詳細 | EntityDetailHeader下 | 全件表示（flex-wrap） |
-| リリース詳細 | ヘッダー部分 | 全件表示（flex-wrap） |
 | トラックカード | カード内 | 全件表示（flex-wrap） |
 
 ```
@@ -352,7 +316,7 @@ graph TD
 ### 6.2 認可制御
 
 - ジャンルCRUD: Admin権限必須
-- トラック/リリースへの紐付け: Admin権限必須
+- トラックへの紐付け: Admin権限必須
 - 公開画面での表示: 認証不要
 
 ### 6.3 SQLインジェクション対策
@@ -410,12 +374,11 @@ const tracksWithGenres = await db
 | データ | キャッシュ時間 | 説明 |
 |--------|---------------|------|
 | ジャンルマスター | 5分 | 変更頻度が低い |
-| トラック/リリースのジャンル | 1分 | 編集時に無効化 |
+| トラックのジャンル | 1分 | 編集時に無効化 |
 
 ### 7.3 インデックス活用
 
 - `track_genres(track_id)`: トラック詳細表示時
-- `release_genres(release_id)`: リリース詳細表示時
 - `genres(sort_order)`: ジャンル一覧取得時
 
 ---
@@ -446,7 +409,7 @@ const tracksWithGenres = await db
 
 ```mermaid
 graph TD
-    A[ジャンル削除リクエスト] --> B{使用中のトラック/リリースあり?}
+    A[ジャンル削除リクエスト] --> B{使用中のトラックあり?}
     B -->|Yes| C[削除拒否 RESTRICT]
     B -->|No| D[削除実行]
     C --> E[エラー: 紐付けを先に解除してください]
@@ -485,7 +448,6 @@ make db-studio
 ```bash
 # ジャンクションテーブルを先に削除
 DROP TABLE IF EXISTS track_genres;
-DROP TABLE IF EXISTS release_genres;
 
 # マスターテーブルを削除
 DROP TABLE IF EXISTS genres;
@@ -505,7 +467,6 @@ DROP TABLE IF EXISTS genres;
 ### 10.2 統合テスト
 
 - [ ] トラック詳細でのジャンル表示
-- [ ] リリース詳細でのジャンル表示
 - [ ] 管理画面でのマルチセレクト動作
 
 ### 10.3 E2Eテスト

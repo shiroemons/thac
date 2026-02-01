@@ -459,7 +459,6 @@ export interface PublicReleaseDetail {
 		genres?: PublicGenre[];
 	}>;
 	trackCount: number;
-	genres?: PublicGenre[];
 	artistCount: number;
 	publications: Array<{
 		id: string;

@@ -1,6 +1,6 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
-import { genres, releaseGenres, trackGenres } from "./genre";
+import { genres, trackGenres } from "./genre";
 
 // Helper: 空文字列を拒否するスキーマ
 const nonEmptyString = z.string().trim().min(1, "必須項目です");
@@ -74,15 +74,6 @@ export const insertTrackGenreSchema = createInsertSchema(trackGenres, {
 
 export const selectTrackGenreSchema = createSelectSchema(trackGenres);
 
-// ReleaseGenres
-export const insertReleaseGenreSchema = createInsertSchema(releaseGenres, {
-	releaseId: nonEmptyString,
-	genreCode: nonEmptyString,
-	position: z.number().int().min(1).max(5).optional(),
-}).omit({ createdAt: true });
-
-export const selectReleaseGenreSchema = createSelectSchema(releaseGenres);
-
 // ジャンルコード配列（最大5件）
 export const genreCodesSchema = z
 	.array(z.string().trim().min(1))
@@ -95,6 +86,3 @@ export type SelectGenre = z.infer<typeof selectGenreSchema>;
 
 export type InsertTrackGenre = z.infer<typeof insertTrackGenreSchema>;
 export type SelectTrackGenre = z.infer<typeof selectTrackGenreSchema>;
-
-export type InsertReleaseGenre = z.infer<typeof insertReleaseGenreSchema>;
-export type SelectReleaseGenre = z.infer<typeof selectReleaseGenreSchema>;

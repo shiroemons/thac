@@ -257,18 +257,6 @@ export interface TrackGenreUpdateResponse {
 	}>;
 }
 
-export interface ReleaseGenreUpdateResponse {
-	releaseId: string;
-	genres: Array<{
-		genreCode: string;
-		position: number;
-		nameJa: string;
-		nameEn: string;
-		color: string;
-		icon: string;
-	}>;
-}
-
 // Genres
 export const genresApi = {
 	list: (params?: {
@@ -321,15 +309,6 @@ export const genresApi = {
 	updateTrackGenres: (trackId: string, genreCodes: string[]) =>
 		fetchWithAuth<TrackGenreUpdateResponse>(
 			`/api/admin/tracks/${trackId}/genres`,
-			{
-				method: "PUT",
-				body: JSON.stringify({ genreCodes }),
-			},
-		),
-	// リリースのジャンル更新
-	updateReleaseGenres: (releaseId: string, genreCodes: string[]) =>
-		fetchWithAuth<ReleaseGenreUpdateResponse>(
-			`/api/admin/releases/${releaseId}/genres`,
 			{
 				method: "PUT",
 				body: JSON.stringify({ genreCodes }),

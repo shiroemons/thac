@@ -161,13 +161,6 @@ function ReleaseDetailPage() {
 				</div>
 			</EntityDetailHeader>
 
-			{/* ジャンル */}
-			{release.genres && release.genres.length > 0 && (
-				<div className="mt-4">
-					<GenreBadgeList genres={release.genres} />
-				</div>
-			)}
-
 			{/* 統計カード */}
 			<StatsCardGrid
 				items={
