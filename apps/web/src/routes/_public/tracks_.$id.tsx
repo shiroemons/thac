@@ -10,7 +10,7 @@ import {
 import { useMemo } from "react";
 import {
 	EntityDetailHeader,
-	GenreBadgeList,
+	GenreBadge,
 	PublicationLinks,
 	PublicBreadcrumb,
 } from "@/components/public";
@@ -136,6 +136,17 @@ function TrackDetailPage() {
 								</span>,
 							]
 						: []),
+					...(track.genres && track.genres.length > 0
+						? track.genres.map((genre) => (
+								<GenreBadge
+									key={genre.code}
+									code={genre.code}
+									name={genre.nameJa}
+									color={genre.color}
+									icon={genre.icon}
+								/>
+							))
+						: []),
 				]}
 			>
 				{/* 作品・イベントへのリンク */}
@@ -163,13 +174,6 @@ function TrackDetailPage() {
 					)}
 				</div>
 			</EntityDetailHeader>
-
-			{/* ジャンル */}
-			{track.genres && track.genres.length > 0 && (
-				<div className="mt-4">
-					<GenreBadgeList genres={track.genres} />
-				</div>
-			)}
 
 			{/* クレジット */}
 			{track.credits.length > 0 && (

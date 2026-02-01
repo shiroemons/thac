@@ -6,6 +6,7 @@ import {
 	discs,
 	eq,
 	events,
+	genres,
 	gt,
 	inArray,
 	lt,
@@ -16,6 +17,7 @@ import {
 	trackCreditRoles,
 	trackCredits,
 	trackDerivations,
+	trackGenres,
 	trackOfficialSongs,
 	trackPublications,
 	tracks,
@@ -86,6 +88,7 @@ tracksRouter.get("/:id", async (c) => {
 			parentTracksData,
 			publicationsData,
 			siblingTracksData,
+			genresData,
 		] = await Promise.all([
 			// クレジット（役割含む）
 			db
@@ -202,6 +205,19 @@ tracksRouter.get("/:id", async (c) => {
 						.limit(1),
 				]);
 			})(),
+
+			// ジャンル情報を取得
+			db
+				.select({
+					genreCode: genres.code,
+					nameJa: genres.nameJa,
+					color: genres.color,
+					icon: genres.icon,
+				})
+				.from(trackGenres)
+				.innerJoin(genres, eq(trackGenres.genreCode, genres.code))
+				.where(eq(trackGenres.trackId, id))
+				.orderBy(asc(trackGenres.position)),
 		]);
 
 		// Step 3: クレジット役割をバッチ取得
@@ -282,12 +298,21 @@ tracksRouter.get("/:id", async (c) => {
 			},
 		}));
 
+		// ジャンルデータを整形
+		const trackGenresResult = genresData.map((g) => ({
+			code: g.genreCode,
+			nameJa: g.nameJa,
+			color: g.color,
+			icon: g.icon,
+		}));
+
 		const response = {
 			id: track.id,
 			name: track.name,
 			nameJa: track.nameJa,
 			nameEn: track.nameEn,
 			trackNumber: track.trackNumber,
+			genres: trackGenresResult,
 			credits,
 			officialSongs: officialSongsResult,
 			release: track.releaseId

@@ -849,21 +849,21 @@ function SearchPage() {
 													</div>
 												</td>
 												<td className="max-w-[150px]">
-													<div className="flex flex-wrap gap-1">
-														{hit.genres && hit.genres.length > 0
-															? getGenresByCode(hit.genres, genreMap).map(
-																	(genre) => (
-																		<GenreBadge
-																			key={genre.code}
-																			code={genre.code}
-																			name={genre.nameJa}
-																			color={genre.color}
-																			icon={genre.icon}
-																		/>
-																	),
-																)
-															: "-"}
-													</div>
+													{hit.genres && hit.genres.length > 0 && (
+														<div className="flex flex-wrap gap-1">
+															{getGenresByCode(hit.genres, genreMap).map(
+																(genre) => (
+																	<GenreBadge
+																		key={genre.code}
+																		code={genre.code}
+																		name={genre.nameJa}
+																		color={genre.color}
+																		icon={genre.icon}
+																	/>
+																),
+															)}
+														</div>
+													)}
 												</td>
 												<td className="max-w-[250px] text-base-content/70 text-sm">
 													<div>

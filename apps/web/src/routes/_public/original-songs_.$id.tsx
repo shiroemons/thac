@@ -265,6 +265,20 @@ function OriginalSongDetailPage() {
 													{track.release.name}
 												</Link>
 											)}
+											{/* モバイル用ジャンル表示 */}
+											{track.genres && track.genres.length > 0 && (
+												<div className="mt-1 flex flex-wrap gap-1 lg:hidden">
+													{track.genres.map((genre) => (
+														<GenreBadge
+															key={genre.code}
+															code={genre.code}
+															name={genre.nameJa}
+															color={genre.color}
+															icon={genre.icon}
+														/>
+													))}
+												</div>
+											)}
 										</td>
 										<td>
 											{track.circles.map((circle, idx) => (
