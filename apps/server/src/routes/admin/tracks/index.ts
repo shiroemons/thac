@@ -20,11 +20,14 @@ import {
 	releaseCircles,
 	releases,
 	sql,
+	tagIdsSchema,
+	tags,
 	trackCreditRoles,
 	trackCredits,
 	trackGenres,
 	trackOfficialSongs,
 	tracks,
+	trackTags,
 } from "@thac/db";
 import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
@@ -592,6 +595,215 @@ tracksAdminRouter.put("/:trackId/genres", async (c) => {
 		});
 	} catch (error) {
 		return handleDbError(c, error, "PUT /admin/tracks/:trackId/genres");
+	}
+});
+
+// トラックのタグ更新API
+tracksAdminRouter.put("/:trackId/tags", async (c) => {
+	try {
+		const trackId = c.req.param("trackId");
+		const body = await c.req.json();
+
+		// バリデーション（最大15件）
+		const parsed = tagIdsSchema.safeParse(body.tagIds);
+		if (!parsed.success) {
+			return c.json(
+				{
+					error: "タグは最大15件まで設定できます",
+					details: parsed.error.flatten().fieldErrors,
+				},
+				400,
+			);
+		}
+
+		const tagIds = parsed.data;
+
+		// トラック存在チェック
+		const existingTrack = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, trackId))
+			.limit(1);
+
+		if (existingTrack.length === 0) {
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
+		}
+
+		// タグIDの存在チェック
+		if (tagIds.length > 0) {
+			const existingTags = await db
+				.select({ id: tags.id })
+				.from(tags)
+				.where(inArray(tags.id, tagIds));
+
+			const existingIds = new Set(existingTags.map((t) => t.id));
+			const notFoundIds = tagIds.filter((id) => !existingIds.has(id));
+
+			if (notFoundIds.length > 0) {
+				return c.json(
+					{
+						error: "存在しないタグIDが含まれています",
+						notFoundIds,
+					},
+					404,
+				);
+			}
+		}
+
+		// トランザクションでタグ更新
+		const result = await db.transaction(async (tx) => {
+			// 既存のロック済みタグを取得
+			const lockedTags = await tx
+				.select()
+				.from(trackTags)
+				.where(
+					and(eq(trackTags.trackId, trackId), eq(trackTags.isLocked, true)),
+				);
+
+			const lockedTagIds = new Set(lockedTags.map((t) => t.tagId));
+
+			// アンロック状態のタグを削除
+			await tx
+				.delete(trackTags)
+				.where(
+					and(eq(trackTags.trackId, trackId), eq(trackTags.isLocked, false)),
+				);
+
+			// 新しいタグを追加（ロック済みタグを除く）
+			const newTagIds = tagIds.filter((id) => !lockedTagIds.has(id));
+
+			// position計算: ロック済みタグの数 + 新規タグの順序
+			let position = lockedTags.length + 1;
+			for (const tagId of newTagIds) {
+				await tx.insert(trackTags).values({
+					trackId,
+					tagId,
+					position,
+					isLocked: false,
+				});
+				position++;
+			}
+
+			// 更新後のタグ情報を取得
+			const updatedTags = await tx
+				.select({
+					tagId: trackTags.tagId,
+					tagName: tags.name,
+					position: trackTags.position,
+					isLocked: trackTags.isLocked,
+				})
+				.from(trackTags)
+				.innerJoin(tags, eq(trackTags.tagId, tags.id))
+				.where(eq(trackTags.trackId, trackId))
+				.orderBy(trackTags.position);
+
+			return updatedTags;
+		});
+
+		return c.json({
+			trackId,
+			tags: result,
+		});
+	} catch (error) {
+		return handleDbError(c, error, "PUT /admin/tracks/:trackId/tags");
+	}
+});
+
+// タグをロック
+tracksAdminRouter.put("/:trackId/tags/:tagId/lock", async (c) => {
+	try {
+		const trackId = c.req.param("trackId");
+		const tagId = c.req.param("tagId");
+
+		// 紐付け存在チェック
+		const existing = await db
+			.select({
+				trackId: trackTags.trackId,
+				tagId: trackTags.tagId,
+				tagName: tags.name,
+				isLocked: trackTags.isLocked,
+			})
+			.from(trackTags)
+			.innerJoin(tags, eq(trackTags.tagId, tags.id))
+			.where(and(eq(trackTags.trackId, trackId), eq(trackTags.tagId, tagId)))
+			.limit(1);
+
+		if (existing.length === 0) {
+			return c.json({ error: "この紐付けが見つかりません" }, 404);
+		}
+
+		const existingRow = existing[0];
+		if (!existingRow) {
+			return c.json({ error: "この紐付けが見つかりません" }, 404);
+		}
+
+		// ロック状態を更新
+		await db
+			.update(trackTags)
+			.set({ isLocked: true })
+			.where(and(eq(trackTags.trackId, trackId), eq(trackTags.tagId, tagId)));
+
+		return c.json({
+			trackId,
+			tagId,
+			tagName: existingRow.tagName,
+			isLocked: true,
+		});
+	} catch (error) {
+		return handleDbError(
+			c,
+			error,
+			"PUT /admin/tracks/:trackId/tags/:tagId/lock",
+		);
+	}
+});
+
+// ロック解除
+tracksAdminRouter.delete("/:trackId/tags/:tagId/lock", async (c) => {
+	try {
+		const trackId = c.req.param("trackId");
+		const tagId = c.req.param("tagId");
+
+		// 紐付け存在チェック
+		const existing = await db
+			.select({
+				trackId: trackTags.trackId,
+				tagId: trackTags.tagId,
+				tagName: tags.name,
+				isLocked: trackTags.isLocked,
+			})
+			.from(trackTags)
+			.innerJoin(tags, eq(trackTags.tagId, tags.id))
+			.where(and(eq(trackTags.trackId, trackId), eq(trackTags.tagId, tagId)))
+			.limit(1);
+
+		if (existing.length === 0) {
+			return c.json({ error: "この紐付けが見つかりません" }, 404);
+		}
+
+		const existingRow = existing[0];
+		if (!existingRow) {
+			return c.json({ error: "この紐付けが見つかりません" }, 404);
+		}
+
+		// ロック状態を解除
+		await db
+			.update(trackTags)
+			.set({ isLocked: false })
+			.where(and(eq(trackTags.trackId, trackId), eq(trackTags.tagId, tagId)));
+
+		return c.json({
+			trackId,
+			tagId,
+			tagName: existingRow.tagName,
+			isLocked: false,
+		});
+	} catch (error) {
+		return handleDbError(
+			c,
+			error,
+			"DELETE /admin/tracks/:trackId/tags/:tagId/lock",
+		);
 	}
 });
 

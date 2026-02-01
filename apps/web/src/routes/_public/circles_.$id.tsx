@@ -19,6 +19,7 @@ import {
 	type StatItem,
 	StatsCardGrid,
 	TabIcons,
+	TagBadgeList,
 	type ViewMode,
 	ViewToggle,
 	WorkStatsSection,
@@ -527,6 +528,12 @@ function CircleDetailPage() {
 																icon={genre.icon}
 															/>
 														))}
+													</div>
+												)}
+												{/* モバイル用タグ表示 */}
+												{track.tags && track.tags.length > 0 && (
+													<div className="mt-1 lg:hidden">
+														<TagBadgeList tags={track.tags} maxDisplay={3} />
 													</div>
 												)}
 											</td>

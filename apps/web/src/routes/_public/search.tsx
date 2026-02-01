@@ -4,6 +4,7 @@ import DOMPurify from "isomorphic-dompurify";
 import {
 	ChevronRight,
 	Clock,
+	Hash,
 	Music,
 	Search,
 	SlidersHorizontal,
@@ -1059,6 +1060,26 @@ function SearchPage() {
 																		icon={genre.icon}
 																	/>
 																),
+															)}
+														</div>
+													)}
+
+													{/* タグ（IDがないためリンクなしバッジ） */}
+													{hit.tags && hit.tags.length > 0 && (
+														<div className="mt-1 flex flex-wrap gap-1">
+															{hit.tags.slice(0, 5).map((tagName) => (
+																<span
+																	key={tagName}
+																	className="badge badge-ghost badge-sm inline-flex items-center gap-1 text-xs"
+																>
+																	<Hash className="size-3" />
+																	{tagName}
+																</span>
+															))}
+															{hit.tags.length > 5 && (
+																<span className="badge badge-ghost badge-sm text-xs">
+																	+{hit.tags.length - 5}
+																</span>
 															)}
 														</div>
 													)}

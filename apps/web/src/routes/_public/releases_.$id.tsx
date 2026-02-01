@@ -9,6 +9,7 @@ import {
 	PublicBreadcrumb,
 	type StatItem,
 	StatsCardGrid,
+	TagBadgeList,
 } from "@/components/public";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPublicReleaseHead } from "@/lib/head";
@@ -353,6 +354,13 @@ function TrackCardList({ tracks }: { tracks: PublicReleaseDetail["tracks"] }) {
 							{track.genres && track.genres.length > 0 && (
 								<div className="mt-1.5">
 									<GenreBadgeList genres={track.genres} />
+								</div>
+							)}
+
+							{/* タグ */}
+							{track.tags && track.tags.length > 0 && (
+								<div className="mt-1">
+									<TagBadgeList tags={track.tags} maxDisplay={5} />
 								</div>
 							)}
 						</div>

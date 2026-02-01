@@ -16,6 +16,7 @@ import { officialRouter } from "./official";
 import { releasesAdminRouter } from "./releases";
 import { searchRouter } from "./search";
 import { statsRouter } from "./stats";
+import { tagsRouter } from "./tags";
 import { tracksAdminRouter } from "./tracks";
 
 const adminRouter = new Hono<AdminContext>();
@@ -34,6 +35,9 @@ adminRouter.route("/master", masterRouter);
 
 // ジャンル管理ルート
 adminRouter.route("/genres", genresRouter);
+
+// タグ管理ルート
+adminRouter.route("/tags", tagsRouter);
 
 // 公式作品・楽曲管理ルート
 adminRouter.route("/official", officialRouter);

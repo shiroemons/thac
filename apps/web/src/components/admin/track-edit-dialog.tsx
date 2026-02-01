@@ -14,6 +14,7 @@ import { GenreMultiSelect } from "@/components/ui/genre-multi-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { TagInput, type TagItem } from "@/components/ui/tag-input";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
 import { useFormDirty } from "@/hooks/use-form-dirty";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
@@ -26,6 +27,7 @@ import {
 	releasesApi,
 	type Track,
 	type TrackGenreInfo,
+	trackTagsApi,
 } from "@/lib/api-client";
 import { trackMutations } from "@/lib/mutation-options";
 import { ConflictDialog } from "./conflict-dialog";
@@ -56,6 +58,8 @@ export function TrackEditDialog({
 	// ジャンル選択状態
 	const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
 	const [initialGenres, setInitialGenres] = useState<string[]>([]);
+	// タグ選択状態（編集されたらセット、nullなら初期値を使用）
+	const [editedTags, setEditedTags] = useState<TagItem[] | null>(null);
 	// 楽観的ロック用: 編集開始時のupdatedAtを記録
 	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
 		null,
@@ -66,11 +70,45 @@ export function TrackEditDialog({
 	// フォーム変更検出フック
 	const formDirty = useFormDirty<Partial<Track> & Record<string, unknown>>();
 
+	// トラックのタグ取得
+	const { data: trackTagsData } = useQuery({
+		queryKey: ["tracks", track?.id, "tags"],
+		queryFn: () => trackTagsApi.list(track.id),
+		staleTime: 60_000,
+		enabled: open && !!track?.id,
+	});
+
+	// APIデータを派生状態として変換（初期値）
+	const initialTags = useMemo<TagItem[]>(() => {
+		if (!trackTagsData) return [];
+		return trackTagsData.map((t) => ({
+			tagId: t.tagId,
+			name: t.name,
+			isLocked: t.isLocked,
+		}));
+	}, [trackTagsData]);
+
+	// 表示用：編集中ならeditedTags、そうでなければinitialTags
+	const selectedTags = editedTags ?? initialTags;
+
+	// タグ変更ハンドラ
+	const handleTagsChange = (tags: TagItem[]) => {
+		setEditedTags(tags);
+	};
+
 	// ジャンル変更があるかどうか（早期に計算）
 	const genresChanged = useMemo(() => {
 		if (selectedGenres.length !== initialGenres.length) return true;
 		return selectedGenres.some((code, i) => code !== initialGenres[i]);
 	}, [selectedGenres, initialGenres]);
+
+	// タグ変更があるかどうか
+	const tagsChanged = useMemo(() => {
+		// editedTagsがnullなら変更なし
+		if (editedTags === null) return false;
+		if (editedTags.length !== initialTags.length) return true;
+		return editedTags.some((tag, i) => tag.tagId !== initialTags[i]?.tagId);
+	}, [editedTags, initialTags]);
 
 	// 未保存変更保護フック
 	const {
@@ -79,7 +117,7 @@ export function TrackEditDialog({
 		confirmDiscard,
 		guardedOnOpenChange,
 	} = useUnsavedChangesGuard(onOpenChange, {
-		isDirty: formDirty.isDirty || genresChanged,
+		isDirty: formDirty.isDirty || genresChanged || tagsChanged,
 		isOpen: open,
 	});
 
@@ -113,6 +151,8 @@ export function TrackEditDialog({
 			const genreCodes = track.genres?.map((g) => g.code) ?? [];
 			setSelectedGenres(genreCodes);
 			setInitialGenres(genreCodes);
+			// タグ編集状態をリセット（APIデータを初期値として使用）
+			setEditedTags(null);
 			// フォームの初期状態を記録
 			formDirty.setInitialState(
 				initialFormData as Partial<Track> & Record<string, unknown>,
@@ -275,18 +315,39 @@ export function TrackEditDialog({
 					if (genresChanged) {
 						try {
 							await genresApi.updateTrackGenres(track.id, selectedGenres);
-							// キャッシュの無効化
-							await queryClient.invalidateQueries({
-								queryKey: ["tracks", track.id],
-							});
-							await queryClient.invalidateQueries({
-								queryKey: ["releases", track.releaseId, "tracks"],
-							});
 						} catch (error) {
 							console.error("Failed to update genres:", error);
 						}
 					}
+					// タグ変更がある場合は更新
+					if (tagsChanged) {
+						try {
+							const tagsToUpdate = selectedTags.map((tag, index) => ({
+								tagId: tag.tagId,
+								position: index,
+								isLocked: tag.isLocked,
+							}));
+							await trackTagsApi.update(track.id, tagsToUpdate);
+						} catch (error) {
+							console.error("Failed to update tags:", error);
+						}
+					}
+					// キャッシュの無効化
+					if (genresChanged || tagsChanged) {
+						await queryClient.invalidateQueries({
+							queryKey: ["tracks", track.id],
+						});
+						await queryClient.invalidateQueries({
+							queryKey: ["releases", track.releaseId, "tracks"],
+						});
+						if (tagsChanged) {
+							await queryClient.invalidateQueries({
+								queryKey: ["tracks", track.id, "tags"],
+							});
+						}
+					}
 					formDirty.reset();
+					setEditedTags(null); // タグ編集状態をリセット
 					onOpenChange(false);
 					onSuccess?.();
 				},
@@ -328,6 +389,20 @@ export function TrackEditDialog({
 		}
 	};
 
+	// ダイアログを閉じる際のハンドラ（タグ編集状態をリセット）
+	const handleGuardedOpenChange = (isOpen: boolean) => {
+		if (!isOpen) {
+			setEditedTags(null);
+		}
+		guardedOnOpenChange(isOpen);
+	};
+
+	// 破棄確認後のハンドラ
+	const handleConfirmDiscard = () => {
+		setEditedTags(null);
+		confirmDiscard();
+	};
+
 	const isReleaseDateEditable = !selectedReleaseId || !editForm.eventDayId;
 	const isDiscFieldVisible = !!selectedReleaseId;
 	const isDiscSelectDisabled = !discsData || discsData.length <= 1;
@@ -342,7 +417,7 @@ export function TrackEditDialog({
 
 	return (
 		<>
-			<Dialog open={open} onOpenChange={guardedOnOpenChange}>
+			<Dialog open={open} onOpenChange={handleGuardedOpenChange}>
 				<DialogContent className="sm:max-w-[600px]">
 					<DialogHeader>
 						<DialogTitle>トラックの編集</DialogTitle>
@@ -465,6 +540,21 @@ export function TrackEditDialog({
 							/>
 						</div>
 
+						{/* タグ */}
+						<div className="grid gap-2">
+							<Label htmlFor="track-tags">タグ（最大15件）</Label>
+							<TagInput
+								id="track-tags"
+								value={selectedTags}
+								onChange={handleTagsChange}
+								maxTags={15}
+								placeholder="タグを入力または選択..."
+							/>
+							<p className="text-base-content/50 text-sm">
+								タグを入力してEnterで追加、既存タグからも選択可能です
+							</p>
+						</div>
+
 						{/* イベント */}
 						<div className="grid gap-2">
 							<Label>イベント</Label>
@@ -564,7 +654,7 @@ export function TrackEditDialog({
 					<DialogFooter>
 						<Button
 							variant="ghost"
-							onClick={() => guardedOnOpenChange(false)}
+							onClick={() => handleGuardedOpenChange(false)}
 							disabled={isPending}
 						>
 							キャンセル
@@ -600,7 +690,7 @@ export function TrackEditDialog({
 				confirmLabel="破棄"
 				cancelLabel="編集を続ける"
 				variant="warning"
-				onConfirm={confirmDiscard}
+				onConfirm={handleConfirmDiscard}
 			/>
 		</>
 	);

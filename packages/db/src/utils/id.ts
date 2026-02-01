@@ -27,4 +27,5 @@ export const createId = {
 	eventDay: () => `ed_${nanoid()}`,
 	officialWorkLink: () => `wl_${nanoid()}`,
 	officialSongLink: () => `sl_${nanoid()}`,
+	tag: () => `tag_${nanoid()}`,
 } as const;

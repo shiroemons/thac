@@ -197,6 +197,7 @@ export interface PublicArrangeTrack {
 		color: string;
 		icon: string;
 	}>;
+	tags?: Array<{ id: string; name: string }>;
 }
 
 /** ページネーションレスポンス */
@@ -276,6 +277,7 @@ export interface PublicCircleTrack {
 		color: string;
 		icon: string;
 	}>;
+	tags?: Array<{ id: string; name: string }>;
 }
 
 /** アーティストの役割 */
@@ -348,6 +350,7 @@ export interface PublicArtistTrack {
 	}>;
 	originalSong: { id: string; name: string | null } | null;
 	genres: PublicGenre[];
+	tags?: Array<{ id: string; name: string }>;
 }
 
 /** イベントシリーズ一覧項目 */
@@ -457,6 +460,7 @@ export interface PublicReleaseDetail {
 			songName: string;
 		}>;
 		genres?: PublicGenre[];
+		tags?: Array<{ id: string; name: string }>;
 	}>;
 	trackCount: number;
 	artistCount: number;
@@ -560,6 +564,28 @@ export interface PublicGenre {
 	icon?: string;
 }
 
+/** タグ一覧項目 */
+export interface PublicTagItem {
+	id: string;
+	name: string;
+	trackCount: number;
+}
+
+/** タグ詳細 */
+export interface PublicTagDetail {
+	id: string;
+	name: string;
+	trackCount: number;
+}
+
+/** タグクラウド項目 */
+export interface PublicTagCloudItem {
+	id: string;
+	name: string;
+	count: number;
+	weight: number;
+}
+
 /** ジャンルマスタ項目 */
 export interface PublicGenreItem {
 	code: string;
@@ -623,6 +649,7 @@ export interface PublicTrackDetail {
 		};
 	}>;
 	genres?: PublicGenre[];
+	tags?: Array<{ id: string; name: string }>;
 }
 
 // =============================================================================
@@ -1112,6 +1139,50 @@ export const publicApi = {
 			if (params.sort) sp.set("sort", params.sort);
 			return publicFetch<TrackSearchResponse>(
 				`/api/public/search/tracks?${sp.toString()}`,
+			);
+		},
+	},
+
+	tags: {
+		/** タグ一覧を取得 */
+		list: (params?: { page?: number; limit?: number; search?: string }) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			if (params?.search) sp.set("search", params.search);
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<PublicTagItem>>(
+				`/api/public/tags${query ? `?${query}` : ""}`,
+			);
+		},
+
+		/** タグ詳細を取得 */
+		get: (id: string) => publicFetch<PublicTagDetail>(`/api/public/tags/${id}`),
+
+		/** タグのトラック一覧を取得 */
+		tracks: (
+			id: string,
+			params?: {
+				page?: number;
+				limit?: number;
+			},
+		) => {
+			const sp = new URLSearchParams();
+			if (params?.page) sp.set("page", String(params.page));
+			if (params?.limit) sp.set("limit", String(params.limit));
+			const query = sp.toString();
+			return publicFetch<PaginatedResponse<PublicArrangeTrack>>(
+				`/api/public/tags/${id}/tracks${query ? `?${query}` : ""}`,
+			);
+		},
+
+		/** タグクラウドを取得 */
+		cloud: (limit?: number) => {
+			const sp = new URLSearchParams();
+			if (limit) sp.set("limit", String(limit));
+			const query = sp.toString();
+			return publicFetch<{ data: PublicTagCloudItem[] }>(
+				`/api/public/tags/cloud${query ? `?${query}` : ""}`,
 			);
 		},
 	},

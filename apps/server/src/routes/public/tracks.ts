@@ -3,6 +3,7 @@ import {
 	asc,
 	creditRoles,
 	db,
+	desc,
 	discs,
 	eq,
 	events,
@@ -14,6 +15,7 @@ import {
 	officialWorks,
 	platforms,
 	releases,
+	tags,
 	trackCreditRoles,
 	trackCredits,
 	trackDerivations,
@@ -21,6 +23,7 @@ import {
 	trackOfficialSongs,
 	trackPublications,
 	tracks,
+	trackTags,
 } from "@thac/db";
 import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
@@ -89,6 +92,7 @@ tracksRouter.get("/:id", async (c) => {
 			publicationsData,
 			siblingTracksData,
 			genresData,
+			tagsData,
 		] = await Promise.all([
 			// クレジット（役割含む）
 			db
@@ -218,6 +222,19 @@ tracksRouter.get("/:id", async (c) => {
 				.innerJoin(genres, eq(trackGenres.genreCode, genres.code))
 				.where(eq(trackGenres.trackId, id))
 				.orderBy(asc(trackGenres.position)),
+
+			// タグ情報を取得（ロック済みを先頭に、その後position順）
+			db
+				.select({
+					tagId: tags.id,
+					tagName: tags.name,
+					isLocked: trackTags.isLocked,
+					position: trackTags.position,
+				})
+				.from(trackTags)
+				.innerJoin(tags, eq(trackTags.tagId, tags.id))
+				.where(eq(trackTags.trackId, id))
+				.orderBy(desc(trackTags.isLocked), asc(trackTags.position)),
 		]);
 
 		// Step 3: クレジット役割をバッチ取得
@@ -306,6 +323,14 @@ tracksRouter.get("/:id", async (c) => {
 			icon: g.icon,
 		}));
 
+		// タグデータを整形
+		const trackTagsResult = tagsData.map((t) => ({
+			id: t.tagId,
+			name: t.tagName,
+			isLocked: t.isLocked,
+			position: t.position,
+		}));
+
 		const response = {
 			id: track.id,
 			name: track.name,
@@ -313,6 +338,7 @@ tracksRouter.get("/:id", async (c) => {
 			nameEn: track.nameEn,
 			trackNumber: track.trackNumber,
 			genres: trackGenresResult,
+			tags: trackTagsResult,
 			credits,
 			officialSongs: officialSongsResult,
 			release: track.releaseId

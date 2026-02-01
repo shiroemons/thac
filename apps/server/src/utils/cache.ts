@@ -279,4 +279,10 @@ export const cacheKeys = {
 		`public:stats:rankings:artists:page=${params.page}:limit=${params.limit}`,
 	songPairsRanking: (params: { page: number; limit: number }) =>
 		`public:stats:rankings:song-pairs:page=${params.page}:limit=${params.limit}`,
+
+	tagsList: (params: { search?: string; limit: number }) =>
+		`public:tags:search=${params.search || ""}:limit=${params.limit}`,
+
+	tagsCloud: (params: { limit: number; minCount: number }) =>
+		`public:tags:cloud:limit=${params.limit}:minCount=${params.minCount}`,
 };

@@ -15,6 +15,8 @@ export * from "./publication";
 export * from "./publication.validation";
 export * from "./release";
 export * from "./release.validation";
+export * from "./tag";
+export * from "./tag.validation";
 export * from "./track";
 export * from "./track.validation";
 export * from "./track-relations";

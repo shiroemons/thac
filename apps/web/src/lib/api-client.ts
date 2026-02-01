@@ -142,6 +142,8 @@ export interface DashboardStats {
 	eventSeries: number;
 	releases: number;
 	tracks: number;
+	genres: number;
+	tags: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -2841,6 +2843,186 @@ export const searchApi = {
 			`/api/admin/search/settings/${indexName}/reset`,
 			{
 				method: "POST",
+			},
+		),
+};
+
+// ===== タグ管理 =====
+
+export interface Tag {
+	id: string;
+	name: string;
+	attributes: Record<string, unknown> | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface TagWithCount extends Tag {
+	trackCount: number;
+}
+
+export interface TagDetail extends Tag {
+	usageCount: number;
+	lockedCount: number;
+}
+
+export interface TagTrack {
+	id: string;
+	name: string;
+	releaseId: string | null;
+	releaseName: string | null;
+	position: number;
+	isLocked: boolean;
+	createdAt: string;
+}
+
+export interface TagTracksResponse {
+	tag: {
+		id: string;
+		name: string;
+	};
+	tracks: TagTrack[];
+	pagination: {
+		page: number;
+		limit: number;
+		totalCount: number;
+		totalPages: number;
+	};
+}
+
+export interface TrackTag {
+	trackId: string;
+	tagId: string;
+	position: number;
+	isLocked: boolean;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface TrackTagInfo {
+	tagId: string;
+	name: string;
+	isLocked?: boolean;
+}
+
+export interface TagUpdateTrackResponse {
+	trackId: string;
+	tags: Array<{
+		tagId: string;
+		name: string;
+		position: number;
+		isLocked: boolean;
+	}>;
+}
+
+// Tags
+export const tagsApi = {
+	list: (params?: {
+		search?: string;
+		page?: number;
+		limit?: number;
+		sortBy?: string;
+		sortOrder?: "asc" | "desc";
+	}) => {
+		const searchParams = new URLSearchParams();
+		if (params?.search) searchParams.set("search", params.search);
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+		if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+		const query = searchParams.toString();
+		return fetchWithAuth<PaginatedResponse<TagWithCount>>(
+			`/api/admin/tags${query ? `?${query}` : ""}`,
+		);
+	},
+
+	get: (id: string) => fetchWithAuth<TagDetail>(`/api/admin/tags/${id}`),
+
+	getTracks: (id: string, params?: { page?: number; limit?: number }) => {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		const query = searchParams.toString();
+		return fetchWithAuth<TagTracksResponse>(
+			`/api/admin/tags/${id}/tracks${query ? `?${query}` : ""}`,
+		);
+	},
+
+	create: (data: { name: string; attributes?: Record<string, unknown> }) =>
+		fetchWithAuth<Tag>("/api/admin/tags", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+
+	update: (
+		id: string,
+		data: { name?: string; attributes?: Record<string, unknown> },
+	) =>
+		fetchWithAuth<Tag>(`/api/admin/tags/${id}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+
+	delete: (id: string, force?: boolean) => {
+		const searchParams = new URLSearchParams();
+		if (force) searchParams.set("force", "true");
+		const query = searchParams.toString();
+		return fetchWithAuth<{ success: boolean; id: string }>(
+			`/api/admin/tags/${id}${query ? `?${query}` : ""}`,
+			{
+				method: "DELETE",
+			},
+		);
+	},
+
+	merge: (sourceIds: string[], targetId: string) =>
+		fetchWithAuth<{ success: boolean; mergedCount: number }>(
+			"/api/admin/tags/merge",
+			{
+				method: "POST",
+				body: JSON.stringify({ sourceIds, targetId }),
+			},
+		),
+};
+
+// Track Tags
+export const trackTagsApi = {
+	list: (trackId: string) =>
+		fetchWithAuth<
+			Array<{
+				tagId: string;
+				name: string;
+				position: number;
+				isLocked: boolean;
+			}>
+		>(`/api/admin/tracks/${trackId}/tags`),
+
+	update: (
+		trackId: string,
+		tags: Array<{
+			tagId: string;
+			position: number;
+			isLocked?: boolean;
+		}>,
+	) =>
+		fetchWithAuth<TagUpdateTrackResponse>(`/api/admin/tracks/${trackId}/tags`, {
+			method: "PUT",
+			body: JSON.stringify({ tags }),
+		}),
+
+	lock: (trackId: string, tagId: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/tracks/${trackId}/tags/${tagId}/lock`,
+			{
+				method: "PATCH",
+			},
+		),
+
+	unlock: (trackId: string, tagId: string) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/admin/tracks/${trackId}/tags/${tagId}/unlock`,
+			{
+				method: "PATCH",
 			},
 		),
 };

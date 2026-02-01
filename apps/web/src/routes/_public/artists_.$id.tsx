@@ -11,6 +11,7 @@ import {
 	type StatItem,
 	StatsCardGrid,
 	TabIcons,
+	TagBadgeList,
 	WorkStatsSection,
 	WorkStatsSkeleton,
 } from "@/components/public";
@@ -391,6 +392,12 @@ function ArtistDetailPage() {
 																icon={genre.icon}
 															/>
 														))}
+													</div>
+												)}
+												{/* モバイル用タグ表示 */}
+												{credit.tags && credit.tags.length > 0 && (
+													<div className="mt-1 lg:hidden">
+														<TagBadgeList tags={credit.tags} maxDisplay={3} />
 													</div>
 												)}
 											</td>
