@@ -13,14 +13,14 @@ export interface IndexTask<T = unknown> {
 
 interface QueueConfig {
 	batchSize: number; // Max documents per batch (default: 100)
-	flushIntervalMs: number; // Max time before flush (default: 100ms)
+	flushIntervalMs: number; // Max time before flush (default: 30000ms / 30秒)
 	maxRetries: number; // Max retry attempts (default: 3)
 	baseDelayMs: number; // Base delay for exponential backoff (default: 1000ms)
 }
 
 const DEFAULT_CONFIG: QueueConfig = {
 	batchSize: 100,
-	flushIntervalMs: 100,
+	flushIntervalMs: 30000,
 	maxRetries: 3,
 	baseDelayMs: 1000,
 };

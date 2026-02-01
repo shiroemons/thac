@@ -20,7 +20,6 @@ import {
 	releaseCircles,
 	releases,
 	sql,
-	tagIdsSchema,
 	tags,
 	trackCreditRoles,
 	trackCredits,
@@ -29,7 +28,9 @@ import {
 	tracks,
 	trackTags,
 } from "@thac/db";
+import { getIndexQueue, queueTrackIndexing } from "@thac/search";
 import { Hono } from "hono";
+import { z } from "zod";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
@@ -489,6 +490,20 @@ tracksAdminRouter.delete("/batch", async (c) => {
 			}
 		}
 
+		// Meilisearchから削除されたトラックを削除（非同期で実行、レスポンスはブロックしない）
+		if (deleted.length > 0) {
+			(async () => {
+				try {
+					const { TRACKS_INDEX_NAME } = await import("@thac/search");
+					const queue = getIndexQueue();
+					queue.deleteDocuments(TRACKS_INDEX_NAME, deleted);
+					await queue.flush();
+				} catch (err) {
+					console.error("[Tracks] Failed to delete from Meilisearch:", err);
+				}
+			})();
+		}
+
 		return c.json({
 			success: failed.length === 0,
 			deleted,
@@ -582,6 +597,14 @@ tracksAdminRouter.put("/:trackId/genres", async (c) => {
 			return updatedGenres;
 		});
 
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
+
 		return c.json({
 			trackId,
 			genres: result.map((g) => ({
@@ -598,25 +621,10 @@ tracksAdminRouter.put("/:trackId/genres", async (c) => {
 	}
 });
 
-// トラックのタグ更新API
-tracksAdminRouter.put("/:trackId/tags", async (c) => {
+// トラックのタグ一覧取得API
+tracksAdminRouter.get("/:trackId/tags", async (c) => {
 	try {
 		const trackId = c.req.param("trackId");
-		const body = await c.req.json();
-
-		// バリデーション（最大15件）
-		const parsed = tagIdsSchema.safeParse(body.tagIds);
-		if (!parsed.success) {
-			return c.json(
-				{
-					error: "タグは最大15件まで設定できます",
-					details: parsed.error.flatten().fieldErrors,
-				},
-				400,
-			);
-		}
-
-		const tagIds = parsed.data;
 
 		// トラック存在チェック
 		const existingTrack = await db
@@ -629,38 +637,85 @@ tracksAdminRouter.put("/:trackId/tags", async (c) => {
 			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
-		// タグIDの存在チェック
-		if (tagIds.length > 0) {
-			const existingTags = await db
-				.select({ id: tags.id })
-				.from(tags)
-				.where(inArray(tags.id, tagIds));
+		// タグ一覧を取得
+		const trackTagList = await db
+			.select({
+				tagId: trackTags.tagId,
+				name: tags.name,
+				position: trackTags.position,
+				isLocked: trackTags.isLocked,
+			})
+			.from(trackTags)
+			.innerJoin(tags, eq(trackTags.tagId, tags.id))
+			.where(eq(trackTags.trackId, trackId))
+			.orderBy(trackTags.position);
 
-			const existingIds = new Set(existingTags.map((t) => t.id));
-			const notFoundIds = tagIds.filter((id) => !existingIds.has(id));
+		return c.json(trackTagList);
+	} catch (error) {
+		return handleDbError(c, error, "GET /admin/tracks/:trackId/tags");
+	}
+});
 
-			if (notFoundIds.length > 0) {
-				return c.json(
-					{
-						error: "存在しないタグIDが含まれています",
-						notFoundIds,
-					},
-					404,
-				);
-			}
+// トラックのタグ更新APIスキーマ（タグ名ベースで受け取る新形式）
+const trackTagUpdateSchema = z
+	.array(
+		z.object({
+			name: z.string().min(1).max(50),
+			isLocked: z.boolean().optional(),
+		}),
+	)
+	.max(15);
+
+// トラックのタグ更新API（タグ名ベース）
+tracksAdminRouter.put("/:trackId/tags", async (c) => {
+	try {
+		const trackId = c.req.param("trackId");
+		const body = await c.req.json();
+
+		// バリデーション（最大15件）- body.tags 形式を受け入れ
+		const parsed = trackTagUpdateSchema.safeParse(body.tags);
+		if (!parsed.success) {
+			return c.json(
+				{
+					error: "タグは最大15件まで設定できます",
+					details: parsed.error.flatten().fieldErrors,
+				},
+				400,
+			);
+		}
+
+		const tagData = parsed.data;
+
+		// トラック存在チェック
+		const existingTrack = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, trackId))
+			.limit(1);
+
+		if (existingTrack.length === 0) {
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
 		}
 
 		// トランザクションでタグ更新
 		const result = await db.transaction(async (tx) => {
 			// 既存のロック済みタグを取得
 			const lockedTags = await tx
-				.select()
+				.select({
+					tagId: trackTags.tagId,
+					tagName: tags.name,
+					position: trackTags.position,
+					isLocked: trackTags.isLocked,
+				})
 				.from(trackTags)
+				.innerJoin(tags, eq(trackTags.tagId, tags.id))
 				.where(
 					and(eq(trackTags.trackId, trackId), eq(trackTags.isLocked, true)),
 				);
 
-			const lockedTagIds = new Set(lockedTags.map((t) => t.tagId));
+			const lockedTagNames = new Set(
+				lockedTags.map((t) => t.tagName.toLowerCase()),
+			);
 
 			// アンロック状態のタグを削除
 			await tx
@@ -669,17 +724,48 @@ tracksAdminRouter.put("/:trackId/tags", async (c) => {
 					and(eq(trackTags.trackId, trackId), eq(trackTags.isLocked, false)),
 				);
 
-			// 新しいタグを追加（ロック済みタグを除く）
-			const newTagIds = tagIds.filter((id) => !lockedTagIds.has(id));
+			// 新しいタグを処理（ロック済みタグを除く）
+			const newTagData = tagData.filter(
+				(t) => !lockedTagNames.has(t.name.toLowerCase()),
+			);
+
+			// 各タグ名に対して既存タグを検索、なければ作成
+			const resolvedTags: Array<{ id: string; name: string }> = [];
+			for (const data of newTagData) {
+				// 既存タグを検索（大文字小文字区別なし）
+				const existingTag = await tx
+					.select({ id: tags.id, name: tags.name })
+					.from(tags)
+					.where(sql`LOWER(${tags.name}) = LOWER(${data.name})`)
+					.limit(1);
+
+				if (existingTag.length > 0 && existingTag[0]) {
+					resolvedTags.push({ id: existingTag[0].id, name: existingTag[0].name });
+				} else {
+					// 新規タグを作成
+					const newId = `tag_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+					await tx.insert(tags).values({
+						id: newId,
+						name: data.name,
+					});
+					resolvedTags.push({ id: newId, name: data.name });
+				}
+			}
+
+			// タグデータをマップ化（name -> isLocked）
+			const tagDataMap = new Map(
+				tagData.map((t) => [t.name.toLowerCase(), t.isLocked ?? false]),
+			);
 
 			// position計算: ロック済みタグの数 + 新規タグの順序
 			let position = lockedTags.length + 1;
-			for (const tagId of newTagIds) {
+			for (const tag of resolvedTags) {
+				const isLocked = tagDataMap.get(tag.name.toLowerCase()) ?? false;
 				await tx.insert(trackTags).values({
 					trackId,
-					tagId,
+					tagId: tag.id,
 					position,
-					isLocked: false,
+					isLocked,
 				});
 				position++;
 			}
@@ -699,6 +785,14 @@ tracksAdminRouter.put("/:trackId/tags", async (c) => {
 
 			return updatedTags;
 		});
+
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
 
 		return c.json({
 			trackId,
@@ -742,6 +836,14 @@ tracksAdminRouter.put("/:trackId/tags/:tagId/lock", async (c) => {
 			.update(trackTags)
 			.set({ isLocked: true })
 			.where(and(eq(trackTags.trackId, trackId), eq(trackTags.tagId, tagId)));
+
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
 
 		return c.json({
 			trackId,
@@ -792,6 +894,14 @@ tracksAdminRouter.delete("/:trackId/tags/:tagId/lock", async (c) => {
 			.set({ isLocked: false })
 			.where(and(eq(trackTags.trackId, trackId), eq(trackTags.tagId, tagId)));
 
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
+
 		return c.json({
 			trackId,
 			tagId,
@@ -804,6 +914,33 @@ tracksAdminRouter.delete("/:trackId/tags/:tagId/lock", async (c) => {
 			error,
 			"DELETE /admin/tracks/:trackId/tags/:tagId/lock",
 		);
+	}
+});
+
+// トラックをMeilisearchに即時同期
+tracksAdminRouter.post("/:trackId/sync", async (c) => {
+	try {
+		const trackId = c.req.param("trackId");
+
+		// トラック存在チェック
+		const existingTrack = await db
+			.select()
+			.from(tracks)
+			.where(eq(tracks.id, trackId))
+			.limit(1);
+
+		if (existingTrack.length === 0) {
+			return c.json({ error: ERROR_MESSAGES.TRACK_NOT_FOUND }, 404);
+		}
+
+		// 即時同期（キューに追加してすぐにフラッシュ）
+		await queueTrackIndexing(trackId);
+		const queue = getIndexQueue();
+		await queue.flush();
+
+		return c.json({ success: true });
+	} catch (error) {
+		return handleDbError(c, error, "POST /admin/tracks/:trackId/sync");
 	}
 });
 

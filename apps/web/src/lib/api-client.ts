@@ -187,6 +187,15 @@ async function fetchWithAuth<T>(
 			throw new ConflictError(errorData.error, errorData.current);
 		}
 
+		// 409 Conflict（既存タグ）の場合はexistingTagを含むエラーをthrow
+		if (res.status === 409 && errorData.existingTag) {
+			const error = new Error(errorData.error || "既に存在します") as Error & {
+				existingTag: { id: string; name: string };
+			};
+			error.existingTag = errorData.existingTag;
+			throw error;
+		}
+
 		throw new Error(errorData.error || `HTTP ${res.status}`);
 	}
 
@@ -2025,6 +2034,10 @@ export const tracksApi = {
 			method: "DELETE",
 			body: JSON.stringify({ items }),
 		}),
+	syncToSearch: (trackId: string) =>
+		fetchWithAuth<{ success: boolean }>(`/api/admin/tracks/${trackId}/sync`, {
+			method: "POST",
+		}),
 };
 
 // Track Credits
@@ -3000,8 +3013,7 @@ export const trackTagsApi = {
 	update: (
 		trackId: string,
 		tags: Array<{
-			tagId: string;
-			position: number;
+			name: string;
 			isLocked?: boolean;
 		}>,
 	) =>
@@ -3014,15 +3026,15 @@ export const trackTagsApi = {
 		fetchWithAuth<{ success: boolean }>(
 			`/api/admin/tracks/${trackId}/tags/${tagId}/lock`,
 			{
-				method: "PATCH",
+				method: "PUT",
 			},
 		),
 
 	unlock: (trackId: string, tagId: string) =>
 		fetchWithAuth<{ success: boolean }>(
-			`/api/admin/tracks/${trackId}/tags/${tagId}/unlock`,
+			`/api/admin/tracks/${trackId}/tags/${tagId}/lock`,
 			{
-				method: "PATCH",
+				method: "DELETE",
 			},
 		),
 };

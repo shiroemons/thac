@@ -7,6 +7,7 @@ import {
 	trackDerivations,
 	tracks,
 } from "@thac/db";
+import { getIndexQueue, queueTrackIndexing } from "@thac/search";
 import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
@@ -134,6 +135,14 @@ trackDerivationsRouter.post("/:trackId/derivations", async (c) => {
 			.values(parsed.data)
 			.returning();
 
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
+
 		return c.json(result[0], 201);
 	} catch (error) {
 		return handleDbError(c, error, "POST /admin/tracks/:trackId/derivations");
@@ -164,6 +173,14 @@ trackDerivationsRouter.delete("/:trackId/derivations/:id", async (c) => {
 
 		// 削除
 		await db.delete(trackDerivations).where(eq(trackDerivations.id, id));
+
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
 
 		return c.json({ success: true, id });
 	} catch (error) {
