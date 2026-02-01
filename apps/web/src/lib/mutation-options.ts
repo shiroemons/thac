@@ -1977,7 +1977,9 @@ export const platformMutations = {
 // ===== マスターデータ: ジャンル =====
 
 type CreateGenreData = Omit<Genre, "createdAt" | "updatedAt">;
-type UpdateGenreData = Partial<Omit<Genre, "code" | "createdAt" | "updatedAt">> & {
+type UpdateGenreData = Partial<
+	Omit<Genre, "code" | "createdAt" | "updatedAt">
+> & {
 	updatedAt?: string;
 };
 
@@ -2009,9 +2011,8 @@ export const genreMutations = {
 			// 3. 楽観的更新
 			// 詳細データ
 			if (previousDetail) {
-				queryClient.setQueryData<Genre>(
-					["genre", variables.code],
-					(old) => (old ? { ...old, ...variables.data } : old),
+				queryClient.setQueryData<Genre>(["genre", variables.code], (old) =>
+					old ? { ...old, ...variables.data } : old,
 				);
 			}
 

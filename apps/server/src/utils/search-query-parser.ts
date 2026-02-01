@@ -425,7 +425,9 @@ export function buildMeilisearchFilter(
 			conditions.push(`releaseDate <= "${filters.releaseDate.to}"`);
 		} else if ("op" in filters.releaseDate && "value" in filters.releaseDate) {
 			// 単一日付フィルター（date:用）
-			conditions.push(`releaseDate ${filters.releaseDate.op} "${filters.releaseDate.value}"`);
+			conditions.push(
+				`releaseDate ${filters.releaseDate.op} "${filters.releaseDate.value}"`,
+			);
 		}
 	}
 

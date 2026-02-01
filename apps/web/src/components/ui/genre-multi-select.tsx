@@ -147,14 +147,14 @@ function GenreMultiSelect({
 
 				{/* プレースホルダーまたは残り件数表示 */}
 				{!isMaxReached && (
-					<span className="ml-1 text-sm text-base-content/50">
+					<span className="ml-1 text-base-content/50 text-sm">
 						{value.length === 0
 							? placeholder
 							: `あと${remainingCount}件選択可能`}
 					</span>
 				)}
 				{isMaxReached && value.length > 0 && (
-					<span className="ml-1 text-xs text-base-content/40">
+					<span className="ml-1 text-base-content/40 text-xs">
 						(最大{maxItems}件)
 					</span>
 				)}
@@ -190,7 +190,9 @@ function GenreMultiSelect({
 					>
 						{availableOptions.length === 0 ? (
 							<div className="p-4 text-center text-base-content/50">
-								{search ? "該当するジャンルがありません" : "選択可能なジャンルがありません"}
+								{search
+									? "該当するジャンルがありません"
+									: "選択可能なジャンルがありません"}
 							</div>
 						) : (
 							availableOptions.map((genre) => (
@@ -211,7 +213,7 @@ function GenreMultiSelect({
 									{/* ジャンル名 */}
 									<span className="flex-1">
 										<span className="font-medium">{genre.nameEn}</span>
-										<span className="ml-2 text-sm text-base-content/60">
+										<span className="ml-2 text-base-content/60 text-sm">
 											{genre.nameJa}
 										</span>
 									</span>

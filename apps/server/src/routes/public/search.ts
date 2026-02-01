@@ -6,8 +6,8 @@ import type {
 import { getMeilisearchClient, TRACKS_INDEX_NAME } from "@thac/search";
 import { Hono } from "hono";
 import {
-	optionalAuthMiddleware,
 	type OptionalAuthContext,
+	optionalAuthMiddleware,
 } from "../../middleware/optional-auth";
 import {
 	buildMeilisearchFilter,

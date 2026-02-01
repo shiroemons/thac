@@ -59,7 +59,8 @@ const searchSyntaxHelp: SearchSyntaxItem[] = [
 		keyword: "date:",
 		description: "頒布日で検索（=, >=, <=, >, < 対応）",
 		example: "date:>=2025-01-01",
-		tooltip: "例: date:2025-01-01（指定日）/ date:>=2025-01-01（以降）/ date:<2025-01-01（より前）",
+		tooltip:
+			"例: date:2025-01-01（指定日）/ date:>=2025-01-01（以降）/ date:<2025-01-01（より前）",
 	},
 	// --- 数値フィルター ---
 	{
@@ -72,7 +73,8 @@ const searchSyntaxHelp: SearchSyntaxItem[] = [
 		keyword: "originalcount:",
 		description: "原曲数で検索（=, >=, <=, >, < 対応）",
 		example: "originalcount:2",
-		tooltip: "例: originalcount:2（等しい）/ originalcount:>=3（以上）/ originalcount:<5（未満）",
+		tooltip:
+			"例: originalcount:2（等しい）/ originalcount:>=3（以上）/ originalcount:<5（未満）",
 	},
 	{
 		keyword: "vocalistcount:",

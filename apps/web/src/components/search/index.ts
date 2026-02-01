@@ -4,13 +4,13 @@ export {
 	type AdvancedSearchModalRef,
 } from "./AdvancedSearchModal";
 export { AdvancedSearchPanel } from "./AdvancedSearchPanel";
-export { LoginPromptBanner } from "./LoginPromptBanner";
 export { ArtistRoleFilter } from "./ArtistRoleFilter";
 export { CircleFilter } from "./CircleFilter";
 export { DateRangeFilter } from "./DateRangeFilter";
 export { EventFilter } from "./EventFilter";
 export { createFilterChip, FilterChips } from "./FilterChips";
 export { FilterSection } from "./FilterSection";
+export { LoginPromptBanner } from "./LoginPromptBanner";
 export { OriginalSongCountFilter } from "./OriginalSongCountFilter";
 export { OriginalSongFilter } from "./OriginalSongFilter";
 export { RoleCountFilter } from "./RoleCountFilter";

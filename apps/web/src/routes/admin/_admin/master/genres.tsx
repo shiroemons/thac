@@ -296,9 +296,7 @@ function GenresPage() {
 									{isVisible("icon") && (
 										<TableHead className="w-[100px]">アイコン</TableHead>
 									)}
-									{isVisible("description") && (
-										<TableHead>説明</TableHead>
-									)}
+									{isVisible("description") && <TableHead>説明</TableHead>}
 									{isVisible("createdAt") && (
 										<TableHead
 											className="w-[160px] cursor-pointer select-none hover:bg-base-200"
@@ -392,7 +390,7 @@ function GenresPage() {
 														color={g.color}
 														icon={g.icon}
 													/>
-													<span className="ml-2 text-sm text-base-content/60">
+													<span className="ml-2 text-base-content/60 text-sm">
 														{g.nameEn}
 													</span>
 												</TableCell>
@@ -404,19 +402,19 @@ function GenresPage() {
 															className="size-4 rounded border border-base-300"
 															style={{ backgroundColor: g.color }}
 														/>
-														<span className="font-mono text-sm text-base-content/70">
+														<span className="font-mono text-base-content/70 text-sm">
 															{g.color}
 														</span>
 													</div>
 												</TableCell>
 											)}
 											{isVisible("icon") && (
-												<TableCell className="font-mono text-sm text-base-content/70">
+												<TableCell className="font-mono text-base-content/70 text-sm">
 													{g.icon}
 												</TableCell>
 											)}
 											{isVisible("description") && (
-												<TableCell className="max-w-[200px] truncate text-sm text-base-content/70">
+												<TableCell className="max-w-[200px] truncate text-base-content/70 text-sm">
 													{g.description || "-"}
 												</TableCell>
 											)}

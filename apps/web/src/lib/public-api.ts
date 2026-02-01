@@ -791,8 +791,7 @@ export const publicApi = {
 
 	/** ジャンルマスタ一覧を取得 */
 	genres: {
-		list: () =>
-			publicFetch<{ data: PublicGenreItem[] }>("/api/public/genres"),
+		list: () => publicFetch<{ data: PublicGenreItem[] }>("/api/public/genres"),
 	},
 
 	works: {

@@ -157,14 +157,19 @@ export async function getReleaseTracks(releaseId: string) {
 	};
 
 	// 並列で取得
-	const [vocalistsMap, arrangersMap, lyricistsMap, originalSongsMap, genresMap] =
-		await Promise.all([
-			getCreditsByRole("vocalist"),
-			getCreditsByRole("arranger"),
-			getCreditsByRole("lyricist"),
-			getOriginalSongs(),
-			getGenres(),
-		]);
+	const [
+		vocalistsMap,
+		arrangersMap,
+		lyricistsMap,
+		originalSongsMap,
+		genresMap,
+	] = await Promise.all([
+		getCreditsByRole("vocalist"),
+		getCreditsByRole("arranger"),
+		getCreditsByRole("lyricist"),
+		getOriginalSongs(),
+		getGenres(),
+	]);
 
 	// レスポンス形式に変換
 	return releaseTracks.map((row) => ({

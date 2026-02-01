@@ -1,4 +1,3 @@
-import type { SQL } from "drizzle-orm";
 import {
 	asc,
 	count,
@@ -12,6 +11,7 @@ import {
 	trackGenres,
 	updateGenreSchema,
 } from "@thac/db";
+import type { SQL } from "drizzle-orm";
 import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
 import type { AdminContext } from "../../middleware/admin-auth";

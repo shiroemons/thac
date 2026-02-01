@@ -4,9 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";
 import { useFormDirty } from "@/hooks/use-form-dirty";
 import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
-import { isConflictError, type Genre } from "@/lib/api-client";
+import { type Genre, isConflictError } from "@/lib/api-client";
 import { genreMutations } from "@/lib/mutation-options";
-import { GenreBadge } from "../ui/genre-badge";
 import { Button } from "../ui/button";
 import { ConfirmDialog } from "../ui/confirm-dialog";
 import {
@@ -17,6 +16,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "../ui/dialog";
+import { GenreBadge } from "../ui/genre-badge";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { ConflictDialog } from "./conflict-dialog";
@@ -335,7 +335,7 @@ export function GenreEditDialog({
 
 						{/* プレビュー */}
 						<div className="flex items-center gap-2 rounded-lg border border-base-300 bg-base-200/50 p-3">
-							<span className="text-sm text-base-content/60">プレビュー:</span>
+							<span className="text-base-content/60 text-sm">プレビュー:</span>
 							<GenreBadge
 								code={form.code || "preview"}
 								name={form.nameJa || "ジャンル名"}

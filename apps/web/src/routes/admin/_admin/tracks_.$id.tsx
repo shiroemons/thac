@@ -22,7 +22,6 @@ import { TrackEditDialog } from "@/components/admin/track-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { GenreBadge } from "@/components/ui/genre-badge";
 import {
 	Dialog,
 	DialogContent,
@@ -31,6 +30,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { EnhancedTrackSelect } from "@/components/ui/enhanced-track-select";
+import { GenreBadge } from "@/components/ui/genre-badge";
 import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

@@ -20,14 +20,20 @@ const genreCodeSchema = z
 const hexColorSchema = z
 	.string()
 	.trim()
-	.regex(/^#[0-9A-Fa-f]{6}$/, "Hexカラーコード形式（#RRGGBB）で入力してください");
+	.regex(
+		/^#[0-9A-Fa-f]{6}$/,
+		"Hexカラーコード形式（#RRGGBB）で入力してください",
+	);
 
 // Helper: 英小文字とハイフンのみ（Lucideアイコン名）
 const iconNameSchema = z
 	.string()
 	.trim()
 	.min(1, "必須項目です")
-	.regex(/^[a-z][a-z0-9-]*$/, "英小文字で始まり、英小文字・数字・ハイフンのみ使用可能です");
+	.regex(
+		/^[a-z][a-z0-9-]*$/,
+		"英小文字で始まり、英小文字・数字・ハイフンのみ使用可能です",
+	);
 
 // Helper: 名前フィールド（1-100文字）
 const nameSchema = nonEmptyString.max(100, "100文字以内で入力してください");

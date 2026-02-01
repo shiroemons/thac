@@ -535,7 +535,9 @@ tracksAdminRouter.put("/:trackId/genres", async (c) => {
 				.where(inArray(genres.code, genreCodes));
 
 			const existingCodes = new Set(existingGenres.map((g) => g.code));
-			const invalidCodes = genreCodes.filter((code) => !existingCodes.has(code));
+			const invalidCodes = genreCodes.filter(
+				(code) => !existingCodes.has(code),
+			);
 
 			if (invalidCodes.length > 0) {
 				return c.json(

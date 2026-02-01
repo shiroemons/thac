@@ -24,7 +24,6 @@ import {
 	LoginPromptBanner,
 	useFilterChips,
 } from "@/components/search";
-import { authClient } from "@/lib/auth-client";
 import {
 	buildSearchQueryString,
 	filtersToSearchParams,
@@ -35,6 +34,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { authClient } from "@/lib/auth-client";
 import { createPageHead } from "@/lib/head";
 import type { PublicGenreItem } from "@/lib/public-api";
 import {
@@ -376,9 +376,9 @@ function SearchPage() {
 	const navigate = useNavigate();
 	const [inputValue, setInputValue] = useState(query);
 	const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
-	const [expandedOriginalSongs, setExpandedOriginalSongs] = useState<Set<string>>(
-		new Set(),
-	);
+	const [expandedOriginalSongs, setExpandedOriginalSongs] = useState<
+		Set<string>
+	>(new Set());
 
 	// ジャンルマスタを取得
 	const { data: genresData } = useSuspenseQuery(publicGenresListOptions());
@@ -844,9 +844,7 @@ function SearchPage() {
 													)}
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div>
-														{renderCircleLinks(hit.circles)}
-													</div>
+													<div>{renderCircleLinks(hit.circles)}</div>
 												</td>
 												<td className="max-w-[150px]">
 													{hit.genres && hit.genres.length > 0 && (
@@ -888,19 +886,13 @@ function SearchPage() {
 													</div>
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div>
-														{renderArtistLinks(hit.vocalists)}
-													</div>
+													<div>{renderArtistLinks(hit.vocalists)}</div>
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div>
-														{renderArtistLinks(hit.arrangers)}
-													</div>
+													<div>{renderArtistLinks(hit.arrangers)}</div>
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div>
-														{renderArtistLinks(hit.lyricists)}
-													</div>
+													<div>{renderArtistLinks(hit.lyricists)}</div>
 												</td>
 												<td className="max-w-[120px] text-base-content/50 text-xs">
 													<div>
@@ -953,7 +945,7 @@ function SearchPage() {
 												<div className="min-w-0 flex-1">
 													{/* メタ情報 */}
 													{(hit.releaseName || hit.eventName) && (
-														<p className="text-xs text-base-content/60">
+														<p className="text-base-content/60 text-xs">
 															{hit.releaseName &&
 																getFormattedText(
 																	hit.releaseName,
@@ -971,7 +963,7 @@ function SearchPage() {
 
 													{/* サークル */}
 													{hit.circleNames.length > 0 && (
-														<p className="text-sm text-base-content/80">
+														<p className="text-base-content/80 text-sm">
 															{getFormattedArrayText(
 																hit.circleNames,
 																hit._formatted?.circleNames,
@@ -983,7 +975,7 @@ function SearchPage() {
 													{(hit.vocalistNames.length > 0 ||
 														hit.arrangerNames.length > 0 ||
 														hit.lyricistNames.length > 0) && (
-														<p className="text-xs text-base-content/70">
+														<p className="text-base-content/70 text-xs">
 															{hit.vocalistNames.length > 0 && (
 																<span>Vo: {hit.vocalistNames.join(", ")}</span>
 															)}
@@ -1005,7 +997,7 @@ function SearchPage() {
 
 													{/* 原曲名（展開/折りたたみ対応） */}
 													{hit.originalSongNames.length > 0 && (
-														<p className="text-xs text-base-content/60">
+														<p className="text-base-content/60 text-xs">
 															♪{" "}
 															{hit.originalSongNames.length <= 3 ? (
 																getFormattedArrayText(
@@ -1022,8 +1014,10 @@ function SearchPage() {
 																	)}{" "}
 																	<button
 																		type="button"
-																		onClick={(e) => toggleOriginalSongs(hit.id, e)}
-																		className="touch-manipulation rounded px-2 py-1 -mx-2 -my-1 text-primary/80 transition-colors hover:text-primary hover:underline active:bg-primary/10 active:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+																		onClick={(e) =>
+																			toggleOriginalSongs(hit.id, e)
+																		}
+																		className="-mx-2 -my-1 touch-manipulation rounded px-2 py-1 text-primary/80 transition-colors hover:text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:bg-primary/10 active:text-primary"
 																	>
 																		閉じる
 																	</button>
@@ -1032,13 +1026,18 @@ function SearchPage() {
 																<>
 																	{getFormattedArrayText(
 																		hit.originalSongNames.slice(0, 3),
-																		hit._formatted?.originalSongNames?.slice(0, 3),
+																		hit._formatted?.originalSongNames?.slice(
+																			0,
+																			3,
+																		),
 																		" / ",
 																	)}{" "}
 																	<button
 																		type="button"
-																		onClick={(e) => toggleOriginalSongs(hit.id, e)}
-																		className="touch-manipulation rounded px-2 py-1 -mx-2 -my-1 text-primary/80 transition-colors hover:text-primary hover:underline active:bg-primary/10 active:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+																		onClick={(e) =>
+																			toggleOriginalSongs(hit.id, e)
+																		}
+																		className="-mx-2 -my-1 touch-manipulation rounded px-2 py-1 text-primary/80 transition-colors hover:text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:bg-primary/10 active:text-primary"
 																	>
 																		他{hit.originalSongNames.length - 3}曲を見る
 																	</button>
