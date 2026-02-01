@@ -86,6 +86,7 @@ function getLucideIcon(
 		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 		.join("");
 
+	// biome-ignore lint/performance/noDynamicNamespaceImportAccess: Dynamic icon loading is intentional
 	const IconComponent = LucideIcons[pascalCase as keyof typeof LucideIcons];
 	// Reactコンポーネント（関数またはforwardRef）かどうかをチェック
 	if (isReactComponent(IconComponent)) {

@@ -1,3 +1,4 @@
+import type { SQL } from "drizzle-orm";
 import {
 	asc,
 	count,
@@ -25,7 +26,7 @@ genresRouter.get("/", async (c) => {
 		const search = c.req.query("search");
 
 		// 検索条件を構築
-		let whereCondition;
+		let whereCondition: SQL<unknown> | undefined;
 		if (search) {
 			const searchPattern = `%${search}%`;
 			whereCondition = or(
