@@ -8,6 +8,7 @@ import {
 	discs,
 	eq,
 	events,
+	genres,
 	inArray,
 	officialSongs,
 	platforms,
@@ -16,6 +17,7 @@ import {
 	releases,
 	trackCreditRoles,
 	trackCredits,
+	trackGenres,
 	trackOfficialSongs,
 	tracks,
 } from "@thac/db";
@@ -176,8 +178,8 @@ releasesRouter.get("/:id", async (c) => {
 			return c.json(response);
 		}
 
-		// Step 4: クレジットと原曲をバッチ取得
-		const [creditsData, creditsRolesData, officialSongsData] =
+		// Step 4: クレジット、原曲、ジャンルをバッチ取得
+		const [creditsData, creditsRolesData, officialSongsData, genresData] =
 			await Promise.all([
 				// クレジット（artistAliases, artists を LEFT JOIN して別名義名・アーティスト名を取得）
 				db
@@ -236,6 +238,20 @@ releasesRouter.get("/:id", async (c) => {
 						eq(trackOfficialSongs.officialSongId, officialSongs.id),
 					)
 					.where(inArray(trackOfficialSongs.trackId, trackIds)),
+
+				// ジャンル情報を一括取得
+				db
+					.select({
+						trackId: trackGenres.trackId,
+						genreCode: genres.code,
+						nameJa: genres.nameJa,
+						color: genres.color,
+						icon: genres.icon,
+					})
+					.from(trackGenres)
+					.innerJoin(genres, eq(trackGenres.genreCode, genres.code))
+					.where(inArray(trackGenres.trackId, trackIds))
+					.orderBy(asc(trackGenres.position)),
 			]);
 
 		// Step 5: メモリ上でマージ
@@ -298,6 +314,29 @@ releasesRouter.get("/:id", async (c) => {
 			});
 		}
 
+		// ジャンルをトラックIDでグループ化
+		const genresByTrack = new Map<
+			string,
+			Array<{
+				code: string;
+				nameJa: string;
+				color: string;
+				icon: string | null;
+			}>
+		>();
+		for (const g of genresData) {
+			const existing = genresByTrack.get(g.trackId) ?? [];
+			if (!genresByTrack.has(g.trackId)) {
+				genresByTrack.set(g.trackId, existing);
+			}
+			existing.push({
+				code: g.genreCode,
+				nameJa: g.nameJa,
+				color: g.color,
+				icon: g.icon,
+			});
+		}
+
 		// トラックデータを構築
 		const tracksWithDetails = tracksData.map((track) => ({
 			id: track.id,
@@ -308,6 +347,7 @@ releasesRouter.get("/:id", async (c) => {
 			nameEn: track.nameEn,
 			credits: creditsByTrack.get(track.id) ?? [],
 			officialSongs: officialSongsByTrack.get(track.id) ?? [],
+			genres: genresByTrack.get(track.id) ?? [],
 		}));
 
 		const response = {

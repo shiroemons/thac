@@ -10,6 +10,7 @@ import {
 	db,
 	desc,
 	eq,
+	genres,
 	inArray,
 	isNull,
 	officialSongs,
@@ -19,6 +20,7 @@ import {
 	sql,
 	trackCreditRoles,
 	trackCredits,
+	trackGenres,
 	trackOfficialSongs,
 	tracks,
 } from "@thac/db";
@@ -645,43 +647,61 @@ artistsRouter.get("/:id/tracks", async (c) => {
 		const releaseIds = [...new Set(creditsData.map((c) => c.releaseId))];
 
 		// Step 3: 関連データをバッチ取得（N+1回避）
-		const [rolesData, circlesData, originalSongsData] = await Promise.all([
-			// ロール情報を一括取得
-			db
-				.select({
-					creditId: trackCreditRoles.trackCreditId,
-					roleCode: trackCreditRoles.roleCode,
-					roleLabel: creditRoles.label,
-				})
-				.from(trackCreditRoles)
-				.innerJoin(creditRoles, eq(trackCreditRoles.roleCode, creditRoles.code))
-				.where(inArray(trackCreditRoles.trackCreditId, creditIds)),
+		const [rolesData, circlesData, originalSongsData, genresData] =
+			await Promise.all([
+				// ロール情報を一括取得
+				db
+					.select({
+						creditId: trackCreditRoles.trackCreditId,
+						roleCode: trackCreditRoles.roleCode,
+						roleLabel: creditRoles.label,
+					})
+					.from(trackCreditRoles)
+					.innerJoin(
+						creditRoles,
+						eq(trackCreditRoles.roleCode, creditRoles.code),
+					)
+					.where(inArray(trackCreditRoles.trackCreditId, creditIds)),
 
-			// サークル情報を一括取得
-			db
-				.select({
-					releaseId: releaseCircles.releaseId,
-					circleId: circles.id,
-					circleName: circles.name,
-				})
-				.from(releaseCircles)
-				.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
-				.where(inArray(releaseCircles.releaseId, releaseIds)),
+				// サークル情報を一括取得
+				db
+					.select({
+						releaseId: releaseCircles.releaseId,
+						circleId: circles.id,
+						circleName: circles.name,
+					})
+					.from(releaseCircles)
+					.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
+					.where(inArray(releaseCircles.releaseId, releaseIds)),
 
-			// 原曲情報を一括取得
-			db
-				.select({
-					trackId: trackOfficialSongs.trackId,
-					songId: officialSongs.id,
-					songName: officialSongs.nameJa,
-				})
-				.from(trackOfficialSongs)
-				.innerJoin(
-					officialSongs,
-					eq(trackOfficialSongs.officialSongId, officialSongs.id),
-				)
-				.where(inArray(trackOfficialSongs.trackId, trackIds)),
-		]);
+				// 原曲情報を一括取得
+				db
+					.select({
+						trackId: trackOfficialSongs.trackId,
+						songId: officialSongs.id,
+						songName: officialSongs.nameJa,
+					})
+					.from(trackOfficialSongs)
+					.innerJoin(
+						officialSongs,
+						eq(trackOfficialSongs.officialSongId, officialSongs.id),
+					)
+					.where(inArray(trackOfficialSongs.trackId, trackIds)),
+
+				// ジャンル情報を一括取得
+				db
+					.select({
+						trackId: trackGenres.trackId,
+						genreCode: genres.code,
+						nameJa: genres.nameJa,
+						color: genres.color,
+						icon: genres.icon,
+					})
+					.from(trackGenres)
+					.innerJoin(genres, eq(trackGenres.genreCode, genres.code))
+					.where(inArray(trackGenres.trackId, trackIds))
+					.orderBy(asc(trackGenres.position)),
+			]);
 
 		// Step 4: メモリ上でマージ
 		// ロールをクレジットIDでグルーピング
@@ -726,6 +746,24 @@ artistsRouter.get("/:id/tracks", async (c) => {
 			}
 		}
 
+		// ジャンルをトラックIDでグルーピング
+		const genresByTrack = new Map<
+			string,
+			Array<{ code: string; nameJa: string; color: string; icon: string }>
+		>();
+		for (const g of genresData) {
+			const existing = genresByTrack.get(g.trackId) ?? [];
+			if (!genresByTrack.has(g.trackId)) {
+				genresByTrack.set(g.trackId, existing);
+			}
+			existing.push({
+				code: g.genreCode,
+				nameJa: g.nameJa,
+				color: g.color,
+				icon: g.icon,
+			});
+		}
+
 		// 最終結果を構築
 		const data = creditsData.map((credit) => ({
 			id: credit.creditId,
@@ -744,6 +782,7 @@ artistsRouter.get("/:id/tracks", async (c) => {
 			},
 			circles: circlesByRelease.get(credit.releaseId) ?? [],
 			originalSong: originalSongsByTrack.get(credit.trackId) ?? null,
+			genres: genresByTrack.get(credit.trackId) ?? [],
 		}));
 
 		const response = { data, total, page, limit };

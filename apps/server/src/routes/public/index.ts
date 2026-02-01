@@ -4,6 +4,7 @@ import { categoriesRouter } from "./categories";
 import { circlesRouter } from "./circles";
 import { eventSeriesRouter } from "./event-series";
 import { eventsRouter } from "./events";
+import { genresRouter } from "./genres";
 import { officialWorksRouter } from "./official-works";
 import { originalSongsRouter } from "./original-songs";
 import { releasesRouter } from "./releases";
@@ -14,6 +15,7 @@ import { tracksRouter } from "./tracks";
 const publicRouter = new Hono();
 
 // 公開API（認証不要）
+publicRouter.route("/genres", genresRouter);
 publicRouter.route("/official-work-categories", categoriesRouter);
 publicRouter.route("/official-works", officialWorksRouter);
 publicRouter.route("/original-songs", originalSongsRouter);

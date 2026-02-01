@@ -12,6 +12,7 @@ import {
 	Music,
 	Pencil,
 	Plus,
+	Tag,
 	Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -29,6 +30,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { EnhancedTrackSelect } from "@/components/ui/enhanced-track-select";
+import { GenreBadge } from "@/components/ui/genre-badge";
 import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1049,6 +1051,30 @@ function TrackDetailPage() {
 								</div>
 							</div>
 						</div>
+
+						{/* ジャンル */}
+						{track.genres && track.genres.length > 0 && (
+							<div className="border-base-300 border-t pt-4">
+								<div className="flex items-center gap-1.5 text-base-content/70">
+									<Tag className="h-3.5 w-3.5" />
+									<p className="text-sm">ジャンル</p>
+								</div>
+								<div className="mt-2.5 flex flex-wrap gap-2.5 rounded-lg bg-base-200/50 p-3">
+									{track.genres
+										.sort((a, b) => a.position - b.position)
+										.map((genre) => (
+											<GenreBadge
+												key={genre.code}
+												code={genre.code}
+												name={genre.nameJa}
+												color={genre.color}
+												icon={genre.icon}
+												size="sm"
+											/>
+										))}
+								</div>
+							</div>
+						)}
 
 						<div className="border-base-300 border-t pt-4">
 							<p className="text-base-content/70 text-sm">ID</p>

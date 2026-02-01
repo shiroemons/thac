@@ -10,6 +10,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { GenreMultiSelect } from "@/components/ui/genre-multi-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -20,17 +21,23 @@ import {
 	discsApi,
 	eventDaysApi,
 	eventsApi,
+	genresApi,
 	isConflictError,
 	releasesApi,
 	type Track,
+	type TrackGenreInfo,
 } from "@/lib/api-client";
 import { trackMutations } from "@/lib/mutation-options";
 import { ConflictDialog } from "./conflict-dialog";
 
+interface TrackWithGenres extends Track {
+	genres?: TrackGenreInfo[];
+}
+
 interface TrackEditDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	track: Track;
+	track: TrackWithGenres;
 	onSuccess?: () => void;
 }
 
@@ -46,6 +53,9 @@ export function TrackEditDialog({
 		null,
 	);
 	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+	// ジャンル選択状態
+	const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+	const [initialGenres, setInitialGenres] = useState<string[]>([]);
 	// 楽観的ロック用: 編集開始時のupdatedAtを記録
 	const [originalUpdatedAt, setOriginalUpdatedAt] = useState<string | null>(
 		null,
@@ -56,6 +66,12 @@ export function TrackEditDialog({
 	// フォーム変更検出フック
 	const formDirty = useFormDirty<Partial<Track> & Record<string, unknown>>();
 
+	// ジャンル変更があるかどうか（早期に計算）
+	const genresChanged = useMemo(() => {
+		if (selectedGenres.length !== initialGenres.length) return true;
+		return selectedGenres.some((code, i) => code !== initialGenres[i]);
+	}, [selectedGenres, initialGenres]);
+
 	// 未保存変更保護フック
 	const {
 		showConfirmDialog,
@@ -63,7 +79,7 @@ export function TrackEditDialog({
 		confirmDiscard,
 		guardedOnOpenChange,
 	} = useUnsavedChangesGuard(onOpenChange, {
-		isDirty: formDirty.isDirty,
+		isDirty: formDirty.isDirty || genresChanged,
 		isOpen: open,
 	});
 
@@ -93,6 +109,10 @@ export function TrackEditDialog({
 			setSelectedReleaseId(track.releaseId);
 			setSelectedEventId(track.eventId);
 			setOriginalUpdatedAt(track.updatedAt);
+			// ジャンル初期化
+			const genreCodes = track.genres?.map((g) => g.code) ?? [];
+			setSelectedGenres(genreCodes);
+			setInitialGenres(genreCodes);
 			// フォームの初期状態を記録
 			formDirty.setInitialState(
 				initialFormData as Partial<Track> & Record<string, unknown>,
@@ -114,6 +134,14 @@ export function TrackEditDialog({
 		queryKey: ["releases", { limit: 200 }],
 		queryFn: () => releasesApi.list({ limit: 200 }),
 		staleTime: 60_000,
+		enabled: open,
+	});
+
+	// ジャンル一覧取得
+	const { data: genreOptionsData } = useQuery({
+		queryKey: ["genres", { limit: 100 }],
+		queryFn: () => genresApi.list({ limit: 100 }),
+		staleTime: 300_000,
 		enabled: open,
 	});
 
@@ -207,8 +235,19 @@ export function TrackEditDialog({
 		}));
 	}, [eventDaysData]);
 
+	// ジャンルオプション（GenreMultiSelect用）
+	const genreOptions = useMemo(() => {
+		return (genreOptionsData?.data ?? []).map((g) => ({
+			code: g.code,
+			nameJa: g.nameJa,
+			nameEn: g.nameEn,
+			color: g.color,
+			icon: g.icon,
+		}));
+	}, [genreOptionsData?.data]);
+
 	// 保存
-	const handleSave = (overrideUpdatedAt?: string) => {
+	const handleSave = async (overrideUpdatedAt?: string) => {
 		if (!track.releaseId) {
 			return;
 		}
@@ -231,7 +270,22 @@ export function TrackEditDialog({
 				},
 			},
 			{
-				onSuccess: () => {
+				onSuccess: async () => {
+					// ジャンル変更がある場合は更新
+					if (genresChanged) {
+						try {
+							await genresApi.updateTrackGenres(track.id, selectedGenres);
+							// キャッシュの無効化
+							await queryClient.invalidateQueries({
+								queryKey: ["tracks", track.id],
+							});
+							await queryClient.invalidateQueries({
+								queryKey: ["releases", track.releaseId, "tracks"],
+							});
+						} catch (error) {
+							console.error("Failed to update genres:", error);
+						}
+					}
 					formDirty.reset();
 					onOpenChange(false);
 					onSuccess?.();
@@ -395,6 +449,19 @@ export function TrackEditDialog({
 									setEditForm({ ...editForm, nameEn: e.target.value })
 								}
 								placeholder="例: Native Face"
+							/>
+						</div>
+
+						{/* ジャンル */}
+						<div className="grid gap-2">
+							<Label htmlFor="track-genres">ジャンル（最大5件）</Label>
+							<GenreMultiSelect
+								id="track-genres"
+								value={selectedGenres}
+								onChange={setSelectedGenres}
+								options={genreOptions}
+								maxItems={5}
+								placeholder="ジャンルを選択..."
 							/>
 						</div>
 

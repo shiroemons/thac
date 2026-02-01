@@ -29,6 +29,8 @@ export const STALE_TIME_PUBLIC = {
 	RANKINGS: 5 * 60_000,
 	/** 最近の更新: 1分 */
 	RECENT_UPDATES: 60_000,
+	/** マスタデータ: 30分（ジャンルなど滅多に変わらない） */
+	MASTER: 30 * 60_000,
 } as const;
 
 /**
@@ -135,6 +137,21 @@ export const publicSongStatsQueryOptions = (
 			}
 		},
 		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+// =============================================================================
+// ジャンルマスタ用クエリオプション
+// =============================================================================
+
+/**
+ * ジャンルマスタ一覧のクエリオプション
+ * 検索結果のジャンル表示などで使用
+ */
+export const publicGenresListOptions = () =>
+	queryOptions({
+		queryKey: ["public", "genres", "list"],
+		queryFn: () => publicApi.genres.list(),
+		staleTime: STALE_TIME_PUBLIC.MASTER,
 	});
 
 // =============================================================================

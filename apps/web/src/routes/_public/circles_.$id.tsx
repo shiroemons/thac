@@ -13,6 +13,7 @@ import {
 	EmptyState,
 	EntityDetailHeader,
 	ExternalLink,
+	GenreBadge,
 	Pagination,
 	PublicBreadcrumb,
 	type StatItem,
@@ -496,6 +497,7 @@ function CircleDetailPage() {
 										<th>作品</th>
 										<th className="hidden md:table-cell">アーティスト</th>
 										<th className="hidden sm:table-cell">原曲</th>
+										<th className="hidden lg:table-cell">ジャンル</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -513,6 +515,20 @@ function CircleDetailPage() {
 												>
 													{track.name}
 												</Link>
+												{/* モバイル用ジャンル表示 */}
+												{track.genres && track.genres.length > 0 && (
+													<div className="mt-1 flex flex-wrap gap-1 lg:hidden">
+														{track.genres.map((genre) => (
+															<GenreBadge
+																key={genre.code}
+																code={genre.code}
+																name={genre.nameJa}
+																color={genre.color}
+																icon={genre.icon}
+															/>
+														))}
+													</div>
+												)}
 											</td>
 											<td className="text-base-content/70">
 												{track.releaseId ? (
@@ -563,6 +579,21 @@ function CircleDetailPage() {
 													</Link>
 												) : (
 													"-"
+												)}
+											</td>
+											<td className="hidden lg:table-cell">
+												{track.genres && track.genres.length > 0 && (
+													<div className="flex flex-wrap gap-1">
+														{track.genres.map((genre) => (
+															<GenreBadge
+																key={genre.code}
+																code={genre.code}
+																name={genre.nameJa}
+																color={genre.color}
+																icon={genre.icon}
+															/>
+														))}
+													</div>
 												)}
 											</td>
 										</tr>

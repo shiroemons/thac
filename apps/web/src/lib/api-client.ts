@@ -57,6 +57,18 @@ export interface Platform {
 	updatedAt: string;
 }
 
+export interface Genre {
+	code: string;
+	nameJa: string;
+	nameEn: string;
+	color: string;
+	icon: string;
+	description: string | null;
+	sortOrder: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
 export interface AliasType {
 	code: string;
 	label: string;
@@ -230,6 +242,78 @@ export const platformsApi = {
 			method: "PUT",
 			body: JSON.stringify({ items }),
 		}),
+};
+
+// Genre Update Response Type
+export interface TrackGenreUpdateResponse {
+	trackId: string;
+	genres: Array<{
+		genreCode: string;
+		position: number;
+		nameJa: string;
+		nameEn: string;
+		color: string;
+		icon: string;
+	}>;
+}
+
+// Genres
+export const genresApi = {
+	list: (params?: {
+		page?: number;
+		limit?: number;
+		search?: string;
+		sortBy?: string;
+		sortOrder?: "asc" | "desc";
+	}) => {
+		const searchParams = new URLSearchParams();
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		if (params?.search) searchParams.set("search", params.search);
+		if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+		if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+		const query = searchParams.toString();
+		return fetchWithAuth<PaginatedResponse<Genre>>(
+			`/api/admin/genres${query ? `?${query}` : ""}`,
+		);
+	},
+	get: (code: string) => fetchWithAuth<Genre>(`/api/admin/genres/${code}`),
+	create: (data: Omit<Genre, "createdAt" | "updatedAt">) =>
+		fetchWithAuth<Genre>("/api/admin/genres", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (
+		code: string,
+		data: Partial<Omit<Genre, "code" | "createdAt" | "updatedAt">> & {
+			updatedAt?: string;
+		},
+	) =>
+		fetchWithAuth<Genre>(`/api/admin/genres/${code}`, {
+			method: "PUT",
+			body: JSON.stringify(data),
+		}),
+	delete: (code: string) =>
+		fetchWithAuth<{ success: boolean; id: string }>(
+			`/api/admin/genres/${code}`,
+			{
+				method: "DELETE",
+			},
+		),
+	reorder: (items: { code: string; sortOrder: number }[]) =>
+		fetchWithAuth<{ success: boolean }>("/api/admin/genres/reorder", {
+			method: "PATCH",
+			body: JSON.stringify({ items }),
+		}),
+	// トラックのジャンル更新
+	updateTrackGenres: (trackId: string, genreCodes: string[]) =>
+		fetchWithAuth<TrackGenreUpdateResponse>(
+			`/api/admin/tracks/${trackId}/genres`,
+			{
+				method: "PUT",
+				body: JSON.stringify({ genreCodes }),
+			},
+		),
 };
 
 // Alias Types
@@ -1577,6 +1661,7 @@ export interface ReleaseFullResponse {
 	circles: ReleaseCircleWithCircle[];
 	publications: ReleasePublication[];
 	janCodes: ReleaseJanCode[];
+	genres: TrackGenreInfo[];
 	event: ReleaseEventInfo | null;
 	stats: ReleaseFullStats;
 }
@@ -1807,12 +1892,24 @@ export interface TrackWithCreditCount extends Track {
 	arrangers: string | null;
 	lyricists: string | null;
 	originalSongs: string | null;
+	genres: TrackGenreInfo[];
+}
+
+// ジャンル情報（紐付け情報付き）
+export interface TrackGenreInfo {
+	code: string;
+	nameJa: string;
+	nameEn: string;
+	color: string;
+	icon: string;
+	position: number;
 }
 
 export interface TrackDetail extends Track {
 	release: Release | null;
 	disc: Disc | null;
 	credits: TrackCredit[];
+	genres: TrackGenreInfo[];
 	eventName: string | null;
 	eventDayNumber: number | null;
 	eventDayDate: string | null;

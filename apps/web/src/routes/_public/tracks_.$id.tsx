@@ -10,6 +10,7 @@ import {
 import { useMemo } from "react";
 import {
 	EntityDetailHeader,
+	GenreBadge,
 	PublicationLinks,
 	PublicBreadcrumb,
 } from "@/components/public";
@@ -134,6 +135,17 @@ function TrackDetailPage() {
 									{track.disc.discName && ` - ${track.disc.discName}`}
 								</span>,
 							]
+						: []),
+					...(track.genres && track.genres.length > 0
+						? track.genres.map((genre) => (
+								<GenreBadge
+									key={genre.code}
+									code={genre.code}
+									name={genre.nameJa}
+									color={genre.color}
+									icon={genre.icon}
+								/>
+							))
 						: []),
 				]}
 			>

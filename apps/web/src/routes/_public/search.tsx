@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import DOMPurify from "isomorphic-dompurify";
 import {
@@ -14,7 +14,7 @@ import {
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PublicBreadcrumb } from "@/components/public";
+import { GenreBadge, PublicBreadcrumb } from "@/components/public";
 import {
 	type AdvancedSearchFilters,
 	AdvancedSearchModal,
@@ -24,7 +24,6 @@ import {
 	LoginPromptBanner,
 	useFilterChips,
 } from "@/components/search";
-import { authClient } from "@/lib/auth-client";
 import {
 	buildSearchQueryString,
 	filtersToSearchParams,
@@ -35,8 +34,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { authClient } from "@/lib/auth-client";
 import { createPageHead } from "@/lib/head";
-import { searchTracksQueryOptions } from "@/lib/public-query-options";
+import type { PublicGenreItem } from "@/lib/public-api";
+import {
+	publicGenresListOptions,
+	searchTracksQueryOptions,
+} from "@/lib/public-query-options";
 
 interface SearchParams {
 	q?: string;
@@ -61,6 +65,10 @@ interface SearchParams {
 export const Route = createFileRoute("/_public/search")({
 	head: () => createPageHead("検索"),
 	component: SearchPage,
+	loader: async ({ context }) => {
+		// ジャンルマスタをプリフェッチ
+		await context.queryClient.ensureQueryData(publicGenresListOptions());
+	},
 	validateSearch: (search: Record<string, unknown>): SearchParams => {
 		return {
 			q: typeof search.q === "string" ? search.q : undefined,
@@ -350,15 +358,39 @@ function filtersToUrlSearchObject(
 	return result;
 }
 
+/**
+ * ジャンルコードからジャンル情報をマップするヘルパー
+ */
+function getGenresByCode(
+	codes: string[],
+	genreMap: Map<string, PublicGenreItem>,
+): PublicGenreItem[] {
+	return codes
+		.map((code) => genreMap.get(code))
+		.filter((g): g is PublicGenreItem => g !== undefined);
+}
+
 function SearchPage() {
 	const searchParams = Route.useSearch();
 	const query = searchParams.q ?? "";
 	const navigate = useNavigate();
 	const [inputValue, setInputValue] = useState(query);
 	const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
-	const [expandedOriginalSongs, setExpandedOriginalSongs] = useState<Set<string>>(
-		new Set(),
-	);
+	const [expandedOriginalSongs, setExpandedOriginalSongs] = useState<
+		Set<string>
+	>(new Set());
+
+	// ジャンルマスタを取得
+	const { data: genresData } = useSuspenseQuery(publicGenresListOptions());
+
+	// ジャンルコード -> ジャンル情報のマップを作成
+	const genreMap = useMemo(() => {
+		const map = new Map<string, PublicGenreItem>();
+		for (const genre of genresData.data) {
+			map.set(genre.code, genre);
+		}
+		return map;
+	}, [genresData.data]);
 
 	// 認証状態を取得
 	const { data: session } = authClient.useSession();
@@ -757,6 +789,7 @@ function SearchPage() {
 											<th className="font-medium">作品名</th>
 											<th className="font-medium">イベント</th>
 											<th className="font-medium">サークル</th>
+											<th className="font-medium">ジャンル</th>
 											<th className="font-medium">原曲</th>
 											<th className="font-medium">ボーカリスト</th>
 											<th className="font-medium">編曲者</th>
@@ -811,9 +844,24 @@ function SearchPage() {
 													)}
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div>
-														{renderCircleLinks(hit.circles)}
-													</div>
+													<div>{renderCircleLinks(hit.circles)}</div>
+												</td>
+												<td className="max-w-[150px]">
+													{hit.genres && hit.genres.length > 0 && (
+														<div className="flex flex-wrap gap-1">
+															{getGenresByCode(hit.genres, genreMap).map(
+																(genre) => (
+																	<GenreBadge
+																		key={genre.code}
+																		code={genre.code}
+																		name={genre.nameJa}
+																		color={genre.color}
+																		icon={genre.icon}
+																	/>
+																),
+															)}
+														</div>
+													)}
 												</td>
 												<td className="max-w-[250px] text-base-content/70 text-sm">
 													<div>
@@ -838,19 +886,13 @@ function SearchPage() {
 													</div>
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div>
-														{renderArtistLinks(hit.vocalists)}
-													</div>
+													<div>{renderArtistLinks(hit.vocalists)}</div>
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div>
-														{renderArtistLinks(hit.arrangers)}
-													</div>
+													<div>{renderArtistLinks(hit.arrangers)}</div>
 												</td>
 												<td className="max-w-[120px] text-sm">
-													<div>
-														{renderArtistLinks(hit.lyricists)}
-													</div>
+													<div>{renderArtistLinks(hit.lyricists)}</div>
 												</td>
 												<td className="max-w-[120px] text-base-content/50 text-xs">
 													<div>
@@ -903,7 +945,7 @@ function SearchPage() {
 												<div className="min-w-0 flex-1">
 													{/* メタ情報 */}
 													{(hit.releaseName || hit.eventName) && (
-														<p className="text-xs text-base-content/60">
+														<p className="text-base-content/60 text-xs">
 															{hit.releaseName &&
 																getFormattedText(
 																	hit.releaseName,
@@ -921,7 +963,7 @@ function SearchPage() {
 
 													{/* サークル */}
 													{hit.circleNames.length > 0 && (
-														<p className="text-sm text-base-content/80">
+														<p className="text-base-content/80 text-sm">
 															{getFormattedArrayText(
 																hit.circleNames,
 																hit._formatted?.circleNames,
@@ -933,7 +975,7 @@ function SearchPage() {
 													{(hit.vocalistNames.length > 0 ||
 														hit.arrangerNames.length > 0 ||
 														hit.lyricistNames.length > 0) && (
-														<p className="text-xs text-base-content/70">
+														<p className="text-base-content/70 text-xs">
 															{hit.vocalistNames.length > 0 && (
 																<span>Vo: {hit.vocalistNames.join(", ")}</span>
 															)}
@@ -955,7 +997,7 @@ function SearchPage() {
 
 													{/* 原曲名（展開/折りたたみ対応） */}
 													{hit.originalSongNames.length > 0 && (
-														<p className="text-xs text-base-content/60">
+														<p className="text-base-content/60 text-xs">
 															♪{" "}
 															{hit.originalSongNames.length <= 3 ? (
 																getFormattedArrayText(
@@ -972,8 +1014,10 @@ function SearchPage() {
 																	)}{" "}
 																	<button
 																		type="button"
-																		onClick={(e) => toggleOriginalSongs(hit.id, e)}
-																		className="touch-manipulation rounded px-2 py-1 -mx-2 -my-1 text-primary/80 transition-colors hover:text-primary hover:underline active:bg-primary/10 active:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+																		onClick={(e) =>
+																			toggleOriginalSongs(hit.id, e)
+																		}
+																		className="-mx-2 -my-1 touch-manipulation rounded px-2 py-1 text-primary/80 transition-colors hover:text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:bg-primary/10 active:text-primary"
 																	>
 																		閉じる
 																	</button>
@@ -982,19 +1026,41 @@ function SearchPage() {
 																<>
 																	{getFormattedArrayText(
 																		hit.originalSongNames.slice(0, 3),
-																		hit._formatted?.originalSongNames?.slice(0, 3),
+																		hit._formatted?.originalSongNames?.slice(
+																			0,
+																			3,
+																		),
 																		" / ",
 																	)}{" "}
 																	<button
 																		type="button"
-																		onClick={(e) => toggleOriginalSongs(hit.id, e)}
-																		className="touch-manipulation rounded px-2 py-1 -mx-2 -my-1 text-primary/80 transition-colors hover:text-primary hover:underline active:bg-primary/10 active:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+																		onClick={(e) =>
+																			toggleOriginalSongs(hit.id, e)
+																		}
+																		className="-mx-2 -my-1 touch-manipulation rounded px-2 py-1 text-primary/80 transition-colors hover:text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 active:bg-primary/10 active:text-primary"
 																	>
 																		他{hit.originalSongNames.length - 3}曲を見る
 																	</button>
 																</>
 															)}
 														</p>
+													)}
+
+													{/* ジャンルバッジ */}
+													{hit.genres && hit.genres.length > 0 && (
+														<div className="mt-1 flex flex-wrap gap-1">
+															{getGenresByCode(hit.genres, genreMap).map(
+																(genre) => (
+																	<GenreBadge
+																		key={genre.code}
+																		code={genre.code}
+																		name={genre.nameJa}
+																		color={genre.color}
+																		icon={genre.icon}
+																	/>
+																),
+															)}
+														</div>
 													)}
 												</div>
 

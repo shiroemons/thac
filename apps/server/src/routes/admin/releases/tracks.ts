@@ -3,6 +3,7 @@ import {
 	db,
 	discs,
 	eq,
+	genres,
 	inArray,
 	insertTrackSchema,
 	isNull,
@@ -11,6 +12,7 @@ import {
 	type Track,
 	trackCreditRoles,
 	trackCredits,
+	trackGenres,
 	trackOfficialSongs,
 	tracks,
 	updateTrackSchema,
@@ -101,14 +103,73 @@ export async function getReleaseTracks(releaseId: string) {
 		return map;
 	};
 
+	// ジャンル取得（N+1回避: JOINで一括取得）
+	const getGenres = async () => {
+		if (trackIds.length === 0)
+			return new Map<
+				string,
+				Array<{
+					code: string;
+					nameJa: string;
+					nameEn: string;
+					color: string;
+					icon: string;
+					position: number;
+				}>
+			>();
+
+		const genresData = await db
+			.select({
+				trackId: trackGenres.trackId,
+				genreCode: trackGenres.genreCode,
+				position: trackGenres.position,
+				genre: genres,
+			})
+			.from(trackGenres)
+			.innerJoin(genres, eq(trackGenres.genreCode, genres.code))
+			.where(inArray(trackGenres.trackId, trackIds))
+			.orderBy(trackGenres.trackId, trackGenres.position);
+
+		const map = new Map<
+			string,
+			Array<{
+				code: string;
+				nameJa: string;
+				nameEn: string;
+				color: string;
+				icon: string;
+				position: number;
+			}>
+		>();
+		for (const g of genresData) {
+			const existing = map.get(g.trackId) ?? [];
+			existing.push({
+				code: g.genre.code,
+				nameJa: g.genre.nameJa,
+				nameEn: g.genre.nameEn,
+				color: g.genre.color,
+				icon: g.genre.icon,
+				position: g.position,
+			});
+			map.set(g.trackId, existing);
+		}
+		return map;
+	};
+
 	// 並列で取得
-	const [vocalistsMap, arrangersMap, lyricistsMap, originalSongsMap] =
-		await Promise.all([
-			getCreditsByRole("vocalist"),
-			getCreditsByRole("arranger"),
-			getCreditsByRole("lyricist"),
-			getOriginalSongs(),
-		]);
+	const [
+		vocalistsMap,
+		arrangersMap,
+		lyricistsMap,
+		originalSongsMap,
+		genresMap,
+	] = await Promise.all([
+		getCreditsByRole("vocalist"),
+		getCreditsByRole("arranger"),
+		getCreditsByRole("lyricist"),
+		getOriginalSongs(),
+		getGenres(),
+	]);
 
 	// レスポンス形式に変換
 	return releaseTracks.map((row) => ({
@@ -118,6 +179,7 @@ export async function getReleaseTracks(releaseId: string) {
 		arrangers: arrangersMap.get(row.track.id)?.join(" / ") ?? null,
 		lyricists: lyricistsMap.get(row.track.id)?.join(" / ") ?? null,
 		originalSongs: originalSongsMap.get(row.track.id)?.join(" / ") ?? null,
+		genres: genresMap.get(row.track.id) ?? [],
 	}));
 }
 

@@ -9,6 +9,7 @@ import { artistsRouter } from "./artists";
 import { circlesRouter } from "./circles";
 import { eventSeriesRouter, eventsAdminRouter } from "./events";
 import { exportRouter } from "./export";
+import { genresRouter } from "./genres";
 import { importRouter } from "./import";
 import { masterRouter } from "./master";
 import { officialRouter } from "./official";
@@ -30,6 +31,9 @@ adminRouter.route("/stats", statsRouter);
 
 // マスタデータ管理ルート
 adminRouter.route("/master", masterRouter);
+
+// ジャンル管理ルート
+adminRouter.route("/genres", genresRouter);
 
 // 公式作品・楽曲管理ルート
 adminRouter.route("/official", officialRouter);

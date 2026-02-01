@@ -11,6 +11,7 @@ import {
 	desc,
 	eq,
 	events,
+	genres,
 	inArray,
 	like,
 	officialSongs,
@@ -22,6 +23,7 @@ import {
 	sql,
 	trackCreditRoles,
 	trackCredits,
+	trackGenres,
 	trackOfficialSongs,
 	tracks,
 } from "@thac/db";
@@ -455,7 +457,7 @@ circlesRouter.get("/:id/tracks", async (c) => {
 		const trackIds = tracksData.map((t) => t.trackId);
 
 		// Step 3: 関連データをバッチ取得（N+1回避）
-		const [creditsData, originalSongsData] = await Promise.all([
+		const [creditsData, originalSongsData, genresData] = await Promise.all([
 			// クレジット情報を一括取得（ロール含む）
 			db
 				.select({
@@ -488,6 +490,21 @@ circlesRouter.get("/:id/tracks", async (c) => {
 					eq(trackOfficialSongs.officialSongId, officialSongs.id),
 				)
 				.where(inArray(trackOfficialSongs.trackId, trackIds)),
+
+			// ジャンル情報を一括取得
+			db
+				.select({
+					trackId: trackGenres.trackId,
+					genreCode: genres.code,
+					nameJa: genres.nameJa,
+					color: genres.color,
+					icon: genres.icon,
+					position: trackGenres.position,
+				})
+				.from(trackGenres)
+				.innerJoin(genres, eq(trackGenres.genreCode, genres.code))
+				.where(inArray(trackGenres.trackId, trackIds))
+				.orderBy(asc(trackGenres.position)),
 		]);
 
 		// Step 4: メモリ上でマージ
@@ -539,6 +556,25 @@ circlesRouter.get("/:id/tracks", async (c) => {
 			existing.push({ id: os.songId, name: os.songName });
 		}
 
+		// ジャンルをトラックIDでグルーピング
+		const genresByTrack = new Map<
+			string,
+			Array<{ code: string; nameJa: string; color: string; icon: string }>
+		>();
+		for (const g of genresData) {
+			const key = g.trackId;
+			const existing = genresByTrack.get(key) ?? [];
+			if (!genresByTrack.has(key)) {
+				genresByTrack.set(key, existing);
+			}
+			existing.push({
+				code: g.genreCode,
+				nameJa: g.nameJa,
+				color: g.color,
+				icon: g.icon,
+			});
+		}
+
 		// 最終結果を構築
 		const data = tracksData.map((track) => ({
 			id: track.trackId,
@@ -548,6 +584,7 @@ circlesRouter.get("/:id/tracks", async (c) => {
 			trackNumber: track.trackNumber,
 			artists: creditsByTrack.get(track.trackId) ?? [],
 			originalSong: originalSongsByTrack.get(track.trackId)?.[0] ?? null,
+			genres: genresByTrack.get(track.trackId) ?? [],
 		}));
 
 		const response = { data, total, page, limit };

@@ -167,7 +167,7 @@ export function ReleaseEditDialog({
 	}, [editForm]);
 
 	// 保存
-	const handleSave = (overrideUpdatedAt?: string) => {
+	const handleSave = async (overrideUpdatedAt?: string) => {
 		updateMutation.mutate(
 			{
 				id: release.id,

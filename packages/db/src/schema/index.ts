@@ -3,6 +3,8 @@ export * from "./artist-circle.validation";
 export * from "./auth";
 export * from "./event";
 export * from "./event.validation";
+export * from "./genre";
+export * from "./genre.validation";
 export * from "./identifier";
 export * from "./identifier.validation";
 export * from "./master";

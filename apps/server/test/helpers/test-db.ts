@@ -18,6 +18,7 @@ const schema = {
 	aliasTypes: dbExports.aliasTypes,
 	creditRoles: dbExports.creditRoles,
 	officialWorkCategories: dbExports.officialWorkCategories,
+	genres: dbExports.genres,
 	// アーティスト・サークル
 	artists: dbExports.artists,
 	artistAliases: dbExports.artistAliases,
@@ -42,6 +43,7 @@ const schema = {
 	trackOfficialSongs: dbExports.trackOfficialSongs,
 	trackDerivations: dbExports.trackDerivations,
 	trackIsrcs: dbExports.trackIsrcs,
+	trackGenres: dbExports.trackGenres,
 	// 出版物
 	trackPublications: dbExports.trackPublications,
 	releasePublications: dbExports.releasePublications,
@@ -156,6 +158,32 @@ function createMissingTables(sqlite: Database) {
 			role_code TEXT NOT NULL REFERENCES credit_roles(code),
 			role_position INTEGER NOT NULL DEFAULT 1,
 			PRIMARY KEY (track_credit_id, role_code, role_position)
+		)
+	`);
+
+	// genres テーブル（マスタデータ）
+	sqlite.run(`
+		CREATE TABLE IF NOT EXISTS genres (
+			code TEXT PRIMARY KEY NOT NULL,
+			name_ja TEXT NOT NULL,
+			name_en TEXT NOT NULL,
+			color TEXT NOT NULL,
+			icon TEXT NOT NULL,
+			description TEXT,
+			sort_order INTEGER DEFAULT 0 NOT NULL,
+			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+			updated_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
+		)
+	`);
+
+	// track_genres テーブル（中間テーブル）
+	sqlite.run(`
+		CREATE TABLE IF NOT EXISTS track_genres (
+			track_id TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+			genre_code TEXT NOT NULL REFERENCES genres(code) ON DELETE RESTRICT,
+			position INTEGER DEFAULT 1 NOT NULL,
+			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+			PRIMARY KEY (track_id, genre_code)
 		)
 	`);
 }

@@ -37,6 +37,12 @@ export {
 	type FilterDrawerProps,
 	FilterDrawerTrigger,
 } from "./filter-drawer";
+export { GenreBadge, type GenreBadgeProps } from "./genre-badge";
+export {
+	type Genre,
+	GenreBadgeList,
+	type GenreBadgeListProps,
+} from "./genre-badge-list";
 export { HeroSection } from "./hero-section";
 export {
 	MobileCardItem,

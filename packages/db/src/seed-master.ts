@@ -1,6 +1,7 @@
 import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
 import { drizzle } from "drizzle-orm/libsql";
+import { genres } from "./schema/genre";
 import {
 	aliasTypes,
 	creditRoles,
@@ -274,6 +275,191 @@ const officialWorkCategoriesData = [
 	},
 ];
 
+const genresData = [
+	// ポピュラー音楽 - 暖色系で区別
+	{
+		code: "pop",
+		nameJa: "ポップ",
+		nameEn: "Pop",
+		color: "#EC4899", // ピンク500（fuchsia-pinkより鮮やか）
+		icon: "heart",
+	},
+	{
+		code: "rock",
+		nameJa: "ロック",
+		nameEn: "Rock",
+		color: "#DC2626", // 赤600
+		icon: "guitar",
+	},
+	{
+		code: "hip_hop",
+		nameJa: "ヒップホップ",
+		nameEn: "Hip-Hop",
+		color: "#F59E0B", // アンバー500
+		icon: "mic",
+	},
+	{
+		code: "rnb",
+		nameJa: "R&B",
+		nameEn: "R&B",
+		color: "#A855F7", // パープル500
+		icon: "heart-pulse",
+	},
+	{
+		code: "country",
+		nameJa: "カントリー",
+		nameEn: "Country",
+		color: "#D97706", // アンバー600（茶色寄り）
+		icon: "mountain",
+	},
+	// 電子音楽 - 寒色系で区別
+	{
+		code: "electronic",
+		nameJa: "エレクトロニック",
+		nameEn: "Electronic",
+		color: "#06B6D4", // シアン500
+		icon: "zap",
+	},
+	{
+		code: "house",
+		nameJa: "ハウス",
+		nameEn: "House",
+		color: "#3B82F6", // ブルー500（より青く）
+		icon: "home",
+	},
+	{
+		code: "techno",
+		nameJa: "テクノ",
+		nameEn: "Techno",
+		color: "#1D4ED8", // ブルー700（より濃い青）
+		icon: "cpu",
+	},
+	{
+		code: "trance",
+		nameJa: "トランス",
+		nameEn: "Trance",
+		color: "#8B5CF6", // バイオレット500
+		icon: "sparkles",
+	},
+	// クラシック・ジャズ - アース/ニュートラル
+	{
+		code: "classical",
+		nameJa: "クラシック",
+		nameEn: "Classical",
+		color: "#92400E", // アンバー800（より濃い茶）
+		icon: "music-2",
+	},
+	{
+		code: "orchestral",
+		nameJa: "オーケストラ",
+		nameEn: "Orchestral",
+		color: "#7C2D12", // オレンジ900（深い赤茶）
+		icon: "users",
+	},
+	{
+		code: "jazz",
+		nameJa: "ジャズ",
+		nameEn: "Jazz",
+		color: "#B45309", // アンバー700
+		icon: "music",
+	},
+	{
+		code: "blues",
+		nameJa: "ブルース",
+		nameEn: "Blues",
+		color: "#1E40AF", // ブルー800
+		icon: "sunset",
+	},
+	// メタル・パンク - ダーク系
+	{
+		code: "metal",
+		nameJa: "メタル",
+		nameEn: "Metal",
+		color: "#18181B", // ジンク900（ほぼ黒）
+		icon: "skull",
+	},
+	{
+		code: "punk",
+		nameJa: "パンク",
+		nameEn: "Punk",
+		color: "#EA580C", // オレンジ600（Latinと区別）
+		icon: "flame",
+	},
+	// ワールド・フォーク
+	{
+		code: "folk",
+		nameJa: "フォーク",
+		nameEn: "Folk",
+		color: "#65A30D", // ライム600（緑系）
+		icon: "leaf",
+	},
+	{
+		code: "latin",
+		nameJa: "ラテン",
+		nameEn: "Latin",
+		color: "#E11D48", // ローズ600（赤ピンク）
+		icon: "sun",
+	},
+	{
+		code: "reggae",
+		nameJa: "レゲエ",
+		nameEn: "Reggae",
+		color: "#16A34A", // グリーン600
+		icon: "palmtree",
+	},
+	// 日本音楽
+	{
+		code: "jpop",
+		nameJa: "J-POP",
+		nameEn: "J-Pop",
+		color: "#DB2777", // ピンク600（Popと区別）
+		icon: "sparkles",
+	},
+	{
+		code: "jrock",
+		nameJa: "J-ROCK",
+		nameEn: "J-Rock",
+		color: "#BE123C", // ローズ700
+		icon: "guitar",
+	},
+	{
+		code: "enka",
+		nameJa: "演歌",
+		nameEn: "Enka",
+		color: "#881337", // ローズ900（深い赤紫）
+		icon: "mic-2",
+	},
+	{
+		code: "city_pop",
+		nameJa: "シティポップ",
+		nameEn: "City Pop",
+		color: "#FB923C", // オレンジ400
+		icon: "building",
+	},
+	// アニメ・ゲーム・同人
+	{
+		code: "anime",
+		nameJa: "アニソン",
+		nameEn: "Anime",
+		color: "#F97316", // オレンジ500
+		icon: "tv",
+	},
+	{
+		code: "game",
+		nameJa: "ゲーム音楽",
+		nameEn: "Game",
+		color: "#7C3AED", // バイオレット600
+		icon: "gamepad-2",
+	},
+	{
+		code: "vocaloid",
+		nameJa: "ボーカロイド",
+		nameEn: "Vocaloid",
+		color: "#14B8A6", // ティール500
+		icon: "bot",
+	},
+];
+
 async function seed() {
 	console.log("Seeding master data...");
 
@@ -355,6 +541,27 @@ async function seed() {
 	console.log(
 		`  ✓ ${officialWorkCategoriesData.length} official work categories seeded`,
 	);
+
+	// Upsert genres
+	console.log("Seeding genres...");
+	for (let i = 0; i < genresData.length; i++) {
+		const data = genresData[i];
+		if (!data) continue;
+		await db
+			.insert(genres)
+			.values({ ...data, sortOrder: i })
+			.onConflictDoUpdate({
+				target: genres.code,
+				set: {
+					nameJa: data.nameJa,
+					nameEn: data.nameEn,
+					color: data.color,
+					icon: data.icon,
+					sortOrder: i,
+				},
+			});
+	}
+	console.log(`  ✓ ${genresData.length} genres seeded`);
 
 	console.log("✓ Master data seeding completed!");
 }

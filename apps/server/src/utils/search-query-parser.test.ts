@@ -240,7 +240,9 @@ describe("parseSearchQuery", () => {
 		});
 
 		it("フルテキストとperiodを組み合わせる", () => {
-			const result = parseSearchQuery("Bad Apple period:2020-01-01..2020-12-31");
+			const result = parseSearchQuery(
+				"Bad Apple period:2020-01-01..2020-12-31",
+			);
 			expect(result.fullTextQuery).toBe("Bad Apple");
 			expect(result.filters.releaseDate).toEqual({
 				from: "2020-01-01",
@@ -249,7 +251,9 @@ describe("parseSearchQuery", () => {
 		});
 
 		it("他のフィルターとperiodを組み合わせる", () => {
-			const result = parseSearchQuery("arranger:ARM period:2023-01-01..2023-12-31");
+			const result = parseSearchQuery(
+				"arranger:ARM period:2023-01-01..2023-12-31",
+			);
 			expect(result.filters.arrangerNames).toEqual(["ARM"]);
 			expect(result.filters.releaseDate).toEqual({
 				from: "2023-01-01",
@@ -474,7 +478,7 @@ describe("buildMeilisearchFilter", () => {
 			releaseDate: { from: "2024-01-01", to: "2024-12-31" },
 		});
 		expect(filter).toBe(
-			'releaseDate >= "2024-01-01" AND releaseDate <= "2024-12-31"'
+			'releaseDate >= "2024-01-01" AND releaseDate <= "2024-12-31"',
 		);
 	});
 
@@ -484,7 +488,7 @@ describe("buildMeilisearchFilter", () => {
 			arrangerNames: ["ARM"],
 		});
 		expect(filter).toBe(
-			'arrangerNames = "ARM" AND releaseDate >= "2024-01-01" AND releaseDate <= "2024-12-31"'
+			'arrangerNames = "ARM" AND releaseDate >= "2024-01-01" AND releaseDate <= "2024-12-31"',
 		);
 	});
 
@@ -515,7 +519,7 @@ describe("buildMeilisearchFilter", () => {
 			circleNames: ["IOSYS"],
 		});
 		expect(filter).toBe(
-			'circleNames = "IOSYS" AND releaseDate >= "2024-01-01"'
+			'circleNames = "IOSYS" AND releaseDate >= "2024-01-01"',
 		);
 	});
 });

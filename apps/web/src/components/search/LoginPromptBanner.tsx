@@ -1,6 +1,6 @@
+import { Link } from "@tanstack/react-router";
 import { LogIn, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
 
 import { cn } from "@/lib/utils";
 
@@ -88,7 +88,7 @@ export function LoginPromptBanner({ className }: LoginPromptBannerProps) {
 			<div className="relative z-10 flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
 				{/* 説明テキスト */}
 				<div className="min-w-0 flex-1">
-					<p className="text-sm leading-relaxed text-base-content/90 sm:text-base">
+					<p className="text-base-content/90 text-sm leading-relaxed sm:text-base">
 						<span className="font-medium text-base-content">
 							ログインすると詳細検索
 						</span>
@@ -109,7 +109,7 @@ export function LoginPromptBanner({ className }: LoginPromptBannerProps) {
 						"btn btn-primary btn-sm gap-2 shadow-md",
 						"hover:shadow-lg hover:shadow-primary/25",
 						"transition-all duration-200",
-						"shrink-0 sm:btn-md",
+						"sm:btn-md shrink-0",
 					)}
 				>
 					<LogIn className="size-4" />
