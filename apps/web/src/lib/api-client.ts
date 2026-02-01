@@ -3022,15 +3022,15 @@ export const trackTagsApi = {
 		fetchWithAuth<{ success: boolean }>(
 			`/api/admin/tracks/${trackId}/tags/${tagId}/lock`,
 			{
-				method: "PATCH",
+				method: "PUT",
 			},
 		),
 
 	unlock: (trackId: string, tagId: string) =>
 		fetchWithAuth<{ success: boolean }>(
-			`/api/admin/tracks/${trackId}/tags/${tagId}/unlock`,
+			`/api/admin/tracks/${trackId}/tags/${tagId}/lock`,
 			{
-				method: "PATCH",
+				method: "DELETE",
 			},
 		),
 };

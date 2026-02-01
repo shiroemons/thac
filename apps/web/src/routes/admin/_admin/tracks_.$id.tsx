@@ -9,6 +9,8 @@ import {
 	ExternalLink,
 	GitFork,
 	Home,
+	Lock,
+	LockOpen,
 	Music,
 	Pencil,
 	Plus,
@@ -352,6 +354,22 @@ function TrackDetailPage() {
 			queryClient.invalidateQueries({ queryKey: ["track", trackId] });
 			queryClient.invalidateQueries({ queryKey: ["track-tags", trackId] });
 			setIsTagEditing(false);
+		},
+	});
+
+	// タグロックmutation
+	const lockTagMutation = useMutation({
+		mutationFn: (tagId: string) => trackTagsApi.lock(trackId, tagId),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["track-tags", trackId] });
+		},
+	});
+
+	// タグアンロックmutation
+	const unlockTagMutation = useMutation({
+		mutationFn: (tagId: string) => trackTagsApi.unlock(trackId, tagId),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["track-tags", trackId] });
 		},
 	});
 
@@ -1270,11 +1288,31 @@ function TrackDetailPage() {
 							) : trackTags && trackTags.length > 0 ? (
 								<div className="mt-2.5 flex flex-wrap gap-2 rounded-lg bg-base-200/50 p-3">
 									{trackTags.map((tag) => (
-										<TagBadge
-											key={tag.tagId}
-											name={tag.name}
-											isLocked={tag.isLocked}
-										/>
+										<div key={tag.tagId} className="flex items-center gap-1">
+											<TagBadge name={tag.name} isLocked={tag.isLocked} />
+											<button
+												type="button"
+												onClick={() =>
+													tag.isLocked
+														? unlockTagMutation.mutate(tag.tagId)
+														: lockTagMutation.mutate(tag.tagId)
+												}
+												disabled={
+													lockTagMutation.isPending ||
+													unlockTagMutation.isPending
+												}
+												className="btn btn-ghost btn-xs p-1"
+												title={
+													tag.isLocked ? "ロック解除" : "ロック（編集時に削除されない）"
+												}
+											>
+												{tag.isLocked ? (
+													<Lock className="h-3.5 w-3.5 text-warning" />
+												) : (
+													<LockOpen className="h-3.5 w-3.5 text-base-content/50" />
+												)}
+											</button>
+										</div>
 									))}
 								</div>
 							) : (
