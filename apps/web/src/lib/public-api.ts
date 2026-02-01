@@ -191,6 +191,12 @@ export interface PublicArrangeTrack {
 		creditName: string;
 		roles: string[];
 	}>;
+	genres: Array<{
+		code: string;
+		nameJa: string;
+		color: string;
+		icon: string;
+	}>;
 }
 
 /** ページネーションレスポンス */
@@ -264,6 +270,12 @@ export interface PublicCircleTrack {
 		roles: string[];
 	}>;
 	originalSong: { id: string; name: string | null } | null;
+	genres: Array<{
+		code: string;
+		nameJa: string;
+		color: string;
+		icon: string;
+	}>;
 }
 
 /** アーティストの役割 */
@@ -335,6 +347,7 @@ export interface PublicArtistTrack {
 		name: string;
 	}>;
 	originalSong: { id: string; name: string | null } | null;
+	genres: PublicGenre[];
 }
 
 /** イベントシリーズ一覧項目 */
@@ -546,6 +559,16 @@ export interface PublicGenre {
 	nameJa: string;
 	color: string;
 	icon?: string;
+}
+
+/** ジャンルマスタ項目 */
+export interface PublicGenreItem {
+	code: string;
+	nameJa: string;
+	nameEn: string;
+	color: string;
+	icon: string;
+	description: string | null;
 }
 
 /** トラック詳細 */
@@ -766,6 +789,12 @@ export const publicApi = {
 		publicFetch<{ data: PublicCategory[] }>(
 			"/api/public/official-work-categories",
 		),
+
+	/** ジャンルマスタ一覧を取得 */
+	genres: {
+		list: () =>
+			publicFetch<{ data: PublicGenreItem[] }>("/api/public/genres"),
+	},
 
 	works: {
 		/** 原作一覧を取得 */

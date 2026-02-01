@@ -16,6 +16,7 @@ const cache = new Map<string, CacheEntry<unknown>>();
 // キャッシュTTL定数（秒）
 export const CACHE_TTL = {
 	CATEGORIES: 24 * 60 * 60, // 24時間
+	GENRES: 24 * 60 * 60, // 24時間
 	WORKS_LIST: 5 * 60, // 5分
 	WORK_DETAIL: 5 * 60, // 5分
 	SONGS_LIST: 5 * 60, // 5分
@@ -147,6 +148,7 @@ export function setCacheHeaders(
  */
 export const cacheKeys = {
 	categories: () => "public:categories",
+	genres: () => "public:genres",
 
 	worksList: (params: {
 		page: number;

@@ -5,6 +5,7 @@ import {
 	DetailTabs,
 	EmptyState,
 	EntityDetailHeader,
+	GenreBadge,
 	Pagination,
 	PublicBreadcrumb,
 	type StatItem,
@@ -360,6 +361,7 @@ function ArtistDetailPage() {
 										<th className="hidden md:table-cell">役割</th>
 										<th className="hidden sm:table-cell">作品</th>
 										<th className="hidden lg:table-cell">原曲</th>
+										<th className="hidden xl:table-cell">ジャンル</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -423,6 +425,23 @@ function ArtistDetailPage() {
 													>
 														{credit.originalSong.name}
 													</Link>
+												) : (
+													<span className="text-base-content/40">-</span>
+												)}
+											</td>
+											<td className="hidden py-3 xl:table-cell">
+												{credit.genres && credit.genres.length > 0 ? (
+													<div className="flex flex-wrap gap-1">
+														{credit.genres.map((genre) => (
+															<GenreBadge
+																key={genre.code}
+																code={genre.code}
+																name={genre.nameJa}
+																color={genre.color}
+																icon={genre.icon}
+															/>
+														))}
+													</div>
 												) : (
 													<span className="text-base-content/40">-</span>
 												)}

@@ -9,7 +9,11 @@ import {
 	UserRound,
 	Users,
 } from "lucide-react";
-import { ExternalLink, PublicBreadcrumb } from "@/components/public";
+import {
+	ExternalLink,
+	GenreBadge,
+	PublicBreadcrumb,
+} from "@/components/public";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { formatNumber } from "@/lib/format";
 import { createPublicOriginalSongHead } from "@/lib/head";
@@ -234,6 +238,7 @@ function OriginalSongDetailPage() {
 								<tr>
 									<th>タイトル</th>
 									<th>サークル</th>
+									<th className="hidden lg:table-cell">ジャンル</th>
 									<th className="hidden md:table-cell">アーティスト</th>
 									<th className="hidden sm:table-cell">頒布日</th>
 								</tr>
@@ -275,6 +280,21 @@ function OriginalSongDetailPage() {
 													</Link>
 												</span>
 											))}
+										</td>
+										<td className="hidden lg:table-cell">
+											{track.genres && track.genres.length > 0 && (
+												<div className="flex flex-wrap gap-1">
+													{track.genres.map((genre) => (
+														<GenreBadge
+															key={genre.code}
+															code={genre.code}
+															name={genre.nameJa}
+															color={genre.color}
+															icon={genre.icon}
+														/>
+													))}
+												</div>
+											)}
 										</td>
 										<td className="hidden md:table-cell">
 											<div className="flex flex-wrap gap-1">
