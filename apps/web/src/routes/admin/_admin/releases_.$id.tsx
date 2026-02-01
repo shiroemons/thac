@@ -14,6 +14,7 @@ import {
 	Music,
 	Pencil,
 	Plus,
+	Tag,
 	Trash2,
 	Users,
 } from "lucide-react";
@@ -23,6 +24,7 @@ import { ReleaseEditDialog } from "@/components/admin/release-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { GenreBadge } from "@/components/ui/genre-badge";
 import {
 	Dialog,
 	DialogContent,
@@ -253,6 +255,7 @@ function ReleaseDetailPage() {
 	const tracks = fullData?.tracks ?? [];
 	const publications = fullData?.publications ?? [];
 	const janCodes = fullData?.janCodes ?? [];
+	const genres = fullData?.genres ?? [];
 
 	// サークル一覧取得（ダイアログ用）
 	const { data: circlesData } = useQuery({
@@ -1045,6 +1048,30 @@ function ReleaseDetailPage() {
 							<Label className="text-base-content/70">メモ</Label>
 							<p className="whitespace-pre-wrap">{release.notes || "-"}</p>
 						</div>
+
+						{/* ジャンル */}
+						{genres.length > 0 && (
+							<div className="md:col-span-2">
+								<div className="flex items-center gap-1.5 text-base-content/70">
+									<Tag className="h-3.5 w-3.5" />
+									<span className="text-sm">ジャンル</span>
+								</div>
+								<div className="mt-2.5 flex flex-wrap gap-2.5 rounded-lg bg-base-200/50 p-3">
+									{genres
+										.sort((a, b) => a.position - b.position)
+										.map((genre) => (
+											<GenreBadge
+												key={genre.code}
+												code={genre.code}
+												name={genre.nameJa}
+												color={genre.color}
+												icon={genre.icon}
+												size="sm"
+											/>
+										))}
+								</div>
+							</div>
+						)}
 					</div>
 				</div>
 			</div>

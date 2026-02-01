@@ -12,6 +12,7 @@ import {
 	Music,
 	Pencil,
 	Plus,
+	Tag,
 	Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -21,6 +22,7 @@ import { TrackEditDialog } from "@/components/admin/track-edit-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { GenreBadge } from "@/components/ui/genre-badge";
 import {
 	Dialog,
 	DialogContent,
@@ -1049,6 +1051,30 @@ function TrackDetailPage() {
 								</div>
 							</div>
 						</div>
+
+						{/* ジャンル */}
+						{track.genres && track.genres.length > 0 && (
+							<div className="border-base-300 border-t pt-4">
+								<div className="flex items-center gap-1.5 text-base-content/70">
+									<Tag className="h-3.5 w-3.5" />
+									<p className="text-sm">ジャンル</p>
+								</div>
+								<div className="mt-2.5 flex flex-wrap gap-2.5 rounded-lg bg-base-200/50 p-3">
+									{track.genres
+										.sort((a, b) => a.position - b.position)
+										.map((genre) => (
+											<GenreBadge
+												key={genre.code}
+												code={genre.code}
+												name={genre.nameJa}
+												color={genre.color}
+												icon={genre.icon}
+												size="sm"
+											/>
+										))}
+								</div>
+							</div>
+						)}
 
 						<div className="border-base-300 border-t pt-4">
 							<p className="text-base-content/70 text-sm">ID</p>
