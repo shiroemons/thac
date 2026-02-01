@@ -127,6 +127,9 @@ export function CreateDialog({
 								value={formData[field.name]}
 								onChange={(e) => handleChange(field.name, e.target.value)}
 								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 					))}

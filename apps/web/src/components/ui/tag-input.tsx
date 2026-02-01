@@ -244,6 +244,9 @@ function TagInput({
 						aria-controls={listboxId}
 						aria-autocomplete="list"
 						autoComplete="off"
+						data-1p-ignore
+						data-lpignore="true"
+						data-form-type="other"
 					/>
 				)}
 
