@@ -55,6 +55,9 @@ function SearchInput({
 					className,
 				)}
 				autoComplete="off"
+				data-1p-ignore
+				data-lpignore="true"
+				data-form-type="other"
 				{...props}
 			/>
 		</div>

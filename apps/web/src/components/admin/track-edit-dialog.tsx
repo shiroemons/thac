@@ -479,6 +479,10 @@ export function TrackEditDialog({
 									setEditForm({ ...editForm, name: e.target.value })
 								}
 								placeholder="例: ネイティブフェイス"
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 
@@ -498,6 +502,10 @@ export function TrackEditDialog({
 										trackNumber: Number.parseInt(e.target.value, 10) || 1,
 									})
 								}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 
@@ -511,6 +519,10 @@ export function TrackEditDialog({
 									setEditForm({ ...editForm, nameJa: e.target.value })
 								}
 								placeholder="例: ネイティブフェイス"
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 
@@ -524,6 +536,10 @@ export function TrackEditDialog({
 									setEditForm({ ...editForm, nameEn: e.target.value })
 								}
 								placeholder="例: Native Face"
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 
@@ -643,6 +659,10 @@ export function TrackEditDialog({
 									setEditForm({ ...editForm, releaseDate: e.target.value })
 								}
 								disabled={!isReleaseDateEditable}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 							{!isReleaseDateEditable && (
 								<p className="text-base-content/50 text-sm">

@@ -192,6 +192,9 @@ export function OfficialWorkCategoryEditDialog({
 								placeholder="例: windows"
 								disabled={isPending || mode === "edit"}
 								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 							{mode === "edit" && (
 								<p className="text-muted-foreground text-sm">
@@ -210,6 +213,9 @@ export function OfficialWorkCategoryEditDialog({
 								placeholder="例: Windows作品"
 								disabled={isPending}
 								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-2">

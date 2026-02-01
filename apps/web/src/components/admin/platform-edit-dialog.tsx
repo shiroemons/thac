@@ -260,6 +260,9 @@ export function PlatformEditDialog({
 								placeholder="例: spotify"
 								disabled={isPending || mode === "edit"}
 								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 							{mode === "edit" && (
 								<p className="text-muted-foreground text-sm">
@@ -278,6 +281,9 @@ export function PlatformEditDialog({
 								placeholder="例: Spotify"
 								disabled={isPending}
 								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -308,6 +314,9 @@ export function PlatformEditDialog({
 								placeholder="例: ^https?://open\.spotify\.com/"
 								disabled={isPending}
 								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 					</DialogBody>

@@ -216,6 +216,10 @@ function TagManagementDialogContent({
 								onChange={(e) => setSearch(e.target.value)}
 								placeholder="タグを検索..."
 								className="pl-9"
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						{selectedTags.size >= 2 && (
@@ -303,6 +307,10 @@ function TagManagementDialogContent({
 																if (e.key === "Enter") saveEditing();
 																if (e.key === "Escape") cancelEditing();
 															}}
+															autoComplete="off"
+															data-1p-ignore
+															data-lpignore="true"
+															data-form-type="other"
 														/>
 														<button
 															type="button"

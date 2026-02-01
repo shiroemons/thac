@@ -235,6 +235,10 @@ export function EventSeriesEditDialog({
 								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: 博麗神社例大祭"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						{mode === "edit" && (
@@ -253,6 +257,10 @@ export function EventSeriesEditDialog({
 										})
 									}
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						)}

@@ -167,6 +167,10 @@ export function OfficialLinkDialog({
 							onChange={(e) => setUrl(e.target.value)}
 							placeholder="https://..."
 							disabled={isSubmitting}
+							autoComplete="off"
+							data-1p-ignore
+							data-lpignore="true"
+							data-form-type="other"
 						/>
 					</div>
 				</div>
