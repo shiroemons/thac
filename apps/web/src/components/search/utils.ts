@@ -11,7 +11,9 @@ import type {
 	SelectedArtist,
 	SelectedCircle,
 	SelectedEvent,
+	SelectedGenre,
 	SelectedOriginalSong,
+	SelectedTag,
 	TextSearchFilters,
 } from "./types";
 import {
@@ -71,6 +73,23 @@ export function filtersToSearchParams(
 			(circle) => `${circle.id}:${encodeURIComponent(circle.name)}`,
 		);
 		params.set("circles", circleValues.join(","));
+	}
+
+	// ジャンル（code:名前:色 形式）
+	if (filters.genres.length > 0) {
+		const genreValues = filters.genres.map(
+			(genre) =>
+				`${genre.code}:${encodeURIComponent(genre.name)}:${encodeURIComponent(genre.color)}`,
+		);
+		params.set("genres", genreValues.join(","));
+	}
+
+	// タグ（ID:名前 形式）
+	if (filters.tags.length > 0) {
+		const tagValues = filters.tags.map(
+			(tag) => `${tag.id}:${encodeURIComponent(tag.name)}`,
+		);
+		params.set("tags", tagValues.join(","));
 	}
 
 	// 役割者数フィルター
@@ -176,6 +195,31 @@ export function searchParamsToFilters(
 				id,
 				name: decodeURIComponent(name || ""),
 			} satisfies SelectedCircle;
+		});
+	}
+
+	// ジャンル
+	const genresParam = params.get("genres");
+	if (genresParam) {
+		filters.genres = genresParam.split(",").map((item) => {
+			const [code, name, color] = item.split(":");
+			return {
+				code,
+				name: decodeURIComponent(name || ""),
+				color: decodeURIComponent(color || ""),
+			} satisfies SelectedGenre;
+		});
+	}
+
+	// タグ
+	const tagsParam = params.get("tags");
+	if (tagsParam) {
+		filters.tags = tagsParam.split(",").map((item) => {
+			const [id, name] = item.split(":");
+			return {
+				id,
+				name: decodeURIComponent(name || ""),
+			} satisfies SelectedTag;
 		});
 	}
 
@@ -308,6 +352,16 @@ export function buildSearchQueryString(
 		filterParts.push(`circle:"${escapeQueryValue(circle.name)}"`);
 	}
 
+	// ジャンルフィルター (genre: 構文)
+	for (const genre of filters.genres) {
+		filterParts.push(`genre:"${escapeQueryValue(genre.name)}"`);
+	}
+
+	// タグフィルター (#タグ 構文)
+	for (const tag of filters.tags) {
+		filterParts.push(`#${escapeTagValue(tag.name)}`);
+	}
+
 	// 役割者数フィルター (vocalistcount, arrangercount, lyricistcount, composercount)
 	const roleCountParts = buildRoleCountQueryParts(filters.roleCounts);
 	filterParts.push(...roleCountParts);
@@ -347,6 +401,17 @@ export function buildSearchQueryString(
  */
 function escapeQueryValue(value: string): string {
 	return value.replace(/"/g, '\\"');
+}
+
+/**
+ * タグ値のエスケープ
+ * スペースを含む場合はダブルクォートで囲む
+ */
+function escapeTagValue(value: string): string {
+	if (value.includes(" ")) {
+		return `"${escapeQueryValue(value)}"`;
+	}
+	return value;
 }
 
 /**
@@ -457,6 +522,8 @@ export function mergeFiltersWithDefaults(
 		originalSongs: partial.originalSongs ?? DEFAULT_FILTERS.originalSongs,
 		artists: partial.artists ?? DEFAULT_FILTERS.artists,
 		circles: partial.circles ?? DEFAULT_FILTERS.circles,
+		genres: partial.genres ?? DEFAULT_FILTERS.genres,
+		tags: partial.tags ?? DEFAULT_FILTERS.tags,
 		roleCounts: partial.roleCounts ?? DEFAULT_FILTERS.roleCounts,
 		songCount: partial.songCount ?? DEFAULT_FILTERS.songCount,
 		dateRange: partial.dateRange ?? DEFAULT_FILTERS.dateRange,
@@ -473,6 +540,8 @@ export function isFiltersEmpty(filters: AdvancedSearchFilters): boolean {
 		originalSongs,
 		artists,
 		circles,
+		genres,
+		tags,
 		roleCounts,
 		songCount,
 		dateRange,
@@ -498,6 +567,8 @@ export function isFiltersEmpty(filters: AdvancedSearchFilters): boolean {
 		originalSongs.length === 0 &&
 		artists.length === 0 &&
 		circles.length === 0 &&
+		genres.length === 0 &&
+		tags.length === 0 &&
 		isRoleCountsEmpty &&
 		songCount === "any" &&
 		!dateRange.from &&

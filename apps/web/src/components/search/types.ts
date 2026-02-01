@@ -84,6 +84,19 @@ export interface SelectedEvent {
 	seriesName?: string;
 }
 
+/** 選択されたジャンル */
+export interface SelectedGenre {
+	code: string;
+	name: string;
+	color: string;
+}
+
+/** 選択されたタグ */
+export interface SelectedTag {
+	id: string;
+	name: string;
+}
+
 /** 日付範囲 */
 export interface DateRange {
 	from?: string; // YYYY-MM形式
@@ -128,6 +141,10 @@ export interface AdvancedSearchFilters {
 	artists: SelectedArtist[];
 	/** 選択されたサークル */
 	circles: SelectedCircle[];
+	/** 選択されたジャンル */
+	genres: SelectedGenre[];
+	/** 選択されたタグ */
+	tags: SelectedTag[];
 	/** 役割者数フィルター */
 	roleCounts: RoleCountFilters;
 	/** 原曲数フィルター */
@@ -170,6 +187,8 @@ export type FilterChipType =
 	| "originalSong"
 	| "artist"
 	| "circle"
+	| "genre"
+	| "tag"
 	| "roleCount"
 	| "songCount"
 	| "date"
@@ -190,6 +209,8 @@ export interface FilterSectionState {
 	originalSongs: boolean;
 	artists: boolean;
 	circles: boolean;
+	genres: boolean;
+	tags: boolean;
 	roleCounts: boolean;
 	songCount: boolean;
 	dateRange: boolean;
@@ -213,6 +234,8 @@ export const CHIP_COLORS: Record<FilterChipType, string> = {
 	originalSong: "badge-secondary", // 原曲関連
 	artist: "badge-accent", // アーティスト関連
 	circle: "badge-primary", // サークル関連
+	genre: "badge-success", // ジャンル関連
+	tag: "badge-warning", // タグ関連
 	roleCount: "badge-warning",
 	songCount: "badge-ghost",
 	date: "badge-info",
@@ -241,6 +264,8 @@ export const DEFAULT_FILTERS: AdvancedSearchFilters = {
 	originalSongs: [],
 	artists: [],
 	circles: [],
+	genres: [],
+	tags: [],
 	roleCounts: DEFAULT_ROLE_COUNTS,
 	songCount: "any",
 	dateRange: {},
@@ -253,6 +278,8 @@ export const DEFAULT_SECTION_STATE: FilterSectionState = {
 	originalSongs: true, // デフォルト展開
 	artists: false,
 	circles: false,
+	genres: false,
+	tags: false,
 	roleCounts: false,
 	songCount: false,
 	dateRange: false,

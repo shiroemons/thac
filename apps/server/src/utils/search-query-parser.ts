@@ -34,12 +34,16 @@ export interface ParsedSearchQuery {
 		circleNames?: string[];
 		composerNames?: string[];
 		originalSongNames?: string[];
+		genreNames?: string[];
+		tagNames?: string[];
 		releaseYear?: FilterValue;
 		originalSongCount?: FilterValue;
 		vocalistCount?: FilterValue;
 		arrangerCount?: FilterValue;
 		lyricistCount?: FilterValue;
 		composerCount?: FilterValue;
+		genreCount?: FilterValue;
+		tagCount?: FilterValue;
 		eventName?: string;
 		releaseDate?: RangeFilterValue | FilterValue;
 	};
@@ -97,6 +101,10 @@ const FILTER_KEY_MAP: Record<
 		isArray: false,
 		isDate: true,
 	},
+	genre: { property: "genreNames", isNumeric: false, isArray: true },
+	tag: { property: "tagNames", isNumeric: false, isArray: true },
+	genrecount: { property: "genreCount", isNumeric: true, isArray: false },
+	tagcount: { property: "tagCount", isNumeric: true, isArray: false },
 };
 
 /**
@@ -233,6 +241,45 @@ export function parseSearchQuery(query: string): ParsedSearchQuery {
 			continue;
 		}
 
+		// #tag構文をチェック
+		if (normalizedQuery[i] === "#") {
+			const tagStartIndex = i + 1;
+			let tagValue: string;
+			let tagEndIndex: number;
+
+			// クォートされたタグ名を処理（#"タグ名" または #'タグ名'）
+			if (
+				normalizedQuery[tagStartIndex] === '"' ||
+				normalizedQuery[tagStartIndex] === "'"
+			) {
+				const quoted = extractQuotedValue(normalizedQuery, tagStartIndex);
+				if (quoted) {
+					tagValue = quoted.value;
+					tagEndIndex = quoted.endIndex;
+				} else {
+					// フォールバック
+					const unquoted = extractUnquotedValue(normalizedQuery, tagStartIndex);
+					tagValue = unquoted.value;
+					tagEndIndex = unquoted.endIndex;
+				}
+			} else {
+				// 非クォートのタグ名
+				const unquoted = extractUnquotedValue(normalizedQuery, tagStartIndex);
+				tagValue = unquoted.value;
+				tagEndIndex = unquoted.endIndex;
+			}
+
+			// タグ名が空でない場合のみ追加
+			if (tagValue.length > 0) {
+				const currentTags = result.filters.tagNames ?? [];
+				currentTags.push(tagValue);
+				result.filters.tagNames = currentTags;
+			}
+
+			i = tagEndIndex;
+			continue;
+		}
+
 		// フィルターキーを探す
 		let foundFilter = false;
 		for (const [key, config] of Object.entries(FILTER_KEY_MAP)) {
@@ -313,7 +360,9 @@ export function parseSearchQuery(query: string): ParsedSearchQuery {
 						| "lyricistNames"
 						| "circleNames"
 						| "composerNames"
-						| "originalSongNames";
+						| "originalSongNames"
+						| "genreNames"
+						| "tagNames";
 					const currentArray = result.filters[arrayProp] ?? [];
 					currentArray.push(extractedValue);
 					result.filters[arrayProp] = currentArray;
@@ -380,6 +429,8 @@ export function buildMeilisearchFilter(
 		{ key: "circleNames", values: filters.circleNames },
 		{ key: "composerNames", values: filters.composerNames },
 		{ key: "originalSongNames", values: filters.originalSongNames },
+		{ key: "genreNames", values: filters.genreNames },
+		{ key: "tagNames", values: filters.tagNames },
 	];
 
 	for (const { key, values } of arrayFilters) {
@@ -403,6 +454,8 @@ export function buildMeilisearchFilter(
 		{ key: "arrangerCount", filter: filters.arrangerCount },
 		{ key: "lyricistCount", filter: filters.lyricistCount },
 		{ key: "composerCount", filter: filters.composerCount },
+		{ key: "genreCount", filter: filters.genreCount },
+		{ key: "tagCount", filter: filters.tagCount },
 	];
 
 	for (const { key, filter } of numericFilters) {
