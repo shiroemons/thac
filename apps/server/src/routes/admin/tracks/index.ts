@@ -490,6 +490,17 @@ tracksAdminRouter.delete("/batch", async (c) => {
 			}
 		}
 
+		// Meilisearchから削除されたトラックを削除
+		if (deleted.length > 0) {
+			try {
+				const { TRACKS_INDEX_NAME } = await import("@thac/search");
+				await getIndexQueue().deleteDocuments(TRACKS_INDEX_NAME, deleted);
+				await getIndexQueue().flush();
+			} catch (err) {
+				console.error("[Tracks] Failed to delete from Meilisearch:", err);
+			}
+		}
+
 		return c.json({
 			success: failed.length === 0,
 			deleted,

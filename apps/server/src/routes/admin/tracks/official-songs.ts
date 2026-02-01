@@ -9,6 +9,7 @@ import {
 	tracks,
 	updateTrackOfficialSongSchema,
 } from "@thac/db";
+import { getIndexQueue, queueTrackIndexing } from "@thac/search";
 import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
@@ -156,6 +157,14 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 			.values(parsed.data)
 			.returning();
 
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
+
 		return c.json(result[0], 201);
 	} catch (error) {
 		return handleDbError(
@@ -242,6 +251,14 @@ trackOfficialSongsRouter.put("/:trackId/official-songs/:id", async (c) => {
 			.where(eq(trackOfficialSongs.id, id))
 			.returning();
 
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
+
 		return c.json(result[0]);
 	} catch (error) {
 		return handleDbError(
@@ -276,6 +293,14 @@ trackOfficialSongsRouter.delete("/:trackId/official-songs/:id", async (c) => {
 
 		// 削除
 		await db.delete(trackOfficialSongs).where(eq(trackOfficialSongs.id, id));
+
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
 
 		return c.json({ success: true, id });
 	} catch (error) {
@@ -345,6 +370,14 @@ trackOfficialSongsRouter.patch(
 				)
 				.where(eq(trackOfficialSongs.trackId, trackId))
 				.orderBy(trackOfficialSongs.partPosition);
+
+			// Meilisearchへ即時同期
+			try {
+				await queueTrackIndexing(trackId);
+				await getIndexQueue().flush();
+			} catch (err) {
+				console.error("[Tracks] Failed to sync to Meilisearch:", err);
+			}
 
 			return c.json(
 				updatedRelations.map((row) => ({

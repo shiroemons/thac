@@ -8,6 +8,7 @@ import {
 	tracks,
 	updateTrackPublicationSchema,
 } from "@thac/db";
+import { getIndexQueue, queueTrackIndexing } from "@thac/search";
 import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
@@ -123,6 +124,14 @@ trackPublicationsRouter.post("/:trackId/publications", async (c) => {
 			.values(parsed.data)
 			.returning();
 
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
+
 		return c.json(result[0], 201);
 	} catch (error) {
 		return handleDbError(c, error, "POST /admin/tracks/:trackId/publications");
@@ -184,6 +193,14 @@ trackPublicationsRouter.put("/:trackId/publications/:id", async (c) => {
 			.where(eq(trackPublications.id, id))
 			.returning();
 
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
+
 		return c.json(result[0]);
 	} catch (error) {
 		return handleDbError(
@@ -218,6 +235,14 @@ trackPublicationsRouter.delete("/:trackId/publications/:id", async (c) => {
 
 		// 削除
 		await db.delete(trackPublications).where(eq(trackPublications.id, id));
+
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
 
 		return c.json({ success: true, id });
 	} catch (error) {
