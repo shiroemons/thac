@@ -583,10 +583,13 @@ tracksAdminRouter.put("/:trackId/genres", async (c) => {
 			return updatedGenres;
 		});
 
-		// Meilisearchへの同期をキューに追加
-		queueTrackIndexing(trackId).catch((err) => {
-			console.error("[Tracks] Failed to queue indexing:", err);
-		});
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
 
 		return c.json({
 			trackId,
@@ -769,10 +772,13 @@ tracksAdminRouter.put("/:trackId/tags", async (c) => {
 			return updatedTags;
 		});
 
-		// Meilisearchへの同期をキューに追加
-		queueTrackIndexing(trackId).catch((err) => {
-			console.error("[Tracks] Failed to queue indexing:", err);
-		});
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
 
 		return c.json({
 			trackId,
@@ -817,10 +823,13 @@ tracksAdminRouter.put("/:trackId/tags/:tagId/lock", async (c) => {
 			.set({ isLocked: true })
 			.where(and(eq(trackTags.trackId, trackId), eq(trackTags.tagId, tagId)));
 
-		// Meilisearchへの同期をキューに追加
-		queueTrackIndexing(trackId).catch((err) => {
-			console.error("[Tracks] Failed to queue indexing:", err);
-		});
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
 
 		return c.json({
 			trackId,
@@ -871,10 +880,13 @@ tracksAdminRouter.delete("/:trackId/tags/:tagId/lock", async (c) => {
 			.set({ isLocked: false })
 			.where(and(eq(trackTags.trackId, trackId), eq(trackTags.tagId, tagId)));
 
-		// Meilisearchへの同期をキューに追加
-		queueTrackIndexing(trackId).catch((err) => {
-			console.error("[Tracks] Failed to queue indexing:", err);
-		});
+		// Meilisearchへ即時同期
+		try {
+			await queueTrackIndexing(trackId);
+			await getIndexQueue().flush();
+		} catch (err) {
+			console.error("[Tracks] Failed to sync to Meilisearch:", err);
+		}
 
 		return c.json({
 			trackId,
