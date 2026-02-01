@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { TagBadge } from "./tag-badge";
 
 interface TagItem {
-	tagId: string;
 	name: string;
 	isLocked?: boolean;
 }
@@ -49,7 +48,7 @@ function TagInput({
 	const remainingCount = maxTags - value.length;
 	const isMaxReached = remainingCount <= 0;
 
-	// 既存タグの検索
+	// 既存タグの検索（サジェスト用）
 	const { data: tagsData, isFetching } = useQuery({
 		queryKey: ["tags", { search: debouncedSearch, limit: 10 }],
 		queryFn: () => tagsApi.list({ search: debouncedSearch, limit: 10 }),
@@ -57,17 +56,19 @@ function TagInput({
 		enabled: isOpen && debouncedSearch.length > 0,
 	});
 
-	// 選択済みタグIDのSet
-	const selectedTagIds = useMemo(
-		() => new Set(value.map((t) => t.tagId)),
+	// 選択済みタグ名のSet（大文字小文字区別なし）
+	const selectedTagNames = useMemo(
+		() => new Set(value.map((t) => t.name.toLowerCase())),
 		[value],
 	);
 
 	// 選択可能なタグ（選択済みを除外）
 	const availableOptions = useMemo(() => {
 		if (!tagsData?.data) return [];
-		return tagsData.data.filter((t) => !selectedTagIds.has(t.id));
-	}, [tagsData?.data, selectedTagIds]);
+		return tagsData.data.filter(
+			(t) => !selectedTagNames.has(t.name.toLowerCase()),
+		);
+	}, [tagsData?.data, selectedTagNames]);
 
 	// 入力値が既存タグと一致するかチェック（大文字小文字区別なし）
 	const isExactMatch = useMemo(() => {
@@ -104,10 +105,10 @@ function TagInput({
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
 
-	// 既存タグを選択
+	// 既存タグを選択（サジェストから選択）
 	const handleSelectTag = (tag: { id: string; name: string }) => {
-		if (isMaxReached || selectedTagIds.has(tag.id)) return;
-		onChange([...value, { tagId: tag.id, name: tag.name }]);
+		if (isMaxReached || selectedTagNames.has(tag.name.toLowerCase())) return;
+		onChange([...value, { name: tag.name }]);
 		setSearch("");
 		inputRef.current?.focus();
 		// 最大件数に達したら閉じる
@@ -116,43 +117,32 @@ function TagInput({
 		}
 	};
 
-	// 新規タグを作成
-	const handleCreateTag = async () => {
+	// 新規タグを追加（名前のみ）
+	const handleAddTag = () => {
 		if (isMaxReached || !search.trim() || isDuplicate) return;
 
 		const trimmedName = search.trim();
 
-		// 既存タグと一致する場合はそれを選択
+		// 既存タグと一致する場合はその名前を使用
 		const existingTag = tagsData?.data?.find(
 			(t) => t.name.toLowerCase() === trimmedName.toLowerCase(),
 		);
 
-		if (existingTag) {
-			handleSelectTag(existingTag);
-			return;
-		}
-
-		try {
-			// 新規タグを作成
-			const newTag = await tagsApi.create({ name: trimmedName });
-			onChange([...value, { tagId: newTag.id, name: newTag.name }]);
-			setSearch("");
-			inputRef.current?.focus();
-			// 最大件数に達したら閉じる
-			if (remainingCount === 1) {
-				setIsOpen(false);
-			}
-		} catch (error) {
-			console.error("Failed to create tag:", error);
+		onChange([...value, { name: existingTag?.name ?? trimmedName }]);
+		setSearch("");
+		inputRef.current?.focus();
+		// 最大件数に達したら閉じる
+		if (remainingCount === 1) {
+			setIsOpen(false);
 		}
 	};
 
 	// タグを削除
-	const handleRemoveTag = (tagId: string) => {
-		const tag = value.find((t) => t.tagId === tagId);
+	const handleRemoveTag = (tagName: string) => {
+		const tag = value.find((t) => t.name === tagName);
 		// ロックされたタグは削除不可
 		if (tag?.isLocked) return;
-		onChange(value.filter((t) => t.tagId !== tagId));
+		onChange(value.filter((t) => t.name !== tagName));
 	};
 
 	// キーボードイベント
@@ -163,18 +153,18 @@ function TagInput({
 		if (e.key === "Enter") {
 			e.preventDefault();
 			if (search.trim()) {
-				handleCreateTag();
+				handleAddTag();
 			}
 		} else if (e.key === ",") {
 			e.preventDefault();
 			if (search.trim()) {
-				handleCreateTag();
+				handleAddTag();
 			}
 		} else if (e.key === "Backspace" && !search) {
 			// 最後のロックされていないタグを削除
 			const lastUnlockedTag = [...value].reverse().find((t) => !t.isLocked);
 			if (lastUnlockedTag) {
-				handleRemoveTag(lastUnlockedTag.tagId);
+				handleRemoveTag(lastUnlockedTag.name);
 			}
 		} else if (e.key === "Escape") {
 			setIsOpen(false);
@@ -211,13 +201,13 @@ function TagInput({
 				{/* 選択済みのバッジ */}
 				{value.map((tag) => (
 					<TagBadge
-						key={tag.tagId}
+						key={tag.name}
 						name={tag.name}
 						isLocked={tag.isLocked}
 						onRemove={
 							disabled || tag.isLocked
 								? undefined
-								: () => handleRemoveTag(tag.tagId)
+								: () => handleRemoveTag(tag.name)
 						}
 					/>
 				))}
@@ -300,11 +290,11 @@ function TagInput({
 							</button>
 						))}
 
-						{/* 新規タグ作成オプション */}
+						{/* 新規タグ追加オプション */}
 						{search.trim() && !isDuplicate && !isExactMatch && (
 							<button
 								type="button"
-								onClick={handleCreateTag}
+								onClick={handleAddTag}
 								className="flex w-full items-center gap-3 border-base-300 border-t px-4 py-2 text-left transition-colors hover:bg-base-200"
 							>
 								<Hash className="h-4 w-4 text-primary" />
@@ -313,7 +303,7 @@ function TagInput({
 										&quot;{search.trim()}&quot;
 									</span>
 									<span className="ml-2 text-base-content/60 text-sm">
-										を新規作成
+										を追加
 									</span>
 								</span>
 							</button>
@@ -341,7 +331,7 @@ function TagInput({
 						{!debouncedSearch && availableOptions.length === 0 && (
 							<div className="flex items-center gap-2 px-4 py-4 text-center text-base-content/50 text-sm">
 								<Search className="h-4 w-4" />
-								タグ名を入力して検索または新規作成
+								タグ名を入力して検索または追加
 							</div>
 						)}
 					</div>

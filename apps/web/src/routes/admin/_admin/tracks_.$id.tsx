@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/dialog";
 import { EnhancedTrackSelect } from "@/components/ui/enhanced-track-select";
 import { GenreBadge } from "@/components/ui/genre-badge";
+import { GenreMultiSelect } from "@/components/ui/genre-multi-select";
+import type { Genre } from "@/components/ui/genre-multi-select";
 import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,10 +46,13 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { TagBadge } from "@/components/ui/tag-badge";
+import { TagInput } from "@/components/ui/tag-input";
 import {
 	artistAliasesApi,
 	artistsApi,
 	creditRolesApi,
+	genresApi,
 	officialSongsApi,
 	platformsApi,
 	type TrackCredit,
@@ -60,6 +65,7 @@ import {
 	trackOfficialSongsApi,
 	trackPublicationsApi,
 	tracksApi,
+	trackTagsApi,
 } from "@/lib/api-client";
 import {
 	OFFICIAL_WORK_CATEGORY_LABELS,
@@ -121,6 +127,14 @@ function TrackDetailPage() {
 
 	// 編集ダイアログ
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+	// ジャンル・タグインライン編集状態
+	const [isGenreEditing, setIsGenreEditing] = useState(false);
+	const [isTagEditing, setIsTagEditing] = useState(false);
+	const [editingGenreCodes, setEditingGenreCodes] = useState<string[]>([]);
+	const [editingTags, setEditingTags] = useState<
+		Array<{ name: string; isLocked?: boolean }>
+	>([]);
 
 	// === Mutation Hooks ===
 	// クレジット
@@ -293,6 +307,52 @@ function TrackDetailPage() {
 		queryKey: ["track-isrcs", trackId],
 		queryFn: () => trackIsrcsApi.list(trackId),
 		staleTime: 30_000,
+	});
+
+	// トラックタグ一覧
+	const { data: trackTags } = useQuery({
+		queryKey: ["track-tags", trackId],
+		queryFn: () => trackTagsApi.list(trackId),
+		staleTime: 30_000,
+	});
+
+	// ジャンルマスター
+	const { data: genresData } = useQuery({
+		queryKey: ["genres", { limit: 100 }],
+		queryFn: () => genresApi.list({ limit: 100 }),
+		staleTime: 60_000,
+	});
+
+	// ジャンルオプションを構築
+	const genreOptions: Genre[] = useMemo(() => {
+		return (genresData?.data ?? []).map((g) => ({
+			code: g.code,
+			nameJa: g.nameJa,
+			nameEn: g.nameEn,
+			color: g.color,
+			icon: g.icon ?? undefined,
+		}));
+	}, [genresData?.data]);
+
+	// ジャンル更新mutation
+	const genreUpdateMutation = useMutation({
+		mutationFn: (genreCodes: string[]) =>
+			genresApi.updateTrackGenres(trackId, genreCodes),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["track", trackId] });
+			setIsGenreEditing(false);
+		},
+	});
+
+	// タグ更新mutation（タグ名ベース）
+	const tagUpdateMutation = useMutation({
+		mutationFn: (tags: Array<{ name: string; isLocked?: boolean }>) =>
+			trackTagsApi.update(trackId, tags),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["track", trackId] });
+			queryClient.invalidateQueries({ queryKey: ["track-tags", trackId] });
+			setIsTagEditing(false);
+		},
 	});
 
 	// 公式楽曲マスター（全件取得）
@@ -1052,13 +1112,71 @@ function TrackDetailPage() {
 							</div>
 						</div>
 
-						{/* ジャンル */}
-						{track.genres && track.genres.length > 0 && (
-							<div className="border-base-300 border-t pt-4">
+						{/* ジャンル（インライン編集対応） */}
+						<div className="border-base-300 border-t pt-4">
+							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-1.5 text-base-content/70">
 									<Tag className="h-3.5 w-3.5" />
 									<p className="text-sm">ジャンル</p>
 								</div>
+								{!isGenreEditing && (
+									<Button
+										variant="ghost"
+										size="sm"
+										className="gap-1"
+										onClick={() => {
+											setEditingGenreCodes(
+												(track.genres ?? [])
+													.sort((a, b) => a.position - b.position)
+													.map((g) => g.code),
+											);
+											setIsGenreEditing(true);
+										}}
+									>
+										<Pencil className="h-3.5 w-3.5" />
+										編集
+									</Button>
+								)}
+							</div>
+							{isGenreEditing ? (
+								<div className="mt-2.5 space-y-3">
+									<GenreMultiSelect
+										value={editingGenreCodes}
+										onChange={setEditingGenreCodes}
+										options={genreOptions}
+										maxItems={5}
+										placeholder="ジャンルを選択..."
+									/>
+									{genreUpdateMutation.error && (
+										<div className="rounded-lg bg-error p-3 text-error-content text-sm">
+											{getErrorMessage(genreUpdateMutation.error)}
+										</div>
+									)}
+									<div className="flex justify-end gap-2">
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() => {
+												setIsGenreEditing(false);
+												genreUpdateMutation.reset();
+											}}
+											disabled={genreUpdateMutation.isPending}
+										>
+											キャンセル
+										</Button>
+										<Button
+											variant="primary"
+											size="sm"
+											onClick={() =>
+												genreUpdateMutation.mutate(editingGenreCodes)
+											}
+											disabled={genreUpdateMutation.isPending}
+										>
+											{genreUpdateMutation.isPending ? "保存中..." : "保存"}
+										</Button>
+									</div>
+								</div>
+							) : track.genres && track.genres.length > 0 ? (
 								<div className="mt-2.5 flex flex-wrap gap-2.5 rounded-lg bg-base-200/50 p-3">
 									{track.genres
 										.sort((a, b) => a.position - b.position)
@@ -1073,8 +1191,98 @@ function TrackDetailPage() {
 											/>
 										))}
 								</div>
+							) : (
+								<p className="mt-2.5 text-base-content/50 text-sm">
+									ジャンルが設定されていません
+								</p>
+							)}
+						</div>
+
+						{/* タグ（インライン編集対応） */}
+						<div className="border-base-300 border-t pt-4">
+							<div className="flex items-center justify-between">
+								<div className="flex items-center gap-1.5 text-base-content/70">
+									<Tag className="h-3.5 w-3.5" />
+									<p className="text-sm">タグ</p>
+								</div>
+								{!isTagEditing && (
+									<Button
+										variant="ghost"
+										size="sm"
+										className="gap-1"
+										onClick={() => {
+											setEditingTags(
+												(trackTags ?? []).map((t) => ({
+													name: t.name,
+													isLocked: t.isLocked,
+												})),
+											);
+											setIsTagEditing(true);
+										}}
+									>
+										<Pencil className="h-3.5 w-3.5" />
+										編集
+									</Button>
+								)}
 							</div>
-						)}
+							{isTagEditing ? (
+								<div className="mt-2.5 space-y-3">
+									<TagInput
+										value={editingTags}
+										onChange={setEditingTags}
+										maxTags={15}
+										placeholder="タグを入力..."
+									/>
+									{tagUpdateMutation.error && (
+										<div className="rounded-lg bg-error p-3 text-error-content text-sm">
+											{getErrorMessage(tagUpdateMutation.error)}
+										</div>
+									)}
+									<div className="flex justify-end gap-2">
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() => {
+												setIsTagEditing(false);
+												tagUpdateMutation.reset();
+											}}
+											disabled={tagUpdateMutation.isPending}
+										>
+											キャンセル
+										</Button>
+										<Button
+											variant="primary"
+											size="sm"
+											onClick={() =>
+												tagUpdateMutation.mutate(
+													editingTags.map((tag) => ({
+														name: tag.name,
+														isLocked: tag.isLocked,
+													})),
+												)
+											}
+											disabled={tagUpdateMutation.isPending}
+										>
+											{tagUpdateMutation.isPending ? "保存中..." : "保存"}
+										</Button>
+									</div>
+								</div>
+							) : trackTags && trackTags.length > 0 ? (
+								<div className="mt-2.5 flex flex-wrap gap-2 rounded-lg bg-base-200/50 p-3">
+									{trackTags.map((tag) => (
+										<TagBadge
+											key={tag.tagId}
+											name={tag.name}
+											isLocked={tag.isLocked}
+										/>
+									))}
+								</div>
+							) : (
+								<p className="mt-2.5 text-base-content/50 text-sm">
+									タグが設定されていません
+								</p>
+							)}
+						</div>
 
 						<div className="border-base-300 border-t pt-4">
 							<p className="text-base-content/70 text-sm">ID</p>

@@ -187,6 +187,15 @@ async function fetchWithAuth<T>(
 			throw new ConflictError(errorData.error, errorData.current);
 		}
 
+		// 409 Conflict（既存タグ）の場合はexistingTagを含むエラーをthrow
+		if (res.status === 409 && errorData.existingTag) {
+			const error = new Error(errorData.error || "既に存在します") as Error & {
+				existingTag: { id: string; name: string };
+			};
+			error.existingTag = errorData.existingTag;
+			throw error;
+		}
+
 		throw new Error(errorData.error || `HTTP ${res.status}`);
 	}
 
@@ -3000,8 +3009,7 @@ export const trackTagsApi = {
 	update: (
 		trackId: string,
 		tags: Array<{
-			tagId: string;
-			position: number;
+			name: string;
 			isLocked?: boolean;
 		}>,
 	) =>
