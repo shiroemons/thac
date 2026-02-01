@@ -334,6 +334,10 @@ export function ArtistAliasEditDialog({
 								onChange={(e) => handleNameChange(e.target.value)}
 								placeholder="例: ZUN"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -391,6 +395,10 @@ export function ArtistAliasEditDialog({
 										setForm({ ...form, periodFrom: e.target.value || null })
 									}
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -403,6 +411,10 @@ export function ArtistAliasEditDialog({
 										setForm({ ...form, periodTo: e.target.value || null })
 									}
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -460,6 +472,10 @@ export function ArtistAliasEditDialog({
 								}}
 								placeholder="例: ZUN"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -475,6 +491,10 @@ export function ArtistAliasEditDialog({
 										})
 									}
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -489,6 +509,10 @@ export function ArtistAliasEditDialog({
 										})
 									}
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -504,6 +528,10 @@ export function ArtistAliasEditDialog({
 									})
 								}
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 					</div>

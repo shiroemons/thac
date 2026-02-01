@@ -276,6 +276,10 @@ export function ArtistEditDialog({
 								onChange={(e) => handleNameChange(e.target.value)}
 								placeholder="例: ZUN"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-4">
@@ -289,6 +293,10 @@ export function ArtistEditDialog({
 									}
 									placeholder="例: ZUN"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -301,6 +309,10 @@ export function ArtistEditDialog({
 									}
 									placeholder="例: ZUN"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -314,6 +326,10 @@ export function ArtistEditDialog({
 								}
 								placeholder="例: ZUN"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-2">

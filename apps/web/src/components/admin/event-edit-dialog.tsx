@@ -315,6 +315,10 @@ export function EventEditDialog({
 								onChange={(e) => handleNameChange(e.target.value)}
 								placeholder="例: 博麗神社例大祭21"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -360,6 +364,10 @@ export function EventEditDialog({
 									}
 									placeholder="例: 21"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -372,6 +380,10 @@ export function EventEditDialog({
 									}
 									placeholder="例: 東京ビッグサイト"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -386,6 +398,10 @@ export function EventEditDialog({
 										setForm({ ...form, startDate: e.target.value || null })
 									}
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -398,6 +414,10 @@ export function EventEditDialog({
 										setForm({ ...form, endDate: e.target.value || null })
 									}
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -444,6 +464,10 @@ export function EventEditDialog({
 								onChange={(e) => setNewSeriesName(e.target.value)}
 								placeholder="例: 博麗神社例大祭"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 					</div>

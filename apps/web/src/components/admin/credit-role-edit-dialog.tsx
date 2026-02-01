@@ -184,6 +184,10 @@ export function CreditRoleEditDialog({
 								onChange={(e) => setForm({ ...form, code: e.target.value })}
 								placeholder="例: composer"
 								disabled={isPending || mode === "edit"}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 							{mode === "edit" && (
 								<p className="text-muted-foreground text-sm">
@@ -201,6 +205,10 @@ export function CreditRoleEditDialog({
 								onChange={(e) => setForm({ ...form, label: e.target.value })}
 								placeholder="例: 作曲"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-2">

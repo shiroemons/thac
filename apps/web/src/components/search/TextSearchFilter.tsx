@@ -40,6 +40,10 @@ function InputField({
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={placeholder}
 				className="input input-sm input-bordered w-full"
+				autoComplete="off"
+				data-1p-ignore
+				data-lpignore="true"
+				data-form-type="other"
 			/>
 		</div>
 	);

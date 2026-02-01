@@ -181,6 +181,10 @@ export function AliasTypeEditDialog({
 								onChange={(e) => setForm({ ...form, code: e.target.value })}
 								placeholder="例: romanization"
 								disabled={isPending || mode === "edit"}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 							{mode === "edit" && (
 								<p className="text-muted-foreground text-sm">
@@ -198,6 +202,10 @@ export function AliasTypeEditDialog({
 								onChange={(e) => setForm({ ...form, label: e.target.value })}
 								placeholder="例: ローマ字表記"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-2">

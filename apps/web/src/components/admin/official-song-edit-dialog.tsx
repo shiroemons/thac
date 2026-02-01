@@ -399,6 +399,10 @@ export function OfficialSongEditDialog({
 								value={form.id}
 								disabled
 								className="font-mono"
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -422,6 +426,10 @@ export function OfficialSongEditDialog({
 								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: A Sacred Lot"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -435,6 +443,10 @@ export function OfficialSongEditDialog({
 									onChange={(e) => setForm({ ...form, nameJa: e.target.value })}
 									placeholder="例: A Sacred Lot"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -447,6 +459,10 @@ export function OfficialSongEditDialog({
 									}
 									placeholder="例: A Sacred Lot"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -467,6 +483,10 @@ export function OfficialSongEditDialog({
 									}
 									placeholder="例: 1"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -517,6 +537,10 @@ export function OfficialSongEditDialog({
 									}
 									placeholder="例: ZUN"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -529,6 +553,10 @@ export function OfficialSongEditDialog({
 									}
 									placeholder="例: ZUN"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>

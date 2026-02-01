@@ -251,6 +251,10 @@ export function ReleaseEditDialog({
 										setEditForm({ ...editForm, name: e.target.value })
 									}
 									placeholder="例: 東方紅魔郷オリジナルサウンドトラック"
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -262,6 +266,10 @@ export function ReleaseEditDialog({
 										setEditForm({ ...editForm, nameJa: e.target.value })
 									}
 									placeholder="例: 東方紅魔郷"
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -273,6 +281,10 @@ export function ReleaseEditDialog({
 										setEditForm({ ...editForm, nameEn: e.target.value })
 									}
 									placeholder="例: Touhou Koumakyou"
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -354,6 +366,10 @@ export function ReleaseEditDialog({
 										setEditForm({ ...editForm, releaseDate: e.target.value })
 									}
 									disabled={!!editForm.eventDayId}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">

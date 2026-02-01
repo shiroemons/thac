@@ -357,6 +357,9 @@ export function GenreEditDialog({
 								placeholder="例: rock"
 								disabled={isPending || mode === "edit"}
 								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 							{mode === "edit" ? (
 								<p className="text-muted-foreground text-sm">
@@ -386,6 +389,9 @@ export function GenreEditDialog({
 									placeholder="例: ロック"
 									disabled={isPending}
 									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -399,6 +405,9 @@ export function GenreEditDialog({
 									placeholder="例: Rock"
 									disabled={isPending}
 									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -416,6 +425,9 @@ export function GenreEditDialog({
 									placeholder="#RRGGBB"
 									disabled={isPending}
 									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 									className="flex-1"
 								/>
 								<input
@@ -457,6 +469,9 @@ export function GenreEditDialog({
 									placeholder="例: music"
 									disabled={isPending}
 									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 									className="flex-1"
 								/>
 								{IconComponent && (
@@ -510,6 +525,9 @@ export function GenreEditDialog({
 								placeholder="例: ギター・ドラム中心のエネルギッシュなサウンド"
 								disabled={isPending}
 								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 					</DialogBody>

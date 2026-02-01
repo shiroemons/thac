@@ -276,6 +276,10 @@ export function CircleEditDialog({
 								onChange={(e) => handleNameChange(e.target.value)}
 								placeholder="例: 上海アリス幻樂団"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-4">
@@ -289,6 +293,10 @@ export function CircleEditDialog({
 									}
 									placeholder="例: 上海アリス幻樂団"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -301,6 +309,10 @@ export function CircleEditDialog({
 									}
 									placeholder="例: Team Shanghai Alice"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -314,6 +326,10 @@ export function CircleEditDialog({
 								}
 								placeholder="例: 上海アリス幻樂団"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-2">

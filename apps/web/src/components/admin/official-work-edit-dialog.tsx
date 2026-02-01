@@ -395,6 +395,10 @@ export function OfficialWorkEditDialog({
 									value={form.id}
 									disabled
 									className="font-mono"
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -408,6 +412,10 @@ export function OfficialWorkEditDialog({
 								onChange={(e) => setForm({ ...form, name: e.target.value })}
 								placeholder="例: Touhou Koumakyou"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid grid-cols-2 gap-4">
@@ -421,6 +429,10 @@ export function OfficialWorkEditDialog({
 									onChange={(e) => setForm({ ...form, nameJa: e.target.value })}
 									placeholder="例: 東方紅魔郷"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -433,6 +445,10 @@ export function OfficialWorkEditDialog({
 									}
 									placeholder="例: Embodiment of Scarlet Devil"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -449,6 +465,10 @@ export function OfficialWorkEditDialog({
 									}
 									placeholder="例: 紅"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -463,6 +483,10 @@ export function OfficialWorkEditDialog({
 									}
 									placeholder="例: EoSD"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -485,6 +509,10 @@ export function OfficialWorkEditDialog({
 									}
 									placeholder="例: 6"
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 							<div className="grid gap-2">
@@ -497,6 +525,10 @@ export function OfficialWorkEditDialog({
 										setForm({ ...form, releaseDate: e.target.value || null })
 									}
 									disabled={isPending}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
 								/>
 							</div>
 						</div>
@@ -515,6 +547,10 @@ export function OfficialWorkEditDialog({
 								}
 								placeholder="例: 上海アリス幻樂団"
 								disabled={isPending}
+								autoComplete="off"
+								data-1p-ignore
+								data-lpignore="true"
+								data-form-type="other"
 							/>
 						</div>
 						<div className="grid gap-2">
