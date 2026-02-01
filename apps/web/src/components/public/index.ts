@@ -92,6 +92,13 @@ export {
 } from "./stats-card-grid";
 export { StatsCards } from "./stats-cards";
 export { StatsPlaceholder } from "./stats-placeholder";
+export { TagBadge, type TagBadgeProps } from "./tag-badge";
+export {
+	type Tag,
+	TagBadgeList,
+	type TagBadgeListProps,
+} from "./tag-badge-list";
+export { TagCloud, type TagCloudProps } from "./tag-cloud";
 export { type ViewMode, ViewToggle } from "./view-toggle";
 export { type StatsEntityType, WorkStatsSection } from "./work-stats-section";
 export { WorkStatsSkeleton } from "./work-stats-skeleton";

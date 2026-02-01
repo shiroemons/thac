@@ -13,6 +13,7 @@ import {
 	GenreBadge,
 	PublicationLinks,
 	PublicBreadcrumb,
+	TagBadgeList,
 } from "@/components/public";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPublicTrackHead } from "@/lib/head";
@@ -149,6 +150,11 @@ function TrackDetailPage() {
 						: []),
 				]}
 			>
+				{/* タグ */}
+				{track.tags && track.tags.length > 0 && (
+					<TagBadgeList tags={track.tags} />
+				)}
+
 				{/* 作品・イベントへのリンク */}
 				<div className="flex flex-wrap gap-2">
 					{track.release && (

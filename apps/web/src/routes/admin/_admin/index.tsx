@@ -5,6 +5,7 @@ import {
 	CircleUser,
 	Disc3,
 	FolderOpen,
+	Hash,
 	Home,
 	Layers,
 	MonitorSmartphone,
@@ -38,7 +39,7 @@ function StatCard({ title, value, icon, href, isLoading }: StatCardProps) {
 					<div className="skeleton h-6 w-12" />
 				) : (
 					<div className="font-bold text-2xl leading-tight">
-						{value?.toLocaleString()}
+						{value !== undefined ? value.toLocaleString() : "-"}
 					</div>
 				)}
 				<div className="text-base-content/70 text-sm">{title}</div>
@@ -161,6 +162,18 @@ function AdminDashboard() {
 			value: data?.officialWorkCategories,
 			icon: <FolderOpen className="h-4 w-4" />,
 			href: "/admin/master/official-work-categories" as const,
+		},
+		{
+			title: "ジャンル",
+			value: data?.genres,
+			icon: <Layers className="h-4 w-4" />,
+			href: "/admin/master/genres" as const,
+		},
+		{
+			title: "タグ",
+			value: data?.tags,
+			icon: <Hash className="h-4 w-4" />,
+			href: "/admin/tags" as const,
 		},
 	];
 

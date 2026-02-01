@@ -13,6 +13,14 @@ export const CACHE_HEADERS = {
 		"Cache-Control": "public, max-age=300, stale-while-revalidate=600",
 	},
 	/**
+	 * 公開一覧ページ用
+	 * - max-age: 2分（120秒）
+	 * - stale-while-revalidate: 5分（300秒）
+	 */
+	PUBLIC_LIST: {
+		"Cache-Control": "public, max-age=120, stale-while-revalidate=300",
+	},
+	/**
 	 * 静的ページ用（about, privacy, stats）
 	 * - max-age: 1時間（3600秒）
 	 * - stale-while-revalidate: 24時間（86400秒）

@@ -8,11 +8,13 @@ import {
 	db,
 	eventSeries,
 	events,
+	genres,
 	officialSongs,
 	officialWorkCategories,
 	officialWorks,
 	platforms,
 	releases,
+	tags,
 	tracks,
 	user,
 } from "@thac/db";
@@ -40,6 +42,8 @@ statsRouter.get("/", async (c) => {
 			eventSeriesResult,
 			releasesResult,
 			tracksResult,
+			genresResult,
+			tagsResult,
 		] = await Promise.all([
 			db.select({ count: count() }).from(user),
 			db.select({ count: count() }).from(platforms),
@@ -55,6 +59,8 @@ statsRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(eventSeries),
 			db.select({ count: count() }).from(releases),
 			db.select({ count: count() }).from(tracks),
+			db.select({ count: count() }).from(genres),
+			db.select({ count: count() }).from(tags),
 		]);
 
 		return c.json({
@@ -72,6 +78,8 @@ statsRouter.get("/", async (c) => {
 			eventSeries: eventSeriesResult[0]?.count ?? 0,
 			releases: releasesResult[0]?.count ?? 0,
 			tracks: tracksResult[0]?.count ?? 0,
+			genres: genresResult[0]?.count ?? 0,
+			tags: tagsResult[0]?.count ?? 0,
 		});
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/stats");

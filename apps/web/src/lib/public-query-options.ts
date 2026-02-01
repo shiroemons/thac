@@ -485,3 +485,42 @@ export const searchTracksQueryOptions = (params: TrackSearchParams) =>
 		staleTime: STALE_TIME_SEARCH,
 		enabled: !!params.q, // クエリが空の場合は実行しない
 	});
+
+// =============================================================================
+// タグ用クエリオプション
+// =============================================================================
+
+/**
+ * タグ一覧のクエリオプション
+ */
+export const publicTagsListQueryOptions = (params?: {
+	page?: number;
+	limit?: number;
+	search?: string;
+}) =>
+	queryOptions({
+		queryKey: ["public", "tags", "list", params],
+		queryFn: () => publicApi.tags.list(params),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+/**
+ * タグ詳細のクエリオプション
+ */
+export const publicTagDetailQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["public", "tags", id],
+		queryFn: () => publicApi.tags.get(id),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+		enabled: !!id,
+	});
+
+/**
+ * タグクラウドのクエリオプション
+ */
+export const publicTagCloudQueryOptions = (limit?: number) =>
+	queryOptions({
+		queryKey: ["public", "tags", "cloud", limit],
+		queryFn: () => publicApi.tags.cloud(limit),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});

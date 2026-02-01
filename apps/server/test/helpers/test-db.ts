@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 // @thac/dbからスキーマをインポート
 import * as dbExports from "@thac/db";
+import { createId } from "@thac/db";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 
 // テーブル定義のみを抽出（関数やオペレータを除外）
@@ -44,6 +45,9 @@ const schema = {
 	trackDerivations: dbExports.trackDerivations,
 	trackIsrcs: dbExports.trackIsrcs,
 	trackGenres: dbExports.trackGenres,
+	// タグ
+	tags: dbExports.tags,
+	trackTags: dbExports.trackTags,
 	// 出版物
 	trackPublications: dbExports.trackPublications,
 	releasePublications: dbExports.releasePublications,
@@ -186,6 +190,37 @@ function createMissingTables(sqlite: Database) {
 			PRIMARY KEY (track_id, genre_code)
 		)
 	`);
+
+	// tags テーブル（マスタデータ）
+	sqlite.run(`
+		CREATE TABLE IF NOT EXISTS tags (
+			id TEXT PRIMARY KEY NOT NULL,
+			name TEXT NOT NULL UNIQUE,
+			attributes TEXT,
+			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+			updated_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
+		)
+	`);
+
+	// track_tags テーブル（中間テーブル）
+	sqlite.run(`
+		CREATE TABLE IF NOT EXISTS track_tags (
+			track_id TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+			tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE RESTRICT,
+			position INTEGER NOT NULL,
+			is_locked INTEGER NOT NULL DEFAULT 0,
+			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+			PRIMARY KEY (track_id, tag_id)
+		)
+	`);
+
+	// track_tags インデックス
+	sqlite.run(`
+		CREATE INDEX IF NOT EXISTS idx_track_tags_track ON track_tags(track_id)
+	`);
+	sqlite.run(`
+		CREATE INDEX IF NOT EXISTS idx_track_tags_tag ON track_tags(tag_id)
+	`);
 }
 
 /**
@@ -247,4 +282,47 @@ export function truncateAllTables(sqlite: Database) {
 	}
 
 	sqlite.run("PRAGMA foreign_keys = ON");
+}
+
+// ============================================================================
+// テスト用タグデータ作成ヘルパー関数
+// ============================================================================
+
+type TestDb = ReturnType<typeof createTestDatabase>["db"];
+
+/**
+ * テスト用タグを作成
+ */
+export async function createTestTag(
+	db: TestDb,
+	data?: Partial<typeof dbExports.tags.$inferInsert>,
+) {
+	const tag = {
+		id: data?.id ?? createId.tag(),
+		name: data?.name ?? `test-tag-${Date.now()}`,
+		attributes: data?.attributes ?? null,
+		createdAt: data?.createdAt ?? new Date(),
+		updatedAt: data?.updatedAt ?? new Date(),
+	};
+	await db.insert(dbExports.tags).values(tag);
+	return tag;
+}
+
+/**
+ * トラックにタグを追加
+ */
+export async function addTagToTrack(
+	db: TestDb,
+	trackId: string,
+	tagId: string,
+	position: number,
+	isLocked = false,
+) {
+	await db.insert(dbExports.trackTags).values({
+		trackId,
+		tagId,
+		position,
+		isLocked,
+		createdAt: new Date(),
+	});
 }

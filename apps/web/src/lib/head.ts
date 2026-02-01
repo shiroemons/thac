@@ -263,6 +263,13 @@ export function createArtistAliasDetailHead(aliasName?: string) {
 	};
 }
 
+export function createTagDetailHead(tagName?: string) {
+	const subtitle = tagName || "読み込み中";
+	return {
+		meta: [{ title: `タグ詳細：${subtitle} | ${APP_NAME}` }],
+	};
+}
+
 // =============================================================================
 // 公開ページ用（OpenGraph対応）
 // =============================================================================
