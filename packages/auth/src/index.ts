@@ -5,6 +5,27 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin } from "better-auth/plugins";
 import { nanoid } from "nanoid";
 
+// OAuth環境変数のチェック（警告のみ）
+const checkOAuthEnv = () => {
+	const oauthVars = [
+		"GOOGLE_CLIENT_ID",
+		"GOOGLE_CLIENT_SECRET",
+		"DISCORD_CLIENT_ID",
+		"DISCORD_CLIENT_SECRET",
+		"GITHUB_CLIENT_ID",
+		"GITHUB_CLIENT_SECRET",
+	];
+
+	const missing = oauthVars.filter((key) => !process.env[key]);
+	if (missing.length > 0) {
+		console.warn(
+			`[auth] OAuth環境変数が未設定です: ${missing.join(", ")}。該当プロバイダは使用できません。`,
+		);
+	}
+};
+
+checkOAuthEnv();
+
 export const auth = betterAuth({
 	database: drizzleAdapter(db, {
 		provider: "sqlite",
@@ -58,7 +79,7 @@ export const auth = betterAuth({
 			generateId: () => nanoid(),
 		},
 		defaultCookieAttributes: {
-			sameSite: "none",
+			sameSite: "lax",
 			secure: true,
 			httpOnly: true,
 		},

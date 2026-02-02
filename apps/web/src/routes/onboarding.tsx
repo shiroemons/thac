@@ -71,7 +71,10 @@ function RouteComponent() {
 		},
 		validators: {
 			onSubmit: z.object({
-				name: z.string().min(1, "ユーザーネームを入力してください"),
+				name: z
+					.string()
+					.min(1, "ユーザーネームを入力してください")
+					.max(20, "20文字以内で入力してください"),
 			}),
 		},
 	});

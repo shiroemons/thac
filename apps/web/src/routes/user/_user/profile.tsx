@@ -13,6 +13,28 @@ export const Route = createFileRoute("/user/_user/profile")({
 	component: ProfilePage,
 });
 
+/**
+ * 画像URLのバリデーション
+ * - 空文字は許可
+ * - HTTPSスキームのみ許可
+ * - 無効なURLはエラー
+ */
+function validateImageUrl(url: string): string | null {
+	if (!url.trim()) {
+		return null; // 空は許可
+	}
+
+	try {
+		const parsed = new URL(url);
+		if (parsed.protocol !== "https:") {
+			return "画像URLはHTTPSのみ使用できます";
+		}
+		return null;
+	} catch {
+		return "有効なURLを入力してください";
+	}
+}
+
 function ProfilePage() {
 	const { user } = Route.useRouteContext();
 	const { data: session, refetch } = authClient.useSession();
@@ -21,14 +43,33 @@ function ProfilePage() {
 
 	const [name, setName] = useState(currentUser.name ?? "");
 	const [image, setImage] = useState(currentUser.image ?? "");
+	const [imageError, setImageError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
+
+	const handleImageChange = (value: string) => {
+		setImage(value);
+		setImageError(validateImageUrl(value));
+	};
+
+	const isValidImageUrl = !imageError && image.trim();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError(null);
 		setSuccess(null);
+
+		// 文字数チェック
+		if (name.trim().length > 20) {
+			setError("名前は20文字以内で入力してください");
+			return;
+		}
+		if (image.trim().length > 500) {
+			setError("画像URLは500文字以内で入力してください");
+			return;
+		}
+
 		setIsSubmitting(true);
 
 		try {
@@ -86,6 +127,7 @@ function ProfilePage() {
 							value={name}
 							onChange={(e) => setName(e.target.value)}
 							placeholder="表示名を入力"
+							maxLength={20}
 							autoComplete="off"
 							data-1p-ignore
 							data-lpignore="true"
@@ -103,20 +145,26 @@ function ProfilePage() {
 							id="image"
 							type="url"
 							value={image}
-							onChange={(e) => setImage(e.target.value)}
+							onChange={(e) => handleImageChange(e.target.value)}
 							placeholder="https://example.com/avatar.png"
+							maxLength={500}
 							autoComplete="off"
 							data-1p-ignore
 							data-lpignore="true"
 							data-form-type="other"
+							className={imageError ? "input-error" : ""}
 						/>
-						<p className="text-base-content/60 text-xs">
-							プロフィール画像のURLを入力してください
-						</p>
+						{imageError ? (
+							<p className="text-error text-xs">{imageError}</p>
+						) : (
+							<p className="text-base-content/60 text-xs">
+								プロフィール画像のURLを入力してください（HTTPSのみ）
+							</p>
+						)}
 					</div>
 
 					{/* Preview */}
-					{image && (
+					{isValidImageUrl && (
 						<div className="space-y-2">
 							<Label>プレビュー</Label>
 							<div className="flex items-center gap-4">
@@ -143,7 +191,7 @@ function ProfilePage() {
 						<Button
 							type="submit"
 							variant="primary"
-							disabled={isSubmitting}
+							disabled={isSubmitting || !!imageError}
 							className="w-full sm:w-auto"
 						>
 							{isSubmitting ? "保存中..." : "保存"}

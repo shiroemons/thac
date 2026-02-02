@@ -8,18 +8,34 @@ import { createPageHead } from "@/lib/head";
 
 /**
  * returnTo パラメータの検証（オープンリダイレクト防止）
+ * - 空文字列は無効
  * - 相対パスのみ許可（/で始まる）
  * - プロトコル相対URL（//example.com）は拒否
+ * - バックスラッシュを含む場合は拒否（WindowsパスやURLエンコード攻撃対策）
+ * - URLデコード後も再チェック
  */
 function isValidReturnTo(url: string): boolean {
-	// 相対パスのみ許可
-	if (!url.startsWith("/")) {
+	// 空文字列は無効
+	if (!url) return false;
+
+	// 相対パスのみ許可（/で始まる）
+	if (!url.startsWith("/")) return false;
+
+	// プロトコル相対URL（//で始まる）は拒否
+	if (url.startsWith("//")) return false;
+
+	// バックスラッシュを含む場合は拒否（WindowsパスやURLエンコード攻撃対策）
+	if (url.includes("\\")) return false;
+
+	// URLデコードして再チェック
+	try {
+		const decoded = decodeURIComponent(url);
+		if (decoded.startsWith("//") || decoded.includes("\\")) return false;
+	} catch {
+		// デコードに失敗した場合は拒否
 		return false;
 	}
-	// プロトコル相対URLは拒否
-	if (url.startsWith("//")) {
-		return false;
-	}
+
 	return true;
 }
 
