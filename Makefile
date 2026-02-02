@@ -1,39 +1,60 @@
-.PHONY: help dev up down logs ps build clean rebuild reset reset-deps prune shell-server shell-web \
-	db-push db-generate db-migrate db-seed db-setup db-studio \
-	check check-types check-local check-types-local test test-local \
-	lint-markuplint lint-markuplint-local \
-	logs-meilisearch shell-meilisearch
+.PHONY: help dev up down ps restart \
+	docker-dev docker-up docker-down docker-logs docker-logs-server docker-logs-web docker-ps docker-restart \
+	build run \
+	docker-clean docker-rebuild docker-reset docker-reset-deps docker-prune docker-shell-server docker-shell-web \
+	db-push db-generate db-migrate db-seed db-setup db-studio db-truncate \
+	docker-db-push docker-db-generate docker-db-migrate docker-db-seed docker-db-setup docker-db-truncate \
+	install check check-types test lint-markuplint
 
 # デフォルトターゲット
 help: ## ヘルプを表示
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 # =============================================================================
-# 開発環境（Docker Compose）
+# 開発環境（devbox）
 # =============================================================================
 
-dev: ## 開発環境を起動（docker compose up）
-	docker compose up
+dev: ## 開発環境を起動（devbox services）
+	devbox services up
 
 up: ## 開発環境をバックグラウンドで起動
-	docker compose up -d
+	devbox services up -b
 
 down: ## 開発環境を停止
+	devbox services stop
+
+ps: ## サービスの状態を表示
+	devbox services ls
+
+restart: ## サービスを再起動
+	devbox services restart
+
+# =============================================================================
+# 開発環境（Docker）
+# =============================================================================
+
+docker-dev: ## 開発環境を起動（Docker）
+	docker compose up
+
+docker-up: ## 開発環境をバックグラウンドで起動（Docker）
+	docker compose up -d
+
+docker-down: ## 開発環境を停止（Docker）
 	docker compose down
 
-logs: ## ログを表示（フォロー）
+docker-logs: ## ログを表示（Docker）
 	docker compose logs -f
 
-logs-server: ## Serverのログを表示
+docker-logs-server: ## Serverのログを表示（Docker）
 	docker compose logs -f server
 
-logs-web: ## Webのログを表示
+docker-logs-web: ## Webのログを表示（Docker）
 	docker compose logs -f web
 
-ps: ## コンテナの状態を表示
+docker-ps: ## コンテナの状態を表示（Docker）
 	docker compose ps
 
-restart: ## コンテナを再起動
+docker-restart: ## コンテナを再起動（Docker）
 	docker compose restart
 
 # =============================================================================
@@ -52,101 +73,102 @@ run: ## 本番用コンテナを実行（要: 環境変数設定）
 		thac
 
 # =============================================================================
-# メンテナンス
+# メンテナンス（Docker）
 # =============================================================================
 
-clean: ## コンテナ・ボリューム・イメージを削除
+docker-clean: ## コンテナ・ボリューム・イメージを削除
 	docker compose down -v --rmi local
 
-rebuild: ## イメージを再ビルドして起動
+docker-rebuild: ## イメージを再ビルドして起動
 	docker compose down
 	docker compose build --no-cache
 	docker compose up -d
 
-reset: ## 完全リセット（ボリューム削除→再ビルド→起動）
+docker-reset: ## 完全リセット（ボリューム削除→再ビルド→起動）
 	docker compose down -v --remove-orphans
 	docker compose build --no-cache
 	docker compose up -d
 
-reset-deps: ## コンテナ内のnode_modulesを再インストール
+docker-reset-deps: ## コンテナ内のnode_modulesを再インストール
 	docker compose exec server rm -rf node_modules
 	docker compose exec web rm -rf node_modules
 	docker compose exec server bun install
 	docker compose exec web bun install
 
-prune: ## Docker不要リソースを削除（キャッシュ・未使用イメージ等）
+docker-prune: ## Docker不要リソースを削除
 	docker system prune -f
 	docker builder prune -f
 
-shell-server: ## Serverコンテナにシェル接続
+docker-shell-server: ## Serverコンテナにシェル接続
 	docker compose exec server sh
 
-shell-web: ## Webコンテナにシェル接続
+docker-shell-web: ## Webコンテナにシェル接続
 	docker compose exec web sh
+
+# =============================================================================
+# データベース（devbox/ローカル）
+# =============================================================================
+
+db-push: ## スキーマをDBにプッシュ
+	bun run db:push
+
+db-generate: ## マイグレーションを生成
+	bun run db:generate
+
+db-migrate: ## マイグレーションを実行
+	bun run db:migrate
+
+db-seed: ## シードデータを投入
+	bun run db:seed
+
+db-setup: ## DBセットアップ（push + seed）
+	bun run db:push
+	bun run db:seed
+
+db-studio: ## Drizzle Studioを起動
+	bun run db:studio
+
+db-truncate: ## マスタデータ・公式作品以外をトランケート
+	bun run db:truncate
 
 # =============================================================================
 # データベース（Docker）
 # =============================================================================
 
-db-push: ## スキーマをDBにプッシュ（Docker）
+docker-db-push: ## スキーマをDBにプッシュ（Docker）
 	docker compose exec server bun run --cwd /app db:push
 
-db-generate: ## マイグレーションを生成（Docker）
+docker-db-generate: ## マイグレーションを生成（Docker）
 	docker compose exec server bun run --cwd /app db:generate
 
-db-migrate: ## マイグレーションを実行（Docker）
+docker-db-migrate: ## マイグレーションを実行（Docker）
 	docker compose exec server bun run --cwd /app db:migrate
 
-db-seed: ## シードデータを投入（Docker）
+docker-db-seed: ## シードデータを投入（Docker）
 	docker compose exec server bun run --cwd /app db:seed
 
-db-setup: ## DBセットアップ（push + seed）（Docker）
+docker-db-setup: ## DBセットアップ（push + seed）（Docker）
 	docker compose exec server bun run --cwd /app db:push
 	docker compose exec server bun run --cwd /app db:seed
 
-db-studio: ## Drizzle Studioを起動（ローカル）
-	bun run db:studio
-
-db-truncate: ## マスタデータ・公式作品以外をトランケート（Docker）
+docker-db-truncate: ## マスタデータ・公式作品以外をトランケート（Docker）
 	docker compose exec server bun run --cwd /app db:truncate
 
 # =============================================================================
 # ユーティリティ
 # =============================================================================
 
-install: ## 依存関係をインストール（ローカル）
+install: ## 依存関係をインストール
 	bun install
 
-check: ## Lint・フォーマットチェック（Docker）
-	docker compose exec server bun run check
-
-check-types: ## 型チェック（Docker）
-	docker compose exec server bun run check-types
-
-check-local: ## Lint・フォーマットチェック（ローカル）
+check: ## Lint・フォーマットチェック
 	bun run check
 
-check-types-local: ## 型チェック（ローカル）
+check-types: ## 型チェック
 	bun run check-types
 
-test: ## テストを実行（Docker）
-	docker compose exec server bun test
-
-test-local: ## テストを実行（ローカル）
+test: ## テストを実行
 	bun test
 
-lint-markuplint: ## Markuplintを実行（Docker）
-	docker compose exec web bun run lint:markuplint
-
-lint-markuplint-local: ## Markuplintを実行（ローカル）
+lint-markuplint: ## Markuplintを実行
 	bun run --cwd apps/web lint:markuplint
-
-# =============================================================================
-# Meilisearch
-# =============================================================================
-
-logs-meilisearch: ## Meilisearchのログを表示
-	docker compose logs -f meilisearch
-
-shell-meilisearch: ## Meilisearchコンテナにシェル接続
-	docker compose exec meilisearch sh
