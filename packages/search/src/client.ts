@@ -2,6 +2,10 @@ import { MeiliSearch } from "meilisearch";
 
 let client: MeiliSearch | null = null;
 
+// Health check cache
+const HEALTH_CHECK_CACHE_TTL_MS = 30_000;
+let healthCache: { isAvailable: boolean; checkedAt: number } | null = null;
+
 /**
  * Get or create Meilisearch client singleton
  */
@@ -36,4 +40,39 @@ export async function checkHealth(): Promise<{
  */
 export function resetClient(): void {
 	client = null;
+}
+
+/**
+ * Check if Meilisearch is available with caching (TTL: 30 seconds)
+ * Logs unavailability message at most once per 30 seconds
+ */
+export async function isMeilisearchAvailable(): Promise<boolean> {
+	const now = Date.now();
+
+	// Check cache
+	if (healthCache && now - healthCache.checkedAt < HEALTH_CHECK_CACHE_TTL_MS) {
+		return healthCache.isAvailable;
+	}
+
+	// Cache miss - check Meilisearch health
+	try {
+		const meili = getMeilisearchClient();
+		await meili.health();
+		healthCache = { isAvailable: true, checkedAt: now };
+		return true;
+	} catch {
+		// Log only when cache is expired or first check
+		console.error(
+			"[Meilisearch] Service unavailable, skipping sync operations",
+		);
+		healthCache = { isAvailable: false, checkedAt: now };
+		return false;
+	}
+}
+
+/**
+ * Reset health cache (useful for testing)
+ */
+export function resetHealthCache(): void {
+	healthCache = null;
 }

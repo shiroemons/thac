@@ -28,7 +28,12 @@ import {
 	tracks,
 	trackTags,
 } from "@thac/db";
-import { getIndexQueue, queueTrackIndexing } from "@thac/search";
+import {
+	flushIndexQueue,
+	getIndexQueue,
+	isMeilisearchAvailable,
+	queueTrackIndexing,
+} from "@thac/search";
 import { Hono } from "hono";
 import { z } from "zod";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
@@ -494,6 +499,9 @@ tracksAdminRouter.delete("/batch", async (c) => {
 		if (deleted.length > 0) {
 			(async () => {
 				try {
+					if (!(await isMeilisearchAvailable())) {
+						return;
+					}
 					const { TRACKS_INDEX_NAME } = await import("@thac/search");
 					const queue = getIndexQueue();
 					queue.deleteDocuments(TRACKS_INDEX_NAME, deleted);
@@ -600,7 +608,7 @@ tracksAdminRouter.put("/:trackId/genres", async (c) => {
 		// Meilisearchへ即時同期
 		try {
 			await queueTrackIndexing(trackId);
-			await getIndexQueue().flush();
+			await flushIndexQueue();
 		} catch (err) {
 			console.error("[Tracks] Failed to sync to Meilisearch:", err);
 		}
@@ -789,7 +797,7 @@ tracksAdminRouter.put("/:trackId/tags", async (c) => {
 		// Meilisearchへ即時同期
 		try {
 			await queueTrackIndexing(trackId);
-			await getIndexQueue().flush();
+			await flushIndexQueue();
 		} catch (err) {
 			console.error("[Tracks] Failed to sync to Meilisearch:", err);
 		}
@@ -840,7 +848,7 @@ tracksAdminRouter.put("/:trackId/tags/:tagId/lock", async (c) => {
 		// Meilisearchへ即時同期
 		try {
 			await queueTrackIndexing(trackId);
-			await getIndexQueue().flush();
+			await flushIndexQueue();
 		} catch (err) {
 			console.error("[Tracks] Failed to sync to Meilisearch:", err);
 		}
@@ -897,7 +905,7 @@ tracksAdminRouter.delete("/:trackId/tags/:tagId/lock", async (c) => {
 		// Meilisearchへ即時同期
 		try {
 			await queueTrackIndexing(trackId);
-			await getIndexQueue().flush();
+			await flushIndexQueue();
 		} catch (err) {
 			console.error("[Tracks] Failed to sync to Meilisearch:", err);
 		}
@@ -935,8 +943,7 @@ tracksAdminRouter.post("/:trackId/sync", async (c) => {
 
 		// 即時同期（キューに追加してすぐにフラッシュ）
 		await queueTrackIndexing(trackId);
-		const queue = getIndexQueue();
-		await queue.flush();
+		await flushIndexQueue();
 
 		return c.json({ success: true });
 	} catch (error) {
