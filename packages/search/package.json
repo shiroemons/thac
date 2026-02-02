@@ -17,7 +17,7 @@
 		"@thac/config": "workspace:*"
 	},
 	"dependencies": {
-		"meilisearch": "^0.49.0",
+		"meilisearch": "^0.55.0",
 		"dotenv": "catalog:",
 		"@thac/db": "workspace:*"
 	}
