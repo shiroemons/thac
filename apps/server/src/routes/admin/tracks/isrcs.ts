@@ -7,7 +7,7 @@ import {
 	tracks,
 	updateTrackIsrcSchema,
 } from "@thac/db";
-import { getIndexQueue, queueTrackIndexing } from "@thac/search";
+import { flushIndexQueue, queueTrackIndexing } from "@thac/search";
 import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
@@ -126,7 +126,7 @@ trackIsrcsRouter.post("/:trackId/isrcs", async (c) => {
 		// Meilisearchへ即時同期
 		try {
 			await queueTrackIndexing(trackId);
-			await getIndexQueue().flush();
+			await flushIndexQueue();
 		} catch (err) {
 			console.error("[Tracks] Failed to sync to Meilisearch:", err);
 		}
@@ -195,7 +195,7 @@ trackIsrcsRouter.put("/:trackId/isrcs/:id", async (c) => {
 		// Meilisearchへ即時同期
 		try {
 			await queueTrackIndexing(trackId);
-			await getIndexQueue().flush();
+			await flushIndexQueue();
 		} catch (err) {
 			console.error("[Tracks] Failed to sync to Meilisearch:", err);
 		}
@@ -229,7 +229,7 @@ trackIsrcsRouter.delete("/:trackId/isrcs/:id", async (c) => {
 		// Meilisearchへ即時同期
 		try {
 			await queueTrackIndexing(trackId);
-			await getIndexQueue().flush();
+			await flushIndexQueue();
 		} catch (err) {
 			console.error("[Tracks] Failed to sync to Meilisearch:", err);
 		}
