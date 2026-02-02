@@ -39,10 +39,58 @@ thac/
 
 ### 前提条件
 
-- Docker / Docker Compose
-- Bun（ローカル開発用）
+- [devbox](https://www.jetify.com/devbox)（推奨）
+- または Docker / Docker Compose
 
 ### 開発環境の起動
+
+#### devbox を使用する場合（推奨）
+
+Docker不要で開発環境が構築できます。
+
+```bash
+# devboxをインストール（未インストールの場合）
+curl -fsSL https://get.jetify.com/devbox | bash
+
+# devbox shellに入る
+devbox shell
+
+# 依存関係をインストール
+bun install
+
+# 全サービスを起動（Meilisearch, server, web）
+devbox services up
+```
+
+これで以下が起動します：
+- **Web**: http://localhost:3000
+- **API Server**: http://localhost:3001
+- **Meilisearch**: http://localhost:7700
+
+##### バックグラウンド起動
+
+```bash
+devbox services up -b    # バックグラウンドで起動
+devbox services ls       # サービス一覧
+devbox services stop     # 停止
+```
+
+##### direnv を使用する場合（オプション）
+
+direnvと組み合わせると、ディレクトリ移動時に自動で環境が切り替わります。
+
+```bash
+# macOS
+brew install direnv
+
+# シェルにフックを追加（~/.zshrc）
+eval "$(direnv hook zsh)"
+
+# 環境を許可
+direnv allow
+```
+
+#### Docker を使用する場合
 
 ```bash
 # 開発環境を起動（Docker Compose）

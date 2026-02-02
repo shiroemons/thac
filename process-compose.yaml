@@ -1,0 +1,44 @@
+version: "0.5"
+
+processes:
+  meilisearch:
+    command: meilisearch --db-path ./data/meilisearch
+    environment:
+      - MEILI_ENV=development
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-development_master_key}
+      - MEILI_NO_ANALYTICS=true
+    availability:
+      restart: on_failure
+      backoff_seconds: 5
+      max_restarts: 3
+    readiness_probe:
+      http_get:
+        host: localhost
+        port: 7700
+        path: /health
+      initial_delay_seconds: 2
+      period_seconds: 5
+
+  server:
+    command: bun run --cwd apps/server dev
+    depends_on:
+      meilisearch:
+        condition: process_healthy
+    environment:
+      - NODE_ENV=development
+      - MEILI_URL=http://localhost:7700
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-development_master_key}
+      - DATABASE_URL=${DATABASE_URL:-file:./data/local.db}
+      - CORS_ORIGIN=http://localhost:3000
+      - BETTER_AUTH_URL=http://localhost:3001
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-devbox_secret_key_change_in_production}
+
+  web:
+    command: bun run --cwd apps/web dev
+    depends_on:
+      server:
+        condition: process_started
+    environment:
+      - NODE_ENV=development
+      - VITE_SERVER_URL=http://localhost:3001
+      - SERVER_URL=http://localhost:3001
