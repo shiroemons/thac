@@ -60,3 +60,9 @@ temp
 .claude/settings.local.json
 # Meilisearch dumps
 .meilisearch/
+
+# Devbox
+.devbox/
+
+# Local data (devbox)
+/data/
