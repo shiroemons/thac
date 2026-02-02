@@ -203,6 +203,27 @@ GITHUB_CLIENT_SECRET=your_github_client_secret
 - `CORS_ORIGIN` が正しく設定されているか確認
 - Cookieの設定（SameSite、Secure）を確認
 
+## 実装機能
+
+### 認証機能
+- Google、Discord、GitHub によるOAuth認証
+- セッション管理とCookie設定
+- ログイン/ログアウト処理
+
+### ユーザー情報の自動取得
+- メールアドレス
+- 表示名（displayName）
+- **アバター画像** - OAuthプロバイダのプロフィール画像を自動取得
+
+## アバター画像
+
+ユーザーのアバター画像は以下の優先順位で表示されます：
+
+1. **OAuthプロバイダのアバター** - Google、Discord、GitHubのプロフィール画像を自動取得
+2. **UI Avatars** - プロバイダにアバターがない場合、ユーザー名のイニシャルから自動生成
+
+※ セキュリティ上の理由から、任意の画像URL入力はサポートしていません。
+
 ## 関連ファイル
 
 - `packages/auth/src/index.ts` - Better-Auth設定

@@ -13,28 +13,6 @@ export const Route = createFileRoute("/user/_user/profile")({
 	component: ProfilePage,
 });
 
-/**
- * 画像URLのバリデーション
- * - 空文字は許可
- * - HTTPSスキームのみ許可
- * - 無効なURLはエラー
- */
-function validateImageUrl(url: string): string | null {
-	if (!url.trim()) {
-		return null; // 空は許可
-	}
-
-	try {
-		const parsed = new URL(url);
-		if (parsed.protocol !== "https:") {
-			return "画像URLはHTTPSのみ使用できます";
-		}
-		return null;
-	} catch {
-		return "有効なURLを入力してください";
-	}
-}
-
 function ProfilePage() {
 	const { user } = Route.useRouteContext();
 	const { data: session, refetch } = authClient.useSession();
@@ -42,18 +20,9 @@ function ProfilePage() {
 	const currentUser = session?.user ?? user;
 
 	const [name, setName] = useState(currentUser.name ?? "");
-	const [image, setImage] = useState(currentUser.image ?? "");
-	const [imageError, setImageError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
-
-	const handleImageChange = (value: string) => {
-		setImage(value);
-		setImageError(validateImageUrl(value));
-	};
-
-	const isValidImageUrl = !imageError && image.trim();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -65,17 +34,12 @@ function ProfilePage() {
 			setError("名前は20文字以内で入力してください");
 			return;
 		}
-		if (image.trim().length > 500) {
-			setError("画像URLは500文字以内で入力してください");
-			return;
-		}
 
 		setIsSubmitting(true);
 
 		try {
 			const result = await authClient.updateUser({
 				name: name.trim() || undefined,
-				image: image.trim() || undefined,
 			});
 
 			if (result.error) {
@@ -118,6 +82,27 @@ function ProfilePage() {
 				)}
 
 				<form onSubmit={handleSubmit} className="space-y-6">
+					{/* 現在のアバター */}
+					<div className="space-y-2">
+						<Label>アバター</Label>
+						<div className="flex items-center gap-4">
+							<div className="avatar">
+								<div className="w-16 rounded-full ring ring-primary ring-offset-2 ring-offset-base-100">
+									<img
+										src={
+											currentUser.image ||
+											`https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name || "User")}&background=random`
+										}
+										alt="アバター"
+									/>
+								</div>
+							</div>
+							<p className="text-base-content/60 text-sm">
+								アバターはログインに使用したサービス（Google、Discord、GitHub）から取得されます
+							</p>
+						</div>
+					</div>
+
 					{/* Name */}
 					<div className="space-y-2">
 						<Label htmlFor="name">名前</Label>
@@ -138,60 +123,12 @@ function ProfilePage() {
 						</p>
 					</div>
 
-					{/* Avatar URL */}
-					<div className="space-y-2">
-						<Label htmlFor="image">アイコンURL</Label>
-						<Input
-							id="image"
-							type="url"
-							value={image}
-							onChange={(e) => handleImageChange(e.target.value)}
-							placeholder="https://example.com/avatar.png"
-							maxLength={500}
-							autoComplete="off"
-							data-1p-ignore
-							data-lpignore="true"
-							data-form-type="other"
-							className={imageError ? "input-error" : ""}
-						/>
-						{imageError ? (
-							<p className="text-error text-xs">{imageError}</p>
-						) : (
-							<p className="text-base-content/60 text-xs">
-								プロフィール画像のURLを入力してください（HTTPSのみ）
-							</p>
-						)}
-					</div>
-
-					{/* Preview */}
-					{isValidImageUrl && (
-						<div className="space-y-2">
-							<Label>プレビュー</Label>
-							<div className="flex items-center gap-4">
-								<div className="avatar">
-									<div className="w-16 rounded-full ring ring-primary ring-offset-2 ring-offset-base-100">
-										<img
-											src={image}
-											alt="アイコンプレビュー"
-											onError={(e) => {
-												e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "User")}&background=random`;
-											}}
-										/>
-									</div>
-								</div>
-								<span className="text-base-content/70 text-sm">
-									{name || "名前未設定"}
-								</span>
-							</div>
-						</div>
-					)}
-
 					{/* Submit */}
 					<div className="pt-4">
 						<Button
 							type="submit"
 							variant="primary"
-							disabled={isSubmitting || !!imageError}
+							disabled={isSubmitting}
 							className="w-full sm:w-auto"
 						>
 							{isSubmitting ? "保存中..." : "保存"}
