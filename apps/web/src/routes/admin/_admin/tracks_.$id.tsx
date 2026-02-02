@@ -34,8 +34,8 @@ import {
 } from "@/components/ui/dialog";
 import { EnhancedTrackSelect } from "@/components/ui/enhanced-track-select";
 import { GenreBadge } from "@/components/ui/genre-badge";
-import { GenreMultiSelect } from "@/components/ui/genre-multi-select";
 import type { Genre } from "@/components/ui/genre-multi-select";
+import { GenreMultiSelect } from "@/components/ui/genre-multi-select";
 import { GroupedSearchableSelect } from "@/components/ui/grouped-searchable-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1323,7 +1323,9 @@ function TrackDetailPage() {
 												}
 												className="btn btn-ghost btn-xs p-1"
 												title={
-													tag.isLocked ? "ロック解除" : "ロック（編集時に削除されない）"
+													tag.isLocked
+														? "ロック解除"
+														: "ロック（編集時に削除されない）"
 												}
 											>
 												{tag.isLocked ? (

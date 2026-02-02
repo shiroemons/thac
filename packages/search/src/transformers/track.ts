@@ -20,8 +20,8 @@ import {
 	trackGenres,
 	trackOfficialSongs,
 	trackPublications,
-	trackTags,
 	tracks,
+	trackTags,
 } from "@thac/db";
 import type {
 	ArtistRef,
