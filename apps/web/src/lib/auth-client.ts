@@ -1,4 +1,5 @@
-import { adminClient } from "better-auth/client/plugins";
+import type { auth } from "@thac/auth";
+import { adminClient, inferAdditionalFields } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
 // SSR時はSERVER_URL（Docker内部通信用）、クライアント側はVITE_SERVER_URL（ブラウザ用）を使用
@@ -13,5 +14,5 @@ const getBaseURL = () => {
 
 export const authClient = createAuthClient({
 	baseURL: getBaseURL(),
-	plugins: [adminClient()],
+	plugins: [adminClient(), inferAdditionalFields<typeof auth>()],
 });

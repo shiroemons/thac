@@ -13,7 +13,7 @@ export default function UserMenu() {
 	if (!session) {
 		return (
 			<Link to="/login" className="btn btn-outline btn-sm">
-				Sign In
+				ログイン
 			</Link>
 		);
 	}
@@ -42,7 +42,7 @@ export default function UserMenu() {
 				<li className="menu-title">{session.user.email}</li>
 				<li>
 					<button type="button" onClick={handleSignOut} className="text-error">
-						Sign Out
+						ログアウト
 					</button>
 				</li>
 			</ul>
