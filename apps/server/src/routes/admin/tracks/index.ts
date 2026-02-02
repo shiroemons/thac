@@ -28,7 +28,11 @@ import {
 	tracks,
 	trackTags,
 } from "@thac/db";
-import { getIndexQueue, queueTrackIndexing } from "@thac/search";
+import {
+	getIndexQueue,
+	isMeilisearchAvailable,
+	queueTrackIndexing,
+} from "@thac/search";
 import { Hono } from "hono";
 import { z } from "zod";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
@@ -494,6 +498,9 @@ tracksAdminRouter.delete("/batch", async (c) => {
 		if (deleted.length > 0) {
 			(async () => {
 				try {
+					if (!(await isMeilisearchAvailable())) {
+						return;
+					}
 					const { TRACKS_INDEX_NAME } = await import("@thac/search");
 					const queue = getIndexQueue();
 					queue.deleteDocuments(TRACKS_INDEX_NAME, deleted);

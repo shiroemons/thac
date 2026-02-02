@@ -519,7 +519,9 @@ tracksRouter.delete("/:releaseId/tracks/:trackId", async (c) => {
 		await db.delete(tracks).where(eq(tracks.id, trackId));
 
 		// Search index deletion (non-blocking)
-		queueTrackDeletion(trackId);
+		queueTrackDeletion(trackId).catch((err) => {
+			console.error("[SearchHook] Track deletion failed:", err);
+		});
 
 		return c.json({ success: true, id: trackId });
 	} catch (error) {
