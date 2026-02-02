@@ -45,10 +45,10 @@ devbox環境では `/data/` にローカル開発データが保存される：
 
 ## 環境変数
 
-devbox.json でデフォルト値が設定済み。本番環境の値は `.env` で上書き可能。
+devbox.json でMeilisearch関連のデフォルト値が設定済み。
+DB接続は `apps/server/.env` のTurso設定を使用。
 
 | 変数 | デフォルト値 |
 |------|-------------|
 | `MEILI_URL` | `http://localhost:7700` |
-| `DATABASE_URL` | `file:./data/local.db` |
 | `CORS_ORIGIN` | `http://localhost:3000` |
