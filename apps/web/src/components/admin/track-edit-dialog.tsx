@@ -274,7 +274,6 @@ export function TrackEditDialog({
 		}
 	};
 
-
 	const isReleaseDateEditable = !selectedReleaseId || !editForm.eventDayId;
 	const isDiscFieldVisible = !!selectedReleaseId;
 	const isDiscSelectDisabled = !discsData || discsData.length <= 1;

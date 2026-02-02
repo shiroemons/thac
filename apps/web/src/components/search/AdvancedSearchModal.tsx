@@ -29,11 +29,11 @@ import { EventFilter } from "./EventFilter";
 import { FilterChips } from "./FilterChips";
 import { FilterSection } from "./FilterSection";
 import { GenreFilter } from "./GenreFilter";
-import { TagFilter } from "./TagFilter";
 import { OriginalSongCountFilter } from "./OriginalSongCountFilter";
 import { OriginalSongFilter } from "./OriginalSongFilter";
 import { RoleCountFilter } from "./RoleCountFilter";
 import { SearchSyntaxHelp } from "./SearchSyntaxHelp";
+import { TagFilter } from "./TagFilter";
 import { TextSearchFilter } from "./TextSearchFilter";
 import type {
 	AdvancedSearchFilters,

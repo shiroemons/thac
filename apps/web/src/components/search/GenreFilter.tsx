@@ -1,5 +1,5 @@
-import { Check } from "lucide-react";
 import * as LucideIcons from "lucide-react";
+import { Check } from "lucide-react";
 import type * as React from "react";
 import { useCallback, useMemo } from "react";
 import type { PublicGenreItem } from "@/lib/public-api";
@@ -96,9 +96,7 @@ export function GenreFilter({
 			<div className="flex flex-wrap gap-2">
 				{(genreList ?? []).map((genre) => {
 					const isSelected = selectedCodes.has(genre.code);
-					const IconComponent = genre.icon
-						? getLucideIcon(genre.icon)
-						: null;
+					const IconComponent = genre.icon ? getLucideIcon(genre.icon) : null;
 					return (
 						<button
 							key={genre.code}

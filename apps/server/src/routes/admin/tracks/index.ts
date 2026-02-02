@@ -748,7 +748,10 @@ tracksAdminRouter.put("/:trackId/tags", async (c) => {
 					.limit(1);
 
 				if (existingTag.length > 0 && existingTag[0]) {
-					resolvedTags.push({ id: existingTag[0].id, name: existingTag[0].name });
+					resolvedTags.push({
+						id: existingTag[0].id,
+						name: existingTag[0].name,
+					});
 				} else {
 					// 新規タグを作成
 					const newId = `tag_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
