@@ -2,17 +2,17 @@ import type { auth } from "@thac/auth";
 import { adminClient, inferAdditionalFields } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
-// SSR時はSERVER_URL（Docker内部通信用）、クライアント側はVITE_SERVER_URL（ブラウザ用）を使用
+// TanStack Startでは、SSR時も import.meta.env.VITE_* が利用可能
+// クライアント/サーバー両方で同じURLを使用
+// フォールバック値を追加して undefined を防止
 const getBaseURL = () => {
-	if (typeof window === "undefined") {
-		// サーバーサイド（SSR）
-		return process.env.SERVER_URL || import.meta.env.VITE_SERVER_URL;
-	}
-	// クライアントサイド
-	return import.meta.env.VITE_SERVER_URL;
+	return import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 };
 
 export const authClient = createAuthClient({
 	baseURL: getBaseURL(),
 	plugins: [adminClient(), inferAdditionalFields<typeof auth>()],
+	fetchOptions: {
+		credentials: "include",
+	},
 });
