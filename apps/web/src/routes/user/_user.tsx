@@ -5,6 +5,8 @@ import {
 	redirect,
 } from "@tanstack/react-router";
 import { Settings, User } from "lucide-react";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import UserMenu from "@/components/user-menu";
 import { getUser } from "@/functions/get-user";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPageHead } from "@/lib/head";
@@ -32,40 +34,61 @@ function UserLayout() {
 	const { user } = Route.useRouteContext();
 
 	return (
-		<div className="min-h-screen bg-base-200/30">
-			<div className="mx-auto max-w-4xl p-4 lg:p-6">
-				{/* Header */}
-				<div className="mb-6">
-					<h1 className="font-bold text-2xl">アカウント設定</h1>
-					<p className="text-base-content/70 text-sm">{user.email}</p>
+		<div className="flex min-h-screen flex-col">
+			<header className="navbar sticky top-0 z-50 bg-base-100/70 backdrop-blur-sm">
+				<div className="navbar-start">
+					<Link to="/" className="btn btn-ghost font-bold text-lg">
+						東方編曲録
+					</Link>
 				</div>
-
-				<div className="flex flex-col gap-6 lg:flex-row">
-					{/* Sidebar Navigation */}
-					<nav className="w-full lg:w-64">
-						<ul className="menu menu-lg w-full rounded-box bg-base-100 p-2 shadow">
-							<li>
-								<NavLink to="/user/profile" icon={<User className="h-5 w-5" />}>
-									プロフィール
-								</NavLink>
-							</li>
-							<li>
-								<NavLink
-									to="/user/settings"
-									icon={<Settings className="h-5 w-5" />}
-								>
-									設定
-								</NavLink>
-							</li>
-						</ul>
-					</nav>
-
-					{/* Main Content */}
-					<main className="flex-1">
-						<Outlet />
-					</main>
+				<div className="navbar-end gap-1">
+					<ThemeSwitcher />
+					<UserMenu />
 				</div>
-			</div>
+			</header>
+			<main className="flex-1 bg-base-200/30">
+				<div className="mx-auto max-w-4xl p-4 lg:p-6">
+					{/* Header */}
+					<div className="mb-6">
+						<h1 className="font-bold text-2xl">アカウント設定</h1>
+						<p className="text-base-content/70 text-sm">{user.email}</p>
+					</div>
+
+					<div className="flex flex-col gap-6 lg:flex-row">
+						{/* Sidebar Navigation */}
+						<nav className="w-full lg:w-64">
+							<ul className="menu menu-lg w-full rounded-box bg-base-100 p-2 shadow">
+								<li>
+									<NavLink
+										to="/user/profile"
+										icon={<User className="h-5 w-5" />}
+									>
+										プロフィール
+									</NavLink>
+								</li>
+								<li>
+									<NavLink
+										to="/user/settings"
+										icon={<Settings className="h-5 w-5" />}
+									>
+										設定
+									</NavLink>
+								</li>
+							</ul>
+						</nav>
+
+						{/* Main Content */}
+						<div className="flex-1">
+							<Outlet />
+						</div>
+					</div>
+				</div>
+			</main>
+			<footer className="bg-base-200 py-6 text-center text-base-content/60 text-sm">
+				<p>
+					&copy; {new Date().getFullYear()} 迷い家の白猫. All rights reserved.
+				</p>
+			</footer>
 		</div>
 	);
 }
