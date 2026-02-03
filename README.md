@@ -18,7 +18,7 @@
 | フロントエンド | React, TanStack Start, TanStack Router, TailwindCSS v4, daisyUI |
 | バックエンド | Hono (Bun) |
 | データベース | SQLite (Turso/libsql), Drizzle ORM |
-| 認証 | Better-Auth |
+| 認証 | Better-Auth（Google/Discord/GitHub OAuth） |
 | ビルド | Turborepo, Bun |
 | コード品質 | Biome, Lefthook |
 | 開発環境 | devbox（推奨）, Docker |
@@ -56,8 +56,8 @@ curl -fsSL https://get.jetify.com/devbox | bash
 # 2. devbox shellに入る
 devbox shell
 
-# 3. 依存関係をインストール
-devbox run -- bun install
+# 3. 依存関係をインストール（shell内ではdevbox不要）
+bun install
 
 # 4. 全サービスを起動（Meilisearch, server, web）
 devbox services up
@@ -141,7 +141,7 @@ make db-setup
 ## Git Hooks
 
 このプロジェクトはlefthookを使用してpre-commitフックを設定しています。
-`devbox run -- bun install` 時に自動でhooksがインストールされます。
+`bun install` 時に自動でhooksがインストールされます。
 
 コミット前に以下が自動実行されます：
 
@@ -157,37 +157,15 @@ make db-setup
 | ワークフロー | トリガー | 説明 |
 |-------------|---------|------|
 | CI | Push/PR to main | Lint、型チェック、テストを実行 |
-| Update Lockfile | PR (package.json変更時) | Renovate PRの`bun.lock`を自動更新 |
 
-### Renovate
+> **Note**: Markdown、docs/、.kiro/、LICENSEへの変更はCIをスキップします。
 
-依存関係の自動更新にRenovateを使用しています。
+CIでは以下のチェックが実行されます：
 
-```mermaid
-flowchart TD
-    A[Renovate PR作成] --> B[Update Lockfile ワークフロー]
-    B --> C[bun.lock 自動更新 & コミット]
-    C --> D[PR close/reopen]
-    D --> E[CI ワークフロー実行]
-    E --> F{CI成功?}
-    F -->|Yes| G[Automerge]
-    F -->|No| H[修正が必要]
-```
-
-> **Note**: Renovate GitHub AppはBunのロックファイル更新をサポートしていないため、
-> GitHub Actionsワークフローで自動更新しています。
-
-### 依存関係の更新後
-
-Renovate PRがマージされた後、ローカル環境を更新する手順：
-
-```bash
-# 1. 最新のコードを取得
-git pull
-
-# 2. ローカルの依存関係を更新（devbox shell内で実行）
-devbox run -- bun install
-```
+- `bun run check` - Lint・フォーマット
+- `bun run check-types` - 型チェック
+- `bun run --cwd apps/web lint:jsx-nesting` - JSXネスト検証
+- `bun run test` - テスト
 
 ---
 
