@@ -6,6 +6,8 @@
 
 ```bash
 # 依存関係のインストール
+devbox run install
+# または
 devbox run -- bun install
 
 # 全サービス起動（推奨）
@@ -14,9 +16,9 @@ devbox services up
 # 全アプリ（web + server）を開発モードで起動
 devbox run dev
 
-# 個別アプリの起動
-devbox run dev:web      # Webアプリ http://localhost:3000
-devbox run dev:server   # APIサーバー http://localhost:3001
+# 個別アプリの起動（devbox run -- bun run 経由）
+devbox run -- bun run dev:web      # Webアプリ http://localhost:3000
+devbox run -- bun run dev:server   # APIサーバー http://localhost:3001
 
 # 全アプリのビルド
 devbox run build
@@ -30,28 +32,36 @@ devbox run check
 
 ## データベースコマンド
 
+データベース操作は Makefile で定義されている `make db-xxx` を使用する。
+
 ```bash
 # スキーマをDBにプッシュ
-devbox run db:push
+make db-push
 
 # マイグレーションを生成
-devbox run db:generate
+make db-generate
 
 # マイグレーションを実行
-devbox run db:migrate
+make db-migrate
 
 # シードデータを投入
-devbox run db:seed
+make db-seed
+
+# DBセットアップ（push + seed）
+make db-setup
 
 # Drizzle Studioを起動
-devbox run db:studio
+make db-studio
+
+# マスタデータ・公式作品以外をトランケート
+make db-truncate
 ```
 
 ## Meilisearchコマンド
 
 ```bash
 # Meilisearchのインデックスを同期
-devbox run meilisearch:sync
+devbox run -- bun run meilisearch:sync
 ```
 
 ## devbox サービス管理

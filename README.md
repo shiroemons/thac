@@ -21,6 +21,7 @@
 | 認証 | Better-Auth |
 | ビルド | Turborepo, Bun |
 | コード品質 | Biome, Lefthook |
+| 開発環境 | devbox（推奨）, Docker |
 
 ## プロジェクト構成
 
@@ -33,6 +34,9 @@ thac/
 │   ├── auth/        # 認証設定
 │   ├── db/          # データベーススキーマ
 │   └── config/      # 共有設定（TypeScript）
+├── data/            # ローカル開発データ（.gitignore）
+│   ├── local.db     # SQLiteデータベース
+│   └── meilisearch/ # Meilisearchインデックス
 ```
 
 ## クイックスタート
@@ -40,42 +44,43 @@ thac/
 ### 前提条件
 
 - [devbox](https://www.jetify.com/devbox)（推奨）
-- または Docker / Docker Compose
 
-### 開発環境の起動
+### devbox で開発環境を起動（推奨）
 
-#### devbox を使用する場合（推奨）
-
-Docker不要で開発環境が構築できます。
+devbox を使用すると、Docker 不要で開発環境が構築できます。
 
 ```bash
-# devboxをインストール（未インストールの場合）
+# 1. devboxをインストール（未インストールの場合）
 curl -fsSL https://get.jetify.com/devbox | bash
 
-# devbox shellに入る
+# 2. devbox shellに入る
 devbox shell
 
-# 依存関係をインストール
-bun install
+# 3. 依存関係をインストール
+devbox run -- bun install
 
-# 全サービスを起動（Meilisearch, server, web）
+# 4. 全サービスを起動（Meilisearch, server, web）
 devbox services up
 ```
 
 これで以下が起動します：
-- **Web**: http://localhost:3000
-- **API Server**: http://localhost:3001
-- **Meilisearch**: http://localhost:7700
 
-##### バックグラウンド起動
+| サービス | URL | 説明 |
+|---------|-----|------|
+| Web | http://localhost:3000 | TanStack Start フロントエンド |
+| API Server | http://localhost:3001 | Hono API サーバー |
+| Meilisearch | http://localhost:7700 | 検索エンジン |
+
+#### サービス管理
 
 ```bash
+devbox services up       # フォアグラウンドで起動（TUI付き）
 devbox services up -b    # バックグラウンドで起動
 devbox services ls       # サービス一覧
 devbox services stop     # 停止
 ```
 
-##### direnv を使用する場合（オプション）
+#### direnv を使用する場合（オプション）
 
 direnvと組み合わせると、ディレクトリ移動時に自動で環境が切り替わります。
 
@@ -90,44 +95,28 @@ eval "$(direnv hook zsh)"
 direnv allow
 ```
 
-#### Docker を使用する場合
-
-```bash
-# 開発環境を起動（Docker Compose）
-make dev
-
-# バックグラウンドで起動する場合
-make up
-```
-
-- Web: http://localhost:3000
-- API: http://localhost:3001
-
 ### 初回セットアップ
 
 ```bash
-# 開発環境を起動後、DBセットアップ（スキーマ適用 + シードデータ投入）
+# DBセットアップ（スキーマ適用 + シードデータ投入）
 make db-setup
 ```
 
 ## 利用可能なコマンド
 
-`make help` で全コマンドを確認できます。
-
-### 開発環境（Docker Compose）
+### 開発（devbox）
 
 | コマンド | 説明 |
 |---------|------|
-| `make dev` | 開発環境を起動（フォアグラウンド） |
-| `make up` | 開発環境を起動（バックグラウンド） |
-| `make down` | 開発環境を停止 |
-| `make logs` | ログを表示（フォロー） |
-| `make logs-server` | Serverのログを表示 |
-| `make logs-web` | Webのログを表示 |
-| `make ps` | コンテナの状態を表示 |
-| `make restart` | コンテナを再起動 |
+| `devbox services up` | 全サービスを起動（フォアグラウンド） |
+| `devbox services up -b` | 全サービスをバックグラウンド起動 |
+| `devbox services stop` | サービスを停止 |
+| `devbox run dev` | `bun run dev` を実行 |
+| `devbox run build` | ビルドを実行 |
+| `devbox run check` | Lint・フォーマットチェック |
+| `devbox run check-types` | 型チェック |
 
-### データベース操作（Docker）
+### データベース操作
 
 | コマンド | 説明 |
 |---------|------|
@@ -138,44 +127,26 @@ make db-setup
 | `make db-setup` | DBセットアップ（push + seed） |
 | `make db-studio` | Drizzle Studioを起動 |
 
-### メンテナンス
-
-| コマンド | 説明 |
-|---------|------|
-| `make rebuild` | イメージを再ビルドして起動 |
-| `make clean` | コンテナ・ボリューム・イメージを削除 |
-| `make shell-server` | Serverコンテナにシェル接続 |
-| `make shell-web` | Webコンテナにシェル接続 |
-
-### ユーティリティ（ローカル）
+### ユーティリティ
 
 | コマンド | 説明 |
 |---------|------|
 | `make install` | 依存関係をインストール |
 | `make check` | Lint・フォーマットチェック |
 | `make check-types` | 型チェック |
-| `make test` | テストを実行（Docker） |
-| `make test-local` | テストを実行（ローカル） |
+| `make test` | テストを実行 |
 
-### ローカル開発用コマンド
-
-Docker環境を使わずローカルで開発する場合は、`-local`サフィックス付きのコマンドを使用します：
-
-```bash
-make db-local        # ローカルSQLiteサーバーを起動
-make db-push-local   # スキーマをDBにプッシュ
-make db-setup-local  # DBセットアップ（push + seed）
-```
+`make help` で全コマンドを確認できます。
 
 ## Git Hooks
 
 このプロジェクトはlefthookを使用してpre-commitフックを設定しています。
-`bun install`時に自動でhooksがインストールされます。
+`devbox run -- bun install` 時に自動でhooksがインストールされます。
 
 コミット前に以下が自動実行されます：
 
-- **check-types**: 型チェック（`bun run check-types`）
-- **biome**: Lintとフォーマット（`bun run check`）
+- **check-types**: 型チェック（`devbox run check-types`）
+- **biome**: Lintとフォーマット（`devbox run check`）
 
 エラーがある場合、コミットがブロックされます。
 
@@ -214,6 +185,77 @@ Renovate PRがマージされた後、ローカル環境を更新する手順：
 # 1. 最新のコードを取得
 git pull
 
+# 2. ローカルの依存関係を更新（devbox shell内で実行）
+devbox run -- bun install
+```
+
+---
+
+## Docker を使用する場合（代替）
+
+<details>
+<summary>Docker Compose による開発環境</summary>
+
+### 前提条件
+
+- Docker / Docker Compose
+
+### 開発環境の起動
+
+```bash
+# 開発環境を起動（Docker Compose）
+make docker-dev
+
+# バックグラウンドで起動する場合
+make docker-up
+```
+
+- Web: http://localhost:3000
+- API: http://localhost:3001
+
+### 初回セットアップ
+
+```bash
+# 開発環境を起動後、DBセットアップ（スキーマ適用 + シードデータ投入）
+make db-setup
+```
+
+### Docker コマンド一覧
+
+#### 開発環境管理
+
+| コマンド | 説明 |
+|---------|------|
+| `make docker-dev` | 開発環境を起動（フォアグラウンド） |
+| `make docker-up` | 開発環境を起動（バックグラウンド） |
+| `make docker-down` | 開発環境を停止 |
+| `make docker-logs` | ログを表示（フォロー） |
+| `make docker-logs-server` | Serverのログを表示 |
+| `make docker-logs-web` | Webのログを表示 |
+| `make docker-ps` | コンテナの状態を表示 |
+| `make docker-restart` | コンテナを再起動 |
+
+#### メンテナンス
+
+| コマンド | 説明 |
+|---------|------|
+| `make docker-rebuild` | イメージを再ビルドして起動 |
+| `make docker-clean` | コンテナ・ボリューム・イメージを削除 |
+| `make docker-shell-server` | Serverコンテナにシェル接続 |
+| `make docker-shell-web` | Webコンテナにシェル接続 |
+
+#### テスト
+
+| コマンド | 説明 |
+|---------|------|
+| `make test` | テストを実行（Docker） |
+
+#### 依存関係の更新後（Docker使用時）
+
+```bash
+# 1. 最新のコードを取得
+git pull
+
 # 2. ローカルの依存関係を更新
 bun install
 
@@ -224,6 +266,10 @@ docker compose exec server bun install
 
 > **Note**: Docker環境はホストの`node_modules`をボリュームマウントしているため、
 > ローカルで`bun install`を実行すればコンテナにも反映されます。
+
+</details>
+
+---
 
 ## 開発ワークフロー（cc-sdd）
 
