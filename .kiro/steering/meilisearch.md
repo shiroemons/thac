@@ -6,9 +6,11 @@
 
 ## 開発環境
 
-- **バージョン**: v1.33.1
+- **バージョン**: latest（devbox.json で `meilisearch@latest` 指定）
 - **ポート**: 7700
 - **Search Preview**: http://localhost:7700
+- **起動方法**: `devbox services up`（process-compose経由）
+- **データ保存先**: `data/meilisearch/`
 
 ## 日本語対応
 
@@ -92,10 +94,10 @@ Meilisearch v1.10.2以降は日本語を**最適化サポート**している。
 
 ## 環境変数
 
-| 変数 | 説明 | デフォルト |
+| 変数 | 説明 | デフォルト（devbox） |
 |-----|------|-----------|
 | `MEILI_MASTER_KEY` | API認証キー | `development_master_key` |
-| `MEILI_URL` | Meilisearch URL | `http://meilisearch:7700` |
+| `MEILI_URL` | Meilisearch URL | `http://localhost:7700` |
 
 ## コマンド
 
@@ -117,9 +119,20 @@ curl http://localhost:7700/health
 - **月1〜2回**のリリース（2025年現在、非常に活発）
 - 最新版のみサポート（LTSなし）
 - Semantic Versioning 2.0.0準拠
-- 定期的なバージョン確認を推奨
 
-### Docker Compose でのアップグレード手順
+### devbox でのアップグレード（推奨）
+
+devbox は `meilisearch@latest` を使用するため、Nix パッケージの更新で自動的に最新版が適用される。
+
+```bash
+# devbox パッケージ更新
+devbox update
+
+# バージョン確認
+devbox run -- meilisearch --version
+```
+
+### Docker Compose でのアップグレード手順（本番/CI用）
 
 ```bash
 # 1. 現在のバージョン確認

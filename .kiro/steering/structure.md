@@ -14,7 +14,7 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 ### Shared Packages (`packages/`)
 **Location**: `/packages/{package-name}/`
 **Purpose**: アプリ間で共有するロジックとスキーマ
-**Example**: `@thac/db`、`@thac/auth`、`@thac/config`
+**Example**: `@thac/db`、`@thac/auth`、`@thac/config`、`@thac/search`、`@thac/utils`
 
 ### Frontend Routes (`apps/web/src/routes/`)
 **Location**: `/apps/web/src/routes/`
@@ -138,6 +138,11 @@ Turborepoによるモノレポ構成で、アプリケーション（apps/）と
 - `integration/admin/`: 管理API統合テスト（`{entity}.test.ts`）
 **Example**: `integration/admin/artists.test.ts`, `helpers/test-response.ts`
 
+### Search Package (`packages/search/`)
+**Location**: `/packages/search/`
+**Purpose**: Meilisearch統合クライアント
+**Example**: アーティスト・サークル・楽曲の全文検索
+
 ### Utility Package (`packages/utils/`)
 **Location**: `/packages/utils/`
 **Purpose**: アプリ間で共有するユーティリティ関数
@@ -173,8 +178,9 @@ import { Button } from "./components/ui/button";
 
 ```
 apps/web → @thac/auth
-apps/server → @thac/auth, @thac/db
+apps/server → @thac/auth, @thac/db, @thac/search
 packages/auth → @thac/db
+packages/search → @thac/db
 packages/utils → @thac/config
 packages/config → (standalone)
 ```

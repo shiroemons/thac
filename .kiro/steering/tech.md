@@ -17,7 +17,9 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 - **Framework**: TanStack Start（SSR）
 - **Routing**: TanStack Router（ファイルベースルーティング）
 - **State**: TanStack Query（サーバー状態管理）
+- **Forms**: TanStack Form（フォーム状態管理）
 - **UI**: React 19 + daisyUI + TailwindCSS v4
+- **Charts**: Nivo（統計・ランキング表示）
 - **ドラッグ&ドロップ**: @dnd-kit
 
 ### Backend (apps/server)
@@ -25,15 +27,15 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 - **Build**: tsdown
 
 ### Shared
-- **ORM**: Drizzle ORM
+- **ORM**: Drizzle ORM + drizzle-zod（スキーマ検証）
 - **Database**: SQLite（Turso/libsql）
-- **Auth**: Better-Auth
+- **Auth**: Better-Auth（メール/パスワード + OAuth: Google, Discord, GitHub）
 - **Validation**: Zod v4
 - **ID生成**: nanoid（プレフィックス付きID）
 - **日付処理**: date-fns
 
 ### Search
-- **Search Engine**: Meilisearch v1.31
+- **Search Engine**: Meilisearch（devbox: latest）
 - **用途**: アーティスト、サークル、楽曲等の全文検索
 - **ポート**: 7700（開発環境）
 
@@ -76,31 +78,38 @@ bun test --coverage     # カバレッジ付き
 
 ## Development Environment
 
-### Required Tools
-- Bun 1.2+
-- Turso CLI（ローカルDB用）
+### devbox（標準開発環境）
 
-### Common Commands
+すべてのコマンドは devbox 経由で実行する。
+
 ```bash
-# Dev: 全アプリ起動
-bun run dev
+# サービス起動（web + server + meilisearch）
+devbox services up
 
-# Build: 全アプリビルド
-bun run build
+# 開発サーバー起動
+devbox run dev
 
-# Lint/Format: チェックと修正
-bun run check
+# ビルド
+devbox run build
 
-# Type Check
-bun run check-types
+# Lint/Format
+devbox run check
 
-# HTML/JSX品質チェック（web）
-bun run --cwd apps/web lint:markuplint
-bun run --cwd apps/web lint:jsx-nesting
+# 型チェック
+devbox run check-types
 
-# DB: ローカル起動
-cd packages/db && bun run db:local
+# 任意のコマンド実行
+devbox run -- bun install
+devbox run -- bunx @hono/cli docs
 ```
+
+### Required Tools
+- devbox（Nix ベースの開発環境管理）
+- Bun 1.3.8（devbox.json で管理）
+
+### データディレクトリ
+- `data/local.db` - SQLiteデータベース（ローカル開発）
+- `data/meilisearch/` - Meilisearchインデックス
 
 ## API Error Handling
 
