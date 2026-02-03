@@ -17,25 +17,29 @@ sequenceDiagram
     participant P as OAuthプロバイダー
 
     U->>W: ログインボタンをクリック
-    W->>S: /api/auth/signin/google
+    W->>S: /api/auth/signin/google（プロキシ経由）
     S->>P: 認証リクエスト
     P->>U: ログイン画面を表示
     U->>P: 認証情報を入力
-    P->>S: コールバック（認証コード）
+    P->>W: コールバック（認証コード）
+    W->>S: コールバック転送（プロキシ）
     S->>P: アクセストークン取得
     P->>S: ユーザー情報
     S->>W: セッション作成・リダイレクト
-    W->>U: ダッシュボード表示
+    W->>U: トップページ表示（初回はオンボーディング）
 ```
 
 ### システム構成図
 
 ```mermaid
 flowchart TB
-    subgraph Client["クライアント (localhost:3000)"]
+    subgraph Client["Web (localhost:3000)"]
         Login["/login<br>OAuthボタン"]
-        Callback["/auth/callback"]
-        Dashboard["/dashboard"]
+        Proxy["/api/auth/*<br>プロキシ"]
+        Home["/<br>トップページ"]
+        Onboarding["/onboarding<br>初回設定"]
+        UserProfile["/user/profile<br>プロフィール"]
+        UserSettings["/user/settings<br>設定"]
     end
 
     subgraph Server["APIサーバー (localhost:3001)"]
@@ -48,15 +52,20 @@ flowchart TB
         GitHub["GitHub"]
     end
 
-    Login --> Auth
+    Login --> Proxy
+    Proxy --> Auth
     Auth --> Google
     Auth --> Discord
     Auth --> GitHub
-    Google --> Auth
-    Discord --> Auth
-    GitHub --> Auth
-    Auth --> Callback
-    Callback --> Dashboard
+    Google --> Proxy
+    Discord --> Proxy
+    GitHub --> Proxy
+    Proxy --> Auth
+    Auth --> Proxy
+    Proxy --> Home
+    Home -.-> Onboarding
+    Home -.-> UserProfile
+    Home -.-> UserSettings
 ```
 
 ## クイックスタート
@@ -94,7 +103,7 @@ http://localhost:3000/login にアクセスし、OAuthログインをテスト�
 ## 前提条件
 
 - 各プロバイダーのアカウント
-- 開発環境: `http://localhost:3001`（APIサーバー）
+- 開発環境: `http://localhost:3000`（Webサーバー経由でAPIにプロキシ）
 
 ## 1. Google OAuth
 
@@ -106,7 +115,7 @@ http://localhost:3000/login にアクセスし、OAuthログインをテスト�
 4. 「認証情報を作成」→「OAuthクライアントID」をクリック
 5. アプリケーションの種類: 「ウェブアプリケーション」を選択
 6. 承認済みリダイレクトURIを追加:
-   - 開発環境: `http://localhost:3001/api/auth/callback/google`
+   - 開発環境: `http://localhost:3000/api/auth/callback/google`
    - 本番環境: `https://your-domain.com/api/auth/callback/google`
 7. 「作成」をクリック
 8. クライアントIDとクライアントシークレットをコピー
@@ -125,7 +134,7 @@ http://localhost:3000/login にアクセスし、OAuthログインをテスト�
 2. 「New Application」をクリックしてアプリを作成
 3. 左メニューの「OAuth2」→「General」に移動
 4. 「Redirects」にリダイレクトURIを追加:
-   - 開発環境: `http://localhost:3001/api/auth/callback/discord`
+   - 開発環境: `http://localhost:3000/api/auth/callback/discord`
    - 本番環境: `https://your-domain.com/api/auth/callback/discord`
 5. 「Save Changes」をクリック
 6. 「Client ID」をコピー
@@ -146,7 +155,7 @@ http://localhost:3000/login にアクセスし、OAuthログインをテスト�
    - Application name: アプリ名
    - Homepage URL: `http://localhost:3000`（開発環境）
    - Authorization callback URL:
-     - 開発環境: `http://localhost:3001/api/auth/callback/github`
+     - 開発環境: `http://localhost:3000/api/auth/callback/github`
      - 本番環境: `https://your-domain.com/api/auth/callback/github`
 4. 「Register application」をクリック
 5. 「Client ID」をコピー
@@ -181,9 +190,11 @@ GITHUB_CLIENT_SECRET=your_github_client_secret
 
 | プロバイダー | 開発環境 | 本番環境 |
 |-------------|---------|---------|
-| Google | `http://localhost:3001/api/auth/callback/google` | `https://your-domain.com/api/auth/callback/google` |
-| Discord | `http://localhost:3001/api/auth/callback/discord` | `https://your-domain.com/api/auth/callback/discord` |
-| GitHub | `http://localhost:3001/api/auth/callback/github` | `https://your-domain.com/api/auth/callback/github` |
+| Google | `http://localhost:3000/api/auth/callback/google` | `https://your-domain.com/api/auth/callback/google` |
+| Discord | `http://localhost:3000/api/auth/callback/discord` | `https://your-domain.com/api/auth/callback/discord` |
+| GitHub | `http://localhost:3000/api/auth/callback/github` | `https://your-domain.com/api/auth/callback/github` |
+
+> **Note**: 開発環境ではWeb（localhost:3000）がプロキシとしてAPIサーバー（localhost:3001）に転送します。
 
 ## トラブルシューティング
 
@@ -209,11 +220,21 @@ GITHUB_CLIENT_SECRET=your_github_client_secret
 - Google、Discord、GitHub によるOAuth認証
 - セッション管理とCookie設定
 - ログイン/ログアウト処理
+- **プロキシ認証** - Web（localhost:3000）経由でAPIサーバーに転送
 
 ### ユーザー情報の自動取得
 - メールアドレス
 - 表示名（displayName）
 - **アバター画像** - OAuthプロバイダのプロフィール画像を自動取得
+
+### オンボーディング機能
+- 初回ログイン時にオンボーディング画面（`/onboarding`）を表示
+- ユーザー名の設定
+- 初期設定の案内
+
+### ユーザー管理画面
+- **プロフィール画面** (`/user/profile`) - ユーザー情報の表示・編集
+- **設定画面** (`/user/settings`) - アカウント設定、通知設定など
 
 ## アバター画像
 
@@ -229,3 +250,7 @@ GITHUB_CLIENT_SECRET=your_github_client_secret
 - `packages/auth/src/index.ts` - Better-Auth設定
 - `apps/server/.env.example` - 環境変数テンプレート
 - `apps/web/src/routes/login.tsx` - ログイン画面
+- `apps/web/src/routes/onboarding.tsx` - オンボーディング画面
+- `apps/web/src/routes/user/profile.tsx` - プロフィール画面
+- `apps/web/src/routes/user/settings.tsx` - 設定画面
+- `apps/web/src/routes/api/auth/$.ts` - 認証プロキシ
