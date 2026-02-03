@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 重要: コマンド実行ルール
+
+**すべてのコマンドは devbox 経由で実行すること。**
+
+```bash
+# 正しい例
+devbox run check-types
+devbox run check
+devbox run -- bun install
+devbox run -- bunx @hono/cli docs
+
+# 間違った例（直接実行は禁止）
+bun run check-types
+bun install
+npx @hono/cli docs
+```
+
 ## アーキテクチャ概要
 
 Turborepoによるモノレポ構成のフルスタックWebアプリケーション。
@@ -46,11 +63,11 @@ Hono に関する不明点は Hono CLI（`@hono/cli`）を使用すること。
 context7 よりも Hono CLI を優先して使用する。
 
 ```bash
-# ドキュメント参照
-npx @hono/cli docs [path]
+# ドキュメント参照（devbox経由で実行）
+devbox run -- bunx @hono/cli docs [path]
 
-# ドキュメント検索
-npx @hono/cli search <query>
+# ドキュメント検索（devbox経由で実行）
+devbox run -- bunx @hono/cli search <query>
 ```
 
 ## 図解の指示

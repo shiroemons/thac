@@ -1,5 +1,8 @@
 # devbox 開発環境
 
+**重要**: このプロジェクトでは devbox を標準の開発環境として使用する。
+すべてのコマンド（bun, npm, npx など）は devbox 経由で実行すること。
+
 ## サービス構成
 
 devbox services（process-compose）で以下のサービスが起動する：
@@ -10,12 +13,12 @@ devbox services（process-compose）で以下のサービスが起動する：
 | server | 3001 | Hono API サーバー |
 | meilisearch | 7700 | 検索エンジン |
 
-## devbox環境での操作
+## 基本的な使い方
 
 ### サービス起動
 
 ```bash
-# 全サービス起動（TUI付き）
+# 全サービス起動（TUI付き）- 推奨
 devbox services up
 
 # バックグラウンド起動
@@ -28,20 +31,42 @@ devbox services stop
 ### スクリプト実行
 
 ```bash
-devbox run dev          # bun run dev
-devbox run build        # ビルド
-devbox run check        # Lint/フォーマット
-devbox run check-types  # 型チェック
+# 開発サーバー起動
+devbox run dev
+
+# 個別アプリ起動
+devbox run dev:web      # Webアプリのみ
+devbox run dev:server   # APIサーバーのみ
+
+# ビルド
+devbox run build
+
+# Lint/フォーマット
+devbox run check
+
+# 型チェック
+devbox run check-types
+```
+
+### 任意のコマンド実行
+
+devbox.json に定義されていないコマンドを実行する場合:
+
+```bash
+# devbox run -- <コマンド>
+devbox run -- bun install
+devbox run -- bun add <package>
+devbox run -- bunx <command>
 ```
 
 ## データディレクトリ
 
-devbox環境では `/data/` にローカル開発データが保存される：
+devbox環境では `data/` にローカル開発データが保存される：
 
 - `data/local.db` - SQLiteデータベース
 - `data/meilisearch/` - Meilisearchインデックス
 
-**重要**: `/data/` は `.gitignore` に含まれており、コミット対象外。
+**重要**: `data/` は `.gitignore` に含まれており、コミット対象外。
 
 ## 環境変数
 

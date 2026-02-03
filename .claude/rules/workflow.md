@@ -1,17 +1,17 @@
 # ワークフロー
 
+**重要**: すべてのコマンドは devbox 経由で実行すること。
+
 ## 実装後・コミット前（必須）
 
 コードを変更したら、コミット前に必ず以下を実行:
 
 ```bash
-# Docker経由（推奨）
-make check-types  # 全パッケージの型チェック
-make check        # Lint・フォーマット
+# 型チェック
+devbox run check-types
 
-# または ローカル実行
-bun run check-types
-bun run check
+# Lint・フォーマット
+devbox run check
 ```
 
 **重要**: 型チェックは全パッケージ（packages/*, apps/*）に対して実行される。
