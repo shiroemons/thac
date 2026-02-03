@@ -18,9 +18,7 @@ function AuthCallbackComponent() {
 
 		if (session?.user) {
 			// onboardingCompletedに基づいてリダイレクト先を決定
-			const redirectTo = session.user.onboardingCompleted
-				? "/dashboard"
-				: "/onboarding";
+			const redirectTo = session.user.onboardingCompleted ? "/" : "/onboarding";
 			navigate({ to: redirectTo });
 		} else {
 			// セッションがない場合はログインページへ

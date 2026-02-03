@@ -25,10 +25,10 @@ export const Route = createFileRoute("/onboarding")({
 				to: "/login",
 			});
 		}
-		// 既にオンボーディング完了済みの場合は /dashboard へリダイレクト
+		// 既にオンボーディング完了済みの場合は / へリダイレクト
 		if (context.session.user.onboardingCompleted) {
 			throw redirect({
-				to: "/dashboard",
+				to: "/",
 			});
 		}
 	},
@@ -60,9 +60,9 @@ function RouteComponent() {
 					return;
 				}
 
-				// 成功時は /dashboard へリダイレクト
+				// 成功時は / へリダイレクト
 				navigate({
-					to: "/dashboard",
+					to: "/",
 				});
 			} catch (_err) {
 				setError("予期せぬエラーが発生しました");

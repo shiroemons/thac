@@ -38,13 +38,13 @@ export default function SignInForm({
 				},
 				{
 					onSuccess: () => {
-						// returnTo があればそこへ、なければ /dashboard へ
+						// returnTo があればそこへ、なければ / へ
 						if (returnTo) {
 							// ルーター外のパスの可能性があるため window.location.assign を使用
 							window.location.assign(returnTo);
 						} else {
 							navigate({
-								to: "/dashboard",
+								to: "/",
 							});
 						}
 					},

@@ -136,9 +136,7 @@ function RouteComponent() {
 	// ログイン済みの場合はリダイレクト
 	if (session?.user) {
 		// onboardingCompletedに基づいてリダイレクト先を決定
-		const redirectTo = session.user.onboardingCompleted
-			? "/dashboard"
-			: "/onboarding";
+		const redirectTo = session.user.onboardingCompleted ? "/" : "/onboarding";
 		navigate({ to: validatedReturnTo || redirectTo });
 		return <Loader />;
 	}

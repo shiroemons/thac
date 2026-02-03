@@ -29,7 +29,7 @@ processes:
       - MEILI_URL=http://localhost:7700
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-development_master_key}
       - CORS_ORIGIN=http://localhost:3000
-      - BETTER_AUTH_URL=http://localhost:3001
+      - BETTER_AUTH_URL=http://localhost:3000
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-devbox_secret_key_change_in_production}
 
   web:
