@@ -1,31 +1,24 @@
-import { customAlphabet } from "nanoid";
-
-// 英数字のみ（ダブルクリックで全選択可能）
-const ALPHABET =
-	"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-const ID_LENGTH = 21;
-
-const nanoid = customAlphabet(ALPHABET, ID_LENGTH);
+import { typeid } from "typeid-js";
 
 export const createId = {
-	artist: () => `ar_${nanoid()}`,
-	artistAlias: () => `aa_${nanoid()}`,
-	circle: () => `ci_${nanoid()}`,
-	circleLink: () => `cl_${nanoid()}`,
-	track: () => `tr_${nanoid()}`,
-	trackCredit: () => `tc_${nanoid()}`,
-	trackOfficialSong: () => `to_${nanoid()}`,
-	trackDerivation: () => `td_${nanoid()}`,
-	trackPublication: () => `tp_${nanoid()}`,
-	trackIsrc: () => `ti_${nanoid()}`,
-	release: () => `re_${nanoid()}`,
-	releasePublication: () => `rp_${nanoid()}`,
-	releaseJanCode: () => `rj_${nanoid()}`,
-	disc: () => `di_${nanoid()}`,
-	eventSeries: () => `es_${nanoid()}`,
-	event: () => `ev_${nanoid()}`,
-	eventDay: () => `ed_${nanoid()}`,
-	officialWorkLink: () => `wl_${nanoid()}`,
-	officialSongLink: () => `sl_${nanoid()}`,
-	tag: () => `tag_${nanoid()}`,
+	artist: () => typeid("ar").toString(),
+	artistAlias: () => typeid("aa").toString(),
+	circle: () => typeid("ci").toString(),
+	circleLink: () => typeid("cl").toString(),
+	track: () => typeid("tr").toString(),
+	trackCredit: () => typeid("tc").toString(),
+	trackOfficialSong: () => typeid("to").toString(),
+	trackDerivation: () => typeid("td").toString(),
+	trackPublication: () => typeid("tp").toString(),
+	trackIsrc: () => typeid("ti").toString(),
+	release: () => typeid("re").toString(),
+	releasePublication: () => typeid("rp").toString(),
+	releaseJanCode: () => typeid("rj").toString(),
+	disc: () => typeid("di").toString(),
+	eventSeries: () => typeid("es").toString(),
+	event: () => typeid("ev").toString(),
+	eventDay: () => typeid("ed").toString(),
+	officialWorkLink: () => typeid("wl").toString(),
+	officialSongLink: () => typeid("sl").toString(),
+	tag: () => typeid("tag").toString(),
 } as const;
