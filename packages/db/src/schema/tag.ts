@@ -10,7 +10,7 @@ import { tracks } from "./track";
 
 /**
  * Tags table - master table for user-defined tags
- * id is nanoid format with "tag_" prefix
+ * id is TypeID format with "tag_" prefix
  */
 export const tags = sqliteTable("tags", {
 	id: text("id").primaryKey(),

@@ -32,7 +32,6 @@
 		"dotenv": "catalog:",
 		"libsql": "catalog:",
 		"lucide-react": "^0.563.0",
-		"nanoid": "catalog:",
 		"react": "19.2.4",
 		"react-dom": "19.2.4",
 		"tailwindcss": "^4.1.18",

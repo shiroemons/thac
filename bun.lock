@@ -72,7 +72,6 @@
         "dotenv": "catalog:",
         "libsql": "catalog:",
         "lucide-react": "^0.563.0",
-        "nanoid": "catalog:",
         "react": "19.2.4",
         "react-dom": "19.2.4",
         "tailwindcss": "^4.1.18",
@@ -131,7 +130,6 @@
         "drizzle-orm": "^0.45.1",
         "drizzle-zod": "^0.8.3",
         "libsql": "catalog:",
-        "nanoid": "catalog:",
         "zod": "catalog:",
       },
       "devDependencies": {
