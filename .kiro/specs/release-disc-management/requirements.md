@@ -12,7 +12,7 @@
 #### Acceptance Criteria
 1. The Release Schema shall `packages/db/src/schema/release.ts`に配置される
 2. The Release Schema shall 以下のカラムを持つ:
-   - `id`: text型、主キー（nanoid生成）
+   - `id`: text型、主キー（TypeID形式：プレフィックス + 26文字のbase32エンコード、UUIDv7ベース）
    - `name`: text型、必須（リリース名）
    - `nameJa`: text型、任意（日本語名）
    - `nameEn`: text型、任意（英語名）
@@ -32,7 +32,7 @@
 #### Acceptance Criteria
 1. The Disc Schema shall `packages/db/src/schema/release.ts`内に定義される
 2. The Disc Schema shall 以下のカラムを持つ:
-   - `id`: text型、主キー（nanoid生成）
+   - `id`: text型、主キー（TypeID形式：プレフィックス + 26文字のbase32エンコード、UUIDv7ベース）
    - `releaseId`: text型、必須（リリースへの外部キー、CASCADE on delete）
    - `discNumber`: integer型、必須（1から開始）
    - `discName`: text型、任意（ディスク名やサブタイトル）

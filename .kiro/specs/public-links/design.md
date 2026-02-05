@@ -100,7 +100,7 @@ graph TB
 |-----------|--------------|--------|--------------|------------------|-----------|
 | officialWorkLinks | Data | 作品リンクテーブル | 3.1, 3.3, 3.4 | officialWorks, platforms (P0) | Schema |
 | officialSongLinks | Data | 楽曲リンクテーブル | 3.2, 3.3, 3.4 | officialSongs, platforms (P0) | Schema |
-| createId拡張 | Utility | ID生成関数追加 | 3.5 | nanoid (P0) | Function |
+| createId拡張 | Utility | ID生成関数追加 | 3.5 | TypeID (P0) | Function |
 | WorkLinksAPI | Backend | 作品リンクCRUD | 1.1-1.5, 6.1-6.4 | admin-auth (P0), db (P0) | API |
 | SongLinksAPI | Backend | 楽曲リンクCRUD | 2.1-2.5, 6.1-6.4 | admin-auth (P0), db (P0) | API |
 | OfficialLinkDialog | Frontend | リンク追加/編集UI | 1.1, 1.3, 2.1, 2.3 | platformsApi (P1) | State |
@@ -215,7 +215,7 @@ export const officialSongLinks = sqliteTable(
 - 既存の createId オブジェクトに新しいエントリを追加
 
 **Dependencies**
-- Outbound: nanoid — ID生成 (P0)
+- Outbound: TypeID — ID生成 (P0)
 
 **Contracts**: Function [x]
 
@@ -226,15 +226,15 @@ export const officialSongLinks = sqliteTable(
 
 export const createId = {
   // ... 既存エントリ ...
-  officialWorkLink: () => `wl_${nanoid()}`,  // wl = work link
-  officialSongLink: () => `sl_${nanoid()}`,  // sl = song link
+  officialWorkLink: () => typeid("wl").toString(),  // wl = work link
+  officialSongLink: () => typeid("sl").toString(),  // sl = song link
 } as const;
 ```
 
 **命名規則**:
 - `wl_`: 公式作品リンク（work link）
 - `sl_`: 公式楽曲リンク（song link）
-- 形式: `{prefix}_{nanoid()}` で21文字の英数字ID
+- 形式: `{prefix}_{26文字のbase32エンコード}`（TypeID形式、UUIDv7ベースで時系列ソート可能）
 
 ### Backend Layer
 

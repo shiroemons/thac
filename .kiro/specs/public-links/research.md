@@ -46,7 +46,8 @@
   - `packages/db/src/utils/id.ts`
   - `.kiro/steering/admin.md` - ID生成ルール
 - **Findings**:
-  - 形式: `{prefix}_{nanoid()}` で21文字英数字
+  - 形式: TypeID（`{prefix}_{26文字のbase32エンコード}`）
+  - UUIDv7ベースで時系列ソート可能
   - 命名規則: 1単語は先頭2文字、複合語は各語頭文字
 - **Implications**:
   - officialWorkLink → `wl_` (work link)

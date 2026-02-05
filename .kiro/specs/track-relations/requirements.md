@@ -106,7 +106,7 @@
 
 #### Acceptance Criteria
 
-1. The システム shall UUIDの代わりにnanoidベースのプレフィックス付きIDを使用する
+1. The システム shall UUIDの代わりにTypeID形式（プレフィックス + 26文字のbase32エンコード、UUIDv7ベース）を使用する
 2. The システム shall timestamptzの代わりにinteger（timestamp_ms）を使用する
 3. The システム shall numericの代わりにreal型を使用する
 4. The システム shall PostgreSQL固有の正規表現チェックをアプリケーションレベルのバリデーションに移行する

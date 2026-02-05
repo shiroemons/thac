@@ -18,7 +18,7 @@
   - `packages/db/src/schema/release.ts` - releases, discs, releaseCircles定義
   - `packages/db/src/utils/id.ts` - ID生成ユーティリティ
 - **Findings**:
-  - ID形式: `{prefix}_{21文字英数字}` (nanoid使用)
+  - ID形式: TypeID（`{prefix}_{26文字のbase32エンコード}`、UUIDv7ベースで時系列ソート可能）
   - タイムスタンプ: `integer("column", { mode: "timestamp_ms" })`
   - 条件付きユニークインデックス: `.where(sql\`...\`)` で実装
   - 外部キー: onDeleteにCASCADE/RESTRICT/SET NULLを適切に使い分け
@@ -150,6 +150,6 @@
 ## References
 
 - [Drizzle ORM Documentation](https://orm.drizzle.team/) - スキーマ定義、インデックス設計
-- [nanoid](https://github.com/ai/nanoid) - ID生成ライブラリ
+- [TypeID](https://github.com/jetify-com/typeid) - TypeID仕様（UUIDv7ベース、型安全なID）
 - [ISRC Handbook](https://isrc.ifpi.org/) - ISRC形式仕様
 - [JAN/EAN規格](https://www.gs1jp.org/) - JANコード形式仕様

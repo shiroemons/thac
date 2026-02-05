@@ -39,7 +39,7 @@ erDiagram
 
 | カラム | 型 | 制約 | 説明 |
 |--------|-----|------|------|
-| id | TEXT | PK | nanoid形式 `tag_xxx` |
+| id | TEXT | PK | TypeID形式 `tag_xxx`（プレフィックス + 26文字のbase32エンコード） |
 | name | TEXT | UNIQUE, NOT NULL | タグ名（文字数制限あり） |
 | attributes | TEXT | NULL | JSON形式の属性データ |
 | created_at | INTEGER | NOT NULL | 作成日時（ms） |
@@ -48,9 +48,11 @@ erDiagram
 #### ID形式
 
 ```
-tag_[nanoid 21文字]
-例: tag_V1StGXR8_Z5jdHi6B-myT
+tag_[26文字のbase32エンコード]
+例: tag_01h455vb4pex5vsknk084sn02q
 ```
+
+TypeIDはUUIDv7ベースで時系列ソート可能。
 
 #### 文字数制限
 
@@ -206,7 +208,7 @@ export const trackTags = sqliteTable("track_tags", {
 
 ```typescript
 const newTag = await db.insert(tags).values({
-  id: `tag_${nanoid()}`,
+  id: createId.tag(), // TypeID形式: tag_01h455vb4pex5vsknk084sn02q
   name: "vocal",
   attributes: null,
   createdAt: Date.now(),

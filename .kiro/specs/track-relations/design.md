@@ -96,7 +96,7 @@ graph TB
 |-------|------------------|-----------------|-------|
 | Frontend | TanStack Router / Query | 詳細画面のセクション追加、データフェッチ | 既存パターン踏襲 |
 | Backend | Hono | 新規CRUDエンドポイント | 既存AdminContextを使用 |
-| Data | Drizzle ORM / SQLite | 6テーブル追加 | nanoid ID、integer timestamp |
+| Data | Drizzle ORM / SQLite | 6テーブル追加 | TypeID（UUIDv7ベース）、integer timestamp |
 | Validation | Zod | 入力バリデーション | drizzle-zodで生成 |
 
 ## Requirements Traceability
@@ -391,14 +391,16 @@ packages/db/src/schema/
 
 #### ID Generation Prefixes
 
+TypeID形式（プレフィックス + "_" + 26文字のbase32エンコード、UUIDv7ベースで時系列ソート可能）
+
 | Table | Prefix | Example |
 |-------|--------|---------|
-| trackOfficialSongs | `to_` | `to_aBcD1eFgH2iJkL3mNoPq4r` |
-| trackDerivations | `td_` | `td_aBcD1eFgH2iJkL3mNoPq4r` |
-| releasePublications | `rp_` | `rp_aBcD1eFgH2iJkL3mNoPq4r` |
-| trackPublications | `tp_` | `tp_aBcD1eFgH2iJkL3mNoPq4r` |
-| releaseJanCodes | `rj_` | `rj_aBcD1eFgH2iJkL3mNoPq4r` |
-| trackIsrcs | `ti_` | `ti_aBcD1eFgH2iJkL3mNoPq4r` |
+| trackOfficialSongs | `to_` | `to_01h455vb4pex5vsknk084sn02q` |
+| trackDerivations | `td_` | `td_01h455vb4pex5vsknk084sn02q` |
+| releasePublications | `rp_` | `rp_01h455vb4pex5vsknk084sn02q` |
+| trackPublications | `tp_` | `tp_01h455vb4pex5vsknk084sn02q` |
+| releaseJanCodes | `rj_` | `rj_01h455vb4pex5vsknk084sn02q` |
+| trackIsrcs | `ti_` | `ti_01h455vb4pex5vsknk084sn02q` |
 
 #### Table Definitions
 
