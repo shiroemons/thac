@@ -14,7 +14,7 @@
 - **Context**: リリース/ディスクスキーマの設計指針を確立
 - **Sources Consulted**: `packages/db/src/schema/event.ts`, `artist-circle.ts`
 - **Findings**:
-  - ID: `text("id").primaryKey()` + nanoid生成
+  - ID: `text("id").primaryKey()` + TypeID生成（プレフィックス + 26文字のbase32エンコード、UUIDv7ベースで時系列ソート可能）
   - タイムスタンプ: `integer("created_at", { mode: "timestamp_ms" })`
   - 日付: `text("date")` でYYYY-MM-DD形式
   - 外部キー: `.references(() => table.id, { onDelete: "cascade" })`

@@ -77,7 +77,7 @@ graph TB
 **Architecture Integration**:
 - **Selected pattern**: Hybrid Approach（スキーマ分離 + API統合）
 - **Domain boundaries**: track.ts/track.validation.tsとして独立、APIはreleases/配下に統合
-- **Existing patterns preserved**: nanoid ID生成、timestamp_ms、Zodバリデーション、position swap
+- **Existing patterns preserved**: TypeID生成（UUIDv7ベース、時系列ソート可能）、timestamp_ms、Zodバリデーション、position swap
 - **New components rationale**: 3テーブル追加によるrelease.ts肥大化回避
 - **Steering compliance**: モノレポ構成、packages/db → apps/serverの依存方向維持
 

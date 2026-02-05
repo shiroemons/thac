@@ -43,6 +43,7 @@
 		"better-auth": "^1.4.18",
 		"date-fns": "^4.1.0",
 		"dotenv": "catalog:",
+		"typeid-js": "^1.2.0",
 		"zod": "catalog:"
 	},
 	"devDependencies": {

@@ -42,7 +42,7 @@
 - **Context**: 拡張機能として既存パターンとの整合性確認
 - **Sources Consulted**: discs.ts, release-circles.ts, releases_.$id.tsx
 - **Findings**:
-  - ID生成: フロントエンドでnanoid生成
+  - ID生成: TypeID形式（プレフィックス + 26文字のbase32エンコード、UUIDv7ベースで時系列ソート可能）
   - タイムスタンプ: `integer("created_at", { mode: "timestamp_ms" })`
   - バリデーション: drizzle-zod + カスタムZod
   - 並び順更新: position swap（2レコード同時更新）

@@ -18,7 +18,7 @@
   - `apps/web/src/routes/admin/_admin/circles.tsx`
   - `apps/web/src/lib/api-client.ts`
 - **Findings**:
-  - ID: `text("id").primaryKey()` + nanoid
+  - ID: `text("id").primaryKey()` + TypeID（プレフィックス + 26文字のbase32エンコード、UUIDv7ベースで時系列ソート可能）
   - タイムスタンプ: `integer("...", { mode: "timestamp_ms" })`
   - 外部キー: `onDelete: "cascade"` または `"restrict"`
   - バリデーション: `drizzle-zod` + カスタム Zod スキーマ

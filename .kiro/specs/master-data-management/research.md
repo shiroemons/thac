@@ -27,7 +27,7 @@
   - Better-Auth admin plugin設定済み: `adminRoles: ["admin"]`
   - フロントエンドで`user.role !== "admin"`チェック実装済み
   - バックエンドでは`auth.handler`がセッション管理
-  - nanoidでID生成（`advanced.database.generateId`）
+  - TypeIDでID生成（プレフィックス + 26文字のbase32エンコード、UUIDv7ベースで時系列ソート可能）
 - **Implications**: APIミドルウェアでセッション検証とロールチェックが必要
 
 ### 既存Honoサーバー構成

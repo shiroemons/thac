@@ -71,7 +71,7 @@ graph TB
 | Backend | Hono | REST API | 既存スタック |
 | Data | Drizzle ORM + SQLite | データ永続化 | 既存スタック |
 | Validation | Zod | スキーマバリデーション | 既存スタック |
-| ID Generation | nanoid | 一意ID生成 | 既存スタック |
+| ID Generation | TypeID | 一意ID生成（UUIDv7ベース、時系列ソート可能） | 既存スタック |
 
 ## Requirements Traceability
 
@@ -115,7 +115,7 @@ graph TB
 ```typescript
 // packages/db/src/schema/event.ts
 interface EventSeriesSchema {
-  id: string;              // text, PK, nanoid
+  id: string;              // text, PK, TypeID
   name: string;            // text, NOT NULL, UNIQUE (case-insensitive)
   createdAt: Date;         // integer (timestamp_ms)
   updatedAt: Date;         // integer (timestamp_ms)
@@ -133,7 +133,7 @@ interface EventSeriesSchema {
 
 ```typescript
 interface EventSchema {
-  id: string;              // text, PK, nanoid
+  id: string;              // text, PK, TypeID
   eventSeriesId: string;   // text, FK → event_series.id, ON DELETE RESTRICT
   name: string;            // text, NOT NULL
   edition: number | null;  // integer, 回次
@@ -158,7 +158,7 @@ interface EventSchema {
 
 ```typescript
 interface EventDaySchema {
-  id: string;           // text, PK, nanoid
+  id: string;           // text, PK, TypeID
   eventId: string;      // text, FK → events.id, ON DELETE CASCADE
   dayNumber: number;    // integer, NOT NULL
   date: string;         // text, NOT NULL, YYYY-MM-DD

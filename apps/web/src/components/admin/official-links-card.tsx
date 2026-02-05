@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createId } from "@thac/db";
 import {
 	ArrowDown,
 	ArrowUp,
@@ -24,7 +25,6 @@ import {
 	officialSongLinksApi,
 	officialWorkLinksApi,
 } from "@/lib/api-client";
-import { createId } from "@/lib/utils";
 import { OfficialLinkDialog } from "./official-link-dialog";
 
 interface OfficialLinksCardProps {

@@ -102,7 +102,7 @@ apps/web/src/lib/
 #### Constraint（既存パターンからの制約）
 | 項目 | 制約内容 |
 |------|---------|
-| ID生成 | nanoid使用（フロントエンドで生成） |
+| ID生成 | TypeID形式（プレフィックス + 26文字のbase32エンコード、UUIDv7ベースで時系列ソート可能） |
 | タイムスタンプ | integer mode timestamp_ms |
 | バリデーション | drizzle-zod + カスタムZod |
 | 並び順更新 | 2レコード同時更新パターン（releaseCircles参照） |

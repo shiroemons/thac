@@ -10,7 +10,7 @@
 | **スキーマ** | `packages/db/src/schema/release.ts` | releases, discs, releaseCircles定義 |
 | **スキーマ** | `packages/db/src/schema/official.ts` | officialWorks, officialSongs定義 |
 | **スキーマ** | `packages/db/src/schema/master.ts` | platforms, creditRoles等のマスター定義 |
-| **ID生成** | `packages/db/src/utils/id.ts` | nanoidベースのプレフィックス付きID生成 |
+| **ID生成** | `packages/db/src/utils/id.ts` | TypeIDベースのプレフィックス付きID生成（UUIDv7ベース、時系列ソート可能） |
 | **バリデーション** | `packages/db/src/schema/track.validation.ts` | Zodスキーマ定義 |
 | **API** | `apps/server/src/routes/admin/tracks/index.ts` | トラックAPI（単体取得のみ） |
 | **API** | `apps/server/src/routes/admin/releases/tracks.ts` | リリース配下のトラックCRUD |
@@ -20,7 +20,7 @@
 ### 1.2 既存パターン・規約
 
 #### データベーススキーマ
-- **ID形式**: `{prefix}_{21文字英数字}` (例: `tr_aBcD...`)
+- **ID形式**: TypeID（`{prefix}_{26文字のbase32エンコード}`、例: `tr_01h455vb4pex5vsknk084sn02q`、UUIDv7ベースで時系列ソート可能）
 - **タイムスタンプ**: `integer("column", { mode: "timestamp_ms" })`
 - **外部キー**: CASCADE/RESTRICT/SET NULL を適切に使い分け
 - **条件付きユニーク**: `.where(sql\`...\`)` で実装

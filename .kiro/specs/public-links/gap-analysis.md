@@ -66,7 +66,7 @@ export const circleLinks = sqliteTable("circle_links", {
 
 | カテゴリ | 規約 |
 |---------|------|
-| ID生成 | `packages/db/src/utils/id.ts` で `{prefix}_{nanoid()}` 形式 |
+| ID生成 | `packages/db/src/utils/id.ts` で TypeID形式（`{prefix}_{26文字base32}`、UUIDv7ベース） |
 | スキーマ配置 | `packages/db/src/schema/{entity}.ts` + `{entity}.validation.ts` |
 | APIルート | `apps/server/src/routes/admin/{entity}/index.ts` |
 | バリデーション | Zod + drizzle-zod、insert/update/select スキーマ |

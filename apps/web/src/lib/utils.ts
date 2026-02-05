@@ -1,5 +1,4 @@
 import { type ClassValue, clsx } from "clsx";
-import { nanoid } from "nanoid";
 
 export function cn(...inputs: ClassValue[]) {
 	return clsx(inputs);
@@ -17,13 +16,8 @@ export function getErrorMessage(
 	return defaultMessage;
 }
 
-/**
- * ID生成ユーティリティ
- */
-export const createId = {
-	officialWorkLink: () => `wl_${nanoid()}`,
-	officialSongLink: () => `sl_${nanoid()}`,
-};
+// createIdは@thac/dbから直接インポートしてください
+// import { createId } from "@thac/db";
 
 /**
  * 外部リンクを中間ページ経由のURLに変換

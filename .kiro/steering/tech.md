@@ -31,7 +31,7 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 - **Database**: SQLite（Turso/libsql）
 - **Auth**: Better-Auth（メール/パスワード + OAuth: Google, Discord, GitHub）
 - **Validation**: Zod v4
-- **ID生成**: nanoid（プレフィックス付きID）
+- **ID生成**: TypeID（プレフィックス + UUIDv7ベース、時系列ソート可能）
 - **日付処理**: date-fns
 
 ### Search
