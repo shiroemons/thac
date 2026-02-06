@@ -1,21 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import dotenv from "dotenv";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
 import { officialSongLinks, officialWorkLinks } from "./schema/official";
 import { createId } from "./utils/id";
+import { createScriptClient } from "./utils/script-client";
 
-// Load environment variables
-dotenv.config({
-	path: "../../apps/server/.env",
-});
-
-const client = postgres(
-	process.env.DATABASE_URL || "postgresql://localhost:5432/thac",
-);
-
-const db = drizzle({ client });
+const { client, db } = createScriptClient();
 
 // TSVファイルをパースする関数
 function parseTsv<T>(filePath: string): T[] {

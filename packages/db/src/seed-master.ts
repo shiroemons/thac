@@ -1,6 +1,3 @@
-import dotenv from "dotenv";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
 import { genres } from "./schema/genre";
 import {
 	aliasTypes,
@@ -8,17 +5,9 @@ import {
 	officialWorkCategories,
 	platforms,
 } from "./schema/master";
+import { createScriptClient } from "./utils/script-client";
 
-// Load environment variables
-dotenv.config({
-	path: "../../apps/server/.env",
-});
-
-const client = postgres(
-	process.env.DATABASE_URL || "postgresql://localhost:5432/thac",
-);
-
-const db = drizzle({ client });
+const { client, db } = createScriptClient();
 
 // 初期データ定義
 const platformsData = [

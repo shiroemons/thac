@@ -37,14 +37,14 @@ function getDb(): DrizzleDB {
 	}
 
 	if (!_db) {
-		const client = postgres(
-			process.env.DATABASE_URL || "postgresql://localhost:5432/thac",
-			{
-				max: 10,
-				idle_timeout: 20,
-				connect_timeout: 10,
-			},
-		);
+		const url = process.env.DATABASE_URL || "postgresql://localhost:5432/thac";
+		const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
+		const client = postgres(url, {
+			max: Number(process.env.DB_POOL_MAX) || 10,
+			idle_timeout: 20,
+			connect_timeout: 10,
+			ssl: isLocal ? false : "require",
+		});
 		_sql = client;
 		_db = drizzle({ client, schema });
 	}

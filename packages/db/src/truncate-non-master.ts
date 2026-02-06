@@ -1,18 +1,7 @@
-import dotenv from "dotenv";
 import { sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { createScriptClient } from "./utils/script-client";
 
-// Load environment variables
-dotenv.config({
-	path: "../../apps/server/.env",
-});
-
-const client = postgres(
-	process.env.DATABASE_URL || "postgresql://localhost:5432/thac",
-);
-
-const db = drizzle({ client });
+const { client, db } = createScriptClient();
 
 // Non-master tables to truncate
 const NON_MASTER_TABLES = [
