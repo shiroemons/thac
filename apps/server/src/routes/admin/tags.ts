@@ -117,7 +117,6 @@ tagsRouter.get("/", async (c) => {
 		return c.json({
 			data: result.map((tag) => ({
 				...tag,
-				attributes: tag.attributes ? JSON.parse(tag.attributes) : null,
 				createdAt: tag.createdAt.toISOString(),
 				updatedAt: tag.updatedAt.toISOString(),
 			})),
@@ -150,33 +149,23 @@ tagsRouter.post("/", async (c) => {
 		const name = nameResult.data;
 
 		// attributes のバリデーション
-		let attributesStr: string | null = null;
+		let attributesVal: Record<string, unknown> | null = null;
 		if (body.attributes) {
-			try {
-				if (typeof body.attributes === "string") {
-					JSON.parse(body.attributes);
-					attributesStr = body.attributes;
-				} else {
-					attributesStr = JSON.stringify(body.attributes);
-				}
-				if (attributesStr && attributesStr.length > 1000) {
-					return c.json(
-						{
-							error: ERROR_MESSAGES.VALIDATION_FAILED,
-							details: { attributes: ["属性は1000文字以内で入力してください"] },
-						},
-						400,
-					);
-				}
-			} catch {
+			if (
+				typeof body.attributes !== "object" ||
+				Array.isArray(body.attributes)
+			) {
 				return c.json(
 					{
 						error: ERROR_MESSAGES.VALIDATION_FAILED,
-						details: { attributes: ["有効なJSON形式で入力してください"] },
+						details: {
+							attributes: ["有効なオブジェクト形式で入力してください"],
+						},
 					},
 					400,
 				);
 			}
+			attributesVal = body.attributes;
 		}
 
 		// 既存タグ検索（大文字小文字無視）
@@ -209,7 +198,7 @@ tagsRouter.post("/", async (c) => {
 			.values({
 				id: newId,
 				name,
-				attributes: attributesStr,
+				attributes: attributesVal,
 			})
 			.returning();
 
@@ -221,9 +210,7 @@ tagsRouter.post("/", async (c) => {
 			{
 				id: createdTag.id,
 				name: createdTag.name,
-				attributes: createdTag.attributes
-					? JSON.parse(createdTag.attributes)
-					: null,
+				attributes: createdTag.attributes ?? null,
 				createdAt: createdTag.createdAt.toISOString(),
 				updatedAt: createdTag.updatedAt.toISOString(),
 			},
@@ -406,7 +393,7 @@ tagsRouter.get("/:id", async (c) => {
 		return c.json({
 			id: tag.id,
 			name: tag.name,
-			attributes: tag.attributes ? JSON.parse(tag.attributes) : null,
+			attributes: tag.attributes ?? null,
 			usageCount: usageResult?.count ?? 0,
 			lockedCount: lockedResult?.count ?? 0,
 			createdAt: tag.createdAt.toISOString(),
@@ -558,48 +545,39 @@ tagsRouter.put("/:id", async (c) => {
 		}
 
 		// attributes の処理
-		let attributesStr: string | null | undefined;
+		let attributesVal: Record<string, unknown> | null | undefined;
 		if (body.attributes !== undefined) {
 			if (body.attributes === null) {
-				attributesStr = null;
+				attributesVal = null;
 			} else {
-				try {
-					if (typeof body.attributes === "string") {
-						JSON.parse(body.attributes);
-						attributesStr = body.attributes;
-					} else {
-						attributesStr = JSON.stringify(body.attributes);
-					}
-					if (attributesStr && attributesStr.length > 1000) {
-						return c.json(
-							{
-								error: ERROR_MESSAGES.VALIDATION_FAILED,
-								details: {
-									attributes: ["属性は1000文字以内で入力してください"],
-								},
-							},
-							400,
-						);
-					}
-				} catch {
+				if (
+					typeof body.attributes !== "object" ||
+					Array.isArray(body.attributes)
+				) {
 					return c.json(
 						{
 							error: ERROR_MESSAGES.VALIDATION_FAILED,
-							details: { attributes: ["有効なJSON形式で入力してください"] },
+							details: {
+								attributes: ["有効なオブジェクト形式で入力してください"],
+							},
 						},
 						400,
 					);
 				}
+				attributesVal = body.attributes;
 			}
 		}
 
 		// 更新データを構築
-		const updateData: { name?: string; attributes?: string | null } = {};
+		const updateData: {
+			name?: string;
+			attributes?: Record<string, unknown> | null;
+		} = {};
 		if (body.name) {
 			updateData.name = body.name;
 		}
-		if (attributesStr !== undefined) {
-			updateData.attributes = attributesStr;
+		if (attributesVal !== undefined) {
+			updateData.attributes = attributesVal;
 		}
 
 		// 更新
@@ -616,9 +594,7 @@ tagsRouter.put("/:id", async (c) => {
 		return c.json({
 			id: updatedTag.id,
 			name: updatedTag.name,
-			attributes: updatedTag.attributes
-				? JSON.parse(updatedTag.attributes)
-				: null,
+			attributes: updatedTag.attributes ?? null,
 			createdAt: updatedTag.createdAt.toISOString(),
 			updatedAt: updatedTag.updatedAt.toISOString(),
 		});

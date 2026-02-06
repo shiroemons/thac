@@ -3,6 +3,7 @@ import {
 	boolean,
 	index,
 	integer,
+	jsonb,
 	pgTable,
 	primaryKey,
 	text,
@@ -17,7 +18,7 @@ import { tracks } from "./track";
 export const tags = pgTable("tags", {
 	id: text("id").primaryKey(),
 	name: text("name").notNull().unique(),
-	attributes: text("attributes"), // JSON format (nullable)
+	attributes: jsonb("attributes").$type<Record<string, unknown>>(),
 	createdAt: timestamp("created_at", { withTimezone: true })
 		.defaultNow()
 		.notNull(),
