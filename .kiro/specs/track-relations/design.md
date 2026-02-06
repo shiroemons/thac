@@ -1,3 +1,5 @@
+> **注意**: このドキュメントはPostgreSQL移行前に作成されました。データベースはSQLite/TursoからPostgreSQLに移行済みです。
+
 # Design Document: track-relations
 
 ## Overview

@@ -1,3 +1,5 @@
+> **注意**: このドキュメントはPostgreSQL移行前に作成されました。データベースはSQLite/TursoからPostgreSQLに移行済みです。
+
 # 技術設計書: artist-circle-management
 
 ## 1. 概要
