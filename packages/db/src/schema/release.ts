@@ -116,5 +116,10 @@ export const releaseCircles = pgTable(
 		}),
 		index("idx_release_circles_release").on(table.releaseId),
 		index("idx_release_circles_circle").on(table.circleId),
+		// Composite index for release+participation queries (used in artist circles)
+		index("idx_release_circles_release_participation").on(
+			table.releaseId,
+			table.participationType,
+		),
 	],
 );

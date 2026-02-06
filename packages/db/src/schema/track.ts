@@ -103,6 +103,8 @@ export const trackCredits = pgTable(
 		index("idx_track_credits_track").on(table.trackId),
 		index("idx_track_credits_artist").on(table.artistId),
 		index("idx_track_credits_alias").on(table.artistAliasId),
+		// Composite index for track+artist queries (used in N+1 elimination)
+		index("idx_track_credits_track_artist").on(table.trackId, table.artistId),
 		// Prevent duplicate credits: artist without alias on same track
 		uniqueIndex("uq_track_credits_no_alias")
 			.on(table.trackId, table.artistId)
