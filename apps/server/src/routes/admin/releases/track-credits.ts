@@ -52,32 +52,40 @@ trackCreditsRouter.get("/:releaseId/tracks/:trackId/credits", async (c) => {
 			.where(eq(trackCredits.trackId, trackId))
 			.orderBy(trackCredits.creditPosition);
 
-		// 各クレジットの役割を取得
-		const creditsWithRoles = await Promise.all(
-			credits.map(async (row) => {
-				const roles = await db
-					.select({
-						trackCreditId: trackCreditRoles.trackCreditId,
-						roleCode: trackCreditRoles.roleCode,
-						rolePosition: trackCreditRoles.rolePosition,
-						role: creditRoles,
-					})
-					.from(trackCreditRoles)
-					.leftJoin(
-						creditRoles,
-						eq(trackCreditRoles.roleCode, creditRoles.code),
-					)
-					.where(eq(trackCreditRoles.trackCreditId, row.credit.id))
-					.orderBy(trackCreditRoles.rolePosition);
+		// 全クレジットの役割を一括取得（N+1解消）
+		const creditIds = credits.map((row) => row.credit.id);
+		const allRoles =
+			creditIds.length > 0
+				? await db
+						.select({
+							trackCreditId: trackCreditRoles.trackCreditId,
+							roleCode: trackCreditRoles.roleCode,
+							rolePosition: trackCreditRoles.rolePosition,
+							role: creditRoles,
+						})
+						.from(trackCreditRoles)
+						.leftJoin(
+							creditRoles,
+							eq(trackCreditRoles.roleCode, creditRoles.code),
+						)
+						.where(inArray(trackCreditRoles.trackCreditId, creditIds))
+						.orderBy(trackCreditRoles.rolePosition)
+				: [];
 
-				return {
-					...row.credit,
-					artist: row.artist,
-					artistAlias: row.artistAlias,
-					roles,
-				};
-			}),
-		);
+		// クレジットIDごとに役割をグルーピング
+		const rolesByCredit = new Map<string, typeof allRoles>();
+		for (const role of allRoles) {
+			const existing = rolesByCredit.get(role.trackCreditId) ?? [];
+			existing.push(role);
+			rolesByCredit.set(role.trackCreditId, existing);
+		}
+
+		const creditsWithRoles = credits.map((row) => ({
+			...row.credit,
+			artist: row.artist,
+			artistAlias: row.artistAlias,
+			roles: rolesByCredit.get(row.credit.id) ?? [],
+		}));
 
 		return c.json(creditsWithRoles);
 	} catch (error) {
