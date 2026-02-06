@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
+import { resolveSslConfig } from "./utils/ssl";
 
 // 遅延初期化: ブラウザ側でのモジュールロード時にDBクライアントを初期化しない
 type DrizzleDB = ReturnType<typeof drizzle<typeof schema>>;
@@ -38,12 +39,14 @@ function getDb(): DrizzleDB {
 
 	if (!_db) {
 		const url = process.env.DATABASE_URL || "postgresql://localhost:5432/thac";
-		const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
 		const client = postgres(url, {
 			max: Number(process.env.DB_POOL_MAX) || 10,
 			idle_timeout: 20,
 			connect_timeout: 10,
-			ssl: isLocal ? false : "require",
+			ssl: resolveSslConfig(url),
+			connection: {
+				application_name: "thac-server",
+			},
 		});
 		_sql = client;
 		_db = drizzle({ client, schema });
@@ -57,9 +60,10 @@ function getDb(): DrizzleDB {
  */
 export async function cleanup(): Promise<void> {
 	if (_sql) {
-		await _sql.end();
+		const client = _sql;
 		_sql = null;
 		_db = null;
+		await client.end({ timeout: 5 });
 	}
 }
 
