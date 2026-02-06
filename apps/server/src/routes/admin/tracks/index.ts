@@ -462,36 +462,51 @@ tracksAdminRouter.delete("/batch", async (c) => {
 		const deleted: string[] = [];
 		const failed: Array<{ trackId: string; error: string }> = [];
 
+		const requestedIds = items.map((item) => item.trackId);
+
+		// 一括存在チェック（trackId と releaseId の組み合わせで検証）
+		const existingTracks = await db
+			.select({ id: tracks.id, releaseId: tracks.releaseId })
+			.from(tracks)
+			.where(inArray(tracks.id, requestedIds));
+
+		// 存在するトラックを (trackId, releaseId) のペアでマップ化
+		const existingMap = new Map(existingTracks.map((t) => [t.id, t.releaseId]));
+
+		// リクエストされた各アイテムを検証し、存在するものと失敗するものを分類
+		const idsToDelete: string[] = [];
 		for (const item of items) {
-			try {
-				// 存在チェック
-				const existing = await db
-					.select()
-					.from(tracks)
-					.where(
-						and(
-							eq(tracks.id, item.trackId),
-							eq(tracks.releaseId, item.releaseId),
-						),
-					)
-					.limit(1);
-
-				if (existing.length === 0) {
-					failed.push({
-						trackId: item.trackId,
-						error: ERROR_MESSAGES.TRACK_NOT_FOUND,
-					});
-					continue;
-				}
-
-				// 削除（カスケードでクレジット等も削除される）
-				await db.delete(tracks).where(eq(tracks.id, item.trackId));
-				deleted.push(item.trackId);
-			} catch (e) {
+			const existingReleaseId = existingMap.get(item.trackId);
+			if (existingReleaseId === undefined) {
+				// トラックが存在しない
 				failed.push({
 					trackId: item.trackId,
-					error: e instanceof Error ? e.message : "Unknown error",
+					error: ERROR_MESSAGES.TRACK_NOT_FOUND,
 				});
+			} else if (existingReleaseId !== item.releaseId) {
+				// トラックは存在するが releaseId が一致しない
+				failed.push({
+					trackId: item.trackId,
+					error: ERROR_MESSAGES.TRACK_NOT_FOUND,
+				});
+			} else {
+				idsToDelete.push(item.trackId);
+			}
+		}
+
+		// 一括削除（カスケードでクレジット等も削除される）
+		if (idsToDelete.length > 0) {
+			try {
+				await db.delete(tracks).where(inArray(tracks.id, idsToDelete));
+				deleted.push(...idsToDelete);
+			} catch (e) {
+				// 一括削除が失敗した場合、全てのアイテムを失敗として記録
+				for (const id of idsToDelete) {
+					failed.push({
+						trackId: id,
+						error: e instanceof Error ? e.message : "Unknown error",
+					});
+				}
 			}
 		}
 
