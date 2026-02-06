@@ -24,6 +24,7 @@ export function createScriptClient() {
 		ssl: resolveSslConfig(url),
 		connection: {
 			application_name: "thac-script",
+			statement_timeout: 300000, // 5 minutes for bulk operations
 		},
 	});
 

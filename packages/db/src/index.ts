@@ -46,6 +46,7 @@ function getDb(): DrizzleDB {
 			ssl: resolveSslConfig(url),
 			connection: {
 				application_name: "thac-server",
+				statement_timeout: 30000, // 30 seconds
 			},
 		});
 		_sql = client;

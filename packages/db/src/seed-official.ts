@@ -126,7 +126,7 @@ async function seed() {
 
 seed()
 	.then(async () => {
-		await client.end();
+		await client.end({ timeout: 2 });
 		process.exit(0);
 	})
 	.catch((error) => {
