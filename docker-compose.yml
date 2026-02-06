@@ -29,7 +29,7 @@ services:
       - auth_node_modules:/app/packages/auth/node_modules
       - db_node_modules:/app/packages/db/node_modules
     environment:
-      - DATABASE_URL=postgresql://postgres:5432/thac
+      - DATABASE_URL=postgresql://postgres@postgres:5432/thac
       - BETTER_AUTH_URL=http://localhost:3001
       - CORS_ORIGIN=http://localhost:3000
       - MEILI_URL=http://meilisearch:7700
