@@ -26,6 +26,7 @@
 		"test": "bun test"
 	},
 	"devDependencies": {
+		"@electric-sql/pglite": "catalog:",
 		"drizzle-kit": "^0.31.8",
 		"typescript": "catalog:",
 		"@thac/config": "workspace:*"
