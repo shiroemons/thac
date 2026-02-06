@@ -39,9 +39,7 @@ lerna-debug.log*
 # Better-T-Stack
 .alchemy
 
-# Local database
-local.db
-local.db-*
+# PostgreSQL data is managed by .devbox/ and /data/ directories
 
 # Testing
 coverage
