@@ -17,7 +17,7 @@
 |---------|------|
 | フロントエンド | React, TanStack Start, TanStack Router, TailwindCSS v4, daisyUI |
 | バックエンド | Hono (Bun) |
-| データベース | SQLite (Turso/libsql), Drizzle ORM |
+| データベース | PostgreSQL, Drizzle ORM |
 | 認証 | Better-Auth（Google/Discord/GitHub OAuth） |
 | ビルド | Turborepo, Bun |
 | コード品質 | Biome, Lefthook |
@@ -35,7 +35,6 @@ thac/
 │   ├── db/          # データベーススキーマ
 │   └── config/      # 共有設定（TypeScript）
 ├── data/            # ローカル開発データ（.gitignore）
-│   ├── local.db     # SQLiteデータベース
 │   └── meilisearch/ # Meilisearchインデックス
 ```
 
