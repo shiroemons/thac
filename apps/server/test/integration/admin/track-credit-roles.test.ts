@@ -65,9 +65,9 @@ describe("Admin Track Credit Roles API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	// テストデータ作成ヘルパー

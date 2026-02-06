@@ -44,6 +44,7 @@
         "@electric-sql/pglite": "catalog:",
         "@thac/config": "workspace:*",
         "@types/bun": "catalog:",
+        "drizzle-kit": "^0.31.8",
         "drizzle-orm": "^0.45.1",
         "nanoid": "catalog:",
         "tsdown": "^0.20.1",

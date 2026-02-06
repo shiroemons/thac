@@ -68,9 +68,9 @@ describe("Admin Circles API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET / - 一覧取得", () => {

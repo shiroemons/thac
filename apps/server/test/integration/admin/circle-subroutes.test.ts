@@ -92,9 +92,9 @@ describe("Admin Circle Subroutes API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET /:circleId/artists - サークルの参加アーティスト一覧取得", () => {

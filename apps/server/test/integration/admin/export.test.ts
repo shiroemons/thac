@@ -49,9 +49,9 @@ describe("Admin Export API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET /artists - アーティストエクスポート", () => {

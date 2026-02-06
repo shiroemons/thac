@@ -95,9 +95,9 @@ beforeEach(async () => {
 	await truncateAllTables(client);
 });
 
-afterAll(() => {
+afterAll(async () => {
 	__resetDatabase();
-	client.close();
+	await client.close();
 });
 
 describe("Admin Event Series API", () => {

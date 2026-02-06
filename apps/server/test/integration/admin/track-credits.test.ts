@@ -69,9 +69,9 @@ describe("Admin Track Credits API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET /:releaseId/tracks/:trackId/credits - クレジット一覧取得", () => {

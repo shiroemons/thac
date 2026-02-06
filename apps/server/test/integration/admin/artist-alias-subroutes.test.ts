@@ -94,9 +94,9 @@ describe("Admin Artist Alias Subroutes API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET /:aliasId/circles - アーティスト名義の参加サークル一覧取得", () => {

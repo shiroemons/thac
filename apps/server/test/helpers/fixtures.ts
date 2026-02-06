@@ -182,7 +182,7 @@ export function createTestOfficialWork(
 		nameEn: string | null;
 		shortNameJa: string | null;
 		shortNameEn: string | null;
-		numberInSeries: number | null;
+		numberInSeries: string | null;
 		releaseDate: string | null;
 		officialOrganization: string | null;
 		position: number | null;

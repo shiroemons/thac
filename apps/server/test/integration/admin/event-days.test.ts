@@ -56,9 +56,9 @@ describe("Admin Event Days API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET /:eventId/days - 開催日一覧取得", () => {

@@ -55,9 +55,9 @@ describe("Admin JAN Codes API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET /:releaseId/jan-codes - JANコード一覧取得", () => {

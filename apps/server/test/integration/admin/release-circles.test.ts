@@ -62,9 +62,9 @@ describe("Admin Release Circles API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET /:releaseId/circles - 作品の関連サークル一覧取得", () => {

@@ -25,12 +25,13 @@
 		"zod": "catalog:"
 	},
 	"devDependencies": {
-		"@types/bun": "catalog:",
-		"typescript": "catalog:",
-		"tsdown": "^0.20.1",
-		"@thac/config": "workspace:*",
-		"drizzle-orm": "^0.45.1",
 		"@electric-sql/pglite": "catalog:",
-		"nanoid": "catalog:"
+		"@thac/config": "workspace:*",
+		"@types/bun": "catalog:",
+		"drizzle-kit": "^0.31.8",
+		"drizzle-orm": "^0.45.1",
+		"nanoid": "catalog:",
+		"tsdown": "^0.20.1",
+		"typescript": "catalog:"
 	}
 }

@@ -20,7 +20,7 @@ export const insertOfficialWorkSchema = createInsertSchema(officialWorks, {
 	nameEn: optionalString,
 	shortNameJa: optionalString,
 	shortNameEn: optionalString,
-	numberInSeries: z.number().optional().nullable(),
+	numberInSeries: z.string().optional().nullable(),
 	releaseDate: optionalString,
 	officialOrganization: optionalString,
 	position: z.number().int().optional().nullable(),

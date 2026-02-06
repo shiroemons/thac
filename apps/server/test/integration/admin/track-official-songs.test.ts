@@ -65,9 +65,9 @@ describe("Admin Track Official Songs API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET /:trackId/official-songs - 原曲紐付け一覧取得", () => {

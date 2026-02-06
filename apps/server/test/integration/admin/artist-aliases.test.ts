@@ -75,9 +75,9 @@ beforeEach(async () => {
 	await truncateAllTables(client);
 });
 
-afterAll(() => {
+afterAll(async () => {
 	__resetDatabase();
-	client.close();
+	await client.close();
 });
 
 // ヘルパー: テスト用アーティストを作成

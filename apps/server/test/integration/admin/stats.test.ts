@@ -60,9 +60,9 @@ describe("Admin Stats API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET / - 統計情報取得", () => {

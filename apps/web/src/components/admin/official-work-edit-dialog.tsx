@@ -45,7 +45,7 @@ export interface OfficialWorkFormData {
 	nameEn: string | null;
 	shortNameJa: string | null;
 	shortNameEn: string | null;
-	numberInSeries: number | null;
+	numberInSeries: string | null;
 	releaseDate: string | null;
 	officialOrganization: string | null;
 	position: number | null;
@@ -502,9 +502,7 @@ export function OfficialWorkEditDialog({
 									onChange={(e) =>
 										setForm({
 											...form,
-											numberInSeries: e.target.value
-												? Number.parseInt(e.target.value, 10)
-												: null,
+											numberInSeries: e.target.value || null,
 										})
 									}
 									placeholder="例: 6"

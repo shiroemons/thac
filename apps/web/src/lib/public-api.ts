@@ -95,7 +95,7 @@ export interface PublicWorkItem {
 	nameEn: string | null;
 	shortNameJa: string | null;
 	shortNameEn: string | null;
-	numberInSeries: number | null;
+	numberInSeries: string | null;
 	releaseDate: string | null;
 	songCount: number;
 	totalArrangeCount: number;

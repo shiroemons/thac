@@ -55,9 +55,9 @@ describe("Admin Track ISRCs API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET /:trackId/isrcs - ISRC一覧取得", () => {

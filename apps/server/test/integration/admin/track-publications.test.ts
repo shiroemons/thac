@@ -61,9 +61,9 @@ describe("Admin Track Publications API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET /:trackId/publications - 公開リンク一覧取得", () => {

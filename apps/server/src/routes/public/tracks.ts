@@ -280,14 +280,14 @@ tracksRouter.get("/:id", async (c) => {
 			roles: rolesByCredit.get(credit.creditId) ?? [],
 		}));
 
-		// 原曲データを構築
+		// 原曲データを構築（numeric型のフィールドをnumber型に変換）
 		const officialSongsResult = officialSongsData.map((os) => ({
 			officialSongId: os.officialSongId,
 			songName: os.customSongName ?? os.songName ?? "",
 			workName: os.workName ?? "",
 			partPosition: os.partPosition,
-			startSecond: os.startSecond,
-			endSecond: os.endSecond,
+			startSecond: os.startSecond != null ? Number(os.startSecond) : null,
+			endSecond: os.endSecond != null ? Number(os.endSecond) : null,
 		}));
 
 		// 派生元データを構築

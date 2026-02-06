@@ -60,9 +60,9 @@ describe("Admin Track Derivations API", () => {
 		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		client.close();
+		await client.close();
 	});
 
 	describe("GET /:trackId/derivations - 派生関係一覧取得", () => {

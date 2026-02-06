@@ -566,7 +566,10 @@ async function seed() {
 }
 
 seed()
-	.then(() => process.exit(0))
+	.then(async () => {
+		await client.end();
+		process.exit(0);
+	})
 	.catch((error) => {
 		console.error("Error seeding master data:", error);
 		process.exit(1);
