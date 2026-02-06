@@ -269,11 +269,13 @@ describe("Admin Artist Subroutes API", () => {
 					id: "tr_test_001",
 					releaseId: "rel_test_001",
 					name: "Track 1",
+					trackNumber: 1,
 				}),
 				createTestTrack({
 					id: "tr_test_002",
 					releaseId: "rel_test_001",
 					name: "Track 2",
+					trackNumber: 2,
 				}),
 			]);
 			await db.insert(creditRoles).values([
