@@ -38,6 +38,8 @@ if [ "$SEED_DB" = "true" ]; then
     echo "Database seed completed!"
 fi
 
+# NOTE: 本番環境ではプロセスマネージャー（例: supervisord）の使用、
+# またはサービスごとに別コンテナで起動することを推奨
 # Start Hono API server in background
 echo "Starting API server on port 3001..."
 bun run /app/apps/server/dist/index.js &

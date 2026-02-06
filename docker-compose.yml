@@ -7,6 +7,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=thac
+      # WARNING: 開発専用設定。本番環境では POSTGRES_PASSWORD によるパスワード認証を使用すること
       - POSTGRES_HOST_AUTH_METHOD=trust
     healthcheck:
       test: ["CMD", "pg_isready", "-d", "thac"]
@@ -98,6 +99,7 @@ volumes:
   auth_node_modules:
   db_node_modules:
   postgres_data:
+  # 外部ボリュームのため、事前に作成が必要: docker volume create thac_meilisearch_data
   meilisearch_data:
     external: true
     name: thac_meilisearch_data
