@@ -2,6 +2,7 @@ import {
 	and,
 	circles,
 	db,
+	desc,
 	eq,
 	insertReleaseCircleSchema,
 	releaseCircles,
@@ -132,7 +133,7 @@ releaseCirclesRouter.post("/:releaseId/circles", async (c) => {
 				.select({ maxPos: releaseCircles.position })
 				.from(releaseCircles)
 				.where(eq(releaseCircles.releaseId, releaseId))
-				.orderBy(releaseCircles.position)
+				.orderBy(desc(releaseCircles.position))
 				.limit(1);
 
 			const maxPos = maxPositionResult[0]?.maxPos ?? 0;
