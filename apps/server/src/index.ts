@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { auth } from "@thac/auth";
+import { cleanup } from "@thac/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -31,6 +32,16 @@ app.route("/api/admin", adminRouter);
 app.get("/", (c) => {
 	return c.text("OK");
 });
+
+const shutdown = async () => {
+	console.log("Shutting down gracefully...");
+	await cleanup();
+	console.log("Server stopped");
+	process.exit(0);
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 
 export default {
 	port: 3001,

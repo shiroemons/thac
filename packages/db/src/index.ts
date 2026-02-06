@@ -4,7 +4,9 @@ import * as schema from "./schema";
 
 // 遅延初期化: ブラウザ側でのモジュールロード時にDBクライアントを初期化しない
 type DrizzleDB = ReturnType<typeof drizzle<typeof schema>>;
+type PostgresClient = ReturnType<typeof postgres>;
 let _db: DrizzleDB | null = null;
+let _sql: PostgresClient | null = null;
 
 // テスト用DB注入機能
 // biome-ignore lint/suspicious/noExplicitAny: テスト用の汎用DB型
@@ -24,6 +26,7 @@ export function __setTestDatabase(testDb: any): void {
  */
 export function __resetDatabase(): void {
 	_db = null;
+	_sql = null;
 	_testDb = null;
 }
 
@@ -36,10 +39,28 @@ function getDb(): DrizzleDB {
 	if (!_db) {
 		const client = postgres(
 			process.env.DATABASE_URL || "postgresql://localhost:5432/thac",
+			{
+				max: 10,
+				idle_timeout: 20,
+				connect_timeout: 10,
+			},
 		);
+		_sql = client;
 		_db = drizzle({ client, schema });
 	}
 	return _db;
+}
+
+/**
+ * DB接続をクリーンアップする（graceful shutdown用）
+ * 複数回呼び出しても安全
+ */
+export async function cleanup(): Promise<void> {
+	if (_sql) {
+		await _sql.end();
+		_sql = null;
+		_db = null;
+	}
 }
 
 // Proxyを使用して遅延初期化を実現
