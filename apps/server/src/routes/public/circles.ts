@@ -69,7 +69,7 @@ const KANA_ROW_PATTERNS: Record<string, string[]> = {
 circlesRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
-		const limit = Math.min(Number(c.req.query("limit")) || 20, 5000);
+		const limit = Math.min(Number(c.req.query("limit")) || 20, 500);
 		const initialScript = c.req.query("initialScript"); // all | alphabet | kana | kanji | other
 		const initial = c.req.query("initial"); // A-Z
 		const row = c.req.query("row"); // あ, か, さ, ...
