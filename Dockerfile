@@ -1,5 +1,5 @@
 # Stage 1: Base
-FROM oven/bun:1.3.6 AS base
+FROM oven/bun:1.3.8 AS base
 WORKDIR /app
 
 # Stage 2: Install dependencies
@@ -25,7 +25,7 @@ COPY . .
 RUN bun run build
 
 # Stage 4: Runner (non-root)
-FROM oven/bun:1.3.6-slim AS runner
+FROM oven/bun:1.3.8-slim AS runner
 WORKDIR /app
 
 # Metadata
