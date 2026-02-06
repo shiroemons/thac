@@ -140,7 +140,7 @@ aliasTypesRouter.post("/", async (c) => {
 
 		// 重複チェック
 		const existing = await db
-			.select()
+			.select({ code: aliasTypes.code })
 			.from(aliasTypes)
 			.where(eq(aliasTypes.code, parsed.data.code))
 			.limit(1);
@@ -178,7 +178,7 @@ aliasTypesRouter.put("/:code", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ code: aliasTypes.code })
 			.from(aliasTypes)
 			.where(eq(aliasTypes.code, code))
 			.limit(1);
@@ -219,7 +219,7 @@ aliasTypesRouter.delete("/:code", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ code: aliasTypes.code })
 			.from(aliasTypes)
 			.where(eq(aliasTypes.code, code))
 			.limit(1);

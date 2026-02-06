@@ -137,7 +137,7 @@ worksRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: officialWorks.id })
 			.from(officialWorks)
 			.where(eq(officialWorks.id, parsed.data.id))
 			.limit(1);
@@ -219,7 +219,7 @@ worksRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialWorks.id })
 			.from(officialWorks)
 			.where(eq(officialWorks.id, id))
 			.limit(1);
@@ -317,7 +317,7 @@ worksRouter.get("/:workId/links", async (c) => {
 
 		// 作品存在チェック
 		const existingWork = await db
-			.select()
+			.select({ id: officialWorks.id })
 			.from(officialWorks)
 			.where(eq(officialWorks.id, workId))
 			.limit(1);
@@ -356,7 +356,7 @@ worksRouter.post("/:workId/links", async (c) => {
 
 		// 作品存在チェック
 		const existingWork = await db
-			.select()
+			.select({ id: officialWorks.id })
 			.from(officialWorks)
 			.where(eq(officialWorks.id, workId))
 			.limit(1);
@@ -382,7 +382,7 @@ worksRouter.post("/:workId/links", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: officialWorkLinks.id })
 			.from(officialWorkLinks)
 			.where(eq(officialWorkLinks.id, parsed.data.id))
 			.limit(1);
@@ -393,7 +393,7 @@ worksRouter.post("/:workId/links", async (c) => {
 
 		// URL重複チェック（同一作品内）
 		const existingUrl = await db
-			.select()
+			.select({ id: officialWorkLinks.id })
 			.from(officialWorkLinks)
 			.where(
 				and(
@@ -468,7 +468,7 @@ worksRouter.put("/:workId/links/:linkId", async (c) => {
 		// URL重複チェック（同一作品内、自身以外）
 		if (parsed.data.url) {
 			const existingUrl = await db
-				.select()
+				.select({ id: officialWorkLinks.id })
 				.from(officialWorkLinks)
 				.where(
 					and(
@@ -510,7 +510,7 @@ worksRouter.delete("/:workId/links/:linkId", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialWorkLinks.id })
 			.from(officialWorkLinks)
 			.where(
 				and(
@@ -546,7 +546,7 @@ worksRouter.put("/:workId/links/:linkId/reorder", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialWorkLinks.id })
 			.from(officialWorkLinks)
 			.where(
 				and(

@@ -22,7 +22,7 @@ discsRouter.get("/:releaseId/discs", async (c) => {
 
 		// 作品存在チェック
 		const existingRelease = await db
-			.select()
+			.select({ id: releases.id })
 			.from(releases)
 			.where(eq(releases.id, releaseId))
 			.limit(1);
@@ -51,7 +51,7 @@ discsRouter.post("/:releaseId/discs", async (c) => {
 
 		// 作品存在チェック
 		const existingRelease = await db
-			.select()
+			.select({ id: releases.id })
 			.from(releases)
 			.where(eq(releases.id, releaseId))
 			.limit(1);
@@ -77,7 +77,7 @@ discsRouter.post("/:releaseId/discs", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: discs.id })
 			.from(discs)
 			.where(eq(discs.id, parsed.data.id))
 			.limit(1);
@@ -88,7 +88,7 @@ discsRouter.post("/:releaseId/discs", async (c) => {
 
 		// ディスク番号重複チェック（同一作品内）
 		const existingDiscNumber = await db
-			.select()
+			.select({ id: discs.id })
 			.from(discs)
 			.where(
 				and(
@@ -159,7 +159,7 @@ discsRouter.put("/:releaseId/discs/:discId", async (c) => {
 		// ディスク番号重複チェック（同一作品内、自身以外）
 		if (parsed.data.discNumber !== undefined) {
 			const existingDiscNumber = await db
-				.select()
+				.select({ id: discs.id })
 				.from(discs)
 				.where(
 					and(
@@ -205,7 +205,7 @@ discsRouter.delete("/:releaseId/discs/:discId", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: discs.id })
 			.from(discs)
 			.where(and(eq(discs.id, discId), eq(discs.releaseId, releaseId)))
 			.limit(1);

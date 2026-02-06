@@ -23,7 +23,7 @@ trackPublicationsRouter.get("/:trackId/publications", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);
@@ -61,7 +61,7 @@ trackPublicationsRouter.post("/:trackId/publications", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);
@@ -72,7 +72,7 @@ trackPublicationsRouter.post("/:trackId/publications", async (c) => {
 
 		// プラットフォーム存在チェック
 		const existingPlatform = await db
-			.select()
+			.select({ code: platforms.code })
 			.from(platforms)
 			.where(eq(platforms.code, body.platformCode))
 			.limit(1);
@@ -98,7 +98,7 @@ trackPublicationsRouter.post("/:trackId/publications", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: trackPublications.id })
 			.from(trackPublications)
 			.where(eq(trackPublications.id, parsed.data.id))
 			.limit(1);
@@ -109,7 +109,7 @@ trackPublicationsRouter.post("/:trackId/publications", async (c) => {
 
 		// URL重複チェック
 		const urlDuplicateCheck = await db
-			.select()
+			.select({ id: trackPublications.id })
 			.from(trackPublications)
 			.where(eq(trackPublications.url, parsed.data.url))
 			.limit(1);
@@ -147,7 +147,7 @@ trackPublicationsRouter.put("/:trackId/publications/:id", async (c) => {
 
 		// 公開リンク存在チェック
 		const existingPublication = await db
-			.select()
+			.select({ id: trackPublications.id })
 			.from(trackPublications)
 			.where(
 				and(
@@ -176,7 +176,7 @@ trackPublicationsRouter.put("/:trackId/publications/:id", async (c) => {
 		// URL重複チェック（自分自身以外で）
 		if (parsed.data.url) {
 			const urlDuplicateCheck = await db
-				.select()
+				.select({ id: trackPublications.id })
 				.from(trackPublications)
 				.where(eq(trackPublications.url, parsed.data.url))
 				.limit(1);
@@ -219,7 +219,7 @@ trackPublicationsRouter.delete("/:trackId/publications/:id", async (c) => {
 
 		// 公開リンク存在チェック
 		const existingPublication = await db
-			.select()
+			.select({ id: trackPublications.id })
 			.from(trackPublications)
 			.where(
 				and(

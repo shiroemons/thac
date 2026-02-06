@@ -193,7 +193,7 @@ artistsRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: artists.id })
 			.from(artists)
 			.where(eq(artists.id, parsed.data.id))
 			.limit(1);
@@ -204,7 +204,7 @@ artistsRouter.post("/", async (c) => {
 
 		// 名前重複チェック（大文字小文字無視）
 		const existingName = await db
-			.select()
+			.select({ id: artists.id })
 			.from(artists)
 			.where(sql`lower(${artists.name}) = lower(${parsed.data.name})`)
 			.limit(1);
@@ -266,7 +266,7 @@ artistsRouter.put("/:id", async (c) => {
 		// 名前重複チェック（自身以外に同じ名前がある場合）
 		if (parsed.data.name) {
 			const existingName = await db
-				.select()
+				.select({ id: artists.id })
 				.from(artists)
 				.where(sql`lower(${artists.name}) = lower(${parsed.data.name})`)
 				.limit(1);
@@ -296,7 +296,7 @@ artistsRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: artists.id })
 			.from(artists)
 			.where(eq(artists.id, id))
 			.limit(1);

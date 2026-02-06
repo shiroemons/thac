@@ -22,7 +22,7 @@ eventDaysRouter.get("/:eventId/days", async (c) => {
 
 		// イベント存在チェック
 		const existingEvent = await db
-			.select()
+			.select({ id: events.id })
 			.from(events)
 			.where(eq(events.id, eventId))
 			.limit(1);
@@ -51,7 +51,7 @@ eventDaysRouter.post("/:eventId/days", async (c) => {
 
 		// イベント存在チェック
 		const existingEvent = await db
-			.select()
+			.select({ id: events.id })
 			.from(events)
 			.where(eq(events.id, eventId))
 			.limit(1);
@@ -77,7 +77,7 @@ eventDaysRouter.post("/:eventId/days", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: eventDays.id })
 			.from(eventDays)
 			.where(eq(eventDays.id, parsed.data.id))
 			.limit(1);
@@ -88,7 +88,7 @@ eventDaysRouter.post("/:eventId/days", async (c) => {
 
 		// 日番号重複チェック（同一イベント内）
 		const existingDayNumber = await db
-			.select()
+			.select({ id: eventDays.id })
 			.from(eventDays)
 			.where(
 				and(
@@ -104,7 +104,7 @@ eventDaysRouter.post("/:eventId/days", async (c) => {
 
 		// 日付重複チェック（同一イベント内）
 		const existingDate = await db
-			.select()
+			.select({ id: eventDays.id })
 			.from(eventDays)
 			.where(
 				and(
@@ -172,7 +172,7 @@ eventDaysRouter.put("/:eventId/days/:dayId", async (c) => {
 		// 日番号重複チェック（同一イベント内、自身以外）
 		if (parsed.data.dayNumber !== undefined) {
 			const existingDayNumber = await db
-				.select()
+				.select({ id: eventDays.id })
 				.from(eventDays)
 				.where(
 					and(
@@ -190,7 +190,7 @@ eventDaysRouter.put("/:eventId/days/:dayId", async (c) => {
 		// 日付重複チェック（同一イベント内、自身以外）
 		if (parsed.data.date !== undefined) {
 			const existingDate = await db
-				.select()
+				.select({ id: eventDays.id })
 				.from(eventDays)
 				.where(
 					and(
@@ -226,7 +226,7 @@ eventDaysRouter.delete("/:eventId/days/:dayId", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: eventDays.id })
 			.from(eventDays)
 			.where(and(eq(eventDays.id, dayId), eq(eventDays.eventId, eventId)))
 			.limit(1);

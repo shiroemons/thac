@@ -35,7 +35,7 @@ releaseJanCodesRouter.get("/:releaseId/jan-codes", async (c) => {
 
 		// 作品存在チェック
 		const existingRelease = await db
-			.select()
+			.select({ id: releases.id })
 			.from(releases)
 			.where(eq(releases.id, releaseId))
 			.limit(1);
@@ -59,7 +59,7 @@ releaseJanCodesRouter.post("/:releaseId/jan-codes", async (c) => {
 
 		// 作品存在チェック
 		const existingRelease = await db
-			.select()
+			.select({ id: releases.id })
 			.from(releases)
 			.where(eq(releases.id, releaseId))
 			.limit(1);
@@ -85,7 +85,7 @@ releaseJanCodesRouter.post("/:releaseId/jan-codes", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: releaseJanCodes.id })
 			.from(releaseJanCodes)
 			.where(eq(releaseJanCodes.id, parsed.data.id))
 			.limit(1);
@@ -96,7 +96,7 @@ releaseJanCodesRouter.post("/:releaseId/jan-codes", async (c) => {
 
 		// JANコードのグローバル一意性チェック
 		const janDuplicateCheck = await db
-			.select()
+			.select({ id: releaseJanCodes.id })
 			.from(releaseJanCodes)
 			.where(eq(releaseJanCodes.janCode, parsed.data.janCode))
 			.limit(1);
@@ -108,7 +108,7 @@ releaseJanCodesRouter.post("/:releaseId/jan-codes", async (c) => {
 		// isPrimary制約チェック（同一作品内でisPrimaryは1件のみ）
 		if (parsed.data.isPrimary) {
 			const primaryCheck = await db
-				.select()
+				.select({ id: releaseJanCodes.id })
 				.from(releaseJanCodes)
 				.where(
 					and(
@@ -147,7 +147,7 @@ releaseJanCodesRouter.put("/:releaseId/jan-codes/:id", async (c) => {
 
 		// JANコード存在チェック
 		const existingJanCode = await db
-			.select()
+			.select({ id: releaseJanCodes.id })
 			.from(releaseJanCodes)
 			.where(
 				and(
@@ -176,7 +176,7 @@ releaseJanCodesRouter.put("/:releaseId/jan-codes/:id", async (c) => {
 		// isPrimary変更時の制約チェック
 		if (parsed.data.isPrimary) {
 			const primaryCheck = await db
-				.select()
+				.select({ id: releaseJanCodes.id })
 				.from(releaseJanCodes)
 				.where(
 					and(
@@ -219,7 +219,7 @@ releaseJanCodesRouter.delete("/:releaseId/jan-codes/:id", async (c) => {
 
 		// JANコード存在チェック
 		const existingJanCode = await db
-			.select()
+			.select({ id: releaseJanCodes.id })
 			.from(releaseJanCodes)
 			.where(
 				and(

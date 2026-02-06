@@ -43,7 +43,7 @@ releasePublicationsRouter.get("/:releaseId/publications", async (c) => {
 
 		// 作品存在チェック
 		const existingRelease = await db
-			.select()
+			.select({ id: releases.id })
 			.from(releases)
 			.where(eq(releases.id, releaseId))
 			.limit(1);
@@ -71,7 +71,7 @@ releasePublicationsRouter.post("/:releaseId/publications", async (c) => {
 
 		// 作品存在チェック
 		const existingRelease = await db
-			.select()
+			.select({ id: releases.id })
 			.from(releases)
 			.where(eq(releases.id, releaseId))
 			.limit(1);
@@ -82,7 +82,7 @@ releasePublicationsRouter.post("/:releaseId/publications", async (c) => {
 
 		// プラットフォーム存在チェック
 		const existingPlatform = await db
-			.select()
+			.select({ code: platforms.code })
 			.from(platforms)
 			.where(eq(platforms.code, body.platformCode))
 			.limit(1);
@@ -108,7 +108,7 @@ releasePublicationsRouter.post("/:releaseId/publications", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: releasePublications.id })
 			.from(releasePublications)
 			.where(eq(releasePublications.id, parsed.data.id))
 			.limit(1);
@@ -119,7 +119,7 @@ releasePublicationsRouter.post("/:releaseId/publications", async (c) => {
 
 		// URL重複チェック
 		const urlDuplicateCheck = await db
-			.select()
+			.select({ id: releasePublications.id })
 			.from(releasePublications)
 			.where(eq(releasePublications.url, parsed.data.url))
 			.limit(1);
@@ -153,7 +153,7 @@ releasePublicationsRouter.put("/:releaseId/publications/:id", async (c) => {
 
 		// 公開リンク存在チェック
 		const existingPublication = await db
-			.select()
+			.select({ id: releasePublications.id })
 			.from(releasePublications)
 			.where(
 				and(
@@ -182,7 +182,7 @@ releasePublicationsRouter.put("/:releaseId/publications/:id", async (c) => {
 		// URL重複チェック（自分自身以外で）
 		if (parsed.data.url) {
 			const urlDuplicateCheck = await db
-				.select()
+				.select({ id: releasePublications.id })
 				.from(releasePublications)
 				.where(eq(releasePublications.url, parsed.data.url))
 				.limit(1);
@@ -217,7 +217,7 @@ releasePublicationsRouter.delete("/:releaseId/publications/:id", async (c) => {
 
 		// 公開リンク存在チェック
 		const existingPublication = await db
-			.select()
+			.select({ id: releasePublications.id })
 			.from(releasePublications)
 			.where(
 				and(

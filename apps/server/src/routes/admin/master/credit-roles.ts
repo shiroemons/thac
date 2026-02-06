@@ -140,7 +140,7 @@ creditRolesRouter.post("/", async (c) => {
 
 		// 重複チェック
 		const existing = await db
-			.select()
+			.select({ code: creditRoles.code })
 			.from(creditRoles)
 			.where(eq(creditRoles.code, parsed.data.code))
 			.limit(1);
@@ -178,7 +178,7 @@ creditRolesRouter.put("/:code", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ code: creditRoles.code })
 			.from(creditRoles)
 			.where(eq(creditRoles.code, code))
 			.limit(1);
@@ -218,7 +218,7 @@ creditRolesRouter.delete("/:code", async (c) => {
 
 	// 存在チェック
 	const existing = await db
-		.select()
+		.select({ code: creditRoles.code })
 		.from(creditRoles)
 		.where(eq(creditRoles.code, code))
 		.limit(1);

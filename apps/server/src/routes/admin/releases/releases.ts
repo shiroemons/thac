@@ -331,7 +331,7 @@ releasesRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: releases.id })
 			.from(releases)
 			.where(eq(releases.id, parsed.data.id))
 			.limit(1);
@@ -483,7 +483,7 @@ releasesRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: releases.id })
 			.from(releases)
 			.where(eq(releases.id, id))
 			.limit(1);

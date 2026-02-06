@@ -170,7 +170,7 @@ tagsRouter.post("/", async (c) => {
 
 		// 既存タグ検索（大文字小文字無視）
 		const existing = await db
-			.select()
+			.select({ id: tags.id, name: tags.name })
 			.from(tags)
 			.where(sql`LOWER(${tags.name}) = LOWER(${name})`)
 			.limit(1);
@@ -481,7 +481,7 @@ tagsRouter.put("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: tags.id })
 			.from(tags)
 			.where(eq(tags.id, id))
 			.limit(1);
@@ -611,7 +611,7 @@ tagsRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: tags.id })
 			.from(tags)
 			.where(eq(tags.id, id))
 			.limit(1);

@@ -116,7 +116,7 @@ genresRouter.post("/", async (c) => {
 
 		// 重複チェック
 		const existing = await db
-			.select()
+			.select({ code: genres.code })
 			.from(genres)
 			.where(eq(genres.code, parsed.data.code))
 			.limit(1);
@@ -207,7 +207,7 @@ genresRouter.delete("/:code", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ code: genres.code })
 			.from(genres)
 			.where(eq(genres.code, code))
 			.limit(1);

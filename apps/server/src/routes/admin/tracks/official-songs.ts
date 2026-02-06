@@ -24,7 +24,7 @@ trackOfficialSongsRouter.get("/:trackId/official-songs", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);
@@ -66,7 +66,7 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);
@@ -78,7 +78,7 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 		// 公式楽曲存在チェック（officialSongIdが指定されている場合のみ）
 		if (body.officialSongId) {
 			const existingOfficialSong = await db
-				.select()
+				.select({ id: officialSongs.id })
 				.from(officialSongs)
 				.where(eq(officialSongs.id, body.officialSongId))
 				.limit(1);
@@ -116,7 +116,7 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: trackOfficialSongs.id })
 			.from(trackOfficialSongs)
 			.where(eq(trackOfficialSongs.id, parsed.data.id))
 			.limit(1);
@@ -128,7 +128,7 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 		// 一意性チェック（トラック × 公式楽曲 × 順序、公式楽曲が指定されている場合のみ）
 		if (parsed.data.officialSongId) {
 			const duplicateCheck = await db
-				.select()
+				.select({ id: trackOfficialSongs.id })
 				.from(trackOfficialSongs)
 				.where(
 					and(
@@ -220,7 +220,7 @@ trackOfficialSongsRouter.put("/:trackId/official-songs/:id", async (c) => {
 			newPartPosition != null
 		) {
 			const duplicateCheck = await db
-				.select()
+				.select({ id: trackOfficialSongs.id })
 				.from(trackOfficialSongs)
 				.where(
 					and(
@@ -277,7 +277,7 @@ trackOfficialSongsRouter.delete("/:trackId/official-songs/:id", async (c) => {
 
 		// 紐付け存在チェック
 		const existingRelation = await db
-			.select()
+			.select({ id: trackOfficialSongs.id })
 			.from(trackOfficialSongs)
 			.where(
 				and(

@@ -157,7 +157,7 @@ artistAliasesRouter.post("/", async (c) => {
 
 		// 親アーティスト存在チェック
 		const existingArtist = await db
-			.select()
+			.select({ id: artists.id })
 			.from(artists)
 			.where(eq(artists.id, parsed.data.artistId))
 			.limit(1);
@@ -168,7 +168,7 @@ artistAliasesRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: artistAliases.id })
 			.from(artistAliases)
 			.where(eq(artistAliases.id, parsed.data.id))
 			.limit(1);
@@ -179,7 +179,7 @@ artistAliasesRouter.post("/", async (c) => {
 
 		// 同一アーティスト内での名前重複チェック（大文字小文字無視）
 		const existingName = await db
-			.select()
+			.select({ id: artistAliases.id })
 			.from(artistAliases)
 			.where(
 				and(
@@ -251,7 +251,7 @@ artistAliasesRouter.put("/:id", async (c) => {
 		// 名前重複チェック（同一アーティスト内、自身以外）
 		if (parsed.data.name && currentArtistId) {
 			const existingName = await db
-				.select()
+				.select({ id: artistAliases.id })
 				.from(artistAliases)
 				.where(
 					and(
@@ -286,7 +286,7 @@ artistAliasesRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: artistAliases.id })
 			.from(artistAliases)
 			.where(eq(artistAliases.id, id))
 			.limit(1);

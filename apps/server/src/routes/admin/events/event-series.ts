@@ -83,7 +83,7 @@ eventSeriesRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: eventSeries.id })
 			.from(eventSeries)
 			.where(eq(eventSeries.id, parsed.data.id))
 			.limit(1);
@@ -94,7 +94,7 @@ eventSeriesRouter.post("/", async (c) => {
 
 		// 名前重複チェック（大文字小文字無視）
 		const existingName = await db
-			.select()
+			.select({ id: eventSeries.id })
 			.from(eventSeries)
 			.where(sql`lower(${eventSeries.name}) = lower(${parsed.data.name})`)
 			.limit(1);
@@ -232,7 +232,7 @@ eventSeriesRouter.put("/:id", async (c) => {
 		// 名前重複チェック（自身以外に同じ名前がある場合）
 		if (parsed.data.name) {
 			const existingName = await db
-				.select()
+				.select({ id: eventSeries.id })
 				.from(eventSeries)
 				.where(sql`lower(${eventSeries.name}) = lower(${parsed.data.name})`)
 				.limit(1);
@@ -262,7 +262,7 @@ eventSeriesRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: eventSeries.id })
 			.from(eventSeries)
 			.where(eq(eventSeries.id, id))
 			.limit(1);

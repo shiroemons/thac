@@ -179,7 +179,7 @@ songsRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: officialSongs.id })
 			.from(officialSongs)
 			.where(eq(officialSongs.id, parsed.data.id))
 			.limit(1);
@@ -277,7 +277,7 @@ songsRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialSongs.id })
 			.from(officialSongs)
 			.where(eq(officialSongs.id, id))
 			.limit(1);
@@ -396,7 +396,7 @@ songsRouter.get("/:songId/links", async (c) => {
 
 		// 楽曲存在チェック
 		const existingSong = await db
-			.select()
+			.select({ id: officialSongs.id })
 			.from(officialSongs)
 			.where(eq(officialSongs.id, songId))
 			.limit(1);
@@ -435,7 +435,7 @@ songsRouter.post("/:songId/links", async (c) => {
 
 		// 楽曲存在チェック
 		const existingSong = await db
-			.select()
+			.select({ id: officialSongs.id })
 			.from(officialSongs)
 			.where(eq(officialSongs.id, songId))
 			.limit(1);
@@ -461,7 +461,7 @@ songsRouter.post("/:songId/links", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: officialSongLinks.id })
 			.from(officialSongLinks)
 			.where(eq(officialSongLinks.id, parsed.data.id))
 			.limit(1);
@@ -472,7 +472,7 @@ songsRouter.post("/:songId/links", async (c) => {
 
 		// URL重複チェック（同一楽曲内）
 		const existingUrl = await db
-			.select()
+			.select({ id: officialSongLinks.id })
 			.from(officialSongLinks)
 			.where(
 				and(
@@ -547,7 +547,7 @@ songsRouter.put("/:songId/links/:linkId", async (c) => {
 		// URL重複チェック（同一楽曲内、自身以外）
 		if (parsed.data.url) {
 			const existingUrl = await db
-				.select()
+				.select({ id: officialSongLinks.id })
 				.from(officialSongLinks)
 				.where(
 					and(
@@ -589,7 +589,7 @@ songsRouter.delete("/:songId/links/:linkId", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialSongLinks.id })
 			.from(officialSongLinks)
 			.where(
 				and(
@@ -625,7 +625,7 @@ songsRouter.put("/:songId/links/:linkId/reorder", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialSongLinks.id })
 			.from(officialSongLinks)
 			.where(
 				and(

@@ -157,7 +157,7 @@ platformsRouter.post("/", async (c) => {
 
 		// 重複チェック
 		const existing = await db
-			.select()
+			.select({ code: platforms.code })
 			.from(platforms)
 			.where(eq(platforms.code, parsed.data.code))
 			.limit(1);
@@ -248,7 +248,7 @@ platformsRouter.delete("/:code", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ code: platforms.code })
 			.from(platforms)
 			.where(eq(platforms.code, code))
 			.limit(1);

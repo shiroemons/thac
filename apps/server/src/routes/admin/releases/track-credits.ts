@@ -30,7 +30,7 @@ trackCreditsRouter.get("/:releaseId/tracks/:trackId/credits", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(and(eq(tracks.id, trackId), eq(tracks.releaseId, releaseId)))
 			.limit(1);
@@ -106,7 +106,7 @@ trackCreditsRouter.post("/:releaseId/tracks/:trackId/credits", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(and(eq(tracks.id, trackId), eq(tracks.releaseId, releaseId)))
 			.limit(1);
@@ -117,7 +117,7 @@ trackCreditsRouter.post("/:releaseId/tracks/:trackId/credits", async (c) => {
 
 		// アーティスト存在チェック
 		const existingArtist = await db
-			.select()
+			.select({ id: artists.id })
 			.from(artists)
 			.where(eq(artists.id, body.artistId))
 			.limit(1);
@@ -129,7 +129,7 @@ trackCreditsRouter.post("/:releaseId/tracks/:trackId/credits", async (c) => {
 		// 別名義存在チェック（指定された場合）
 		if (body.artistAliasId) {
 			const existingAlias = await db
-				.select()
+				.select({ id: artistAliases.id })
 				.from(artistAliases)
 				.where(
 					and(
@@ -164,7 +164,7 @@ trackCreditsRouter.post("/:releaseId/tracks/:trackId/credits", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: trackCredits.id })
 			.from(trackCredits)
 			.where(eq(trackCredits.id, parsed.data.id))
 			.limit(1);
@@ -299,7 +299,7 @@ trackCreditsRouter.put(
 			// アーティスト存在チェック（変更される場合）
 			if (updateBody.artistId) {
 				const existingArtist = await db
-					.select()
+					.select({ id: artists.id })
 					.from(artists)
 					.where(eq(artists.id, updateBody.artistId))
 					.limit(1);
@@ -317,7 +317,7 @@ trackCreditsRouter.put(
 				const artistIdToCheck =
 					updateBody.artistId || existingCreditData?.artistId;
 				const existingAlias = await db
-					.select()
+					.select({ id: artistAliases.id })
 					.from(artistAliases)
 					.where(
 						and(
@@ -458,7 +458,7 @@ trackCreditsRouter.delete(
 
 			// クレジット存在チェック（トラック・作品との関連確認含む）
 			const existingCredit = await db
-				.select()
+				.select({ id: trackCredits.id })
 				.from(trackCredits)
 				.innerJoin(tracks, eq(trackCredits.trackId, tracks.id))
 				.where(

@@ -150,7 +150,7 @@ officialWorkCategoriesRouter.post("/", async (c) => {
 
 		// 重複チェック
 		const existing = await db
-			.select()
+			.select({ code: officialWorkCategories.code })
 			.from(officialWorkCategories)
 			.where(eq(officialWorkCategories.code, parsed.data.code))
 			.limit(1);
@@ -188,7 +188,7 @@ officialWorkCategoriesRouter.put("/:code", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ code: officialWorkCategories.code })
 			.from(officialWorkCategories)
 			.where(eq(officialWorkCategories.code, code))
 			.limit(1);
@@ -232,7 +232,7 @@ officialWorkCategoriesRouter.delete("/:code", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ code: officialWorkCategories.code })
 			.from(officialWorkCategories)
 			.where(eq(officialWorkCategories.code, code))
 			.limit(1);

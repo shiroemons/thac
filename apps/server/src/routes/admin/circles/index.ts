@@ -222,7 +222,7 @@ circlesRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: circles.id })
 			.from(circles)
 			.where(eq(circles.id, parsed.data.id))
 			.limit(1);
@@ -233,7 +233,7 @@ circlesRouter.post("/", async (c) => {
 
 		// 名前重複チェック（大文字小文字無視）
 		const existingName = await db
-			.select()
+			.select({ id: circles.id })
 			.from(circles)
 			.where(sql`lower(${circles.name}) = lower(${parsed.data.name})`)
 			.limit(1);
@@ -295,7 +295,7 @@ circlesRouter.put("/:id", async (c) => {
 		// 名前重複チェック（自身以外に同じ名前がある場合）
 		if (parsed.data.name) {
 			const existingName = await db
-				.select()
+				.select({ id: circles.id })
 				.from(circles)
 				.where(sql`lower(${circles.name}) = lower(${parsed.data.name})`)
 				.limit(1);
@@ -325,7 +325,7 @@ circlesRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: circles.id })
 			.from(circles)
 			.where(eq(circles.id, id))
 			.limit(1);
@@ -352,7 +352,7 @@ circlesRouter.get("/:circleId/links", async (c) => {
 
 		// サークル存在チェック
 		const existingCircle = await db
-			.select()
+			.select({ id: circles.id })
 			.from(circles)
 			.where(eq(circles.id, circleId))
 			.limit(1);
@@ -394,7 +394,7 @@ circlesRouter.post("/:circleId/links", async (c) => {
 
 		// サークル存在チェック
 		const existingCircle = await db
-			.select()
+			.select({ id: circles.id })
 			.from(circles)
 			.where(eq(circles.id, circleId))
 			.limit(1);
@@ -420,7 +420,7 @@ circlesRouter.post("/:circleId/links", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: circleLinks.id })
 			.from(circleLinks)
 			.where(eq(circleLinks.id, parsed.data.id))
 			.limit(1);
@@ -431,7 +431,7 @@ circlesRouter.post("/:circleId/links", async (c) => {
 
 		// URL重複チェック（同一サークル内）
 		const existingUrl = await db
-			.select()
+			.select({ id: circleLinks.id })
 			.from(circleLinks)
 			.where(
 				and(
@@ -523,7 +523,7 @@ circlesRouter.put("/:circleId/links/:linkId", async (c) => {
 		// URL重複チェック（同一サークル内、自身以外）
 		if (parsed.data.url) {
 			const existingUrl = await db
-				.select()
+				.select({ id: circleLinks.id })
 				.from(circleLinks)
 				.where(
 					and(
@@ -590,7 +590,7 @@ circlesRouter.delete("/:circleId/links/:linkId", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: circleLinks.id })
 			.from(circleLinks)
 			.where(
 				and(eq(circleLinks.id, linkId), eq(circleLinks.circleId, circleId)),

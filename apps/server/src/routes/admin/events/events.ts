@@ -164,7 +164,7 @@ eventsRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: events.id })
 			.from(events)
 			.where(eq(events.id, parsed.data.id))
 			.limit(1);
@@ -176,7 +176,7 @@ eventsRouter.post("/", async (c) => {
 		// シリーズ存在チェック（eventSeriesIdが指定されている場合のみ）
 		if (parsed.data.eventSeriesId) {
 			const existingSeries = await db
-				.select()
+				.select({ id: eventSeries.id })
 				.from(eventSeries)
 				.where(eq(eventSeries.id, parsed.data.eventSeriesId))
 				.limit(1);
@@ -188,7 +188,7 @@ eventsRouter.post("/", async (c) => {
 			// 回次重複チェック（同一シリーズ内）
 			if (parsed.data.edition !== null && parsed.data.edition !== undefined) {
 				const existingEdition = await db
-					.select()
+					.select({ id: events.id })
 					.from(events)
 					.where(
 						and(
@@ -258,7 +258,7 @@ eventsRouter.put("/:id", async (c) => {
 		// シリーズ存在チェック（変更がある場合）
 		if (parsed.data.eventSeriesId) {
 			const existingSeries = await db
-				.select()
+				.select({ id: eventSeries.id })
 				.from(eventSeries)
 				.where(eq(eventSeries.id, parsed.data.eventSeriesId))
 				.limit(1);
@@ -280,7 +280,7 @@ eventsRouter.put("/:id", async (c) => {
 			targetEdition !== undefined
 		) {
 			const existingEdition = await db
-				.select()
+				.select({ id: events.id })
 				.from(events)
 				.where(
 					and(
@@ -315,7 +315,7 @@ eventsRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: events.id })
 			.from(events)
 			.where(eq(events.id, id))
 			.limit(1);
