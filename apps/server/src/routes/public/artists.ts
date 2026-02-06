@@ -12,6 +12,7 @@ import {
 	eq,
 	genres,
 	inArray,
+	isNotNull,
 	isNull,
 	officialSongs,
 	officialWorks,
@@ -131,6 +132,19 @@ artistsRouter.get("/", async (c) => {
 			return c.json(cached);
 		}
 
+		// 別名義ごとのトラック数を集計する派生テーブル
+		const aliasTrackCountSq = db
+			.select({
+				aliasId: trackCredits.artistAliasId,
+				count: sql<number>`count(distinct ${trackCredits.trackId})`.as(
+					"track_count",
+				),
+			})
+			.from(trackCredits)
+			.where(isNotNull(trackCredits.artistAliasId))
+			.groupBy(trackCredits.artistAliasId)
+			.as("alias_track_count_sq");
+
 		// 別名義を取得（メイン名義は一覧から除外）
 		const aliasesQuery = await db
 			.select({
@@ -141,14 +155,14 @@ artistsRouter.get("/", async (c) => {
 				aliasInitialScript: artistAliases.initialScript,
 				artistId: artists.id,
 				artistName: artists.name,
-				trackCount: sql<number>`(
-					SELECT COUNT(DISTINCT ${trackCredits.trackId})
-					FROM ${trackCredits}
-					WHERE ${trackCredits.artistAliasId} = ${artistAliases.id}
-				)`,
+				trackCount: sql<number>`coalesce(${aliasTrackCountSq.count}, 0)`,
 			})
 			.from(artistAliases)
-			.innerJoin(artists, eq(artistAliases.artistId, artists.id));
+			.innerJoin(artists, eq(artistAliases.artistId, artists.id))
+			.leftJoin(
+				aliasTrackCountSq,
+				eq(artistAliases.id, aliasTrackCountSq.aliasId),
+			);
 
 		// Step 3: 結果をマージ（別名義のみ）
 		let allEntries: NameEntry[] = aliasesQuery
@@ -440,19 +454,32 @@ artistsRouter.get("/:id", async (c) => {
 			});
 		}
 
+		// 別名義ごとのトラック数を集計する派生テーブル
+		const detailAliasTrackCountSq = db
+			.select({
+				aliasId: trackCredits.artistAliasId,
+				count: sql<number>`count(distinct ${trackCredits.trackId})`.as(
+					"track_count",
+				),
+			})
+			.from(trackCredits)
+			.where(isNotNull(trackCredits.artistAliasId))
+			.groupBy(trackCredits.artistAliasId)
+			.as("detail_alias_track_count_sq");
+
 		// 別名義一覧を取得
 		const aliasesData = await db
 			.select({
 				id: artistAliases.id,
 				name: artistAliases.name,
 				aliasTypeCode: artistAliases.aliasTypeCode,
-				trackCount: sql<number>`(
-					SELECT COUNT(DISTINCT ${trackCredits.trackId})
-					FROM ${trackCredits}
-					WHERE ${trackCredits.artistAliasId} = ${artistAliases.id}
-				)`,
+				trackCount: sql<number>`coalesce(${detailAliasTrackCountSq.count}, 0)`,
 			})
 			.from(artistAliases)
+			.leftJoin(
+				detailAliasTrackCountSq,
+				eq(artistAliases.id, detailAliasTrackCountSq.aliasId),
+			)
 			.where(eq(artistAliases.artistId, artistId));
 
 		for (const alias of aliasesData) {
