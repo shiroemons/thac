@@ -74,7 +74,9 @@ async function seed() {
 				nameJa: row.name,
 				shortNameJa: row.short_name || null,
 				categoryCode: row.product_type,
-				numberInSeries: row.series_number || null,
+				numberInSeries: row.series_number
+					? Number.parseFloat(row.series_number)
+					: null,
 				position: i,
 			})
 			.onConflictDoUpdate({
@@ -84,7 +86,9 @@ async function seed() {
 					nameJa: row.name,
 					shortNameJa: row.short_name || null,
 					categoryCode: row.product_type,
-					numberInSeries: row.series_number || null,
+					numberInSeries: row.series_number
+						? Number.parseFloat(row.series_number)
+						: null,
 					position: i,
 				},
 			});

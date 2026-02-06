@@ -262,7 +262,7 @@ const mockWork: PublicWorkDetail = {
 	nameEn: "Touhou Koumakyou",
 	shortNameJa: "紅魔郷",
 	shortNameEn: null,
-	numberInSeries: "6",
+	numberInSeries: 6,
 	releaseDate: "2002-08-11",
 	officialOrganization: "上海アリス幻樂団",
 	notes: null,

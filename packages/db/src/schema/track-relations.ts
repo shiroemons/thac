@@ -2,8 +2,8 @@ import type { InferSelectModel } from "drizzle-orm";
 import {
 	index,
 	integer,
-	numeric,
 	pgTable,
+	real,
 	text,
 	timestamp,
 	uniqueIndex,
@@ -28,8 +28,8 @@ export const trackOfficialSongs = pgTable(
 		),
 		customSongName: text("custom_song_name"),
 		partPosition: integer("part_position"),
-		startSecond: numeric("start_second"),
-		endSecond: numeric("end_second"),
+		startSecond: real("start_second"),
+		endSecond: real("end_second"),
 		notes: text("notes"),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()

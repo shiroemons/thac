@@ -17,22 +17,6 @@ import { handleDbError } from "../../../utils/api-error";
 
 const trackOfficialSongsRouter = new Hono<AdminContext>();
 
-/** DB行のnumeric型フィールド（string）をnumber型に変換するヘルパー */
-function convertNumericFields<
-	T extends { startSecond: string | null; endSecond: string | null },
->(
-	row: T,
-): Omit<T, "startSecond" | "endSecond"> & {
-	startSecond: number | null;
-	endSecond: number | null;
-} {
-	return {
-		...row,
-		startSecond: row.startSecond != null ? Number(row.startSecond) : null,
-		endSecond: row.endSecond != null ? Number(row.endSecond) : null,
-	};
-}
-
 // トラックの原曲紐付け一覧取得
 trackOfficialSongsRouter.get("/:trackId/official-songs", async (c) => {
 	try {
@@ -65,7 +49,7 @@ trackOfficialSongsRouter.get("/:trackId/official-songs", async (c) => {
 
 		return c.json(
 			relations.map((row) => ({
-				...convertNumericFields(row.relation),
+				...row.relation,
 				officialSong: row.officialSong,
 			})),
 		);
@@ -167,18 +151,10 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 			}
 		}
 
-		// 作成（numeric型のフィールドをstring型に変換してDBに挿入）
+		// 作成
 		const result = await db
 			.insert(trackOfficialSongs)
-			.values({
-				...parsed.data,
-				startSecond:
-					parsed.data.startSecond != null
-						? String(parsed.data.startSecond)
-						: null,
-				endSecond:
-					parsed.data.endSecond != null ? String(parsed.data.endSecond) : null,
-			})
+			.values(parsed.data)
 			.returning();
 
 		// Meilisearchへ即時同期
@@ -189,7 +165,7 @@ trackOfficialSongsRouter.post("/:trackId/official-songs", async (c) => {
 			console.error("[Tracks] Failed to sync to Meilisearch:", err);
 		}
 
-		return c.json(result[0] ? convertNumericFields(result[0]) : result[0], 201);
+		return c.json(result[0], 201);
 	} catch (error) {
 		return handleDbError(
 			c,
@@ -268,21 +244,10 @@ trackOfficialSongsRouter.put("/:trackId/official-songs/:id", async (c) => {
 			}
 		}
 
-		// 更新（numeric型のフィールドをstring型に変換してDBに更新）
-		const updateData: Record<string, unknown> = { ...parsed.data };
-		if (parsed.data.startSecond !== undefined) {
-			updateData.startSecond =
-				parsed.data.startSecond != null
-					? String(parsed.data.startSecond)
-					: null;
-		}
-		if (parsed.data.endSecond !== undefined) {
-			updateData.endSecond =
-				parsed.data.endSecond != null ? String(parsed.data.endSecond) : null;
-		}
+		// 更新
 		const result = await db
 			.update(trackOfficialSongs)
-			.set(updateData)
+			.set(parsed.data)
 			.where(eq(trackOfficialSongs.id, id))
 			.returning();
 
@@ -294,7 +259,7 @@ trackOfficialSongsRouter.put("/:trackId/official-songs/:id", async (c) => {
 			console.error("[Tracks] Failed to sync to Meilisearch:", err);
 		}
 
-		return c.json(result[0] ? convertNumericFields(result[0]) : result[0]);
+		return c.json(result[0]);
 	} catch (error) {
 		return handleDbError(
 			c,
@@ -416,7 +381,7 @@ trackOfficialSongsRouter.patch(
 
 			return c.json(
 				updatedRelations.map((row) => ({
-					...convertNumericFields(row.relation),
+					...row.relation,
 					officialSong: row.officialSong,
 				})),
 			);

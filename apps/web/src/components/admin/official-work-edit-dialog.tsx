@@ -45,7 +45,7 @@ export interface OfficialWorkFormData {
 	nameEn: string | null;
 	shortNameJa: string | null;
 	shortNameEn: string | null;
-	numberInSeries: string | null;
+	numberInSeries: number | null;
 	releaseDate: string | null;
 	officialOrganization: string | null;
 	position: number | null;
@@ -498,11 +498,14 @@ export function OfficialWorkEditDialog({
 								<Input
 									id={`${mode}-work-numberInSeries`}
 									type="number"
+									step="any"
 									value={form.numberInSeries ?? ""}
 									onChange={(e) =>
 										setForm({
 											...form,
-											numberInSeries: e.target.value || null,
+											numberInSeries: e.target.value
+												? Number(e.target.value)
+												: null,
 										})
 									}
 									placeholder="例: 6"

@@ -98,7 +98,7 @@ export interface OfficialWork {
 	nameEn: string | null;
 	shortNameJa: string | null;
 	shortNameEn: string | null;
-	numberInSeries: string | null;
+	numberInSeries: number | null;
 	releaseDate: string | null;
 	officialOrganization: string | null;
 	position: number | null;
