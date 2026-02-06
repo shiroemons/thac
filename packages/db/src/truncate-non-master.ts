@@ -1,6 +1,6 @@
-import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
-import { drizzle } from "drizzle-orm/libsql";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
 // Import tables to truncate
 import {
@@ -21,10 +21,9 @@ dotenv.config({
 	path: "../../apps/server/.env",
 });
 
-const client = createClient({
-	url: process.env.DATABASE_URL || "",
-	authToken: process.env.DATABASE_AUTH_TOKEN,
-});
+const client = postgres(
+	process.env.DATABASE_URL || "postgresql://localhost:5432/thac",
+);
 
 const db = drizzle({ client });
 

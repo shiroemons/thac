@@ -5,7 +5,6 @@
  * 作品・ディスク・トラック管理APIのCRUD操作、認証、楽観的ロックをテスト
  */
 
-import type { Database } from "bun:sqlite";
 import {
 	afterAll,
 	beforeAll,
@@ -14,6 +13,7 @@ import {
 	expect,
 	test,
 } from "bun:test";
+import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
 	__setTestDatabase,
@@ -95,22 +95,22 @@ interface TrackResponse {
 
 // 共有テストデータベース
 let testDb: ReturnType<typeof createTestDatabase>["db"];
-let sqlite: Database;
+let client: PGlite;
 
-beforeAll(() => {
-	const result = createTestDatabase();
+beforeAll(async () => {
+	const result = await createTestDatabase();
 	testDb = result.db;
-	sqlite = result.sqlite;
+	client = result.client;
 	__setTestDatabase(testDb);
 });
 
-beforeEach(() => {
-	truncateAllTables(sqlite);
+beforeEach(async () => {
+	await truncateAllTables(client);
 });
 
 afterAll(() => {
 	__resetDatabase();
-	sqlite.close();
+	client.close();
 });
 
 // ヘルパー: テスト用作品を作成

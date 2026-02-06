@@ -1,33 +1,6 @@
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
-
-// リトライ機能付きfetch
-const fetchWithRetry = async (
-	input: string | URL | Request,
-	init?: RequestInit,
-): Promise<Response> => {
-	const maxRetries = 3;
-	const baseDelay = 1000; // 1秒
-
-	for (let attempt = 0; attempt < maxRetries; attempt++) {
-		try {
-			return await fetch(input, init);
-		} catch (error) {
-			const isLastAttempt = attempt === maxRetries - 1;
-			if (isLastAttempt) {
-				throw error;
-			}
-
-			// 指数バックオフで待機
-			const delay = baseDelay * 2 ** attempt;
-			await new Promise((resolve) => setTimeout(resolve, delay));
-		}
-	}
-
-	// TypeScript用（到達しない）
-	throw new Error("Unexpected: all retries exhausted");
-};
 
 // 遅延初期化: ブラウザ側でのモジュールロード時にDBクライアントを初期化しない
 type DrizzleDB = ReturnType<typeof drizzle<typeof schema>>;
@@ -39,7 +12,7 @@ let _testDb: any = null;
 
 /**
  * テスト用DBを設定する（テストでのみ使用）
- * @param testDb - drizzle-orm/bun-sqlite等で作成したテスト用DBインスタンス
+ * @param testDb - drizzle-orm/pglite等で作成したテスト用DBインスタンス
  */
 // biome-ignore lint/suspicious/noExplicitAny: テスト用の汎用DB型
 export function __setTestDatabase(testDb: any): void {
@@ -61,11 +34,9 @@ function getDb(): DrizzleDB {
 	}
 
 	if (!_db) {
-		const client = createClient({
-			url: process.env.DATABASE_URL || "",
-			authToken: process.env.DATABASE_AUTH_TOKEN,
-			fetch: fetchWithRetry,
-		});
+		const client = postgres(
+			process.env.DATABASE_URL || "postgresql://localhost:5432/thac",
+		);
 		_db = drizzle({ client, schema });
 	}
 	return _db;

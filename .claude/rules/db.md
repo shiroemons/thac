@@ -6,7 +6,7 @@ paths: packages/db/**
 
 ## 概要
 
-Drizzle ORMを使用したSQLite（Turso/libsql）データベースパッケージ。
+Drizzle ORMを使用したPostgreSQLデータベースパッケージ。
 
 ## ディレクトリ構成
 
@@ -22,7 +22,7 @@ packages/db/
 └── tsconfig.json
 ```
 
-## コマンド（Docker）
+## コマンド
 
 ```bash
 make db-push       # スキーマをDBにプッシュ
@@ -37,7 +37,7 @@ make db-studio     # Drizzle Studioを起動
 
 - スキーマは`src/schema/`配下に配置
 - 新しいテーブルを追加したら`src/schema/index.ts`でエクスポート
-- スキーマ変更後は`bun run db:generate`でマイグレーション生成
+- スキーマ変更後は`make db-generate`でマイグレーション生成
 - `@thac/db`として他パッケージからインポート可能
 
 ## DB設計原則

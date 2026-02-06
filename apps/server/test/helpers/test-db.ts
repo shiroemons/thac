@@ -1,10 +1,9 @@
-import { Database } from "bun:sqlite";
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { PGlite } from "@electric-sql/pglite";
 // @thac/dbからスキーマをインポート
 import * as dbExports from "@thac/db";
 import { createId } from "@thac/db";
-import { drizzle } from "drizzle-orm/bun-sqlite";
+import { pushSchema } from "drizzle-kit/api";
+import { drizzle } from "drizzle-orm/pglite";
 
 // テーブル定義のみを抽出（関数やオペレータを除外）
 // drizzleはテーブルオブジェクトの形式を期待
@@ -53,242 +52,44 @@ const schema = {
 	releasePublications: dbExports.releasePublications,
 	// 識別子（JANコード）
 	releaseJanCodes: dbExports.releaseJanCodes,
+	// クレジットロール
+	trackCreditRoles: dbExports.trackCreditRoles,
 };
 
 /**
- * テスト用インメモリDBを作成し、マイグレーションを適用
+ * テスト用インメモリ PostgreSQL DB を作成し、スキーマを適用
  */
-export function createTestDatabase() {
-	const sqlite = new Database(":memory:");
-	const db = drizzle(sqlite, { schema });
+export async function createTestDatabase() {
+	const client = new PGlite();
+	const db = drizzle({ client, schema });
 
-	// 欠落しているテーブルを先に作成
-	createMissingTables(sqlite);
+	// スキーマをプッシュ（マイグレーション不要）
+	const { apply } = await pushSchema(schema, db);
+	await apply();
 
-	// マイグレーションを適用
-	applyMigrations(sqlite);
-
-	return { db, sqlite };
+	return { db, client };
 }
 
-/**
- * マイグレーションファイルに欠落しているテーブルを作成
- * NOTE: マイグレーション0007が欠落しているため、手動でテーブルを作成
- */
-function createMissingTables(sqlite: Database) {
-	// releases テーブル
-	sqlite.run(`
-		CREATE TABLE IF NOT EXISTS releases (
-			id TEXT PRIMARY KEY NOT NULL,
-			name TEXT NOT NULL,
-			name_ja TEXT,
-			name_en TEXT,
-			release_date TEXT,
-			release_year INTEGER,
-			release_month INTEGER,
-			release_day INTEGER,
-			release_type TEXT,
-			event_id TEXT REFERENCES events(id) ON DELETE SET NULL,
-			event_day_id TEXT REFERENCES event_days(id) ON DELETE SET NULL,
-			notes TEXT,
-			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-			updated_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
-		)
-	`);
-
-	// discs テーブル
-	sqlite.run(`
-		CREATE TABLE IF NOT EXISTS discs (
-			id TEXT PRIMARY KEY NOT NULL,
-			release_id TEXT NOT NULL REFERENCES releases(id) ON DELETE CASCADE,
-			disc_number INTEGER NOT NULL,
-			disc_name TEXT,
-			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-			updated_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
-		)
-	`);
-
-	// release_circles テーブル
-	sqlite.run(`
-		CREATE TABLE IF NOT EXISTS release_circles (
-			release_id TEXT NOT NULL REFERENCES releases(id) ON DELETE CASCADE,
-			circle_id TEXT NOT NULL REFERENCES circles(id) ON DELETE RESTRICT,
-			participation_type TEXT NOT NULL,
-			position INTEGER DEFAULT 1,
-			PRIMARY KEY (release_id, circle_id, participation_type)
-		)
-	`);
-
-	// tracks テーブル
-	sqlite.run(`
-		CREATE TABLE IF NOT EXISTS tracks (
-			id TEXT PRIMARY KEY NOT NULL,
-			release_id TEXT REFERENCES releases(id) ON DELETE CASCADE,
-			disc_id TEXT REFERENCES discs(id) ON DELETE CASCADE,
-			track_number INTEGER NOT NULL,
-			name TEXT NOT NULL,
-			name_ja TEXT,
-			name_en TEXT,
-			release_date TEXT,
-			release_year INTEGER,
-			release_month INTEGER,
-			release_day INTEGER,
-			event_id TEXT REFERENCES events(id) ON DELETE SET NULL,
-			event_day_id TEXT REFERENCES event_days(id) ON DELETE SET NULL,
-			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-			updated_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
-		)
-	`);
-
-	// track_credits テーブル
-	sqlite.run(`
-		CREATE TABLE IF NOT EXISTS track_credits (
-			id TEXT PRIMARY KEY NOT NULL,
-			track_id TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
-			artist_id TEXT NOT NULL REFERENCES artists(id) ON DELETE RESTRICT,
-			credit_name TEXT NOT NULL,
-			alias_type_code TEXT REFERENCES alias_types(code),
-			credit_position INTEGER,
-			artist_alias_id TEXT REFERENCES artist_aliases(id) ON DELETE SET NULL,
-			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-			updated_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
-		)
-	`);
-
-	// track_credit_roles テーブル
-	sqlite.run(`
-		CREATE TABLE IF NOT EXISTS track_credit_roles (
-			track_credit_id TEXT NOT NULL REFERENCES track_credits(id) ON DELETE CASCADE,
-			role_code TEXT NOT NULL REFERENCES credit_roles(code),
-			role_position INTEGER NOT NULL DEFAULT 1,
-			PRIMARY KEY (track_credit_id, role_code, role_position)
-		)
-	`);
-
-	// genres テーブル（マスタデータ）
-	sqlite.run(`
-		CREATE TABLE IF NOT EXISTS genres (
-			code TEXT PRIMARY KEY NOT NULL,
-			name_ja TEXT NOT NULL,
-			name_en TEXT NOT NULL,
-			color TEXT NOT NULL,
-			icon TEXT NOT NULL,
-			description TEXT,
-			sort_order INTEGER DEFAULT 0 NOT NULL,
-			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-			updated_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
-		)
-	`);
-
-	// track_genres テーブル（中間テーブル）
-	sqlite.run(`
-		CREATE TABLE IF NOT EXISTS track_genres (
-			track_id TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
-			genre_code TEXT NOT NULL REFERENCES genres(code) ON DELETE RESTRICT,
-			position INTEGER DEFAULT 1 NOT NULL,
-			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-			PRIMARY KEY (track_id, genre_code)
-		)
-	`);
-
-	// tags テーブル（マスタデータ）
-	sqlite.run(`
-		CREATE TABLE IF NOT EXISTS tags (
-			id TEXT PRIMARY KEY NOT NULL,
-			name TEXT NOT NULL UNIQUE,
-			attributes TEXT,
-			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-			updated_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
-		)
-	`);
-
-	// track_tags テーブル（中間テーブル）
-	sqlite.run(`
-		CREATE TABLE IF NOT EXISTS track_tags (
-			track_id TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
-			tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE RESTRICT,
-			position INTEGER NOT NULL,
-			is_locked INTEGER NOT NULL DEFAULT 0,
-			created_at INTEGER DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-			PRIMARY KEY (track_id, tag_id)
-		)
-	`);
-
-	// track_tags インデックス
-	sqlite.run(`
-		CREATE INDEX IF NOT EXISTS idx_track_tags_track ON track_tags(track_id)
-	`);
-	sqlite.run(`
-		CREATE INDEX IF NOT EXISTS idx_track_tags_tag ON track_tags(tag_id)
-	`);
-}
+export type TestDb = Awaited<ReturnType<typeof createTestDatabase>>["db"];
 
 /**
- * マイグレーションファイルを読み込んで適用
+ * 全テーブルのデータをクリア（TRUNCATE CASCADE使用）
  */
-function applyMigrations(sqlite: Database) {
-	const migrationsDir = join(
-		import.meta.dir,
-		"../../../../packages/db/src/migrations",
+export async function truncateAllTables(client: PGlite) {
+	// テーブル名一覧を取得
+	const result = await client.query<{ tablename: string }>(
+		"SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT LIKE '_drizzle%'",
 	);
 
-	const files = readdirSync(migrationsDir)
-		.filter((f) => f.endsWith(".sql"))
-		.sort();
-
-	for (const file of files) {
-		const sql = readFileSync(join(migrationsDir, file), "utf-8");
-		// `--> statement-breakpoint` で分割して各ステートメントを実行
-		const statements = sql.split("--> statement-breakpoint");
-		for (const stmt of statements) {
-			const trimmed = stmt.trim();
-			if (trimmed) {
-				try {
-					sqlite.run(trimmed);
-				} catch (error) {
-					const message = error instanceof Error ? error.message : "";
-					// 許容するエラー:
-					// - "already exists": CREATE時に既に存在
-					// - "no such index": DROP時に存在しない
-					// - "no such table": DROP時に存在しない
-					const ignorableErrors = [
-						"already exists",
-						"no such index",
-						"no such table",
-					];
-					if (!ignorableErrors.some((e) => message.includes(e))) {
-						throw error;
-					}
-				}
-			}
-		}
+	if (result.rows.length > 0) {
+		const tableNames = result.rows.map((r) => `"${r.tablename}"`).join(", ");
+		await client.query(`TRUNCATE TABLE ${tableNames} CASCADE`);
 	}
-}
-
-/**
- * 全テーブルのデータをクリア（外部キー制約を一時的に無効化）
- */
-export function truncateAllTables(sqlite: Database) {
-	sqlite.run("PRAGMA foreign_keys = OFF");
-
-	const tables = sqlite
-		.query<{ name: string }, []>(
-			"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_drizzle%'",
-		)
-		.all();
-
-	for (const { name } of tables) {
-		sqlite.run(`DELETE FROM "${name}"`);
-	}
-
-	sqlite.run("PRAGMA foreign_keys = ON");
 }
 
 // ============================================================================
 // テスト用タグデータ作成ヘルパー関数
 // ============================================================================
-
-type TestDb = ReturnType<typeof createTestDatabase>["db"];
 
 /**
  * テスト用タグを作成

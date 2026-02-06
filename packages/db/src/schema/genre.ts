@@ -1,18 +1,19 @@
-import { type InferSelectModel, sql } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 import {
 	index,
 	integer,
+	pgTable,
 	primaryKey,
-	sqliteTable,
 	text,
-} from "drizzle-orm/sqlite-core";
+	timestamp,
+} from "drizzle-orm/pg-core";
 import { tracks } from "./track";
 
 /**
  * Genres table - master table for music genres
  * code is the primary key (e.g., rock, jazz, electronic)
  */
-export const genres = sqliteTable(
+export const genres = pgTable(
 	"genres",
 	{
 		code: text("code").primaryKey(),
@@ -22,11 +23,11 @@ export const genres = sqliteTable(
 		icon: text("icon").notNull(),
 		description: text("description"),
 		sortOrder: integer("sort_order").default(0).notNull(),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -37,7 +38,7 @@ export const genres = sqliteTable(
  * Track Genres table - junction table for track-genre many-to-many relationship
  * Maximum 5 genres per track
  */
-export const trackGenres = sqliteTable(
+export const trackGenres = pgTable(
 	"track_genres",
 	{
 		trackId: text("track_id")
@@ -47,8 +48,8 @@ export const trackGenres = sqliteTable(
 			.notNull()
 			.references(() => genres.code, { onDelete: "restrict" }),
 		position: integer("position").default(1).notNull(),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
 	},
 	(table) => [

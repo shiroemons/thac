@@ -1,24 +1,24 @@
-import { sql } from "drizzle-orm";
 import {
 	index,
 	integer,
-	sqliteTable,
+	pgTable,
 	text,
+	timestamp,
 	uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 
 // イベントシリーズテーブル（例: コミックマーケット）
-export const eventSeries = sqliteTable(
+export const eventSeries = pgTable(
 	"event_series",
 	{
 		id: text("id").primaryKey(),
 		name: text("name").notNull(),
 		sortOrder: integer("sort_order").default(0).notNull(),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -30,7 +30,7 @@ export const eventSeries = sqliteTable(
 );
 
 // イベントテーブル（例: コミックマーケット108）
-export const events = sqliteTable(
+export const events = pgTable(
 	"events",
 	{
 		id: text("id").primaryKey(),
@@ -43,11 +43,11 @@ export const events = sqliteTable(
 		venue: text("venue"),
 		startDate: text("start_date"),
 		endDate: text("end_date"),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -63,7 +63,7 @@ export const events = sqliteTable(
 );
 
 // イベント開催日テーブル（1日目、2日目など）
-export const eventDays = sqliteTable(
+export const eventDays = pgTable(
 	"event_days",
 	{
 		id: text("id").primaryKey(),
@@ -72,11 +72,11 @@ export const eventDays = sqliteTable(
 			.references(() => events.id, { onDelete: "cascade" }),
 		dayNumber: integer("day_number").notNull(),
 		date: text("date").notNull(),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},

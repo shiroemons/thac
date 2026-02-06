@@ -3,7 +3,7 @@
 	"packages": [
 		"bun@1.3.8",
 		"meilisearch@latest",
-		"sqlite@latest",
+		"postgresql_18@18.1",
 		"git@latest",
 		"curl@latest",
 		"gnumake@latest"
@@ -15,14 +15,23 @@
 		"MEILI_NO_ANALYTICS": "true",
 		"MEILI_URL": "http://localhost:7700",
 		"CORS_ORIGIN": "http://localhost:3000",
-		"BETTER_AUTH_URL": "http://localhost:3000"
+		"BETTER_AUTH_URL": "http://localhost:3000",
+		"DATABASE_URL": "postgresql://localhost:5432/thac",
+		"PGDATABASE": "thac"
 	},
 	"shell": {
 		"init_hook": [
+			"# PostgreSQL初期化（初回のみ）",
+			"if [ ! -f $PGDATA/PG_VERSION ]; then",
+			"  initdb --no-locale --encoding=UTF8",
+			"  echo \"listen_addresses = 'localhost'\" >> $PGDATA/postgresql.conf",
+			"  echo \"port = 5432\" >> $PGDATA/postgresql.conf",
+			"fi",
 			"echo ''",
 			"echo '📦 thac devbox environment'",
 			"echo '   Bun: '$(bun --version)",
 			"echo '   Meilisearch: '$(meilisearch --version | head -1)",
+			"echo '   PostgreSQL: '$(pg_config --version)",
 			"echo ''",
 			"echo '🚀 Quick start:'",
 			"echo '   devbox services up     - Start all services'",

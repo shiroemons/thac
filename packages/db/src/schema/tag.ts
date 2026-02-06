@@ -1,26 +1,28 @@
-import { type InferSelectModel, relations, sql } from "drizzle-orm";
+import { type InferSelectModel, relations } from "drizzle-orm";
 import {
+	boolean,
 	index,
 	integer,
+	pgTable,
 	primaryKey,
-	sqliteTable,
 	text,
-} from "drizzle-orm/sqlite-core";
+	timestamp,
+} from "drizzle-orm/pg-core";
 import { tracks } from "./track";
 
 /**
  * Tags table - master table for user-defined tags
  * id is TypeID format with "tag_" prefix
  */
-export const tags = sqliteTable("tags", {
+export const tags = pgTable("tags", {
 	id: text("id").primaryKey(),
 	name: text("name").notNull().unique(),
 	attributes: text("attributes"), // JSON format (nullable)
-	createdAt: integer("created_at", { mode: "timestamp_ms" })
-		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+	createdAt: timestamp("created_at", { withTimezone: true })
+		.defaultNow()
 		.notNull(),
-	updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+	updatedAt: timestamp("updated_at", { withTimezone: true })
+		.defaultNow()
 		.$onUpdate(() => new Date())
 		.notNull(),
 });
@@ -29,7 +31,7 @@ export const tags = sqliteTable("tags", {
  * Track Tags table - junction table for track-tag many-to-many relationship
  * Maximum 15 tags per track
  */
-export const trackTags = sqliteTable(
+export const trackTags = pgTable(
 	"track_tags",
 	{
 		trackId: text("track_id")
@@ -39,11 +41,9 @@ export const trackTags = sqliteTable(
 			.notNull()
 			.references(() => tags.id, { onDelete: "restrict" }),
 		position: integer("position").notNull(), // 1-15
-		isLocked: integer("is_locked", { mode: "boolean" })
-			.notNull()
-			.default(false),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		isLocked: boolean("is_locked").notNull().default(false),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
 	},
 	(table) => [

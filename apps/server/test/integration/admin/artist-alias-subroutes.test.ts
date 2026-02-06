@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
 	afterAll,
 	beforeAll,
@@ -7,6 +6,7 @@ import {
 	expect,
 	test,
 } from "bun:test";
+import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
 	__setTestDatabase,
@@ -71,13 +71,13 @@ interface AliasTracksResult {
 }
 
 describe("Admin Artist Alias Subroutes API", () => {
-	let sqlite: Database;
+	let client: PGlite;
 	let circlesApp: ReturnType<typeof createTestAdminApp>;
 	let tracksApp: ReturnType<typeof createTestAdminApp>;
 
-	beforeAll(() => {
-		const testDb = createTestDatabase();
-		sqlite = testDb.sqlite;
+	beforeAll(async () => {
+		const testDb = await createTestDatabase();
+		client = testDb.client;
 		__setTestDatabase(testDb.db);
 
 		// 複合ルーターを作成
@@ -90,13 +90,13 @@ describe("Admin Artist Alias Subroutes API", () => {
 		tracksApp = createTestAdminApp(combinedTracksRouter);
 	});
 
-	beforeEach(() => {
-		truncateAllTables(sqlite);
+	beforeEach(async () => {
+		await truncateAllTables(client);
 	});
 
 	afterAll(() => {
 		__resetDatabase();
-		sqlite.close();
+		client.close();
 	});
 
 	describe("GET /:aliasId/circles - アーティスト名義の参加サークル一覧取得", () => {

@@ -1,11 +1,11 @@
-import { type InferSelectModel, sql } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 import {
 	index,
-	integer,
-	sqliteTable,
+	pgTable,
 	text,
+	timestamp,
 	uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 import { platforms } from "./master";
 import { releases } from "./release";
 import { tracks } from "./track";
@@ -13,7 +13,7 @@ import { tracks } from "./track";
 /**
  * ReleasePublications table - stores publication/distribution links for releases
  */
-export const releasePublications = sqliteTable(
+export const releasePublications = pgTable(
 	"release_publications",
 	{
 		id: text("id").primaryKey(),
@@ -24,11 +24,11 @@ export const releasePublications = sqliteTable(
 			.notNull()
 			.references(() => platforms.code, { onDelete: "restrict" }),
 		url: text("url").notNull(),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -42,7 +42,7 @@ export const releasePublications = sqliteTable(
 /**
  * TrackPublications table - stores publication/distribution links for individual tracks
  */
-export const trackPublications = sqliteTable(
+export const trackPublications = pgTable(
 	"track_publications",
 	{
 		id: text("id").primaryKey(),
@@ -53,11 +53,11 @@ export const trackPublications = sqliteTable(
 			.notNull()
 			.references(() => platforms.code, { onDelete: "restrict" }),
 		url: text("url").notNull(),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},

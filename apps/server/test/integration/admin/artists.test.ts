@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
 	afterAll,
 	beforeAll,
@@ -7,6 +6,7 @@ import {
 	expect,
 	test,
 } from "bun:test";
+import type { PGlite } from "@electric-sql/pglite";
 import { __resetDatabase, __setTestDatabase, artists, db } from "@thac/db";
 import { artistsRouter } from "../../../src/routes/admin/artists";
 import { createTestArtist } from "../../helpers/fixtures";
@@ -45,23 +45,23 @@ interface ArtistResponse {
 }
 
 describe("Admin Artists API", () => {
-	let sqlite: Database;
+	let client: PGlite;
 	let app: ReturnType<typeof createTestAdminApp>;
 
-	beforeAll(() => {
-		const testDb = createTestDatabase();
-		sqlite = testDb.sqlite;
+	beforeAll(async () => {
+		const testDb = await createTestDatabase();
+		client = testDb.client;
 		__setTestDatabase(testDb.db);
 		app = createTestAdminApp(artistsRouter);
 	});
 
-	beforeEach(() => {
-		truncateAllTables(sqlite);
+	beforeEach(async () => {
+		await truncateAllTables(client);
 	});
 
 	afterAll(() => {
 		__resetDatabase();
-		sqlite.close();
+		client.close();
 	});
 
 	describe("GET / - 一覧取得", () => {

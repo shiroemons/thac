@@ -2,11 +2,12 @@ import { type InferSelectModel, sql } from "drizzle-orm";
 import {
 	index,
 	integer,
+	pgTable,
 	primaryKey,
-	sqliteTable,
 	text,
+	timestamp,
 	uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 import { artistAliases, artists } from "./artist-circle";
 import { eventDays, events } from "./event";
 import { aliasTypes, creditRoles } from "./master";
@@ -16,7 +17,7 @@ import { discs, releases } from "./release";
  * Tracks table - holds individual track/song information within a release
  * disc_id is nullable to support single-track releases without disc structure
  */
-export const tracks = sqliteTable(
+export const tracks = pgTable(
 	"tracks",
 	{
 		id: text("id").primaryKey(),
@@ -38,11 +39,11 @@ export const tracks = sqliteTable(
 		eventDayId: text("event_day_id").references(() => eventDays.id, {
 			onDelete: "set null",
 		}),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -74,7 +75,7 @@ export const tracks = sqliteTable(
  * Track Credits table - maps credit display names to artists/aliases
  * creditName is the name shown on the physical/digital release
  */
-export const trackCredits = sqliteTable(
+export const trackCredits = pgTable(
 	"track_credits",
 	{
 		id: text("id").primaryKey(),
@@ -90,11 +91,11 @@ export const trackCredits = sqliteTable(
 		artistAliasId: text("artist_alias_id").references(() => artistAliases.id, {
 			onDelete: "set null",
 		}),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -117,7 +118,7 @@ export const trackCredits = sqliteTable(
  * Track Credit Roles table - many-to-many relationship between credits and roles
  * Composite primary key: (trackCreditId, roleCode, rolePosition)
  */
-export const trackCreditRoles = sqliteTable(
+export const trackCreditRoles = pgTable(
 	"track_credit_roles",
 	{
 		trackCreditId: text("track_credit_id")

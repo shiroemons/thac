@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createClient } from "@libsql/client";
 import dotenv from "dotenv";
-import { drizzle } from "drizzle-orm/libsql";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { officialSongLinks, officialWorkLinks } from "./schema/official";
 import { createId } from "./utils/id";
 
@@ -11,10 +11,9 @@ dotenv.config({
 	path: "../../apps/server/.env",
 });
 
-const client = createClient({
-	url: process.env.DATABASE_URL || "",
-	authToken: process.env.DATABASE_AUTH_TOKEN,
-});
+const client = postgres(
+	process.env.DATABASE_URL || "postgresql://localhost:5432/thac",
+);
 
 const db = drizzle({ client });
 

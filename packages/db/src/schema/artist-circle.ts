@@ -1,11 +1,11 @@
-import { sql } from "drizzle-orm";
 import {
+	boolean,
 	index,
-	integer,
-	sqliteTable,
+	pgTable,
 	text,
+	timestamp,
 	uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 import { aliasTypes, platforms } from "./master";
 
 // 頭文字の文字種（共通enum値として使用）
@@ -22,7 +22,7 @@ export const INITIAL_SCRIPTS = [
 export type InitialScript = (typeof INITIAL_SCRIPTS)[number];
 
 // アーティストテーブル
-export const artists = sqliteTable(
+export const artists = pgTable(
 	"artists",
 	{
 		id: text("id").primaryKey(),
@@ -33,11 +33,11 @@ export const artists = sqliteTable(
 		nameInitial: text("name_initial"),
 		initialScript: text("initial_script").notNull(),
 		notes: text("notes"),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -49,7 +49,7 @@ export const artists = sqliteTable(
 );
 
 // アーティスト別名義テーブル
-export const artistAliases = sqliteTable(
+export const artistAliases = pgTable(
 	"artist_aliases",
 	{
 		id: text("id").primaryKey(),
@@ -62,11 +62,11 @@ export const artistAliases = sqliteTable(
 		initialScript: text("initial_script").notNull(),
 		periodFrom: text("period_from"),
 		periodTo: text("period_to"),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -77,7 +77,7 @@ export const artistAliases = sqliteTable(
 );
 
 // サークルテーブル
-export const circles = sqliteTable(
+export const circles = pgTable(
 	"circles",
 	{
 		id: text("id").primaryKey(),
@@ -88,11 +88,11 @@ export const circles = sqliteTable(
 		nameInitial: text("name_initial"),
 		initialScript: text("initial_script").notNull(),
 		notes: text("notes"),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -103,7 +103,7 @@ export const circles = sqliteTable(
 );
 
 // サークル外部リンクテーブル
-export const circleLinks = sqliteTable(
+export const circleLinks = pgTable(
 	"circle_links",
 	{
 		id: text("id").primaryKey(),
@@ -116,17 +116,13 @@ export const circleLinks = sqliteTable(
 		url: text("url").notNull(),
 		platformId: text("platform_id"),
 		handle: text("handle"),
-		isOfficial: integer("is_official", { mode: "boolean" })
-			.default(true)
+		isOfficial: boolean("is_official").default(true).notNull(),
+		isPrimary: boolean("is_primary").default(false).notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		isPrimary: integer("is_primary", { mode: "boolean" })
-			.default(false)
-			.notNull(),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},

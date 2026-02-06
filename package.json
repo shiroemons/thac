@@ -13,8 +13,8 @@
 			"typescript": "^5",
 			"@types/bun": "^1.3.8",
 			"better-auth": "1.4.18",
-			"@libsql/client": "0.17.0",
-			"libsql": "0.5.22",
+			"postgres": "^3.4.7",
+			"@electric-sql/pglite": "^0.2.17",
 			"nanoid": "^5.1.6"
 		}
 	},

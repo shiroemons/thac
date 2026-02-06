@@ -1,12 +1,12 @@
-import { sql } from "drizzle-orm";
 import {
 	index,
 	integer,
+	pgTable,
 	primaryKey,
-	sqliteTable,
 	text,
+	timestamp,
 	uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 import { circles } from "./artist-circle";
 import { eventDays, events } from "./event";
 
@@ -33,7 +33,7 @@ export const PARTICIPATION_TYPES = [
 export type ParticipationType = (typeof PARTICIPATION_TYPES)[number];
 
 // リリーステーブル
-export const releases = sqliteTable(
+export const releases = pgTable(
 	"releases",
 	{
 		id: text("id").primaryKey(),
@@ -52,11 +52,11 @@ export const releases = sqliteTable(
 			onDelete: "set null",
 		}),
 		notes: text("notes"),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -71,7 +71,7 @@ export const releases = sqliteTable(
 );
 
 // ディスクテーブル
-export const discs = sqliteTable(
+export const discs = pgTable(
 	"discs",
 	{
 		id: text("id").primaryKey(),
@@ -80,11 +80,11 @@ export const discs = sqliteTable(
 			.references(() => releases.id, { onDelete: "cascade" }),
 		discNumber: integer("disc_number").notNull(),
 		discName: text("disc_name"),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -98,7 +98,7 @@ export const discs = sqliteTable(
 );
 
 // リリースサークル関連テーブル
-export const releaseCircles = sqliteTable(
+export const releaseCircles = pgTable(
 	"release_circles",
 	{
 		releaseId: text("release_id")
