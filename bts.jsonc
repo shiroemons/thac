@@ -5,7 +5,7 @@
   "$schema": "https://r2.better-t-stack.dev/schema.json",
   "version": "3.8.0",
   "createdAt": "2025-12-13T12:57:34.753Z",
-  "database": "sqlite",
+  "database": "postgresql",
   "orm": "drizzle",
   "backend": "hono",
   "runtime": "bun",
@@ -20,7 +20,7 @@
   "auth": "better-auth",
   "payments": "none",
   "packageManager": "bun",
-  "dbSetup": "turso",
+  "dbSetup": "local",
   "api": "none",
   "webDeploy": "none",
   "serverDeploy": "none"
