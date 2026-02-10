@@ -4,6 +4,7 @@ import { cleanup } from "@thac/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { authRateLimiter, methodRateLimiter } from "./middleware/rate-limit";
 import { adminRouter } from "./routes/admin";
 import { publicRouter } from "./routes/public";
 
@@ -21,9 +22,11 @@ app.use(
 	}),
 );
 
+app.use("/api/auth/*", authRateLimiter);
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 // 公開API（認証不要）
+app.use("/api/public/*", methodRateLimiter);
 app.route("/api/public", publicRouter);
 
 // 管理者API

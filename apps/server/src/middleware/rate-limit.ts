@@ -45,6 +45,15 @@ const batchRateLimiter = rateLimiter({
 	message: { error: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED },
 });
 
+// 認証エンドポイント用（10リクエスト/分、IP基準）
+export const authRateLimiter = rateLimiter({
+	windowMs: 60 * 1000,
+	limit: isDev ? 100 : 10,
+	standardHeaders: "draft-6",
+	keyGenerator: (c: Context) => c.req.header("x-forwarded-for") ?? "anonymous",
+	message: { error: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED },
+});
+
 /**
  * HTTPメソッド・パス別のレート制限ミドルウェア
  * 認証ミドルウェアの後に適用することで、ユーザーIDでレート制限を適用可能
