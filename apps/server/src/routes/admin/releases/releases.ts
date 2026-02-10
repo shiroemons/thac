@@ -52,7 +52,7 @@ async function validateEventConsistency(
 	// event_day_id が指定されている場合
 	if (eventDayId) {
 		const eventDayResult = await db
-			.select()
+			.select({ id: eventDays.id, eventId: eventDays.eventId })
 			.from(eventDays)
 			.where(eq(eventDays.id, eventDayId))
 			.limit(1);

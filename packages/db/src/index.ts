@@ -44,6 +44,7 @@ function getDb(): DrizzleDB {
 			idle_timeout: 20,
 			connect_timeout: 10,
 			ssl: resolveSslConfig(url),
+			onnotice: (notice) => console.warn("[PostgreSQL Notice]", notice.message),
 			connection: {
 				application_name: "thac-server",
 				statement_timeout: 30000, // 30 seconds
@@ -64,7 +65,11 @@ export async function cleanup(): Promise<void> {
 		const client = _sql;
 		_sql = null;
 		_db = null;
-		await client.end({ timeout: 5 });
+		try {
+			await client.end({ timeout: 5 });
+		} catch {
+			// シャットダウン中のエラーは無視
+		}
 	}
 }
 
@@ -84,6 +89,7 @@ export {
 	desc,
 	eq,
 	gt,
+	ilike,
 	inArray,
 	isNotNull,
 	isNull,
