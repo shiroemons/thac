@@ -17,6 +17,15 @@ if (process.env.NODE_ENV === "production") {
 	}
 }
 
+if (process.env.NODE_ENV === "production") {
+	const corsOrigin = process.env.CORS_ORIGIN;
+	if (!corsOrigin) {
+		throw new Error(
+			"CORS_ORIGIN must be set in production (e.g. https://your-domain.com)",
+		);
+	}
+}
+
 const app = new Hono();
 
 app.use(logger());
