@@ -323,11 +323,15 @@ circlesRouter.get("/:id/releases", async (c) => {
 
 		const offset = (page - 1) * limit;
 
-		// トラック数サブクエリ
-		const trackCountSubquery = db
-			.select({ count: count() })
+		// トラック数を事前集計（相関サブクエリ → LEFT JOIN最適化）
+		const trackCountSq = db
+			.select({
+				releaseId: tracks.releaseId,
+				trackCount: count().as("track_count"),
+			})
 			.from(tracks)
-			.where(eq(tracks.releaseId, releases.id));
+			.groupBy(tracks.releaseId)
+			.as("track_counts");
 
 		// データ取得
 		const [data, totalResult] = await Promise.all([
@@ -341,10 +345,11 @@ circlesRouter.get("/:id/releases", async (c) => {
 					participationType: releaseCircles.participationType,
 					eventId: events.id,
 					eventName: events.name,
-					trackCount: sql<number>`(${trackCountSubquery})`,
+					trackCount: sql<number>`COALESCE(${trackCountSq.trackCount}, 0)`,
 				})
 				.from(releaseCircles)
 				.innerJoin(releases, eq(releaseCircles.releaseId, releases.id))
+				.leftJoin(trackCountSq, eq(releases.id, trackCountSq.releaseId))
 				.leftJoin(events, eq(releases.eventId, events.id))
 				.where(eq(releaseCircles.circleId, circleId))
 				.orderBy(desc(releases.releaseDate))
