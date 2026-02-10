@@ -752,29 +752,33 @@ tracksAdminRouter.put("/:trackId/tags", async (c) => {
 				(t) => !lockedTagNames.has(t.name.toLowerCase()),
 			);
 
-			// 各タグ名に対して既存タグを検索、なければ作成
+			// 全タグ名をバッチで検索（N+1クエリ解消）
 			const resolvedTags: Array<{ id: string; name: string }> = [];
-			for (const data of newTagData) {
-				// 既存タグを検索（大文字小文字区別なし）
-				const existingTag = await tx
+			if (newTagData.length > 0) {
+				const tagNames = newTagData.map((d) => d.name.toLowerCase());
+				const existingTags = await tx
 					.select({ id: tags.id, name: tags.name })
 					.from(tags)
-					.where(sql`LOWER(${tags.name}) = LOWER(${data.name})`)
-					.limit(1);
+					.where(sql`LOWER(${tags.name}) IN ${tagNames}`);
 
-				if (existingTag.length > 0 && existingTag[0]) {
-					resolvedTags.push({
-						id: existingTag[0].id,
-						name: existingTag[0].name,
-					});
-				} else {
-					// 新規タグを作成
-					const newId = `tag_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-					await tx.insert(tags).values({
-						id: newId,
-						name: data.name,
-					});
-					resolvedTags.push({ id: newId, name: data.name });
+				const existingTagMap = new Map(
+					existingTags.map((t) => [t.name.toLowerCase(), t]),
+				);
+
+				// 新規タグをバッチ作成
+				const newTags: Array<{ id: string; name: string }> = [];
+				for (const data of newTagData) {
+					const existing = existingTagMap.get(data.name.toLowerCase());
+					if (existing) {
+						resolvedTags.push({ id: existing.id, name: existing.name });
+					} else {
+						const newId = `tag_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+						newTags.push({ id: newId, name: data.name });
+						resolvedTags.push({ id: newId, name: data.name });
+					}
+				}
+				if (newTags.length > 0) {
+					await tx.insert(tags).values(newTags);
 				}
 			}
 
@@ -784,16 +788,14 @@ tracksAdminRouter.put("/:trackId/tags", async (c) => {
 			);
 
 			// position計算: ロック済みタグの数 + 新規タグの順序
-			let position = lockedTags.length + 1;
-			for (const tag of resolvedTags) {
-				const isLocked = tagDataMap.get(tag.name.toLowerCase()) ?? false;
-				await tx.insert(trackTags).values({
+			if (resolvedTags.length > 0) {
+				const trackTagValues = resolvedTags.map((tag, i) => ({
 					trackId,
 					tagId: tag.id,
-					position,
-					isLocked,
-				});
-				position++;
+					position: lockedTags.length + 1 + i,
+					isLocked: tagDataMap.get(tag.name.toLowerCase()) ?? false,
+				}));
+				await tx.insert(trackTags).values(trackTagValues);
 			}
 
 			// 更新後のタグ情報を取得
