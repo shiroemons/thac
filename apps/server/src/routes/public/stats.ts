@@ -10,6 +10,7 @@ import {
 	eq,
 	eventSeries,
 	events,
+	inArray,
 	isNotNull,
 	ne,
 	officialSongs,
@@ -685,28 +686,65 @@ statsRouter.get("/recent-updates", async (c) => {
 			return c.json(cached);
 		}
 
-		// 最新の作品を取得し、サークル情報をJOIN
-		const recentReleasesResult = await db
+		// Step 1: 最新の10リリースIDを取得（重複なし）
+		const recentReleaseIds = await db
 			.select({
 				id: releases.id,
-				title: releases.name,
-				circleName: circles.name,
-				circleId: circles.id,
-				createdAt: releases.createdAt,
-				updatedAt: releases.updatedAt,
 			})
 			.from(releases)
-			.leftJoin(releaseCircles, eq(releases.id, releaseCircles.releaseId))
-			.leftJoin(circles, eq(releaseCircles.circleId, circles.id))
 			.orderBy(desc(releases.updatedAt))
 			.limit(10);
 
+		if (recentReleaseIds.length === 0) {
+			const response = { data: [] };
+			setCache(cacheKey, response, CACHE_TTL.STATS_RECENT_UPDATES);
+			setCacheHeaders(c, { maxAge: CACHE_TTL.STATS_RECENT_UPDATES });
+			return c.json(response);
+		}
+
+		const ids = recentReleaseIds.map((r) => r.id);
+
+		// Step 2: リリース詳細とサークル情報を取得
+		const [releasesData, circlesData] = await Promise.all([
+			db
+				.select({
+					id: releases.id,
+					title: releases.name,
+					createdAt: releases.createdAt,
+					updatedAt: releases.updatedAt,
+				})
+				.from(releases)
+				.where(inArray(releases.id, ids))
+				.orderBy(desc(releases.updatedAt)),
+			db
+				.select({
+					releaseId: releaseCircles.releaseId,
+					circleId: circles.id,
+					circleName: circles.name,
+				})
+				.from(releaseCircles)
+				.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
+				.where(inArray(releaseCircles.releaseId, ids)),
+		]);
+
+		// Step 3: サークルをリリースIDでグルーピング
+		const circlesByRelease = new Map<
+			string,
+			Array<{ id: string; name: string }>
+		>();
+		for (const c of circlesData) {
+			const existing = circlesByRelease.get(c.releaseId) ?? [];
+			if (!circlesByRelease.has(c.releaseId)) {
+				circlesByRelease.set(c.releaseId, existing);
+			}
+			existing.push({ id: c.circleId, name: c.circleName });
+		}
+
 		const response = {
-			data: recentReleasesResult.map((row) => ({
+			data: releasesData.map((row) => ({
 				id: row.id,
 				title: row.title,
-				circleName: row.circleName ?? null,
-				circleId: row.circleId ?? null,
+				circles: circlesByRelease.get(row.id) ?? [],
 				date: row.updatedAt?.toISOString() ?? null,
 				type:
 					row.createdAt?.getTime() === row.updatedAt?.getTime()
