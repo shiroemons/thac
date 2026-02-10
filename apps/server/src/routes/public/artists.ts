@@ -11,6 +11,7 @@ import {
 	desc,
 	eq,
 	genres,
+	ilike,
 	inArray,
 	isNotNull,
 	isNull,
@@ -83,19 +84,6 @@ function parseNameId(nameId: string): {
 	};
 }
 
-// 名義エントリの型定義
-interface NameEntry {
-	id: string;
-	name: string;
-	artistId: string;
-	artistName: string;
-	isMainName: boolean;
-	aliasTypeCode: string | null;
-	nameInitial: string | null;
-	initialScript: string;
-	trackCount: number;
-}
-
 /**
  * GET /api/public/artists
  * 名義一覧を取得（ページネーション、フィルタ、検索対応）
@@ -104,7 +92,7 @@ interface NameEntry {
 artistsRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
-		const limit = Math.min(Number(c.req.query("limit")) || 20, 5000);
+		const limit = Math.min(Number(c.req.query("limit")) || 20, 500);
 		const initialScript = c.req.query("initialScript");
 		const initial = c.req.query("initial");
 		const row = c.req.query("row");
@@ -132,6 +120,37 @@ artistsRouter.get("/", async (c) => {
 			return c.json(cached);
 		}
 
+		const offset = (page - 1) * limit;
+
+		// SQL WHERE条件を動的に構築
+		const conditions: SQL<unknown>[] = [];
+
+		// 文字種フィルター
+		if (initialScript && initialScript !== "all") {
+			const scripts = SCRIPT_CATEGORY_MAP[initialScript];
+			if (scripts) {
+				conditions.push(inArray(artistAliases.initialScript, scripts));
+			}
+		}
+
+		// アルファベット頭文字フィルター
+		if (initial && /^[A-Z]$/.test(initial)) {
+			conditions.push(eq(artistAliases.nameInitial, initial));
+		}
+
+		// かな行フィルター
+		if (row && KANA_ROW_PATTERNS[row]) {
+			const kanaChars = KANA_ROW_PATTERNS[row];
+			conditions.push(inArray(artistAliases.nameInitial, kanaChars));
+		}
+
+		// 検索フィルター
+		if (search) {
+			conditions.push(ilike(artistAliases.name, `%${search}%`));
+		}
+
+		const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
 		// 別名義ごとのトラック数を集計する派生テーブル
 		const aliasTrackCountSq = db
 			.select({
@@ -145,156 +164,120 @@ artistsRouter.get("/", async (c) => {
 			.groupBy(trackCredits.artistAliasId)
 			.as("alias_track_count_sq");
 
-		// 別名義を取得（メイン名義は一覧から除外）
-		const aliasesQuery = await db
-			.select({
-				aliasId: artistAliases.id,
-				aliasName: artistAliases.name,
-				aliasTypeCode: artistAliases.aliasTypeCode,
-				aliasNameInitial: artistAliases.nameInitial,
-				aliasInitialScript: artistAliases.initialScript,
-				artistId: artists.id,
-				artistName: artists.name,
-				trackCount: sql<number>`coalesce(${aliasTrackCountSq.count}, 0)`,
-			})
-			.from(artistAliases)
-			.innerJoin(artists, eq(artistAliases.artistId, artists.id))
-			.leftJoin(
-				aliasTrackCountSq,
-				eq(artistAliases.id, aliasTrackCountSq.aliasId),
-			);
+		// ソート条件を構築
+		const trackCountCol = sql<number>`${aliasTrackCountSq.count}`;
+		const sortColumn = sortBy === "name" ? artistAliases.name : trackCountCol;
+		const orderByClause =
+			sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
 
-		// Step 3: 結果をマージ（別名義のみ）
-		let allEntries: NameEntry[] = aliasesQuery
-			.filter((a) => a.trackCount > 0)
-			.map((a) => ({
-				id: a.aliasId,
-				name: a.aliasName,
-				artistId: a.artistId,
-				artistName: a.artistName,
-				isMainName: false,
-				aliasTypeCode: a.aliasTypeCode,
-				nameInitial: a.aliasNameInitial,
-				initialScript: a.aliasInitialScript ?? "other",
-				trackCount: a.trackCount,
-			}));
-
-		// Step 4: フィルター適用
-		// 文字種フィルター
-		if (initialScript && initialScript !== "all") {
-			const scripts = SCRIPT_CATEGORY_MAP[initialScript];
-			if (scripts) {
-				allEntries = allEntries.filter((e) =>
-					scripts.includes(e.initialScript),
-				);
-			}
-		}
-
-		// アルファベット頭文字フィルター
-		if (initial && /^[A-Z]$/.test(initial)) {
-			allEntries = allEntries.filter((e) => e.nameInitial === initial);
-		}
-
-		// かな行フィルター
-		if (row && KANA_ROW_PATTERNS[row]) {
-			const kanaChars = KANA_ROW_PATTERNS[row];
-			allEntries = allEntries.filter(
-				(e) => e.nameInitial && kanaChars.includes(e.nameInitial),
-			);
-		}
-
-		// 検索フィルター
-		if (search) {
-			const searchLower = search.toLowerCase();
-			allEntries = allEntries.filter((e) =>
-				e.name.toLowerCase().includes(searchLower),
-			);
-		}
-
-		// 役割フィルター（後でロール取得時にフィルタリングするため、一旦スキップ）
-		// パフォーマンス上、ロール情報を取得してからフィルタリング
-
-		// Step 5: ソート
-		allEntries.sort((a, b) => {
-			if (sortBy === "name") {
-				const cmp = a.name.localeCompare(b.name, "ja");
-				return sortOrder === "asc" ? cmp : -cmp;
-			}
-			// trackCount でソート
-			const cmp = a.trackCount - b.trackCount;
-			return sortOrder === "asc" ? cmp : -cmp;
-		});
-
-		// Step 6: ロール情報を取得してフィルタリング
-		if (allEntries.length > 0) {
-			const aliasIds = allEntries.map((e) => e.id);
-
-			// 別名義のロールを取得
-			const aliasRolesData = await db
-				.selectDistinct({
-					aliasId: trackCredits.artistAliasId,
-					roleCode: trackCreditRoles.roleCode,
-					roleLabel: creditRoles.label,
+		// データ取得とカウントを並列実行
+		const [aliasesData, totalResult] = await Promise.all([
+			db
+				.select({
+					aliasId: artistAliases.id,
+					aliasName: artistAliases.name,
+					aliasTypeCode: artistAliases.aliasTypeCode,
+					aliasNameInitial: artistAliases.nameInitial,
+					aliasInitialScript: artistAliases.initialScript,
+					artistId: artists.id,
+					artistName: artists.name,
+					trackCount: sql<number>`${aliasTrackCountSq.count}`,
 				})
-				.from(trackCredits)
+				.from(artistAliases)
+				.innerJoin(artists, eq(artistAliases.artistId, artists.id))
 				.innerJoin(
-					trackCreditRoles,
-					eq(trackCreditRoles.trackCreditId, trackCredits.id),
+					aliasTrackCountSq,
+					eq(artistAliases.id, aliasTrackCountSq.aliasId),
 				)
-				.innerJoin(creditRoles, eq(trackCreditRoles.roleCode, creditRoles.code))
-				.where(inArray(trackCredits.artistAliasId, aliasIds));
+				.where(whereClause)
+				.orderBy(orderByClause)
+				.limit(limit)
+				.offset(offset),
+			db
+				.select({
+					count: sql<number>`count(*)`,
+				})
+				.from(artistAliases)
+				.innerJoin(
+					aliasTrackCountSq,
+					eq(artistAliases.id, aliasTrackCountSq.aliasId),
+				)
+				.where(whereClause),
+		]);
 
-			// ロールをIDでグルーピング
-			const rolesByAliasId = new Map<
-				string,
-				Array<{ roleCode: string; label: string }>
-			>();
-			for (const r of aliasRolesData) {
-				if (!r.roleCode || !r.aliasId) continue;
-				const existing = rolesByAliasId.get(r.aliasId) ?? [];
-				if (!rolesByAliasId.has(r.aliasId)) {
-					rolesByAliasId.set(r.aliasId, existing);
-				}
-				if (!existing.some((e) => e.roleCode === r.roleCode)) {
-					existing.push({ roleCode: r.roleCode, label: r.roleLabel });
-				}
-			}
+		const total = totalResult[0]?.count ?? 0;
 
-			// ロール情報を付与
-			let entriesWithRoles = allEntries.map((entry) => ({
-				...entry,
-				roles: rolesByAliasId.get(entry.id) ?? [],
-			}));
-
-			// 役割フィルター適用
-			if (role && role !== "all") {
-				entriesWithRoles = entriesWithRoles.filter((e) =>
-					e.roles.some((r) => r.roleCode === role),
-				);
-			}
-
-			// ページネーション
-			const total = entriesWithRoles.length;
-			const offset = (page - 1) * limit;
-			const pagedEntries = entriesWithRoles.slice(offset, offset + limit);
-
+		if (aliasesData.length === 0) {
 			const response = {
-				data: pagedEntries,
+				data: [],
 				total,
 				page,
 				limit,
 			};
 
-			// キャッシュに保存
 			setCache(cacheKey, response, CACHE_TTL.ARTISTS_LIST);
 			setCacheHeaders(c, { maxAge: CACHE_TTL.ARTISTS_LIST });
 
 			return c.json(response);
 		}
 
+		// ページネーション済み結果のIDでロール情報を取得
+		const aliasIds = aliasesData.map((a) => a.aliasId);
+
+		const aliasRolesData = await db
+			.selectDistinct({
+				aliasId: trackCredits.artistAliasId,
+				roleCode: trackCreditRoles.roleCode,
+				roleLabel: creditRoles.label,
+			})
+			.from(trackCredits)
+			.innerJoin(
+				trackCreditRoles,
+				eq(trackCreditRoles.trackCreditId, trackCredits.id),
+			)
+			.innerJoin(creditRoles, eq(trackCreditRoles.roleCode, creditRoles.code))
+			.where(inArray(trackCredits.artistAliasId, aliasIds));
+
+		// ロールをIDでグルーピング
+		const rolesByAliasId = new Map<
+			string,
+			Array<{ roleCode: string; label: string }>
+		>();
+		for (const r of aliasRolesData) {
+			if (!r.roleCode || !r.aliasId) continue;
+			const existing = rolesByAliasId.get(r.aliasId) ?? [];
+			if (!rolesByAliasId.has(r.aliasId)) {
+				rolesByAliasId.set(r.aliasId, existing);
+			}
+			if (!existing.some((e) => e.roleCode === r.roleCode)) {
+				existing.push({ roleCode: r.roleCode, label: r.roleLabel });
+			}
+		}
+
+		// エントリにロール情報を付与
+		let entriesWithRoles = aliasesData.map((a) => ({
+			id: a.aliasId,
+			name: a.aliasName,
+			artistId: a.artistId,
+			artistName: a.artistName,
+			isMainName: false,
+			aliasTypeCode: a.aliasTypeCode,
+			nameInitial: a.aliasNameInitial,
+			initialScript: a.aliasInitialScript ?? "other",
+			trackCount: a.trackCount,
+			roles: rolesByAliasId.get(a.aliasId) ?? [],
+		}));
+
+		// 役割フィルター適用（メモリ上で実施）
+		if (role && role !== "all") {
+			entriesWithRoles = entriesWithRoles.filter((e) =>
+				e.roles.some((r) => r.roleCode === role),
+			);
+		}
+
 		const response = {
-			data: [],
-			total: 0,
+			data: entriesWithRoles,
+			total,
 			page,
 			limit,
 		};
