@@ -8,6 +8,15 @@ import { authRateLimiter, methodRateLimiter } from "./middleware/rate-limit";
 import { adminRouter } from "./routes/admin";
 import { publicRouter } from "./routes/public";
 
+if (process.env.NODE_ENV === "production") {
+	const secret = process.env.BETTER_AUTH_SECRET;
+	if (!secret || secret === "your-secret-key" || secret.length < 32) {
+		throw new Error(
+			"BETTER_AUTH_SECRET must be set to a strong value in production (min 32 chars)",
+		);
+	}
+}
+
 const app = new Hono();
 
 app.use(logger());
