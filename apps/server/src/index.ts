@@ -47,13 +47,30 @@ app.get("/", (c) => {
 
 const shutdown = async () => {
 	console.log("Shutting down gracefully...");
-	await cleanup();
-	console.log("Server stopped");
-	process.exit(0);
+	const timeoutId = setTimeout(() => {
+		console.error("Shutdown timeout, forcing exit");
+		process.exit(1);
+	}, 10000);
+	try {
+		await cleanup();
+		console.log("Server stopped");
+	} finally {
+		clearTimeout(timeoutId);
+		process.exit(0);
+	}
 };
 
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
+
+process.on("uncaughtException", (err) => {
+	console.error("Uncaught exception:", err);
+	shutdown();
+});
+process.on("unhandledRejection", (reason) => {
+	console.error("Unhandled rejection:", reason);
+	shutdown();
+});
 
 export default {
 	port: 3001,
