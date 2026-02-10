@@ -53,6 +53,11 @@ export const trackTags = pgTable(
 		}),
 		index("idx_track_tags_track").on(table.trackId),
 		index("idx_track_tags_tag").on(table.tagId),
+		index("idx_track_tags_track_locked_pos").on(
+			table.trackId,
+			table.isLocked,
+			table.position,
+		),
 	],
 );
 

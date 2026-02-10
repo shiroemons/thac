@@ -58,6 +58,7 @@ export const trackGenres = pgTable(
 		}),
 		index("idx_track_genres_track").on(table.trackId),
 		index("idx_track_genres_genre").on(table.genreCode),
+		index("idx_track_genres_track_position").on(table.trackId, table.position),
 	],
 );
 
