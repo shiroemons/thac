@@ -73,6 +73,7 @@ export const artistAliases = pgTable(
 	},
 	(table) => [
 		index("idx_artist_aliases_artist_id").on(table.artistId),
+		index("idx_artist_aliases_alias_type").on(table.aliasTypeCode),
 		uniqueIndex("uq_artist_aliases_name").on(table.artistId, table.name),
 	],
 );
@@ -129,6 +130,7 @@ export const circleLinks = pgTable(
 	},
 	(table) => [
 		index("idx_circle_links_circle_id").on(table.circleId),
+		index("idx_circle_links_platform").on(table.platformCode),
 		uniqueIndex("uq_circle_links_circle_url").on(table.circleId, table.url),
 	],
 );

@@ -106,6 +106,7 @@ export const trackCredits = pgTable(
 		index("idx_track_credits_track").on(table.trackId),
 		index("idx_track_credits_artist").on(table.artistId),
 		index("idx_track_credits_alias").on(table.artistAliasId),
+		index("idx_track_credits_alias_type").on(table.aliasTypeCode),
 		// Composite index for track+artist queries (used in N+1 elimination)
 		index("idx_track_credits_track_artist").on(table.trackId, table.artistId),
 		// Prevent duplicate credits: artist without alias on same track
@@ -139,6 +140,7 @@ export const trackCreditRoles = pgTable(
 			columns: [table.trackCreditId, table.roleCode, table.rolePosition],
 		}),
 		index("idx_track_credit_roles_credit").on(table.trackCreditId),
+		index("idx_track_credit_roles_role").on(table.roleCode),
 		// Composite index for role-based credit queries
 		index("idx_track_credit_roles_composite").on(
 			table.trackCreditId,

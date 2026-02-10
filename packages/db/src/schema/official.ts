@@ -99,6 +99,7 @@ export const officialWorkLinks = pgTable(
 	},
 	(table) => [
 		index("idx_official_work_links_work_id").on(table.officialWorkId),
+		index("idx_official_work_links_platform").on(table.platformCode),
 		uniqueIndex("uq_official_work_links_work_url").on(
 			table.officialWorkId,
 			table.url,
@@ -129,6 +130,7 @@ export const officialSongLinks = pgTable(
 	},
 	(table) => [
 		index("idx_official_song_links_song_id").on(table.officialSongId),
+		index("idx_official_song_links_platform").on(table.platformCode),
 		uniqueIndex("uq_official_song_links_song_url").on(
 			table.officialSongId,
 			table.url,
