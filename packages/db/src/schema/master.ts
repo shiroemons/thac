@@ -29,6 +29,13 @@ export const aliasTypes = pgTable(
 		label: text("label").notNull(),
 		description: text("description"),
 		sortOrder: integer("sort_order").default(0).notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
 	},
 	(table) => [index("idx_alias_types_sort_order").on(table.sortOrder)],
 );
@@ -40,6 +47,13 @@ export const creditRoles = pgTable(
 		label: text("label").notNull(),
 		description: text("description"),
 		sortOrder: integer("sort_order").default(0).notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
 	},
 	(table) => [index("idx_credit_roles_sort_order").on(table.sortOrder)],
 );
@@ -51,6 +65,13 @@ export const officialWorkCategories = pgTable(
 		name: text("name").notNull(),
 		description: text("description"),
 		sortOrder: integer("sort_order").default(0).notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
 	},
 	(table) => [
 		index("idx_official_work_categories_sort_order").on(table.sortOrder),
