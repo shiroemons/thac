@@ -25,6 +25,7 @@ import {
 	setCache,
 	setCacheHeaders,
 } from "../../utils/cache";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const officialWorksRouter = new Hono();
 
@@ -37,7 +38,7 @@ officialWorksRouter.get("/", async (c) => {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const category = c.req.query("category");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 
 		const cacheKey = cacheKeys.worksList({ page, limit, category, search });
 

@@ -20,6 +20,7 @@ import {
 	formatToTSV,
 	generateFilename,
 } from "../../../utils/export-formatter";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const eventExportRouter = new Hono<AdminContext>();
 
@@ -54,7 +55,7 @@ eventExportRouter.get("/", async (c) => {
 		const format = (c.req.query("format") || "json") as "tsv" | "json";
 		const includeRelations = c.req.query("includeRelations") === "true";
 		const seriesId = c.req.query("seriesId");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 
 		// フィルタ条件を構築
 		const conditions = [];

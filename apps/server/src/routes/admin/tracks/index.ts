@@ -39,6 +39,7 @@ import { z } from "zod";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { sanitizeSearch } from "../../../utils/query-params";
 import { trackDerivationsRouter } from "./derivations";
 import { trackIsrcsRouter } from "./isrcs";
 import { trackOfficialSongsRouter } from "./official-songs";
@@ -61,7 +62,7 @@ tracksAdminRouter.get("/", async (c) => {
 	try {
 		const page = Number.parseInt(c.req.query("page") ?? "1", 10);
 		const limit = Number.parseInt(c.req.query("limit") ?? "20", 10);
-		const search = c.req.query("search") ?? "";
+		const search = sanitizeSearch(c.req.query("search")) ?? "";
 		const releaseId = c.req.query("releaseId") ?? "";
 		const sortBy = c.req.query("sortBy") || "name";
 		const sortOrder = c.req.query("sortOrder") || "asc";

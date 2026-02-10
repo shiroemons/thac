@@ -17,13 +17,14 @@ import { ERROR_MESSAGES } from "../../constants/error-messages";
 import type { AdminContext } from "../../middleware/admin-auth";
 import { handleDbError } from "../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../utils/conflict-check";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const genresRouter = new Hono<AdminContext>();
 
 // 一覧取得（sortOrder順でソート）
 genresRouter.get("/", async (c) => {
 	try {
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 
 		// 検索条件を構築
 		let whereCondition: SQL<unknown> | undefined;

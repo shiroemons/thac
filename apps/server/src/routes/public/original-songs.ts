@@ -39,6 +39,7 @@ import {
 	setCache,
 	setCacheHeaders,
 } from "../../utils/cache";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const originalSongsRouter = new Hono();
 
@@ -52,7 +53,7 @@ originalSongsRouter.get("/", async (c) => {
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 500);
 		const workId = c.req.query("workId");
 		const category = c.req.query("category");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "id";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 

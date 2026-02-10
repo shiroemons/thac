@@ -15,6 +15,7 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const aliasTypesRouter = new Hono<AdminContext>();
 
@@ -23,7 +24,7 @@ aliasTypesRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "sortOrder";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 

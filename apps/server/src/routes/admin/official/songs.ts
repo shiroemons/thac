@@ -23,6 +23,7 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 import { parseAndValidate } from "../../../utils/import-parser";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const songsRouter = new Hono<AdminContext>();
 
@@ -32,7 +33,7 @@ songsRouter.get("/", async (c) => {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 5000);
 		const workId = c.req.query("workId");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "id";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 

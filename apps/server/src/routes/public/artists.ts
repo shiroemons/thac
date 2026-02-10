@@ -37,6 +37,7 @@ import {
 	setCache,
 	setCacheHeaders,
 } from "../../utils/cache";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const artistsRouter = new Hono();
 
@@ -97,7 +98,7 @@ artistsRouter.get("/", async (c) => {
 		const initial = c.req.query("initial");
 		const row = c.req.query("row");
 		const role = c.req.query("role");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "name";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 

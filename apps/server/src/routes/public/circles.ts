@@ -37,6 +37,7 @@ import {
 	setCache,
 	setCacheHeaders,
 } from "../../utils/cache";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const circlesRouter = new Hono();
 
@@ -73,7 +74,7 @@ circlesRouter.get("/", async (c) => {
 		const initialScript = c.req.query("initialScript"); // all | alphabet | kana | kanji | other
 		const initial = c.req.query("initial"); // A-Z
 		const row = c.req.query("row"); // あ, か, さ, ...
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "releaseCount";
 		const sortOrder = c.req.query("sortOrder") || "desc";
 

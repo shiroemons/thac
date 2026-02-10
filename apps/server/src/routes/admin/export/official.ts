@@ -21,6 +21,7 @@ import {
 	formatToTSV,
 	generateFilename,
 } from "../../../utils/export-formatter";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const officialExportRouter = new Hono<AdminContext>();
 
@@ -94,7 +95,7 @@ officialExportRouter.get("/works", async (c) => {
 		const format = (c.req.query("format") || "json") as "tsv" | "json";
 		const includeRelations = c.req.query("includeRelations") === "true";
 		const categoryCode = c.req.query("categoryCode");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 
 		// フィルタ条件を構築
 		const conditions = [];
@@ -224,7 +225,7 @@ officialExportRouter.get("/songs", async (c) => {
 		const includeRelations = c.req.query("includeRelations") === "true";
 		const workId = c.req.query("workId");
 		const isOriginal = c.req.query("isOriginal");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 
 		// フィルタ条件を構築
 		const conditions = [];

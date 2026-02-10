@@ -21,6 +21,7 @@ import { z } from "zod";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
 import type { AdminContext } from "../../middleware/admin-auth";
 import { handleDbError } from "../../utils/api-error";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const tagsRouter = new Hono<AdminContext>();
 
@@ -42,7 +43,7 @@ const tagNameSchema = z
 // タグ一覧取得（検索、使用数付き、ページネーション）
 tagsRouter.get("/", async (c) => {
 	try {
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const page = Number.parseInt(c.req.query("page") ?? "1", 10);
 		const limit = Math.min(
 			Number.parseInt(c.req.query("limit") ?? "50", 10),

@@ -20,6 +20,7 @@ import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
+import { sanitizeSearch } from "../../../utils/query-params";
 import { getReleaseJanCodes } from "./jan-codes";
 import { getReleasePublications } from "./publications";
 import { getReleaseCircles } from "./release-circles";
@@ -85,7 +86,7 @@ releasesRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const releaseType = c.req.query("releaseType");
 		const sortBy = c.req.query("sortBy") || "releaseDate";
 		const sortOrder = c.req.query("sortOrder") || "asc";

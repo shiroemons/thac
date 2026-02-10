@@ -7,6 +7,7 @@ import {
 	setCache,
 	setCacheHeaders,
 } from "../../utils/cache";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const tagsRouter = new Hono();
 
@@ -36,7 +37,7 @@ function calculateWeight(
  */
 tagsRouter.get("/", async (c) => {
 	try {
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const limit = Math.min(Number(c.req.query("limit")) || 100, 100);
 
 		const cacheKey = cacheKeys.tagsList({ search, limit });
