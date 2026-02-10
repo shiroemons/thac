@@ -149,6 +149,36 @@ artistsRouter.get("/", async (c) => {
 			conditions.push(ilike(artistAliases.name, `%${search}%`));
 		}
 
+		// 役割フィルター（SQL WHERE条件に追加）
+		if (role && role !== "all") {
+			const aliasIdsWithRole = await db
+				.selectDistinct({ aliasId: trackCredits.artistAliasId })
+				.from(trackCredits)
+				.innerJoin(
+					trackCreditRoles,
+					eq(trackCreditRoles.trackCreditId, trackCredits.id),
+				)
+				.where(
+					and(
+						isNotNull(trackCredits.artistAliasId),
+						eq(trackCreditRoles.roleCode, role),
+					),
+				);
+
+			const ids = aliasIdsWithRole
+				.map((r) => r.aliasId)
+				.filter((id): id is string => id !== null);
+
+			if (ids.length === 0) {
+				const response = { data: [], total: 0, page, limit };
+				setCache(cacheKey, response, CACHE_TTL.ARTISTS_LIST);
+				setCacheHeaders(c, { maxAge: CACHE_TTL.ARTISTS_LIST });
+				return c.json(response);
+			}
+
+			conditions.push(inArray(artistAliases.id, ids));
+		}
+
 		const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
 		// 別名義ごとのトラック数を集計する派生テーブル
@@ -255,7 +285,7 @@ artistsRouter.get("/", async (c) => {
 		}
 
 		// エントリにロール情報を付与
-		let entriesWithRoles = aliasesData.map((a) => ({
+		const entriesWithRoles = aliasesData.map((a) => ({
 			id: a.aliasId,
 			name: a.aliasName,
 			artistId: a.artistId,
@@ -267,13 +297,6 @@ artistsRouter.get("/", async (c) => {
 			trackCount: a.trackCount,
 			roles: rolesByAliasId.get(a.aliasId) ?? [],
 		}));
-
-		// 役割フィルター適用（メモリ上で実施）
-		if (role && role !== "all") {
-			entriesWithRoles = entriesWithRoles.filter((e) =>
-				e.roles.some((r) => r.roleCode === role),
-			);
-		}
 
 		const response = {
 			data: entriesWithRoles,
