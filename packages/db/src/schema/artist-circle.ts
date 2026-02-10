@@ -1,5 +1,6 @@
 import {
 	boolean,
+	date,
 	index,
 	pgTable,
 	text,
@@ -60,8 +61,8 @@ export const artistAliases = pgTable(
 		aliasTypeCode: text("alias_type_code").references(() => aliasTypes.code),
 		nameInitial: text("name_initial"),
 		initialScript: text("initial_script").notNull(),
-		periodFrom: text("period_from"),
-		periodTo: text("period_to"),
+		periodFrom: date("period_from", { mode: "string" }),
+		periodTo: date("period_to", { mode: "string" }),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),

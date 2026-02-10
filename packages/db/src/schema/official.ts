@@ -1,5 +1,6 @@
 import {
 	boolean,
+	date,
 	index,
 	integer,
 	pgTable,
@@ -24,7 +25,7 @@ export const officialWorks = pgTable(
 		shortNameJa: text("short_name_ja"),
 		shortNameEn: text("short_name_en"),
 		numberInSeries: real("number_in_series"),
-		releaseDate: text("release_date"),
+		releaseDate: date("release_date", { mode: "string" }),
 		officialOrganization: text("official_organization"),
 		position: integer("position"),
 		notes: text("notes"),

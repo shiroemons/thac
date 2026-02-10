@@ -1,4 +1,5 @@
 import {
+	date,
 	index,
 	integer,
 	pgTable,
@@ -40,7 +41,7 @@ export const releases = pgTable(
 		name: text("name").notNull(),
 		nameJa: text("name_ja"),
 		nameEn: text("name_en"),
-		releaseDate: text("release_date"),
+		releaseDate: date("release_date", { mode: "string" }),
 		releaseYear: integer("release_year"),
 		releaseMonth: integer("release_month"),
 		releaseDay: integer("release_day"),

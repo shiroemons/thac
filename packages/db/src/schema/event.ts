@@ -1,4 +1,5 @@
 import {
+	date,
 	index,
 	integer,
 	pgTable,
@@ -41,8 +42,8 @@ export const events = pgTable(
 		edition: integer("edition"),
 		totalDays: integer("total_days"),
 		venue: text("venue"),
-		startDate: text("start_date"),
-		endDate: text("end_date"),
+		startDate: date("start_date", { mode: "string" }),
+		endDate: date("end_date", { mode: "string" }),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
@@ -71,7 +72,7 @@ export const eventDays = pgTable(
 			.notNull()
 			.references(() => events.id, { onDelete: "cascade" }),
 		dayNumber: integer("day_number").notNull(),
-		date: text("date").notNull(),
+		date: date("date", { mode: "string" }).notNull(),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
