@@ -66,8 +66,6 @@ tagsRouter.get("/", async (c) => {
 			.from(tags)
 			.leftJoin(trackTags, eq(tags.id, trackTags.tagId))
 			.groupBy(tags.id, tags.name)
-			.orderBy(asc(tags.name))
-			.limit(limit)
 			.$dynamic();
 
 		// 検索条件を追加
@@ -75,7 +73,7 @@ tagsRouter.get("/", async (c) => {
 			query = query.where(like(tags.name, `%${search}%`));
 		}
 
-		const data = await query;
+		const data = await query.orderBy(asc(tags.name)).limit(limit);
 
 		// 合計件数を取得（検索条件付き）
 		let totalQuery = db.select({ count: count() }).from(tags).$dynamic();
