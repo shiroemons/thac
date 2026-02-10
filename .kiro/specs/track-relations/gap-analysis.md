@@ -1,3 +1,5 @@
+> **注意**: このドキュメントはPostgreSQL移行前に作成されました。データベースはSQLite/TursoからPostgreSQLに移行済みです。
+
 # Gap Analysis: track-relations
 
 ## 1. 現状調査（Current State Investigation）
