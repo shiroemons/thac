@@ -7,6 +7,9 @@ export const ERROR_MESSAGES = {
 	NOT_FOUND: "データが見つかりません",
 	VALIDATION_FAILED: "入力内容に誤りがあります",
 	DB_ERROR: "データベースエラーが発生しました",
+	DB_UNIQUE_VIOLATION: "データが重複しています",
+	DB_FOREIGN_KEY_VIOLATION: "関連するデータが存在しないか、削除できません",
+	DB_CHECK_VIOLATION: "データの値が制約条件を満たしていません",
 
 	// ===== リソース別 Not Found =====
 	EVENT_NOT_FOUND: "イベントが見つかりません",

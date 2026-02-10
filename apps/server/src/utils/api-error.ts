@@ -34,6 +34,20 @@ export const ErrorCodes = {
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
 /**
+ * PostgreSQLエラーの型ガード
+ * postgres.jsが投げるエラーをダックタイピングで判定
+ */
+function isPostgresError(
+	error: unknown,
+): error is Error & { code: string; detail?: string } {
+	return (
+		error instanceof Error &&
+		"code" in error &&
+		typeof (error as Record<string, unknown>).code === "string"
+	);
+}
+
+/**
  * DB操作時のエラーハンドリング
  * @param c - Honoコンテキスト
  * @param error - エラーオブジェクト
@@ -44,6 +58,36 @@ export function handleDbError(c: Context, error: unknown, operation: string) {
 	console.error(`[${operation}] Database error:`, error);
 
 	const isDev = process.env.NODE_ENV === "development";
+
+	if (isPostgresError(error)) {
+		switch (error.code) {
+			case "23505": {
+				const response: ApiErrorResponse = {
+					error: ERROR_MESSAGES.DB_UNIQUE_VIOLATION,
+					code: ErrorCodes.DUPLICATE,
+				};
+				if (isDev) response.details = error.detail ?? error.message;
+				return c.json(response, 409);
+			}
+			case "23503": {
+				const response: ApiErrorResponse = {
+					error: ERROR_MESSAGES.DB_FOREIGN_KEY_VIOLATION,
+					code: ErrorCodes.VALIDATION_ERROR,
+				};
+				if (isDev) response.details = error.detail ?? error.message;
+				return c.json(response, 400);
+			}
+			case "23514": {
+				const response: ApiErrorResponse = {
+					error: ERROR_MESSAGES.DB_CHECK_VIOLATION,
+					code: ErrorCodes.VALIDATION_ERROR,
+				};
+				if (isDev) response.details = error.detail ?? error.message;
+				return c.json(response, 400);
+			}
+		}
+	}
+
 	const response: ApiErrorResponse = {
 		error: ERROR_MESSAGES.DB_ERROR,
 		code: ErrorCodes.DB_ERROR,
