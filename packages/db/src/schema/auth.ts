@@ -15,8 +15,8 @@ export const user = pgTable("user", {
 		.$onUpdate(() => /* @__PURE__ */ new Date())
 		.notNull(),
 	// Better-Auth admin plugin fields
-	role: text("role").default("user"),
-	banned: boolean("banned").default(false),
+	role: text("role").default("user").notNull(),
+	banned: boolean("banned").default(false).notNull(),
 	banReason: text("ban_reason"),
 	banExpires: timestamp("ban_expires", { withTimezone: true }),
 	// Onboarding status

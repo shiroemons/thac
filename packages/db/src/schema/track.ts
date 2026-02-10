@@ -1,5 +1,6 @@
 import { type InferSelectModel, sql } from "drizzle-orm";
 import {
+	date,
 	index,
 	integer,
 	pgTable,
@@ -21,15 +22,17 @@ export const tracks = pgTable(
 	"tracks",
 	{
 		id: text("id").primaryKey(),
-		releaseId: text("release_id").references(() => releases.id, {
-			onDelete: "cascade",
-		}),
+		releaseId: text("release_id")
+			.notNull()
+			.references(() => releases.id, {
+				onDelete: "cascade",
+			}),
 		discId: text("disc_id").references(() => discs.id, { onDelete: "cascade" }),
 		trackNumber: integer("track_number").notNull(),
 		name: text("name").notNull(),
 		nameJa: text("name_ja"),
 		nameEn: text("name_en"),
-		releaseDate: text("release_date"),
+		releaseDate: date("release_date", { mode: "string" }),
 		releaseYear: integer("release_year"),
 		releaseMonth: integer("release_month"),
 		releaseDay: integer("release_day"),

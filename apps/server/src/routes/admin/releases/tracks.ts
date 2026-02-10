@@ -214,7 +214,7 @@ tracksRouter.post("/:releaseId/tracks", async (c) => {
 		const releaseId = c.req.param("releaseId");
 		const body = await c.req.json();
 
-		// バリデーション（releaseIdはoptionalなので、bodyに含まれていればそれを使用、なければパスパラメータ）
+		// バリデーション（bodyにreleaseIdが含まれていればそれを使用、なければパスパラメータ）
 		const parsed = insertTrackSchema.safeParse({
 			...body,
 			releaseId: body.releaseId || releaseId,
