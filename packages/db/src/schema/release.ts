@@ -70,6 +70,7 @@ export const releases = pgTable(
 		index("idx_releases_type").on(table.releaseType),
 		index("idx_releases_event").on(table.eventId),
 		index("idx_releases_event_day").on(table.eventDayId),
+		index("idx_releases_updated_at").on(table.updatedAt),
 		check(
 			"check_release_year",
 			sql`"release_year" >= 1900 AND "release_year" <= 2200`,
