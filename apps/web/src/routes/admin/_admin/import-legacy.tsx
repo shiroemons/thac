@@ -11,6 +11,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	AlertCircle,
+	ArrowRight,
 	Calendar,
 	CheckCircle,
 	ChevronLeft,
@@ -18,9 +19,11 @@ import {
 	FileUp,
 	Home,
 	Info,
+	Link2,
 	Loader2,
 	Music,
 	Plus,
+	Search,
 	Sparkles,
 	Upload,
 	XCircle,
@@ -30,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
 	type EntityProgressMap,
+	type EventMatchSuggestion,
 	type ExistingEventWithDays,
 	eventSeriesApi,
 	type ImportProgress,
@@ -53,7 +57,13 @@ export const Route = createFileRoute("/admin/_admin/import-legacy")({
 	component: LegacyImportPage,
 });
 
-type WizardStep = "upload" | "mapping" | "events" | "importing" | "result";
+type WizardStep =
+	| "upload"
+	| "event-mapping"
+	| "events"
+	| "mapping"
+	| "importing"
+	| "result";
 
 function LegacyImportPage() {
 	const [step, setStep] = useState<WizardStep>("upload");
@@ -71,6 +81,12 @@ function LegacyImportPage() {
 		ExistingEventWithDays[]
 	>([]);
 	const [eventDayMappings, setEventDayMappings] = useState<
+		Record<string, string>
+	>({});
+	const [eventMatchSuggestions, setEventMatchSuggestions] = useState<
+		EventMatchSuggestion[]
+	>([]);
+	const [eventNameMappings, setEventNameMappings] = useState<
 		Record<string, string>
 	>({});
 	const [parseErrors, setParseErrors] = useState<
@@ -155,8 +171,32 @@ function LegacyImportPage() {
 				}
 				setEventDayMappings(defaultEventDayMappings);
 
-				// イベント設定が必要ならイベントステップへ、不要なら原曲マッピングへ
-				if (
+				// イベントマッチング候補を設定
+				const suggestions = data.eventMatchSuggestions || [];
+				setEventMatchSuggestions(suggestions);
+
+				// 自動マッピングを設定（annotation_pair の自動マッピング）
+				const autoEventMappings: Record<string, string> = {};
+				for (const s of suggestions) {
+					if (s.matchType === "annotation_pair" && s.suggestedEventName) {
+						autoEventMappings[s.csvEventName] = s.suggestedEventName;
+					} else if (s.matchType === "fuzzy" && s.suggestedEventName) {
+						autoEventMappings[s.csvEventName] = s.suggestedEventName;
+					}
+				}
+				setEventNameMappings(autoEventMappings);
+
+				// イベントマッピングが必要かチェック
+				const needsEventMapping = suggestions.some(
+					(s) =>
+						s.matchType === "annotation_pair" ||
+						s.matchType === "fuzzy" ||
+						(s.matchType === "none" && s.annotation !== null),
+				);
+
+				if (needsEventMapping) {
+					setStep("event-mapping");
+				} else if (
 					data.newEventsNeeded.length > 0 ||
 					(data.existingEventsWithDays || []).length > 0
 				) {
@@ -190,9 +230,12 @@ function LegacyImportPage() {
 				newEventsNeeded.length > 0
 					? Object.values(newEventInputs).filter((e) => e.startDate !== "")
 					: undefined;
-			// イベント日マッピングは既存イベントがある場合のみ渡す
 			const eventDayMappingsToSend =
 				existingEventsWithDays.length > 0 ? eventDayMappings : undefined;
+			const eventNameMappingsToSend =
+				Object.keys(eventNameMappings).length > 0
+					? eventNameMappings
+					: undefined;
 			return legacyImportApi.executeWithProgress(
 				records,
 				mappings,
@@ -200,6 +243,7 @@ function LegacyImportPage() {
 				newEvents,
 				handleProgress,
 				eventDayMappingsToSend,
+				eventNameMappingsToSend,
 			);
 		},
 		onMutate: () => {
@@ -277,31 +321,66 @@ function LegacyImportPage() {
 		[],
 	);
 
+	// イベントマッピングが必要かどうか
+	const needsEventMappingStep = eventMatchSuggestions.some(
+		(s) =>
+			s.matchType === "annotation_pair" ||
+			s.matchType === "fuzzy" ||
+			(s.matchType === "none" && s.annotation !== null),
+	);
+
 	// イベント設定が必要かどうか
 	const needsEventStep =
 		newEventsNeeded.length > 0 || existingEventsWithDays.length > 0;
 
 	// 次へハンドラ
 	const handleNext = useCallback(() => {
-		if (step === "events") {
+		if (step === "event-mapping") {
+			// マッピング結果を適用して、新規イベントリストを更新
+			const mappedEventNames = new Set(Object.keys(eventNameMappings));
+			const updatedNewEvents = newEventsNeeded.filter(
+				(e) => !mappedEventNames.has(e.name),
+			);
+			setNewEventsNeeded(updatedNewEvents);
+
+			if (updatedNewEvents.length > 0 || existingEventsWithDays.length > 0) {
+				setStep("events");
+			} else {
+				setStep("mapping");
+			}
+		} else if (step === "events") {
 			setStep("mapping");
 		} else if (step === "mapping") {
 			executeMutation.mutate();
 		}
-	}, [step, executeMutation]);
+	}, [
+		step,
+		executeMutation,
+		eventNameMappings,
+		newEventsNeeded,
+		existingEventsWithDays,
+	]);
 
 	// 戻るハンドラ
 	const handleBack = useCallback(() => {
-		if (step === "events") {
+		if (step === "event-mapping") {
 			setStep("upload");
+		} else if (step === "events") {
+			if (needsEventMappingStep) {
+				setStep("event-mapping");
+			} else {
+				setStep("upload");
+			}
 		} else if (step === "mapping") {
 			if (needsEventStep) {
 				setStep("events");
+			} else if (needsEventMappingStep) {
+				setStep("event-mapping");
 			} else {
 				setStep("upload");
 			}
 		}
-	}, [step, needsEventStep]);
+	}, [step, needsEventStep, needsEventMappingStep]);
 
 	// リセットハンドラ
 	const handleReset = useCallback(() => {
@@ -312,12 +391,17 @@ function LegacyImportPage() {
 		setMappings({});
 		setCustomSongNames({});
 		setNewEventInputs({});
+		setExistingEventsWithDays([]);
+		setEventDayMappings({});
+		setEventMatchSuggestions([]);
+		setEventNameMappings({});
 		setParseErrors([]);
 		setImportResult(null);
 	}, []);
 
 	// イベントステップをスキップするかどうか
 	const skipEventsStep = !needsEventStep;
+	const skipEventMappingStep = !needsEventMappingStep;
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -343,14 +427,21 @@ function LegacyImportPage() {
 			<div className="mb-8">
 				<ul className="steps w-full">
 					<li
-						className={`step ${["upload", "events", "mapping", "importing", "result"].includes(step) ? "step-primary" : ""}`}
+						className={`step ${["upload", "event-mapping", "events", "mapping", "importing", "result"].includes(step) ? "step-primary" : ""}`}
 					>
 						CSVアップロード
 					</li>
 					<li
+						className={`step ${["event-mapping", "events", "mapping", "importing", "result"].includes(step) ? "step-primary" : ""}`}
+					>
+						{step !== "upload" && skipEventMappingStep
+							? "イベントマッピング（スキップ）"
+							: "イベントマッピング"}
+					</li>
+					<li
 						className={`step ${["events", "mapping", "importing", "result"].includes(step) ? "step-primary" : ""}`}
 					>
-						{step !== "upload" && skipEventsStep
+						{step !== "upload" && step !== "event-mapping" && skipEventsStep
 							? "イベント登録（スキップ）"
 							: "イベント登録"}
 					</li>
@@ -378,6 +469,22 @@ function LegacyImportPage() {
 							onUpload={handleFileUpload}
 							isLoading={previewMutation.isPending}
 							errors={parseErrors}
+						/>
+					)}
+
+					{step === "event-mapping" && (
+						<EventMappingStep
+							suggestions={eventMatchSuggestions}
+							eventNameMappings={eventNameMappings}
+							onMappingChange={(csvName, resolvedName) => {
+								setEventNameMappings((prev) => {
+									if (resolvedName === null) {
+										const { [csvName]: _, ...rest } = prev;
+										return rest;
+									}
+									return { ...prev, [csvName]: resolvedName };
+								});
+							}}
 						/>
 					)}
 
@@ -429,14 +536,16 @@ function LegacyImportPage() {
 							戻る
 						</button>
 
-						{(step === "events" || step === "mapping") && (
+						{(step === "event-mapping" ||
+							step === "events" ||
+							step === "mapping") && (
 							<button
 								type="button"
 								className="btn btn-primary"
 								onClick={handleNext}
 								disabled={executeMutation.isPending}
 							>
-								{step === "events" ? (
+								{step === "event-mapping" || step === "events" ? (
 									<>
 										次へ
 										<ChevronRight className="h-4 w-4" />
@@ -633,6 +742,261 @@ function UploadStep({ onUpload, isLoading, errors }: UploadStepProps) {
 						</table>
 					</div>
 				</div>
+			</div>
+		</div>
+	);
+}
+
+// イベントマッピングステップ
+interface EventMappingStepProps {
+	suggestions: EventMatchSuggestion[];
+	eventNameMappings: Record<string, string>;
+	onMappingChange: (csvName: string, resolvedName: string | null) => void;
+}
+
+function EventMappingStep({
+	suggestions,
+	eventNameMappings,
+	onMappingChange,
+}: EventMappingStepProps) {
+	// 表示対象のみフィルタ（exactはスキップ、annotationなしのnoneもスキップ）
+	const annotationPairs = useMemo(
+		() => suggestions.filter((s) => s.matchType === "annotation_pair"),
+		[suggestions],
+	);
+	const fuzzySuggestions = useMemo(
+		() => suggestions.filter((s) => s.matchType === "fuzzy"),
+		[suggestions],
+	);
+	const noMatchWithAnnotation = useMemo(
+		() =>
+			suggestions.filter(
+				(s) => s.matchType === "none" && s.annotation !== null,
+			),
+		[suggestions],
+	);
+
+	return (
+		<div className="space-y-6">
+			<div className="text-center">
+				<h3 className="font-semibold text-lg">イベントマッピング</h3>
+				<p className="text-base-content/70 text-sm">
+					CSVのイベント名を既存イベントにマッピングします
+				</p>
+			</div>
+
+			{/* 自動マッピング済み（annotation_pair） */}
+			{annotationPairs.length > 0 && (
+				<div className="space-y-2">
+					<h4 className="flex items-center gap-2 font-medium text-sm">
+						<CheckCircle className="h-4 w-4 text-success" />
+						自動マッピング済み
+					</h4>
+					<div className="collapse-arrow collapse border border-base-300 bg-base-200">
+						<input type="checkbox" />
+						<div className="collapse-title text-sm">
+							{annotationPairs.length}件のイベントが自動マッピングされました
+						</div>
+						<div className="collapse-content space-y-1">
+							{annotationPairs.map((s) => (
+								<div
+									key={s.csvEventName}
+									className="flex items-center gap-2 rounded-lg bg-base-100 p-3 text-sm"
+								>
+									<CheckCircle className="h-4 w-4 shrink-0 text-success" />
+									<span className="font-medium">{s.csvEventName}</span>
+									<ArrowRight className="h-4 w-4 shrink-0 text-base-content/40" />
+									<span className="text-success">
+										{eventNameMappings[s.csvEventName] || s.suggestedEventName}
+									</span>
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* ファジーマッチ候補（fuzzy） */}
+			{fuzzySuggestions.length > 0 && (
+				<div className="space-y-2">
+					<h4 className="flex items-center gap-2 font-medium text-sm">
+						<Search className="h-4 w-4 text-info" />
+						マッチング候補（確認が必要）
+					</h4>
+					<div className="space-y-2">
+						{fuzzySuggestions.map((s) => (
+							<FuzzyMatchCard
+								key={s.csvEventName}
+								suggestion={s}
+								currentMapping={eventNameMappings[s.csvEventName] || null}
+								onMappingChange={onMappingChange}
+							/>
+						))}
+					</div>
+				</div>
+			)}
+
+			{/* マッチなし（annotationあり） */}
+			{noMatchWithAnnotation.length > 0 && (
+				<div className="space-y-2">
+					<h4 className="flex items-center gap-2 font-medium text-sm">
+						<AlertCircle className="h-4 w-4 text-warning" />
+						マッチなし（操作が必要）
+					</h4>
+					<div className="space-y-2">
+						{noMatchWithAnnotation.map((s) => (
+							<NoMatchCard
+								key={s.csvEventName}
+								suggestion={s}
+								currentMapping={eventNameMappings[s.csvEventName] || null}
+								onMappingChange={onMappingChange}
+							/>
+						))}
+					</div>
+				</div>
+			)}
+
+			{annotationPairs.length === 0 &&
+				fuzzySuggestions.length === 0 &&
+				noMatchWithAnnotation.length === 0 && (
+					<div className="flex flex-col items-center gap-2 py-8 text-success">
+						<CheckCircle className="h-8 w-8" />
+						<p className="text-sm">すべてのイベントが自動解決されました</p>
+					</div>
+				)}
+		</div>
+	);
+}
+
+// ファジーマッチカード
+interface FuzzyMatchCardProps {
+	suggestion: EventMatchSuggestion;
+	currentMapping: string | null;
+	onMappingChange: (csvName: string, resolvedName: string | null) => void;
+}
+
+function FuzzyMatchCard({
+	suggestion,
+	currentMapping,
+	onMappingChange,
+}: FuzzyMatchCardProps) {
+	const isAccepted = currentMapping === suggestion.suggestedEventName;
+	const isNewEvent = currentMapping === null;
+
+	return (
+		<div className="rounded-lg border border-base-300 bg-base-100 p-4">
+			<div className="flex items-center gap-2">
+				<Link2 className="h-4 w-4 text-info" />
+				<span className="font-medium">{suggestion.csvEventName}</span>
+			</div>
+			<div className="mt-3 space-y-2 pl-6">
+				<label className="flex cursor-pointer items-center gap-2">
+					<input
+						type="radio"
+						name={`fuzzy-${suggestion.csvEventName}`}
+						className="radio radio-primary radio-sm"
+						checked={isAccepted}
+						onChange={() =>
+							onMappingChange(
+								suggestion.csvEventName,
+								suggestion.suggestedEventName,
+							)
+						}
+					/>
+					<span className="text-sm">
+						推奨: <strong>{suggestion.suggestedEventName}</strong>
+						（既存イベント）
+					</span>
+				</label>
+				{suggestion.allCandidates.length > 1 && (
+					<div className="ml-6">
+						<select
+							className="select select-bordered select-sm w-full max-w-xs"
+							value={isAccepted || isNewEvent ? "" : currentMapping || ""}
+							onChange={(e) => {
+								if (e.target.value) {
+									onMappingChange(suggestion.csvEventName, e.target.value);
+								}
+							}}
+						>
+							<option value="">他のイベントを選択...</option>
+							{suggestion.allCandidates
+								.filter((c) => c.eventName !== suggestion.suggestedEventName)
+								.map((c) => (
+									<option key={c.eventId} value={c.eventName}>
+										{c.eventName}
+										{c.seriesName ? ` (${c.seriesName})` : ""}
+									</option>
+								))}
+						</select>
+					</div>
+				)}
+				<label className="flex cursor-pointer items-center gap-2">
+					<input
+						type="radio"
+						name={`fuzzy-${suggestion.csvEventName}`}
+						className="radio radio-sm"
+						checked={isNewEvent}
+						onChange={() => onMappingChange(suggestion.csvEventName, null)}
+					/>
+					<span className="text-sm">新規イベントとして作成する</span>
+				</label>
+			</div>
+		</div>
+	);
+}
+
+// マッチなしカード（annotationあり）
+interface NoMatchCardProps {
+	suggestion: EventMatchSuggestion;
+	currentMapping: string | null;
+	onMappingChange: (csvName: string, resolvedName: string | null) => void;
+}
+
+function NoMatchCard({
+	suggestion,
+	currentMapping,
+	onMappingChange,
+}: NoMatchCardProps) {
+	return (
+		<div className="rounded-lg border border-base-300 bg-base-100 p-4">
+			<div className="flex items-center gap-2">
+				<AlertCircle className="h-4 w-4 text-warning" />
+				<span className="font-medium">{suggestion.csvEventName}</span>
+				{suggestion.annotation && (
+					<span className="badge badge-warning badge-sm">
+						{suggestion.annotation}
+					</span>
+				)}
+			</div>
+			<div className="mt-3 space-y-2 pl-6">
+				<label className="flex cursor-pointer items-center gap-2">
+					<input
+						type="radio"
+						name={`nomatch-${suggestion.csvEventName}`}
+						className="radio radio-primary radio-sm"
+						checked={currentMapping === suggestion.strippedName}
+						onChange={() =>
+							onMappingChange(suggestion.csvEventName, suggestion.strippedName)
+						}
+					/>
+					<span className="text-sm">
+						サフィックスを除去して作成: 「
+						<strong>{suggestion.strippedName}</strong>」
+					</span>
+				</label>
+				<label className="flex cursor-pointer items-center gap-2">
+					<input
+						type="radio"
+						name={`nomatch-${suggestion.csvEventName}`}
+						className="radio radio-sm"
+						checked={currentMapping === null}
+						onChange={() => onMappingChange(suggestion.csvEventName, null)}
+					/>
+					<span className="text-sm">
+						そのまま作成: 「{suggestion.csvEventName}」
+					</span>
+				</label>
 			</div>
 		</div>
 	);

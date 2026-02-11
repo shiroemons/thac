@@ -108,9 +108,35 @@ export function parseDiscInfo(albumName: string): DiscInfo {
 }
 
 /**
+ * イベント名の末尾括弧サフィックスを解析
+ * "コミックマーケット105(中止)" → { baseName: "コミックマーケット105", annotation: "(中止)" }
+ * "イベント名" → { baseName: "イベント名", annotation: null }
+ */
+export interface EventAnnotationInfo {
+	baseName: string;
+	annotation: string | null;
+	fullName: string;
+}
+
+export function parseEventAnnotation(eventName: string): EventAnnotationInfo {
+	const trimmed = eventName.trim();
+	// 末尾の括弧付きサフィックスを検出: "(中止)", "(延期)", "(オンライン)" 等
+	const match = trimmed.match(/^(.+?)\s*(\([^)]+\))$/);
+	if (match?.[1] && match[2]) {
+		return {
+			baseName: match[1].trim(),
+			annotation: match[2],
+			fullName: trimmed,
+		};
+	}
+	return { baseName: trimmed, annotation: null, fullName: trimmed };
+}
+
+/**
  * イベント名から回次（edition）を推測
  * "コミックマーケット108" → { baseName: "コミックマーケット", edition: 108 }
  * "博麗神社例大祭21" → { baseName: "博麗神社例大祭", edition: 21 }
+ * "第22回 例大祭" → { baseName: "例大祭", edition: 22 }
  * "M3 2024春" → { baseName: "M3 2024春", edition: null }
  */
 export interface EventEditionInfo {
@@ -120,6 +146,20 @@ export interface EventEditionInfo {
 
 export function parseEventEdition(eventName: string): EventEditionInfo {
 	if (!eventName) return { baseName: eventName, edition: null };
+
+	const trimmed = eventName.trim();
+
+	// 前方パターン: "第22回 例大祭" - 先頭の第XX回を検出
+	const prefixMatch = trimmed.match(/^第(\d+)回\s+(.+)$/);
+	if (prefixMatch?.[1] && prefixMatch[2]) {
+		const edition = Number.parseInt(prefixMatch[1], 10);
+		if (edition > 0 && edition < 1000) {
+			return {
+				baseName: prefixMatch[2].trim(),
+				edition,
+			};
+		}
+	}
 
 	// パターン: 末尾の数字を回次として認識
 	// より具体的なパターンを先に検査する
@@ -133,7 +173,7 @@ export function parseEventEdition(eventName: string): EventEditionInfo {
 	];
 
 	for (const pattern of patterns) {
-		const match = eventName.trim().match(pattern);
+		const match = trimmed.match(pattern);
 		if (match?.[1] && match[2]) {
 			const edition = Number.parseInt(match[2], 10);
 			// 1000以上は回次ではなく年度の可能性が高いのでスキップ
@@ -146,7 +186,7 @@ export function parseEventEdition(eventName: string): EventEditionInfo {
 		}
 	}
 
-	return { baseName: eventName.trim(), edition: null };
+	return { baseName: trimmed, edition: null };
 }
 
 /**
