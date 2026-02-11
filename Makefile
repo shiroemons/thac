@@ -18,16 +18,34 @@ dev: ## 開発環境を起動（devbox services）
 	devbox services up
 
 up: ## 開発環境をバックグラウンドで起動
-	devbox services up -b
+	@if devbox services ls 2>&1 | grep -q "Services running in process-compose"; then \
+		echo "サービスは既に起動しています"; \
+	else \
+		devbox services up -b; \
+	fi
+	@$(MAKE) --no-print-directory ps
 
 down: ## 開発環境を停止
-	devbox services stop
+	@if devbox services ls 2>&1 | grep -q "Services running in process-compose"; then \
+		devbox services stop; \
+		echo "サービスを停止しました"; \
+	else \
+		echo "サービスは起動していません"; \
+	fi
 
 ps: ## サービスの状態を表示
-	devbox services ls
+	@if devbox services ls 2>&1 | grep -q "Services running in process-compose"; then \
+		devbox services ls; \
+	else \
+		echo "サービスは起動していません。make up で起動できます。"; \
+	fi
 
 restart: ## サービスを再起動
-	devbox services restart
+	@if devbox services ls 2>&1 | grep -q "Services running in process-compose"; then \
+		devbox services restart; \
+	else \
+		echo "サービスは起動していません。make up で起動してください。"; \
+	fi
 
 # =============================================================================
 # 開発環境（Docker）
