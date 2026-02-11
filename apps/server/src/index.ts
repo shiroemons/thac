@@ -7,6 +7,7 @@ import { logger } from "hono/logger";
 import { authRateLimiter, methodRateLimiter } from "./middleware/rate-limit";
 import { adminRouter } from "./routes/admin";
 import { publicRouter } from "./routes/public";
+import { pruneExpiredCache } from "./utils/cache";
 
 if (process.env.NODE_ENV === "production") {
 	const secret = process.env.BETTER_AUTH_SECRET;
@@ -54,8 +55,20 @@ app.get("/", (c) => {
 	return c.text("OK");
 });
 
+// キャッシュpruningタイマー（5分ごと）
+const cachePruningInterval = setInterval(
+	() => {
+		const prunedCount = pruneExpiredCache();
+		if (prunedCount > 0) {
+			console.log(`Cache pruning: removed ${prunedCount} expired entries`);
+		}
+	},
+	5 * 60 * 1000,
+); // 5分
+
 const shutdown = async () => {
 	console.log("Shutting down gracefully...");
+	clearInterval(cachePruningInterval);
 	const timeoutId = setTimeout(() => {
 		console.error("Shutdown timeout, forcing exit");
 		process.exit(1);
