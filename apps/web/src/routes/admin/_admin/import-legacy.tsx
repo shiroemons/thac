@@ -660,6 +660,15 @@ function MappingStep({
 	const totalCount = songMatches.length;
 	const unmappedCount = totalCount - mappedCount;
 
+	const [hideMapped, setHideMapped] = useState(false);
+
+	const filteredMatches = useMemo(() => {
+		if (!hideMapped) return songMatches;
+		return songMatches.filter(
+			(match) => match.matchType === "none" || !mappings[match.originalName],
+		);
+	}, [hideMapped, songMatches, mappings]);
+
 	return (
 		<div className="space-y-6">
 			<div className="text-center">
@@ -691,20 +700,45 @@ function MappingStep({
 				</div>
 			</div>
 
+			{/* フィルター */}
+			<div className="flex items-center justify-between">
+				<label className="flex cursor-pointer items-center gap-2">
+					<input
+						type="checkbox"
+						className="checkbox checkbox-sm"
+						checked={hideMapped}
+						onChange={(e) => setHideMapped(e.target.checked)}
+					/>
+					<span className="text-sm">未マッピングのみ表示</span>
+				</label>
+				{hideMapped && (
+					<span className="text-base-content/70 text-sm">
+						表示中: {filteredMatches.length}件 / 全{totalCount}件
+					</span>
+				)}
+			</div>
+
 			{/* マッピングリスト */}
 			<div className="space-y-2">
-				{songMatches.map((match) => (
-					<SongMappingRow
-						key={match.originalName}
-						match={match}
-						selectedId={mappings[match.originalName] || null}
-						customSongName={customSongNames[match.originalName] || null}
-						onSelect={(id) => onMappingChange(match.originalName, id)}
-						onCustomSongNameChange={(name) =>
-							onCustomSongNameChange(match.originalName, name)
-						}
-					/>
-				))}
+				{filteredMatches.length === 0 && hideMapped ? (
+					<div className="flex flex-col items-center gap-2 py-8 text-success">
+						<CheckCircle className="h-8 w-8" />
+						<p className="text-sm">すべての原曲がマッピング済みです</p>
+					</div>
+				) : (
+					filteredMatches.map((match) => (
+						<SongMappingRow
+							key={match.originalName}
+							match={match}
+							selectedId={mappings[match.originalName] || null}
+							customSongName={customSongNames[match.originalName] || null}
+							onSelect={(id) => onMappingChange(match.originalName, id)}
+							onCustomSongNameChange={(name) =>
+								onCustomSongNameChange(match.originalName, name)
+							}
+						/>
+					))
+				)}
 			</div>
 		</div>
 	);
