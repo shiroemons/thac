@@ -18,7 +18,8 @@
 | フロントエンド | React, TanStack Start, TanStack Router, TailwindCSS v4, daisyUI |
 | バックエンド | Hono (Bun) |
 | データベース | PostgreSQL, Drizzle ORM |
-| 認証 | Better-Auth（Google/Discord/GitHub OAuth） |
+| 検索 | Meilisearch |
+| 認証 | Better-Auth（Email/Password, Google/Discord/GitHub OAuth） |
 | ビルド | Turborepo, Bun |
 | コード品質 | Biome, Lefthook |
 | 開発環境 | devbox（推奨）, Docker |
@@ -28,14 +29,25 @@
 ```
 thac/
 ├── apps/
-│   ├── web/         # フロントエンド（React + TanStack Start）
-│   └── server/      # バックエンドAPI（Hono）
+│   ├── web/            # フロントエンド（React + TanStack Start）
+│   └── server/         # バックエンドAPI（Hono）
 ├── packages/
-│   ├── auth/        # 認証設定
-│   ├── db/          # データベーススキーマ
-│   └── config/      # 共有設定（TypeScript）
-├── data/            # ローカル開発データ（.gitignore）
-│   └── meilisearch/ # Meilisearchインデックス
+│   ├── auth/           # 認証設定（Better-Auth）
+│   ├── db/             # データベーススキーマ（Drizzle ORM）
+│   ├── search/         # 検索エンジン統合（Meilisearch）
+│   ├── utils/          # 共通ユーティリティ
+│   └── config/         # 共有設定（TypeScript）
+└── data/               # ローカル開発データ（.gitignore）
+    └── meilisearch/    # Meilisearchインデックス
+```
+
+### パッケージ依存関係
+
+```
+apps/web    → @thac/auth
+apps/server → @thac/auth, @thac/db, @thac/search, @thac/utils
+packages/auth   → @thac/db
+packages/search → @thac/db
 ```
 
 ## クイックスタート
@@ -44,9 +56,7 @@ thac/
 
 - [devbox](https://www.jetify.com/devbox)（推奨）
 
-### devbox で開発環境を起動（推奨）
-
-devbox を使用すると、Docker 不要で開発環境が構築できます。
+### セットアップ
 
 ```bash
 # 1. devboxをインストール（未インストールの場合）
@@ -55,22 +65,79 @@ curl -fsSL https://get.jetify.com/devbox | bash
 # 2. devbox shellに入る
 devbox shell
 
-# 3. 依存関係をインストール（shell内ではdevbox不要）
-bun install
+# 3. セットアップ（依存関係インストール + DB初期化 + シードデータ投入）
+devbox run setup
 
-# 4. 全サービスを起動（Meilisearch, server, web）
+# 4. 全サービスを起動
 devbox services up
 ```
 
-これで以下が起動します：
+`devbox run setup` は以下を一括実行します：
+
+1. `bun install` — 依存関係のインストール
+2. PostgreSQL起動確認（未起動なら起動）
+3. データベース作成（`thac`）
+4. スキーマ適用 + シードデータ投入（管理者ユーザー、マスターデータ、公式作品データ）
+
+### 起動するサービス
 
 | サービス | URL | 説明 |
 |---------|-----|------|
+| PostgreSQL | localhost:5432 | データベース |
 | Web | http://localhost:3000 | TanStack Start フロントエンド |
 | API Server | http://localhost:3001 | Hono API サーバー |
 | Meilisearch | http://localhost:7700 | 検索エンジン |
 
-#### サービス管理
+### 管理者アカウント
+
+シードデータにより以下の管理者アカウントが作成されます：
+
+| 項目 | デフォルト値 | 環境変数 |
+|------|-------------|---------|
+| メール | admin@example.com | `ADMIN_EMAIL` |
+| パスワード | admin123456 | `ADMIN_PASSWORD` |
+| 名前 | Admin | `ADMIN_NAME` |
+
+## 利用可能なコマンド
+
+### 開発（devbox）
+
+| コマンド | 説明 |
+|---------|------|
+| `devbox run setup` | セットアップ（依存関係 + DB初期化 + シード） |
+| `devbox run install` | 依存関係のインストール |
+| `devbox services up` | 全サービスを起動（フォアグラウンド） |
+| `devbox services up -b` | 全サービスをバックグラウンド起動 |
+| `devbox services stop` | サービスを停止 |
+| `devbox run dev` | 開発サーバーを起動 |
+| `devbox run build` | ビルドを実行 |
+| `devbox run check` | Lint・フォーマットチェック |
+| `devbox run check-types` | 型チェック |
+
+### データベース操作
+
+| コマンド | 説明 |
+|---------|------|
+| `make db-push` | スキーマをDBにプッシュ |
+| `make db-generate` | マイグレーションを生成 |
+| `make db-migrate` | マイグレーションを実行 |
+| `make db-seed` | シードデータを投入（管理者 + マスター + 公式） |
+| `make db-setup` | DBセットアップ（push + seed） |
+| `make db-studio` | Drizzle Studioを起動 |
+| `make db-truncate` | マスタデータ・公式作品以外をトランケート |
+
+### ユーティリティ
+
+| コマンド | 説明 |
+|---------|------|
+| `make install` | 依存関係をインストール |
+| `make check` | Lint・フォーマットチェック |
+| `make check-types` | 型チェック |
+| `make test` | テストを実行 |
+
+`make help` で全コマンドを確認できます。
+
+### サービス管理
 
 ```bash
 devbox services up       # フォアグラウンドで起動（TUI付き）
@@ -79,7 +146,7 @@ devbox services ls       # サービス一覧
 devbox services stop     # 停止
 ```
 
-#### direnv を使用する場合（オプション）
+### direnv を使用する場合（オプション）
 
 direnvと組み合わせると、ディレクトリ移動時に自動で環境が切り替わります。
 
@@ -94,49 +161,6 @@ eval "$(direnv hook zsh)"
 direnv allow
 ```
 
-### 初回セットアップ
-
-```bash
-# DBセットアップ（スキーマ適用 + シードデータ投入）
-make db-setup
-```
-
-## 利用可能なコマンド
-
-### 開発（devbox）
-
-| コマンド | 説明 |
-|---------|------|
-| `devbox services up` | 全サービスを起動（フォアグラウンド） |
-| `devbox services up -b` | 全サービスをバックグラウンド起動 |
-| `devbox services stop` | サービスを停止 |
-| `devbox run dev` | `bun run dev` を実行 |
-| `devbox run build` | ビルドを実行 |
-| `devbox run check` | Lint・フォーマットチェック |
-| `devbox run check-types` | 型チェック |
-
-### データベース操作
-
-| コマンド | 説明 |
-|---------|------|
-| `make db-push` | スキーマをDBにプッシュ |
-| `make db-generate` | マイグレーションを生成 |
-| `make db-migrate` | マイグレーションを実行 |
-| `make db-seed` | シードデータを投入 |
-| `make db-setup` | DBセットアップ（push + seed） |
-| `make db-studio` | Drizzle Studioを起動 |
-
-### ユーティリティ
-
-| コマンド | 説明 |
-|---------|------|
-| `make install` | 依存関係をインストール |
-| `make check` | Lint・フォーマットチェック |
-| `make check-types` | 型チェック |
-| `make test` | テストを実行 |
-
-`make help` で全コマンドを確認できます。
-
 ## Git Hooks
 
 このプロジェクトはlefthookを使用してpre-commitフックを設定しています。
@@ -144,8 +168,8 @@ make db-setup
 
 コミット前に以下が自動実行されます：
 
-- **check-types**: 型チェック（`devbox run check-types`）
-- **biome**: Lintとフォーマット（`devbox run check`）
+- **check-types**: 型チェック（`turbo check-types`）
+- **biome**: Lintとフォーマット（`biome check --write`）
 
 エラーがある場合、コミットがブロックされます。
 
