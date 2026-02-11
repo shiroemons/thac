@@ -215,8 +215,9 @@ function countUniqueEntities(records: LegacyCSVRecord[]): EntityProgressMap {
 		const primaryCircle = normalizeFullWidthSymbols(
 			circleNames[0]?.trim() || "",
 		);
-		if (primaryCircle && discInfo.name) {
-			uniqueReleases.add(`${primaryCircle}:${discInfo.name}`);
+		const normalizedAlbumName = normalizeFullWidthSymbols(discInfo.name);
+		if (primaryCircle && normalizedAlbumName) {
+			uniqueReleases.add(`${primaryCircle}:${normalizedAlbumName}`);
 		}
 	}
 
@@ -353,10 +354,11 @@ function extractUniqueEntities(records: LegacyCSVRecord[]): ExtractedEntities {
 		const primaryCircle = normalizeFullWidthSymbols(
 			circleNameList[0]?.trim() || "",
 		);
-		const releaseKey = `${primaryCircle}:${discInfo.name}`;
+		const normalizedAlbumBaseName = normalizeFullWidthSymbols(discInfo.name);
+		const releaseKey = `${primaryCircle}:${normalizedAlbumBaseName}`;
 		if (!result.releaseKeys.has(releaseKey)) {
 			result.releaseKeys.set(releaseKey, {
-				albumBaseName: discInfo.name,
+				albumBaseName: normalizedAlbumBaseName,
 				circleNames: circleNameList.map((n) =>
 					normalizeFullWidthSymbols(n.trim()),
 				),
