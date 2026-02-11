@@ -2,8 +2,10 @@
  * 原曲マッチャー
  *
  * CSV内の原曲名と公式楽曲データベースをマッチングするためのサービス。
- * 完全一致 → 部分一致 の段階的マッチングを行う。
+ * 完全一致 → 正規化マッチ → 部分一致 の段階的マッチングを行う。
  */
+
+import { normalizeTilde } from "./name-utils";
 
 /**
  * 「その他」公式楽曲のID
@@ -16,13 +18,13 @@ export interface SongCandidate {
 	name: string;
 	nameJa: string;
 	officialWorkName: string | null;
-	matchType: "exact" | "partial" | "none";
+	matchType: "exact" | "normalized" | "partial" | "none";
 }
 
 export interface SongMatchResult {
 	originalName: string;
 	isOriginal: boolean;
-	matchType: "exact" | "partial" | "none";
+	matchType: "exact" | "normalized" | "partial" | "none";
 	candidates: SongCandidate[];
 	autoMatched: boolean;
 	selectedId: string | null;
@@ -149,6 +151,29 @@ async function matchSingleSong(
 			selectedId: firstMatch!.id,
 			customSongName: null,
 		};
+	}
+
+	// 波ダッシュ正規化マッチング（U+301C → U+FF5E）
+	const normalizedName = normalizeTilde(trimmedName);
+	if (normalizedName !== trimmedName) {
+		const normalizedMatches = exactSearch(normalizedName);
+		if (normalizedMatches.length > 0) {
+			return {
+				originalName: trimmedName,
+				isOriginal: false,
+				matchType: "normalized",
+				candidates: normalizedMatches.map((song) => ({
+					id: song.id,
+					name: song.name,
+					nameJa: song.nameJa,
+					officialWorkName: song.officialWorkName,
+					matchType: "normalized" as const,
+				})),
+				autoMatched: false,
+				selectedId: null,
+				customSongName: null,
+			};
+		}
 	}
 
 	// 部分一致検索

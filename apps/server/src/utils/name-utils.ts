@@ -220,6 +220,15 @@ export function generateNameInfo(originalName: string): NameInfo {
 }
 
 /**
+ * 波ダッシュ（U+301C）を全角チルダ（U+FF5E）に統一する
+ * 東方Projectの公式楽曲名では U+FF5E が標準的に使用される
+ */
+export function normalizeTilde(text: string): string {
+	if (!text) return text;
+	return text.replaceAll("\u301C", "\uFF5E");
+}
+
+/**
  * ソート用名を生成（サークル用）
  * ひらがな/カタカナ/英語の場合はそのまま
  * 漢字の場合は読み仮名が必要なのでnullを返す

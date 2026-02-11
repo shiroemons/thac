@@ -5,6 +5,7 @@
  */
 
 import { db, eq, like, officialSongs, officialWorks, or } from "@thac/db";
+import { normalizeTilde } from "../utils/name-utils";
 import {
 	type OfficialSongData,
 	OTHER_SONG_ID,
@@ -202,6 +203,29 @@ async function matchSingleSongFromDb(
 			selectedId: firstMatch!.id,
 			customSongName: null,
 		};
+	}
+
+	// 波ダッシュ正規化マッチング（U+301C → U+FF5E）
+	const normalizedName = normalizeTilde(trimmedName);
+	if (normalizedName !== trimmedName) {
+		const normalizedMatches = await exactSearchFromDb(normalizedName);
+		if (normalizedMatches.length > 0) {
+			return {
+				originalName: trimmedName,
+				isOriginal: false,
+				matchType: "normalized" as const,
+				candidates: normalizedMatches.map((song) => ({
+					id: song.id,
+					name: song.name,
+					nameJa: song.nameJa,
+					officialWorkName: song.officialWorkName,
+					matchType: "normalized" as const,
+				})),
+				autoMatched: false,
+				selectedId: null,
+				customSongName: null,
+			};
+		}
 	}
 
 	// 部分一致検索

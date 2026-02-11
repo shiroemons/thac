@@ -1029,7 +1029,10 @@ function MappingStep({
 	const filteredMatches = useMemo(() => {
 		if (!hideMapped) return songMatches;
 		return songMatches.filter(
-			(match) => match.matchType === "none" || !mappings[match.originalName],
+			(match) =>
+				match.matchType === "none" ||
+				match.matchType === "normalized" ||
+				!mappings[match.originalName],
 		);
 	}, [hideMapped, songMatches, mappings]);
 
@@ -1133,6 +1136,9 @@ function SongMappingRow({
 		}
 		if (match.matchType === "exact") {
 			return <span className="badge badge-info badge-sm">完全一致</span>;
+		}
+		if (match.matchType === "normalized") {
+			return <span className="badge badge-warning badge-sm">正規化一致</span>;
 		}
 		if (match.matchType === "partial") {
 			return <span className="badge badge-warning badge-sm">部分一致</span>;

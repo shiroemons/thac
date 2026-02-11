@@ -502,7 +502,7 @@ export interface SongCandidate {
 export interface SongMatchResult {
 	originalName: string;
 	isOriginal: boolean;
-	matchType: "exact" | "partial" | "none";
+	matchType: "exact" | "normalized" | "partial" | "none";
 	candidates: SongCandidate[];
 	autoMatched: boolean;
 	selectedId: string | null;
