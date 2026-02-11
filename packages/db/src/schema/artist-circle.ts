@@ -48,6 +48,10 @@ export const artists = pgTable(
 		index("idx_artists_sort").on(table.sortName),
 		index("idx_artists_initial").on(table.nameInitial, table.initialScript),
 		index("idx_artists_name_lower").on(sql`lower(${table.name})`),
+		index("idx_artists_name_trgm").using(
+			"gin",
+			sql`${table.name} gin_trgm_ops`,
+		),
 	],
 );
 
@@ -78,6 +82,10 @@ export const artistAliases = pgTable(
 		index("idx_artist_aliases_alias_type").on(table.aliasTypeCode),
 		uniqueIndex("uq_artist_aliases_name").on(table.artistId, table.name),
 		index("idx_artist_aliases_name_lower").on(sql`lower(${table.name})`),
+		index("idx_artist_aliases_name_trgm").using(
+			"gin",
+			sql`${table.name} gin_trgm_ops`,
+		),
 	],
 );
 
@@ -105,6 +113,18 @@ export const circles = pgTable(
 		uniqueIndex("uq_circles_name").on(table.name),
 		index("idx_circles_initial").on(table.nameInitial, table.initialScript),
 		index("idx_circles_name_lower").on(sql`lower(${table.name})`),
+		index("idx_circles_name_trgm").using(
+			"gin",
+			sql`${table.name} gin_trgm_ops`,
+		),
+		index("idx_circles_name_ja_trgm").using(
+			"gin",
+			sql`${table.nameJa} gin_trgm_ops`,
+		),
+		index("idx_circles_name_en_trgm").using(
+			"gin",
+			sql`${table.nameEn} gin_trgm_ops`,
+		),
 	],
 );
 

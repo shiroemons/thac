@@ -73,6 +73,10 @@ export const officialSongs = pgTable(
 	(table) => [
 		index("idx_official_songs_work").on(table.officialWorkId),
 		index("idx_official_songs_source").on(table.sourceSongId),
+		index("idx_official_songs_work_original").on(
+			table.officialWorkId,
+			table.isOriginal,
+		),
 	],
 );
 
