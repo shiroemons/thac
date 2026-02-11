@@ -74,9 +74,16 @@ describe("master schema", () => {
 			expect(descriptionColumn.notNull).toBe(false);
 		});
 
-		test("should not have timestamp columns", () => {
-			expect(Object.keys(aliasTypes)).not.toContain("createdAt");
-			expect(Object.keys(aliasTypes)).not.toContain("updatedAt");
+		test("should have createdAt timestamp column", () => {
+			const createdAtColumn = aliasTypes.createdAt;
+			expect(createdAtColumn.name).toBe("created_at");
+			expect(createdAtColumn.notNull).toBe(true);
+		});
+
+		test("should have updatedAt timestamp column", () => {
+			const updatedAtColumn = aliasTypes.updatedAt;
+			expect(updatedAtColumn.name).toBe("updated_at");
+			expect(updatedAtColumn.notNull).toBe(true);
 		});
 	});
 
@@ -103,9 +110,16 @@ describe("master schema", () => {
 			expect(descriptionColumn.notNull).toBe(false);
 		});
 
-		test("should not have timestamp columns", () => {
-			expect(Object.keys(creditRoles)).not.toContain("createdAt");
-			expect(Object.keys(creditRoles)).not.toContain("updatedAt");
+		test("should have createdAt timestamp column", () => {
+			const createdAtColumn = creditRoles.createdAt;
+			expect(createdAtColumn.name).toBe("created_at");
+			expect(createdAtColumn.notNull).toBe(true);
+		});
+
+		test("should have updatedAt timestamp column", () => {
+			const updatedAtColumn = creditRoles.updatedAt;
+			expect(updatedAtColumn.name).toBe("updated_at");
+			expect(updatedAtColumn.notNull).toBe(true);
 		});
 	});
 
@@ -134,9 +148,16 @@ describe("master schema", () => {
 			expect(descriptionColumn.notNull).toBe(false);
 		});
 
-		test("should not have timestamp columns", () => {
-			expect(Object.keys(officialWorkCategories)).not.toContain("createdAt");
-			expect(Object.keys(officialWorkCategories)).not.toContain("updatedAt");
+		test("should have createdAt timestamp column", () => {
+			const createdAtColumn = officialWorkCategories.createdAt;
+			expect(createdAtColumn.name).toBe("created_at");
+			expect(createdAtColumn.notNull).toBe(true);
+		});
+
+		test("should have updatedAt timestamp column", () => {
+			const updatedAtColumn = officialWorkCategories.updatedAt;
+			expect(updatedAtColumn.name).toBe("updated_at");
+			expect(updatedAtColumn.notNull).toBe(true);
 		});
 	});
 });
