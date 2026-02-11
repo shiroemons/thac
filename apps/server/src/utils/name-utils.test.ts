@@ -7,6 +7,7 @@ import {
 	normalizeTilde,
 	parseDiscInfo,
 	parseEventEdition,
+	reverseTilde,
 } from "./name-utils";
 
 describe("isEnglishOnly", () => {
@@ -191,5 +192,29 @@ describe("normalizeTilde", () => {
 	it("チルダを含まない文字列はそのまま返す", () => {
 		expect(normalizeTilde("東方紅魔郷")).toBe("東方紅魔郷");
 		expect(normalizeTilde("Hello World")).toBe("Hello World");
+	});
+});
+
+describe("reverseTilde", () => {
+	it("全角チルダ（U+FF5E）を波ダッシュ（U+301C）に変換する", () => {
+		expect(reverseTilde("テスト\uFF5Eテスト")).toBe("テスト\u301Cテスト");
+	});
+
+	it("波ダッシュ（U+301C）はそのまま保持する", () => {
+		expect(reverseTilde("テスト\u301Cテスト")).toBe("テスト\u301Cテスト");
+	});
+
+	it("複数の全角チルダを含む文字列を正しく変換する", () => {
+		expect(reverseTilde("A\uFF5EB\uFF5EC")).toBe("A\u301CB\u301CC");
+		expect(reverseTilde("\uFF5E\u301C\uFF5E")).toBe("\u301C\u301C\u301C");
+	});
+
+	it("空文字列は空文字列を返す", () => {
+		expect(reverseTilde("")).toBe("");
+	});
+
+	it("チルダを含まない文字列はそのまま返す", () => {
+		expect(reverseTilde("東方紅魔郷")).toBe("東方紅魔郷");
+		expect(reverseTilde("Hello World")).toBe("Hello World");
 	});
 });

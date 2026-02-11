@@ -229,6 +229,15 @@ export function normalizeTilde(text: string): string {
 }
 
 /**
+ * 全角チルダ（U+FF5E）を波ダッシュ（U+301C）に変換する
+ * normalizeTildeの逆方向: DB側がU+301Cの場合に対応
+ */
+export function reverseTilde(text: string): string {
+	if (!text) return text;
+	return text.replaceAll("\uFF5E", "\u301C");
+}
+
+/**
  * ソート用名を生成（サークル用）
  * ひらがな/カタカナ/英語の場合はそのまま
  * 漢字の場合は読み仮名が必要なのでnullを返す

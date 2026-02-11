@@ -5,7 +5,7 @@
  * 完全一致 → 正規化マッチ → 部分一致 の段階的マッチングを行う。
  */
 
-import { normalizeTilde } from "./name-utils";
+import { normalizeTilde, reverseTilde } from "./name-utils";
 
 /**
  * 「その他」公式楽曲のID
@@ -163,6 +163,29 @@ async function matchSingleSong(
 				isOriginal: false,
 				matchType: "normalized",
 				candidates: normalizedMatches.map((song) => ({
+					id: song.id,
+					name: song.name,
+					nameJa: song.nameJa,
+					officialWorkName: song.officialWorkName,
+					matchType: "normalized" as const,
+				})),
+				autoMatched: false,
+				selectedId: null,
+				customSongName: null,
+			};
+		}
+	}
+
+	// 逆方向の正規化マッチング（U+FF5E → U+301C）
+	const reversedName = reverseTilde(trimmedName);
+	if (reversedName !== trimmedName) {
+		const reversedMatches = exactSearch(reversedName);
+		if (reversedMatches.length > 0) {
+			return {
+				originalName: trimmedName,
+				isOriginal: false,
+				matchType: "normalized",
+				candidates: reversedMatches.map((song) => ({
 					id: song.id,
 					name: song.name,
 					nameJa: song.nameJa,

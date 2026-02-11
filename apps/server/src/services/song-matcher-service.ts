@@ -5,7 +5,7 @@
  */
 
 import { db, eq, like, officialSongs, officialWorks, or } from "@thac/db";
-import { normalizeTilde } from "../utils/name-utils";
+import { normalizeTilde, reverseTilde } from "../utils/name-utils";
 import {
 	type OfficialSongData,
 	OTHER_SONG_ID,
@@ -215,6 +215,29 @@ async function matchSingleSongFromDb(
 				isOriginal: false,
 				matchType: "normalized" as const,
 				candidates: normalizedMatches.map((song) => ({
+					id: song.id,
+					name: song.name,
+					nameJa: song.nameJa,
+					officialWorkName: song.officialWorkName,
+					matchType: "normalized" as const,
+				})),
+				autoMatched: false,
+				selectedId: null,
+				customSongName: null,
+			};
+		}
+	}
+
+	// 逆方向の正規化マッチング（U+FF5E → U+301C）
+	const reversedName = reverseTilde(trimmedName);
+	if (reversedName !== trimmedName) {
+		const reversedMatches = await exactSearchFromDb(reversedName);
+		if (reversedMatches.length > 0) {
+			return {
+				originalName: trimmedName,
+				isOriginal: false,
+				matchType: "normalized" as const,
+				candidates: reversedMatches.map((song) => ({
 					id: song.id,
 					name: song.name,
 					nameJa: song.nameJa,

@@ -168,6 +168,52 @@ describe("SongMatcher", () => {
 		});
 	});
 
+	describe("逆方向の正規化マッチング（全角チルダ → 波ダッシュ）", () => {
+		test("全角チルダ（U+FF5E）を含む曲名が波ダッシュ（U+301C）の候補と正規化マッチする", async () => {
+			// Mock data has U+301C, input has U+FF5E
+			const songsWithWaveDash: Array<{
+				id: string;
+				name: string;
+				nameJa: string;
+				isOriginal: boolean;
+				officialWorkName: string | null;
+			}> = [
+				{
+					id: "song-wave",
+					name: "上海紅茶館 \u301C Chinese Tea",
+					nameJa: "上海紅茶館 \u301C Chinese Tea",
+					isOriginal: true,
+					officialWorkName: "東方紅魔郷",
+				},
+			];
+
+			const waveDashExactSearch = (name: string) =>
+				songsWithWaveDash.filter((s) => s.name === name || s.nameJa === name);
+			const waveDashPartialSearch = (name: string, limit: number) =>
+				songsWithWaveDash
+					.filter((s) => s.name.includes(name) || s.nameJa.includes(name))
+					.slice(0, limit);
+			const waveDashFindOriginal = () => null;
+
+			const waveDashMatcher = createSongMatcher(
+				waveDashExactSearch,
+				waveDashPartialSearch,
+				waveDashFindOriginal,
+			);
+
+			const results = await waveDashMatcher.matchSongs([
+				"上海紅茶館 \uFF5E Chinese Tea",
+			]);
+
+			expect(results).toHaveLength(1);
+			expect(results[0]?.matchType).toBe("normalized");
+			expect(results[0]?.autoMatched).toBe(false);
+			expect(results[0]?.selectedId).toBeNull();
+			expect(results[0]?.candidates).toHaveLength(1);
+			expect(results[0]?.candidates[0]?.id).toBe("song-wave");
+		});
+	});
+
 	describe("マッチなしの処理", () => {
 		test("マッチする原曲がない場合は「その他」に紐付け、customSongNameに原曲名を保存する", async () => {
 			const results = await matcher.matchSongs(["存在しない曲名"]);
