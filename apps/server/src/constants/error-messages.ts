@@ -10,6 +10,11 @@ export const ERROR_MESSAGES = {
 	DB_UNIQUE_VIOLATION: "データが重複しています",
 	DB_FOREIGN_KEY_VIOLATION: "関連するデータが存在しないか、削除できません",
 	DB_CHECK_VIOLATION: "データの値が制約条件を満たしていません",
+	DB_NOT_NULL_VIOLATION: "必須フィールドが不足しています",
+	DB_QUERY_TIMEOUT:
+		"リクエストがタイムアウトしました。しばらく後に再試行してください",
+	DB_CONNECTION_ERROR:
+		"データベースに接続できません。しばらく後に再試行してください",
 
 	// ===== リソース別 Not Found =====
 	EVENT_NOT_FOUND: "イベントが見つかりません",

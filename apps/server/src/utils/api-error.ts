@@ -27,6 +27,8 @@ export const ErrorCodes = {
 	DUPLICATE: "DUPLICATE",
 	/** データ競合（楽観的ロック） */
 	CONFLICT: "CONFLICT",
+	/** サービス利用不可 */
+	SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
 	/** その他のエラー */
 	INTERNAL_ERROR: "INTERNAL_ERROR",
 } as const;
@@ -84,6 +86,32 @@ export function handleDbError(c: Context, error: unknown, operation: string) {
 				};
 				if (isDev) response.details = error.detail ?? error.message;
 				return c.json(response, 400);
+			}
+			case "23502": {
+				const response: ApiErrorResponse = {
+					error: ERROR_MESSAGES.DB_NOT_NULL_VIOLATION,
+					code: ErrorCodes.VALIDATION_ERROR,
+				};
+				if (isDev) response.details = error.detail ?? error.message;
+				return c.json(response, 400);
+			}
+			case "57014": {
+				const response: ApiErrorResponse = {
+					error: ERROR_MESSAGES.DB_QUERY_TIMEOUT,
+					code: ErrorCodes.SERVICE_UNAVAILABLE,
+				};
+				if (isDev) response.details = error.message;
+				return c.json(response, 503);
+			}
+			case "08003":
+			case "08006":
+			case "57P03": {
+				const response: ApiErrorResponse = {
+					error: ERROR_MESSAGES.DB_CONNECTION_ERROR,
+					code: ErrorCodes.SERVICE_UNAVAILABLE,
+				};
+				if (isDev) response.details = error.message;
+				return c.json(response, 503);
 			}
 		}
 	}
