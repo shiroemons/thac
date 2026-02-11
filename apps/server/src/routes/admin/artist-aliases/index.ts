@@ -7,9 +7,9 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	inArray,
 	insertArtistAliasSchema,
-	like,
 	sql,
 	updateArtistAliasSchema,
 } from "@thac/db";
@@ -49,7 +49,7 @@ artistAliasesRouter.get("/", async (c) => {
 
 		if (search) {
 			const searchPattern = `%${search}%`;
-			conditions.push(like(artistAliases.name, searchPattern));
+			conditions.push(ilike(artistAliases.name, searchPattern));
 		}
 
 		const whereCondition =

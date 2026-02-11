@@ -3,8 +3,8 @@ import {
 	asc,
 	db,
 	eq,
+	ilike,
 	inArray,
-	like,
 	or,
 	trackCreditRoles,
 	trackCredits,
@@ -81,9 +81,9 @@ trackExportRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(tracks.name, searchPattern),
-					like(tracks.nameJa, searchPattern),
-					like(tracks.nameEn, searchPattern),
+					ilike(tracks.name, searchPattern),
+					ilike(tracks.nameJa, searchPattern),
+					ilike(tracks.nameEn, searchPattern),
 				),
 			);
 		}

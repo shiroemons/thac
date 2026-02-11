@@ -5,8 +5,8 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	insertAliasTypeSchema,
-	like,
 	max,
 	or,
 	updateAliasTypeSchema,
@@ -33,8 +33,8 @@ aliasTypesRouter.get("/", async (c) => {
 		// 条件を構築
 		const whereCondition = search
 			? or(
-					like(aliasTypes.code, `%${search}%`),
-					like(aliasTypes.label, `%${search}%`),
+					ilike(aliasTypes.code, `%${search}%`),
+					ilike(aliasTypes.label, `%${search}%`),
 				)
 			: undefined;
 

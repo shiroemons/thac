@@ -7,9 +7,9 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	inArray,
 	insertArtistSchema,
-	like,
 	or,
 	sql,
 	updateArtistSchema,
@@ -52,10 +52,10 @@ artistsRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(artists.name, searchPattern),
-					like(artists.nameJa, searchPattern),
-					like(artists.nameEn, searchPattern),
-					like(artists.sortName, searchPattern),
+					ilike(artists.name, searchPattern),
+					ilike(artists.nameJa, searchPattern),
+					ilike(artists.nameEn, searchPattern),
+					ilike(artists.sortName, searchPattern),
 				),
 			);
 		}

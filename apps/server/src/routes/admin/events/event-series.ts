@@ -6,8 +6,8 @@ import {
 	eq,
 	eventSeries,
 	events,
+	ilike,
 	insertEventSeriesSchema,
-	like,
 	max,
 	sql,
 	updateEventSeriesSchema,
@@ -30,7 +30,7 @@ eventSeriesRouter.get("/", async (c) => {
 
 		// 条件を構築
 		const whereCondition = search
-			? like(eventSeries.name, `%${search}%`)
+			? ilike(eventSeries.name, `%${search}%`)
 			: undefined;
 
 		// ソート列のマッピング

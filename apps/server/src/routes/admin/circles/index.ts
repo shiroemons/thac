@@ -7,10 +7,10 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	inArray,
 	insertCircleLinkSchema,
 	insertCircleSchema,
-	like,
 	or,
 	platforms,
 	sql,
@@ -55,9 +55,9 @@ circlesRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(circles.name, searchPattern),
-					like(circles.nameJa, searchPattern),
-					like(circles.nameEn, searchPattern),
+					ilike(circles.name, searchPattern),
+					ilike(circles.nameJa, searchPattern),
+					ilike(circles.nameEn, searchPattern),
 				),
 			);
 		}

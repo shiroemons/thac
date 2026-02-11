@@ -1,4 +1,14 @@
-import { asc, count, db, desc, eq, like, sql, tags, trackTags } from "@thac/db";
+import {
+	asc,
+	count,
+	db,
+	desc,
+	eq,
+	ilike,
+	sql,
+	tags,
+	trackTags,
+} from "@thac/db";
 import { Hono } from "hono";
 import { handleDbError } from "../../utils/api-error";
 import {
@@ -71,7 +81,7 @@ tagsRouter.get("/", async (c) => {
 
 		// 検索条件を追加
 		if (search) {
-			query = query.where(like(tags.name, `%${search}%`));
+			query = query.where(ilike(tags.name, `%${search}%`));
 		}
 
 		const data = await query.orderBy(asc(tags.name)).limit(limit);
@@ -79,7 +89,7 @@ tagsRouter.get("/", async (c) => {
 		// 合計件数を取得（検索条件付き）
 		let totalQuery = db.select({ count: count() }).from(tags).$dynamic();
 		if (search) {
-			totalQuery = totalQuery.where(like(tags.name, `%${search}%`));
+			totalQuery = totalQuery.where(ilike(tags.name, `%${search}%`));
 		}
 		const totalResult = await totalQuery;
 		const total = totalResult[0]?.count ?? 0;

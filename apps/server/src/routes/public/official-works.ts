@@ -5,7 +5,7 @@ import {
 	countDistinct,
 	db,
 	eq,
-	like,
+	ilike,
 	officialSongs,
 	officialWorkCategories,
 	officialWorkLinks,
@@ -62,9 +62,9 @@ officialWorksRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(officialWorks.name, searchPattern),
-					like(officialWorks.nameJa, searchPattern),
-					like(officialWorks.nameEn, searchPattern),
+					ilike(officialWorks.name, searchPattern),
+					ilike(officialWorks.nameJa, searchPattern),
+					ilike(officialWorks.nameEn, searchPattern),
 				),
 			);
 		}

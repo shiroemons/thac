@@ -4,8 +4,8 @@ import {
 	db,
 	discs,
 	eq,
+	ilike,
 	inArray,
-	like,
 	or,
 	releaseCircles,
 	releaseJanCodes,
@@ -83,9 +83,9 @@ releaseExportRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(releases.name, searchPattern),
-					like(releases.nameJa, searchPattern),
-					like(releases.nameEn, searchPattern),
+					ilike(releases.name, searchPattern),
+					ilike(releases.nameJa, searchPattern),
+					ilike(releases.nameEn, searchPattern),
 				),
 			);
 		}

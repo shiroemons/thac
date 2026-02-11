@@ -5,9 +5,9 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	insertOfficialSongLinkSchema,
 	insertOfficialSongSchema,
-	like,
 	officialSongLinks,
 	officialSongs,
 	officialWorkCategories,
@@ -50,9 +50,9 @@ songsRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(officialSongs.name, searchPattern),
-					like(officialSongs.nameJa, searchPattern),
-					like(officialSongs.nameEn, searchPattern),
+					ilike(officialSongs.name, searchPattern),
+					ilike(officialSongs.nameJa, searchPattern),
+					ilike(officialSongs.nameEn, searchPattern),
 				),
 			);
 		}

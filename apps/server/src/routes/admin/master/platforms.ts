@@ -5,8 +5,8 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	insertPlatformSchema,
-	like,
 	max,
 	or,
 	platforms,
@@ -44,8 +44,8 @@ platformsRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(platforms.code, searchPattern),
-					like(platforms.name, searchPattern),
+					ilike(platforms.code, searchPattern),
+					ilike(platforms.name, searchPattern),
 				),
 			);
 		}

@@ -8,9 +8,9 @@ import {
 	eq,
 	eventDays,
 	events,
+	ilike,
 	inArray,
 	insertReleaseSchema,
-	like,
 	releases,
 	tracks,
 	updateReleaseSchema,
@@ -98,7 +98,7 @@ releasesRouter.get("/", async (c) => {
 
 		if (search) {
 			const searchPattern = `%${search}%`;
-			conditions.push(like(releases.name, searchPattern));
+			conditions.push(ilike(releases.name, searchPattern));
 		}
 
 		if (releaseType) {

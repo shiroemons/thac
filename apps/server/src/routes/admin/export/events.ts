@@ -6,8 +6,8 @@ import {
 	eventDays,
 	eventSeries,
 	events,
+	ilike,
 	inArray,
-	like,
 	or,
 } from "@thac/db";
 import { Hono } from "hono";
@@ -67,7 +67,10 @@ eventExportRouter.get("/", async (c) => {
 		if (search) {
 			const searchPattern = `%${search}%`;
 			conditions.push(
-				or(like(events.name, searchPattern), like(events.venue, searchPattern)),
+				or(
+					ilike(events.name, searchPattern),
+					ilike(events.venue, searchPattern),
+				),
 			);
 		}
 

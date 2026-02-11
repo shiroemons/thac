@@ -4,8 +4,8 @@ import {
 	db,
 	eq,
 	genres,
+	ilike,
 	insertGenreSchema,
-	like,
 	max,
 	or,
 	trackGenres,
@@ -31,9 +31,9 @@ genresRouter.get("/", async (c) => {
 		if (search) {
 			const searchPattern = `%${search}%`;
 			whereCondition = or(
-				like(genres.code, searchPattern),
-				like(genres.nameJa, searchPattern),
-				like(genres.nameEn, searchPattern),
+				ilike(genres.code, searchPattern),
+				ilike(genres.nameJa, searchPattern),
+				ilike(genres.nameEn, searchPattern),
 			);
 		}
 

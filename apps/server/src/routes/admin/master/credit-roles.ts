@@ -5,8 +5,8 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	insertCreditRoleSchema,
-	like,
 	max,
 	or,
 	updateCreditRoleSchema,
@@ -33,8 +33,8 @@ creditRolesRouter.get("/", async (c) => {
 		// 条件を構築
 		const whereCondition = search
 			? or(
-					like(creditRoles.code, `%${search}%`),
-					like(creditRoles.label, `%${search}%`),
+					ilike(creditRoles.code, `%${search}%`),
+					ilike(creditRoles.label, `%${search}%`),
 				)
 			: undefined;
 

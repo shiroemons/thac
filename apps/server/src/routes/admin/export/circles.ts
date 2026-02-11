@@ -5,8 +5,8 @@ import {
 	circles,
 	db,
 	eq,
+	ilike,
 	inArray,
-	like,
 	or,
 } from "@thac/db";
 import { Hono } from "hono";
@@ -67,10 +67,10 @@ circleExportRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(circles.name, searchPattern),
-					like(circles.nameJa, searchPattern),
-					like(circles.nameEn, searchPattern),
-					like(circles.sortName, searchPattern),
+					ilike(circles.name, searchPattern),
+					ilike(circles.nameJa, searchPattern),
+					ilike(circles.nameEn, searchPattern),
+					ilike(circles.sortName, searchPattern),
 				),
 			);
 		}

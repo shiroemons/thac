@@ -4,8 +4,8 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	insertOfficialWorkCategorySchema,
-	like,
 	max,
 	officialWorkCategories,
 	or,
@@ -33,8 +33,8 @@ officialWorkCategoriesRouter.get("/", async (c) => {
 		// 条件を構築
 		const whereCondition = search
 			? or(
-					like(officialWorkCategories.code, `%${search}%`),
-					like(officialWorkCategories.name, `%${search}%`),
+					ilike(officialWorkCategories.code, `%${search}%`),
+					ilike(officialWorkCategories.name, `%${search}%`),
 				)
 			: undefined;
 

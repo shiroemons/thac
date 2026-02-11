@@ -6,8 +6,8 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	inArray,
-	like,
 	releases,
 	sql,
 	tags,
@@ -58,7 +58,7 @@ tagsRouter.get("/", async (c) => {
 		let whereCondition: SQL<unknown> | undefined;
 		if (search) {
 			const searchPattern = `%${search}%`;
-			whereCondition = like(tags.name, searchPattern);
+			whereCondition = ilike(tags.name, searchPattern);
 		}
 
 		// サブクエリで使用数を取得
