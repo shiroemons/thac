@@ -39,7 +39,10 @@ async function getApproximateCounts(
 	tableNames: string[],
 ): Promise<Map<string, number>> {
 	const result = await db.execute<{ relname: string; reltuples: string }>(
-		sql`SELECT relname, reltuples::bigint AS reltuples FROM pg_class WHERE relname = ANY(${tableNames})`,
+		sql`SELECT relname, reltuples::bigint AS reltuples FROM pg_class WHERE relname IN (${sql.join(
+			tableNames.map((name) => sql`${name}`),
+			sql`, `,
+		)})`,
 	);
 	const counts = new Map<string, number>();
 	for (const row of result) {
