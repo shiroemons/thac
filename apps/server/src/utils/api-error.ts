@@ -50,6 +50,29 @@ function isPostgresError(
 }
 
 /**
+ * リトライ可能な一時的DBエラーかどうかを判定
+ * - 08003: connection_does_not_exist
+ * - 08006: connection_failure
+ * - 57P03: cannot_connect_now
+ * - 57014: query_canceled (timeout)
+ * - 40001: serialization_failure
+ * - 40P01: deadlock_detected
+ */
+const RETRYABLE_ERROR_CODES = new Set([
+	"08003",
+	"08006",
+	"57P03",
+	"57014",
+	"40001",
+	"40P01",
+]);
+
+export function isRetryableDbError(error: unknown): boolean {
+	if (!isPostgresError(error)) return false;
+	return RETRYABLE_ERROR_CODES.has(error.code);
+}
+
+/**
  * DB操作時のエラーハンドリング
  * @param c - Honoコンテキスト
  * @param error - エラーオブジェクト
