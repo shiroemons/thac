@@ -41,6 +41,7 @@ describe("LegacyImportService", () => {
 				tracks: { created: 1, updated: 0, skipped: 0 },
 				credits: { created: 2, updated: 0, skipped: 0 },
 				officialSongLinks: { created: 1, updated: 0, skipped: 0 },
+				createdTrackIds: [],
 				errors: [],
 				batchSummary: {
 					totalBatches: 5,

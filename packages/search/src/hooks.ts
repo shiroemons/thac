@@ -1,7 +1,14 @@
-import { isMeilisearchAvailable } from "./client";
+import {
+	getMeilisearchClient,
+	isIndexExists,
+	isMeilisearchAvailable,
+} from "./client";
 import { TRACKS_INDEX_NAME } from "./indexes/tracks";
 import { getIndexQueue } from "./queue";
-import { fetchTrackForIndexing } from "./transformers/track";
+import {
+	fetchTrackForIndexing,
+	fetchTracksForIndexingByIds,
+} from "./transformers/track";
 import type { TrackSearchDocument } from "./types";
 
 /**
@@ -77,4 +84,46 @@ export async function flushIndexQueue(): Promise<void> {
 	}
 	const queue = getIndexQueue();
 	await queue.flush();
+}
+
+/**
+ * Sync specific tracks to Meilisearch search index (bulk operation)
+ * Used after legacy CSV import to index newly created tracks
+ * Returns null if Meilisearch is unavailable or index doesn't exist
+ */
+export async function syncTracksToSearchIndex(
+	trackIds: string[],
+	onProgress?: (synced: number, total: number) => void,
+): Promise<{ synced: number; errors: string[] } | null> {
+	if (!(await isMeilisearchAvailable())) {
+		return null;
+	}
+
+	if (!(await isIndexExists(TRACKS_INDEX_NAME))) {
+		return null;
+	}
+
+	const meili = getMeilisearchClient();
+	const index = meili.index(TRACKS_INDEX_NAME);
+	let synced = 0;
+	const errors: string[] = [];
+
+	try {
+		for await (const documents of fetchTracksForIndexingByIds(trackIds)) {
+			try {
+				await index.addDocuments(documents);
+				synced += documents.length;
+				onProgress?.(synced, trackIds.length);
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : "Unknown error";
+				errors.push(`Batch sync failed (${documents.length} docs): ${message}`);
+			}
+		}
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Unknown error";
+		errors.push(`Search sync iteration failed: ${message}`);
+	}
+
+	return { synced, errors };
 }
