@@ -8,8 +8,6 @@ import {
 	db,
 	desc,
 	eq,
-	eventSeries,
-	events,
 	inArray,
 	isNotNull,
 	ne,
@@ -21,7 +19,6 @@ import {
 	trackCreditRoles,
 	trackCredits,
 	trackOfficialSongs,
-	tracks,
 } from "@thac/db";
 import { Hono } from "hono";
 import { handleDbError } from "../../utils/api-error";
@@ -32,6 +29,25 @@ import {
 	setCache,
 	setCacheHeaders,
 } from "../../utils/cache";
+
+/**
+ * pg_class.reltuplesを使用した近似行数の取得
+ * VACUUM/ANALYZEで更新される統計値を利用し、COUNT(*)のシーケンシャルスキャンを回避
+ * キャッシュと併用するため、近似値で十分な精度を提供
+ */
+async function getApproximateCounts(
+	tableNames: string[],
+): Promise<Map<string, number>> {
+	const result = await db.execute<{ relname: string; reltuples: string }>(
+		sql`SELECT relname, reltuples::bigint AS reltuples FROM pg_class WHERE relname = ANY(${tableNames})`,
+	);
+	const counts = new Map<string, number>();
+	for (const row of result) {
+		// reltuplesが負の場合（未ANALYZE）は0にフォールバック
+		counts.set(row.relname, Math.max(0, Number(row.reltuples)));
+	}
+	return counts;
+}
 
 const statsRouter = new Hono();
 
@@ -56,22 +72,25 @@ statsRouter.get("/", async (c) => {
 			ELSE ${trackCredits.artistAliasId}
 		END`;
 
+		// 近似カウント: pg_class.reltuplesでシーケンシャルスキャンを回避
+		const approximateCountsPromise = getApproximateCounts([
+			"events",
+			"circles",
+			"artist_aliases",
+			"official_songs",
+			"releases",
+			"event_series",
+			"tracks",
+		]);
+
 		const [
-			eventsResult,
-			circlesResult,
-			artistsResult,
+			approximateCounts,
 			tracksResult,
-			originalSongsResult,
-			releasesResult,
-			eventSeriesResult,
-			totalTracksResult,
 			vocalistsResult,
 			arrangersResult,
 			lyricistsResult,
 		] = await Promise.all([
-			db.select({ count: count() }).from(events),
-			db.select({ count: count() }).from(circles),
-			db.select({ count: count() }).from(artistAliases),
+			approximateCountsPromise,
 			// 東方原曲に紐付くトラックのみをカウント
 			// - officialSongIdがNOT NULL
 			// - officialWorks.idが「0799」（その他）でない
@@ -92,19 +111,6 @@ statsRouter.get("/", async (c) => {
 						ne(officialWorks.id, "0799"),
 					),
 				),
-			// 原曲の数を取得
-			db
-				.select({ count: count() })
-				.from(officialSongs),
-			db.select({ count: count() }).from(releases),
-			// イベントシリーズ数を取得
-			db
-				.select({ count: count() })
-				.from(eventSeries),
-			// 全トラック数を取得
-			db
-				.select({ count: count() })
-				.from(tracks),
 			// ボーカリスト数を取得（名義単位でユニークカウント）
 			db
 				.select({ count: countDistinct(artistAliasIdentifier) })
@@ -135,14 +141,14 @@ statsRouter.get("/", async (c) => {
 		]);
 
 		const response = {
-			events: eventsResult[0]?.count ?? 0,
-			circles: circlesResult[0]?.count ?? 0,
-			artists: artistsResult[0]?.count ?? 0,
+			events: approximateCounts.get("events") ?? 0,
+			circles: approximateCounts.get("circles") ?? 0,
+			artists: approximateCounts.get("artist_aliases") ?? 0,
 			tracks: tracksResult[0]?.count ?? 0,
-			originalSongs: originalSongsResult[0]?.count ?? 0,
-			releases: releasesResult[0]?.count ?? 0,
-			eventSeries: eventSeriesResult[0]?.count ?? 0,
-			totalTracks: totalTracksResult[0]?.count ?? 0,
+			originalSongs: approximateCounts.get("official_songs") ?? 0,
+			releases: approximateCounts.get("releases") ?? 0,
+			eventSeries: approximateCounts.get("event_series") ?? 0,
+			totalTracks: approximateCounts.get("tracks") ?? 0,
 			vocalists: vocalistsResult[0]?.count ?? 0,
 			arrangers: arrangersResult[0]?.count ?? 0,
 			lyricists: lyricistsResult[0]?.count ?? 0,
