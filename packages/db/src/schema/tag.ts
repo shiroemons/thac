@@ -15,18 +15,22 @@ import { tracks } from "./track";
  * Tags table - master table for user-defined tags
  * id is TypeID format with "tag_" prefix
  */
-export const tags = pgTable("tags", {
-	id: text("id").primaryKey(),
-	name: text("name").notNull().unique(),
-	attributes: jsonb("attributes").$type<Record<string, unknown>>(),
-	createdAt: timestamp("created_at", { withTimezone: true })
-		.defaultNow()
-		.notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true })
-		.defaultNow()
-		.$onUpdate(() => new Date())
-		.notNull(),
-});
+export const tags = pgTable(
+	"tags",
+	{
+		id: text("id").primaryKey(),
+		name: text("name").notNull().unique(),
+		attributes: jsonb("attributes").$type<Record<string, unknown>>(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
+	},
+	(table) => [index("idx_tags_attributes_gin").using("gin", table.attributes)],
+);
 
 /**
  * Track Tags table - junction table for track-tag many-to-many relationship
