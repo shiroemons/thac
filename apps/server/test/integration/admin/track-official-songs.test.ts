@@ -12,12 +12,14 @@ import {
 	__setTestDatabase,
 	db,
 	officialSongs,
+	releases,
 	trackOfficialSongs,
 	tracks,
 } from "@thac/db";
 import { trackOfficialSongsRouter } from "../../../src/routes/admin/tracks/official-songs";
 import {
 	createTestOfficialSong,
+	createTestRelease,
 	createTestTrack,
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
@@ -63,6 +65,9 @@ describe("Admin Track Official Songs API", () => {
 
 	beforeEach(async () => {
 		await truncateAllTables(client);
+		await db
+			.insert(releases)
+			.values(createTestRelease({ id: "rel_test_default" }));
 	});
 
 	afterAll(async () => {

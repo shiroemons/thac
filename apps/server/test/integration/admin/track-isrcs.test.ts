@@ -11,11 +11,12 @@ import {
 	__resetDatabase,
 	__setTestDatabase,
 	db,
+	releases,
 	trackIsrcs,
 	tracks,
 } from "@thac/db";
 import { trackIsrcsRouter } from "../../../src/routes/admin/tracks/isrcs";
-import { createTestTrack } from "../../helpers/fixtures";
+import { createTestRelease, createTestTrack } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
 import {
@@ -53,6 +54,9 @@ describe("Admin Track ISRCs API", () => {
 
 	beforeEach(async () => {
 		await truncateAllTables(client);
+		await db
+			.insert(releases)
+			.values(createTestRelease({ id: "rel_test_default" }));
 	});
 
 	afterAll(async () => {

@@ -58,6 +58,9 @@ describe("Admin Track Derivations API", () => {
 
 	beforeEach(async () => {
 		await truncateAllTables(client);
+		await db
+			.insert(releases)
+			.values(createTestRelease({ id: "rel_test_default" }));
 	});
 
 	afterAll(async () => {
@@ -108,13 +111,19 @@ describe("Admin Track Derivations API", () => {
 		});
 
 		test("複数の派生元を返す", async () => {
-			await db
-				.insert(tracks)
-				.values([
-					createTestTrack({ id: "tr_parent_1", name: "Parent 1" }),
-					createTestTrack({ id: "tr_parent_2", name: "Parent 2" }),
-					createTestTrack({ id: "tr_child", name: "Child Track" }),
-				]);
+			await db.insert(tracks).values([
+				createTestTrack({ id: "tr_parent_1", name: "Parent 1" }),
+				createTestTrack({
+					id: "tr_parent_2",
+					name: "Parent 2",
+					trackNumber: 2,
+				}),
+				createTestTrack({
+					id: "tr_child",
+					name: "Child Track",
+					trackNumber: 3,
+				}),
+			]);
 			await db.insert(trackDerivations).values([
 				{
 					id: "deriv_001",
@@ -166,7 +175,7 @@ describe("Admin Track Derivations API", () => {
 				.insert(tracks)
 				.values([
 					createTestTrack({ id: "tr_parent", name: "Parent" }),
-					createTestTrack({ id: "tr_child", name: "Child" }),
+					createTestTrack({ id: "tr_child", name: "Child", trackNumber: 2 }),
 				]);
 
 			const res = await app.request(
@@ -188,7 +197,7 @@ describe("Admin Track Derivations API", () => {
 				.insert(tracks)
 				.values([
 					createTestTrack({ id: "tr_parent" }),
-					createTestTrack({ id: "tr_child" }),
+					createTestTrack({ id: "tr_child", trackNumber: 2 }),
 				]);
 
 			const res = await app.request(
@@ -209,7 +218,7 @@ describe("Admin Track Derivations API", () => {
 				.insert(tracks)
 				.values([
 					createTestTrack({ id: "tr_parent" }),
-					createTestTrack({ id: "tr_child" }),
+					createTestTrack({ id: "tr_child", trackNumber: 2 }),
 				]);
 			await db.insert(trackDerivations).values({
 				id: "deriv_001",
@@ -233,7 +242,7 @@ describe("Admin Track Derivations API", () => {
 				.insert(tracks)
 				.values([
 					createTestTrack({ id: "tr_parent" }),
-					createTestTrack({ id: "tr_child" }),
+					createTestTrack({ id: "tr_child", trackNumber: 2 }),
 				]);
 			await db.insert(trackDerivations).values({
 				id: "deriv_001",
@@ -257,7 +266,7 @@ describe("Admin Track Derivations API", () => {
 				.insert(tracks)
 				.values([
 					createTestTrack({ id: "tr_child" }),
-					createTestTrack({ id: "tr_parent" }),
+					createTestTrack({ id: "tr_parent", trackNumber: 2 }),
 				]);
 
 			const res = await app.request(
@@ -289,7 +298,7 @@ describe("Admin Track Derivations API", () => {
 				.insert(tracks)
 				.values([
 					createTestTrack({ id: "tr_parent" }),
-					createTestTrack({ id: "tr_child" }),
+					createTestTrack({ id: "tr_child", trackNumber: 2 }),
 				]);
 			await db.insert(trackDerivations).values({
 				id: "deriv_001",
