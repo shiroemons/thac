@@ -10,8 +10,8 @@ import {
 	eventDays,
 	eventSeries,
 	events,
+	ilike,
 	inArray,
-	like,
 	officialSongs,
 	officialWorks,
 	or,
@@ -78,7 +78,10 @@ eventsRouter.get("/", async (c) => {
 		if (search) {
 			const searchPattern = `%${search}%`;
 			conditions.push(
-				or(like(events.name, searchPattern), like(events.venue, searchPattern)),
+				or(
+					ilike(events.name, searchPattern),
+					ilike(events.venue, searchPattern),
+				),
 			);
 		}
 
@@ -89,25 +92,33 @@ eventsRouter.get("/", async (c) => {
 					: sql`${conditions[0]} AND ${conditions[1]}`
 				: undefined;
 
-		// releaseCountサブクエリ（N+1回避）
-		const releaseCountSubquery = db
-			.select({ count: count() })
+		// カウントをサブクエリでJOIN（相関サブクエリを回避）
+		const releaseCountSq = db
+			.select({
+				eventId: releases.eventId,
+				count: count().as("releaseCount"),
+			})
 			.from(releases)
-			.where(eq(releases.eventId, events.id));
+			.groupBy(releases.eventId)
+			.as("releaseCountSq");
 
-		// trackCountサブクエリ（N+1回避）
-		const trackCountSubquery = db
-			.select({ count: count() })
+		const trackCountSq = db
+			.select({
+				eventId: releases.eventId,
+				count: count().as("trackCount"),
+			})
 			.from(tracks)
 			.innerJoin(releases, eq(tracks.releaseId, releases.id))
-			.where(eq(releases.eventId, events.id));
+			.groupBy(releases.eventId)
+			.as("trackCountSq");
 
 		// ソート条件を構築
+		const releaseCountCol = sql<number>`COALESCE(${releaseCountSq.count}, 0)`;
 		const sortColumn =
 			sortBy === "name"
 				? events.name
 				: sortBy === "releaseCount"
-					? sql<number>`(${releaseCountSubquery})`
+					? releaseCountCol
 					: events.startDate;
 		const orderByClause =
 			sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
@@ -125,11 +136,13 @@ eventsRouter.get("/", async (c) => {
 					endDate: events.endDate,
 					totalDays: events.totalDays,
 					venue: events.venue,
-					releaseCount: sql<number>`(${releaseCountSubquery})`,
-					trackCount: sql<number>`(${trackCountSubquery})`,
+					releaseCount: sql<number>`COALESCE(${releaseCountSq.count}, 0)`,
+					trackCount: sql<number>`COALESCE(${trackCountSq.count}, 0)`,
 				})
 				.from(events)
 				.leftJoin(eventSeries, eq(events.eventSeriesId, eventSeries.id))
+				.leftJoin(releaseCountSq, eq(events.id, releaseCountSq.eventId))
+				.leftJoin(trackCountSq, eq(events.id, trackCountSq.eventId))
 				.where(whereCondition)
 				.orderBy(orderByClause)
 				.limit(limit)
@@ -300,11 +313,11 @@ eventsRouter.get("/:id/releases", async (c) => {
 				.selectDistinct({ releaseId: releaseCircles.releaseId })
 				.from(releaseCircles)
 				.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
-				.where(like(circles.name, searchPattern));
+				.where(ilike(circles.name, searchPattern));
 
 			const searchCondition = or(
-				like(releases.name, searchPattern),
-				like(releases.nameJa, searchPattern),
+				ilike(releases.name, searchPattern),
+				ilike(releases.nameJa, searchPattern),
 				inArray(releases.id, circleSearchSubquery),
 			);
 			if (searchCondition) {
@@ -314,25 +327,33 @@ eventsRouter.get("/:id/releases", async (c) => {
 
 		const whereCondition = and(...conditions);
 
-		// トラック数サブクエリ
-		const trackCountSubquery = db
-			.select({ count: count() })
+		// トラック数を事前集計（相関サブクエリ → LEFT JOIN最適化）
+		const trackCountSq = db
+			.select({
+				releaseId: tracks.releaseId,
+				count: count().as("trackCount"),
+			})
 			.from(tracks)
-			.where(eq(tracks.releaseId, releases.id));
+			.groupBy(tracks.releaseId)
+			.as("trackCountSq");
 
-		// サークル名サブクエリ（最小の名前を取得）
-		const circleNameSubquery = db
-			.select({ minName: sql<string>`MIN(${circles.name})` })
+		// サークル名を事前集計（最小の名前を取得）
+		const circleNameSq = db
+			.select({
+				releaseId: releaseCircles.releaseId,
+				minName: sql<string>`MIN(${circles.name})`.as("minCircleName"),
+			})
 			.from(circles)
 			.innerJoin(releaseCircles, eq(circles.id, releaseCircles.circleId))
-			.where(eq(releaseCircles.releaseId, releases.id));
+			.groupBy(releaseCircles.releaseId)
+			.as("circleNameSq");
 
 		// ソートカラムの決定
 		const sortColumn =
 			sortBy === "circleName"
-				? sql<string>`(${circleNameSubquery})`
+				? sql<string>`COALESCE(${circleNameSq.minName}, '')`
 				: sortBy === "trackCount"
-					? sql<number>`(${trackCountSubquery})`
+					? sql<number>`COALESCE(${trackCountSq.count}, 0)`
 					: releases.name;
 
 		const orderByClause =
@@ -347,9 +368,11 @@ eventsRouter.get("/:id/releases", async (c) => {
 					nameJa: releases.nameJa,
 					releaseDate: releases.releaseDate,
 					releaseType: releases.releaseType,
-					trackCount: sql<number>`(${trackCountSubquery})`,
+					trackCount: sql<number>`COALESCE(${trackCountSq.count}, 0)`,
 				})
 				.from(releases)
+				.leftJoin(trackCountSq, eq(releases.id, trackCountSq.releaseId))
+				.leftJoin(circleNameSq, eq(releases.id, circleNameSq.releaseId))
 				.where(whereCondition)
 				.orderBy(orderByClause)
 				.limit(limit)
