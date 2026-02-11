@@ -15,6 +15,13 @@
 			"when": 1770772097759,
 			"tag": "0001_narrow_trauma",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1770775004360,
+			"tag": "0002_serious_praxagora",
+			"breakpoints": true
 		}
 	]
 }
