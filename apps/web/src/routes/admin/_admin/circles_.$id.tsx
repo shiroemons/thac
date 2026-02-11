@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { createId } from "@thac/db";
+import { createId } from "@thac/db/utils/id";
 import {
 	ArrowLeft,
 	BarChart3,

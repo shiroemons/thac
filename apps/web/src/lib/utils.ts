@@ -16,8 +16,8 @@ export function getErrorMessage(
 	return defaultMessage;
 }
 
-// createIdは@thac/dbから直接インポートしてください
-// import { createId } from "@thac/db";
+// createIdはサブパスエクスポートからインポートしてください（メインエントリはpostgresを含むため）
+// import { createId } from "@thac/db/utils/id";
 
 /**
  * 外部リンクを中間ページ経由のURLに変換

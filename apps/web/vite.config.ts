@@ -6,4 +6,8 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
 	plugins: [tsconfigPaths(), tailwindcss(), tanstackStart(), viteReact()],
+	ssr: {
+		// サーバー専用パッケージをSSRビルドで外部化し、クライアントバンドルへの漏洩を防止
+		external: ["postgres", "@thac/db", "@thac/auth"],
+	},
 });
