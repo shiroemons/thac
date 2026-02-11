@@ -150,9 +150,9 @@ artistsRouter.get("/", async (c) => {
 			conditions.push(ilike(artistAliases.name, `%${search}%`));
 		}
 
-		// 役割フィルター（SQL WHERE条件に追加）
+		// 役割フィルター（サブクエリでSQL WHERE条件に追加）
 		if (role && role !== "all") {
-			const aliasIdsWithRole = await db
+			const aliasIdsWithRoleSq = db
 				.selectDistinct({ aliasId: trackCredits.artistAliasId })
 				.from(trackCredits)
 				.innerJoin(
@@ -166,18 +166,7 @@ artistsRouter.get("/", async (c) => {
 					),
 				);
 
-			const ids = aliasIdsWithRole
-				.map((r) => r.aliasId)
-				.filter((id): id is string => id !== null);
-
-			if (ids.length === 0) {
-				const response = { data: [], total: 0, page, limit };
-				setCache(cacheKey, response, CACHE_TTL.ARTISTS_LIST);
-				setCacheHeaders(c, { maxAge: CACHE_TTL.ARTISTS_LIST });
-				return c.json(response);
-			}
-
-			conditions.push(inArray(artistAliases.id, ids));
+			conditions.push(inArray(artistAliases.id, aliasIdsWithRoleSq));
 		}
 
 		const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
