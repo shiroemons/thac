@@ -10,7 +10,6 @@ import {
 	eq,
 	inArray,
 	isNotNull,
-	ne,
 	officialSongs,
 	officialWorks,
 	releaseCircles,
@@ -111,7 +110,7 @@ statsRouter.get("/", async (c) => {
 				.where(
 					and(
 						isNotNull(trackOfficialSongs.officialSongId),
-						ne(officialWorks.id, "0799"),
+						sql`${officialWorks.id} <> '0799'`,
 					),
 				),
 			// ボーカリスト数を取得（名義単位でユニークカウント）
@@ -199,7 +198,7 @@ statsRouter.get("/rankings", async (c) => {
 						and(
 							isNotNull(trackOfficialSongs.officialSongId),
 							isNotNull(officialSongs.officialWorkId),
-							ne(officialSongs.officialWorkId, "0799"),
+							sql`${officialSongs.officialWorkId} <> '0799'`,
 						),
 					)
 					.groupBy(officialSongs.id)
@@ -310,7 +309,7 @@ statsRouter.get("/rankings/original-songs", async (c) => {
 				officialWorks,
 				eq(officialSongs.officialWorkId, officialWorks.id),
 			)
-			.where(ne(officialWorks.id, "0799"));
+			.where(sql`${officialWorks.id} <> '0799'`);
 
 		const total = totalResult[0]?.count ?? 0;
 
@@ -332,7 +331,7 @@ statsRouter.get("/rankings/original-songs", async (c) => {
 				trackOfficialSongs,
 				eq(officialSongs.id, trackOfficialSongs.officialSongId),
 			)
-			.where(ne(officialWorks.id, "0799"))
+			.where(sql`${officialWorks.id} <> '0799'`)
 			.groupBy(officialSongs.id, officialWorks.id)
 			.orderBy(desc(count(trackOfficialSongs.trackId)))
 			.limit(limit)
@@ -545,7 +544,7 @@ statsRouter.get("/rankings/song-pairs", async (c) => {
 			.where(
 				and(
 					isNotNull(trackOfficialSongs.officialSongId),
-					ne(officialWorks.id, "0799"),
+					sql`${officialWorks.id} <> '0799'`,
 				),
 			)
 			.groupBy(trackOfficialSongs.trackId)
@@ -585,7 +584,7 @@ statsRouter.get("/rankings/song-pairs", async (c) => {
 				twoSongTracksSubquery,
 				eq(trackOfficialSongs.trackId, twoSongTracksSubquery.trackId),
 			)
-			.where(and(ne(officialWorks.id, "0799"), sql`ow2.id != '0799'`));
+			.where(and(sql`${officialWorks.id} <> '0799'`, sql`ow2.id != '0799'`));
 
 		const total = totalPairsResult[0]?.count ?? 0;
 
@@ -622,7 +621,7 @@ statsRouter.get("/rankings/song-pairs", async (c) => {
 				twoSongTracksSubquery,
 				eq(trackOfficialSongs.trackId, twoSongTracksSubquery.trackId),
 			)
-			.where(and(ne(officialWorks.id, "0799"), sql`ow2.id != '0799'`))
+			.where(and(sql`${officialWorks.id} <> '0799'`, sql`ow2.id != '0799'`))
 			.groupBy(
 				sql`MIN(${trackOfficialSongs.officialSongId}, t2.official_song_id)`,
 				sql`MAX(${trackOfficialSongs.officialSongId}, t2.official_song_id)`,
