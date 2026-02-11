@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
 	date,
 	index,
@@ -27,6 +28,7 @@ export const eventSeries = pgTable(
 		index("idx_event_series_name").on(table.name),
 		index("idx_event_series_sort_order").on(table.sortOrder),
 		uniqueIndex("uq_event_series_name").on(table.name),
+		index("idx_event_series_name_lower").on(sql`lower(${table.name})`),
 	],
 );
 

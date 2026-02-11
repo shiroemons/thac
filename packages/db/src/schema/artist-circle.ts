@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
 	boolean,
 	date,
@@ -46,6 +47,7 @@ export const artists = pgTable(
 		uniqueIndex("uq_artists_name").on(table.name),
 		index("idx_artists_sort").on(table.sortName),
 		index("idx_artists_initial").on(table.nameInitial, table.initialScript),
+		index("idx_artists_name_lower").on(sql`lower(${table.name})`),
 	],
 );
 
@@ -75,6 +77,7 @@ export const artistAliases = pgTable(
 		index("idx_artist_aliases_artist_id").on(table.artistId),
 		index("idx_artist_aliases_alias_type").on(table.aliasTypeCode),
 		uniqueIndex("uq_artist_aliases_name").on(table.artistId, table.name),
+		index("idx_artist_aliases_name_lower").on(sql`lower(${table.name})`),
 	],
 );
 
@@ -101,6 +104,7 @@ export const circles = pgTable(
 	(table) => [
 		uniqueIndex("uq_circles_name").on(table.name),
 		index("idx_circles_initial").on(table.nameInitial, table.initialScript),
+		index("idx_circles_name_lower").on(sql`lower(${table.name})`),
 	],
 );
 
