@@ -37,7 +37,7 @@
 			"echo '📦 thac devbox environment'",
 			"echo '   Bun: '$(bun --version)",
 			"echo '   Meilisearch: '$(meilisearch --version | head -1)",
-			"echo '   PostgreSQL: '$(pg_config --version)",
+			"echo '   PostgreSQL: '$(postgres --version)",
 			"echo ''",
 			"echo '🚀 Quick start:'",
 			"echo '   devbox services up     - Start all services'",
