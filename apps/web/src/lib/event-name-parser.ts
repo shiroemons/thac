@@ -194,3 +194,40 @@ export function suggestFromEventName(
 		edition,
 	};
 }
+
+/**
+ * イベント名から回次部分を除去してベースとなるシリーズ名を抽出する
+ * 例: "博麗神社例大祭22" → "博麗神社例大祭"
+ *     "コミックマーケット107" → "コミックマーケット"
+ *     "第21回 イベント名" → "イベント名"
+ */
+export function extractSeriesName(eventName: string): string {
+	if (!eventName) return "";
+	const trimmed = eventName.trim();
+
+	const patterns: [RegExp, number][] = [
+		// "第21回 イベント名" - 先頭の「第XX回」を除去
+		[/^第\d+回\s*(.+)$/, -1],
+		// "イベント名 第21回" - 末尾の「第XX回」を除去
+		[/^(.+?)\s*第\d+回$/, -1],
+		// "イベント名 Vol.5" - Vol.X を除去
+		[/^(.+?)\s*[Vv][Oo][Ll]\.?\s*\d+$/, -1],
+		// "イベント名108" - 末尾の数字を除去（1000以上は年の可能性があるため除外）
+		[/^(.+?)(\d+)$/, 2],
+	];
+
+	for (const [pattern, numGroup] of patterns) {
+		const match = trimmed.match(pattern);
+		if (match?.[1]) {
+			// 数字グループがある場合、1000以上なら年の可能性があるためスキップ
+			if (numGroup > 0 && match[numGroup]) {
+				const num = Number.parseInt(match[numGroup], 10);
+				if (num >= 1000) continue;
+			}
+			const baseName = match[1].trim();
+			if (baseName) return baseName;
+		}
+	}
+
+	return trimmed;
+}

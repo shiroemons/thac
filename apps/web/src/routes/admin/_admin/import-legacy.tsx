@@ -43,6 +43,7 @@ import {
 } from "@/lib/api-client";
 import {
 	type EventSeries as EventSeriesType,
+	extractSeriesName,
 	suggestFromEventName,
 } from "@/lib/event-name-parser";
 import { createPageHead } from "@/lib/head";
@@ -978,10 +979,10 @@ function EventInputCard({
 	);
 
 	const handleOpenCreateModal = useCallback(() => {
-		setNewSeriesName("");
+		setNewSeriesName(extractSeriesName(event.name));
 		setShowCreateModal(true);
 		setTimeout(() => modalRef.current?.showModal(), 0);
-	}, []);
+	}, [event.name]);
 
 	const handleCloseCreateModal = useCallback(() => {
 		setShowCreateModal(false);
