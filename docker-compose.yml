@@ -9,6 +9,21 @@ services:
       - POSTGRES_DB=thac
       # WARNING: 開発専用設定。本番環境では POSTGRES_PASSWORD によるパスワード認証を使用すること
       - POSTGRES_HOST_AUTH_METHOD=trust
+      # === 本番環境への移行時の参考設定 ===
+      # 1. 認証: 本番では POSTGRES_HOST_AUTH_METHOD=trust を削除し、POSTGRES_PASSWORD を設定
+      #    例: POSTGRES_PASSWORD=secure_production_password
+      # 2. 接続制限: max_connections を環境に応じて設定（デフォルト100）
+      #    小規模: 50-100 | 中規模: 100-300 | 大規模: 300+
+      # 3. メモリ設定: 利用可能なRAMの25%程度を目安に
+      #    - shared_buffers: RAM の 25% (例: 4GB RAM → 1GB)
+      #    - effective_cache_size: RAM の 50-75% (例: 4GB RAM → 2-3GB)
+      #    - work_mem: shared_buffers / max_connections (例: 1GB / 100 → 10MB)
+      # 4. ログ: スロークエリの検知用に設定
+      #    log_min_duration_statement: 1000 (1秒以上のクエリをログ)
+      # 5. バックアップ: 以下を定期実行
+      #    - WAL アーカイブ設定 (wal_level=replica等)
+      #    - pg_dump による定期バックアップ
+      #    - リカバリ手順のテスト
     healthcheck:
       test: ["CMD", "pg_isready", "-d", "thac"]
       interval: 10s
