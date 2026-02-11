@@ -3,8 +3,8 @@
  *
  * 4ステップウィザード:
  * 1. CSVアップロード
- * 2. 原曲マッピング
- * 3. イベント登録（新規イベントがある場合のみ）
+ * 2. イベント登録（新規イベントがある場合のみ）
+ * 3. 原曲マッピング
  * 4. インポート結果
  */
 import { useMutation } from "@tanstack/react-query";
@@ -122,7 +122,15 @@ function LegacyImportPage() {
 				}
 				setEventDayMappings(defaultEventDayMappings);
 
-				setStep("mapping");
+				// イベント設定が必要ならイベントステップへ、不要なら原曲マッピングへ
+				if (
+					data.newEventsNeeded.length > 0 ||
+					(data.existingEventsWithDays || []).length > 0
+				) {
+					setStep("events");
+				} else {
+					setStep("mapping");
+				}
 			} else {
 				setParseErrors(data.errors);
 			}
@@ -242,25 +250,25 @@ function LegacyImportPage() {
 
 	// 次へハンドラ
 	const handleNext = useCallback(() => {
-		if (step === "mapping") {
-			if (needsEventStep) {
-				setStep("events");
-			} else {
-				executeMutation.mutate();
-			}
-		} else if (step === "events") {
+		if (step === "events") {
+			setStep("mapping");
+		} else if (step === "mapping") {
 			executeMutation.mutate();
 		}
-	}, [step, needsEventStep, executeMutation]);
+	}, [step, executeMutation]);
 
 	// 戻るハンドラ
 	const handleBack = useCallback(() => {
-		if (step === "mapping") {
+		if (step === "events") {
 			setStep("upload");
-		} else if (step === "events") {
-			setStep("mapping");
+		} else if (step === "mapping") {
+			if (needsEventStep) {
+				setStep("events");
+			} else {
+				setStep("upload");
+			}
 		}
-	}, [step]);
+	}, [step, needsEventStep]);
 
 	// リセットハンドラ
 	const handleReset = useCallback(() => {
@@ -302,21 +310,21 @@ function LegacyImportPage() {
 			<div className="mb-8">
 				<ul className="steps w-full">
 					<li
-						className={`step ${["upload", "mapping", "events", "importing", "result"].includes(step) ? "step-primary" : ""}`}
+						className={`step ${["upload", "events", "mapping", "importing", "result"].includes(step) ? "step-primary" : ""}`}
 					>
 						CSVアップロード
 					</li>
 					<li
-						className={`step ${["mapping", "events", "importing", "result"].includes(step) ? "step-primary" : ""}`}
-					>
-						原曲マッピング
-					</li>
-					<li
-						className={`step ${["events", "importing", "result"].includes(step) ? "step-primary" : ""}`}
+						className={`step ${["events", "mapping", "importing", "result"].includes(step) ? "step-primary" : ""}`}
 					>
 						{step !== "upload" && skipEventsStep
 							? "イベント登録（スキップ）"
 							: "イベント登録"}
+					</li>
+					<li
+						className={`step ${["mapping", "importing", "result"].includes(step) ? "step-primary" : ""}`}
+					>
+						原曲マッピング
 					</li>
 					<li
 						className={`step ${["importing", "result"].includes(step) ? "step-primary" : ""}`}
@@ -340,17 +348,6 @@ function LegacyImportPage() {
 						/>
 					)}
 
-					{step === "mapping" && (
-						<MappingStep
-							records={records}
-							songMatches={songMatches}
-							mappings={mappings}
-							customSongNames={customSongNames}
-							onMappingChange={handleMappingChange}
-							onCustomSongNameChange={handleCustomSongNameChange}
-						/>
-					)}
-
 					{step === "events" && (
 						<EventRegistrationStep
 							events={newEventsNeeded}
@@ -359,6 +356,17 @@ function LegacyImportPage() {
 							existingEventsWithDays={existingEventsWithDays}
 							eventDayMappings={eventDayMappings}
 							onEventDayChange={handleEventDayChange}
+						/>
+					)}
+
+					{step === "mapping" && (
+						<MappingStep
+							records={records}
+							songMatches={songMatches}
+							mappings={mappings}
+							customSongNames={customSongNames}
+							onMappingChange={handleMappingChange}
+							onCustomSongNameChange={handleCustomSongNameChange}
 						/>
 					)}
 
@@ -388,14 +396,14 @@ function LegacyImportPage() {
 							戻る
 						</button>
 
-						{(step === "mapping" || step === "events") && (
+						{(step === "events" || step === "mapping") && (
 							<button
 								type="button"
 								className="btn btn-primary"
 								onClick={handleNext}
 								disabled={executeMutation.isPending}
 							>
-								{step === "mapping" && !skipEventsStep ? (
+								{step === "events" ? (
 									<>
 										次へ
 										<ChevronRight className="h-4 w-4" />
@@ -597,7 +605,7 @@ function UploadStep({ onUpload, isLoading, errors }: UploadStepProps) {
 	);
 }
 
-// ステップ2: 原曲マッピング
+// ステップ3: 原曲マッピング
 interface MappingStepProps {
 	records: LegacyCSVRecord[];
 	songMatches: SongMatchResult[];
@@ -746,7 +754,7 @@ function SongMappingRow({
 	);
 }
 
-// ステップ3: イベント登録
+// ステップ2: イベント登録
 interface EventRegistrationStepProps {
 	events: NewEventNeeded[];
 	eventInputs: Record<string, NewEventInput>;
