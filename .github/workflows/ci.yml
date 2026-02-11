@@ -19,6 +19,9 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    # Note: PostgreSQLサービスコンテナは不要
+    # テストはPGlite（インメモリPostgreSQL互換エンジン）を使用するため、
+    # 外部のPostgreSQLインスタンスなしでPostgreSQL互換テストを実行可能
     steps:
       - uses: actions/checkout@v6
 
