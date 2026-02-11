@@ -1,6 +1,7 @@
-import { type InferSelectModel, relations } from "drizzle-orm";
+import { type InferSelectModel, relations, sql } from "drizzle-orm";
 import {
 	boolean,
+	check,
 	index,
 	integer,
 	jsonb,
@@ -61,6 +62,10 @@ export const trackTags = pgTable(
 			table.trackId,
 			table.isLocked,
 			table.position,
+		),
+		check(
+			"check_track_tags_position",
+			sql`"position" >= 1 AND "position" <= 15`,
 		),
 	],
 );

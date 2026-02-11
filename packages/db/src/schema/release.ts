@@ -1,4 +1,6 @@
+import { sql } from "drizzle-orm";
 import {
+	check,
 	date,
 	index,
 	integer,
@@ -68,6 +70,15 @@ export const releases = pgTable(
 		index("idx_releases_type").on(table.releaseType),
 		index("idx_releases_event").on(table.eventId),
 		index("idx_releases_event_day").on(table.eventDayId),
+		check(
+			"check_release_year",
+			sql`"release_year" >= 1900 AND "release_year" <= 2200`,
+		),
+		check(
+			"check_release_month",
+			sql`"release_month" >= 1 AND "release_month" <= 12`,
+		),
+		check("check_release_day", sql`"release_day" >= 1 AND "release_day" <= 31`),
 	],
 );
 

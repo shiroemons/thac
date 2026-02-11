@@ -1,5 +1,6 @@
-import type { InferSelectModel } from "drizzle-orm";
+import { type InferSelectModel, sql } from "drizzle-orm";
 import {
+	check,
 	index,
 	integer,
 	pgTable,
@@ -59,6 +60,10 @@ export const trackGenres = pgTable(
 		index("idx_track_genres_track").on(table.trackId),
 		index("idx_track_genres_genre").on(table.genreCode),
 		index("idx_track_genres_track_position").on(table.trackId, table.position),
+		check(
+			"check_track_genres_position",
+			sql`"position" >= 1 AND "position" <= 5`,
+		),
 	],
 );
 
