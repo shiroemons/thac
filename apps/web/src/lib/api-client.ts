@@ -496,7 +496,7 @@ export interface SongCandidate {
 	name: string;
 	nameJa: string | null;
 	officialWorkName: string | null;
-	matchType: "exact" | "partial";
+	matchType: "exact" | "normalized" | "partial" | "none";
 }
 
 export interface SongMatchResult {

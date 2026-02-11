@@ -1029,10 +1029,7 @@ function MappingStep({
 	const filteredMatches = useMemo(() => {
 		if (!hideMapped) return songMatches;
 		return songMatches.filter(
-			(match) =>
-				match.matchType === "none" ||
-				match.matchType === "normalized" ||
-				!mappings[match.originalName],
+			(match) => match.matchType === "none" || !mappings[match.originalName],
 		);
 	}, [hideMapped, songMatches, mappings]);
 
