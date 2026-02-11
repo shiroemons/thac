@@ -25,6 +25,8 @@ export function createScriptClient() {
 		connection: {
 			application_name: "thac-script",
 			statement_timeout: 300000, // 5 minutes for bulk operations
+			idle_in_transaction_session_timeout: 600000, // 10 minutes
+			lock_timeout: 30000, // 30 seconds
 		},
 	});
 

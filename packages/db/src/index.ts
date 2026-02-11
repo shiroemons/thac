@@ -49,6 +49,8 @@ function getDb(): DrizzleDB {
 			connection: {
 				application_name: "thac-server",
 				statement_timeout: 30000, // 30 seconds
+				idle_in_transaction_session_timeout: 300000, // 5 minutes
+				lock_timeout: 10000, // 10 seconds
 			},
 		});
 		_sql = client;
@@ -68,8 +70,8 @@ export async function cleanup(): Promise<void> {
 		_db = null;
 		try {
 			await client.end({ timeout: 5 });
-		} catch {
-			// シャットダウン中のエラーは無視
+		} catch (error) {
+			console.error("[Database] Cleanup error:", error);
 		}
 	}
 }
