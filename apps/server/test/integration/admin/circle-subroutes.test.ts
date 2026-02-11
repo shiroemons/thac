@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
 	afterAll,
 	beforeAll,
@@ -7,6 +6,7 @@ import {
 	expect,
 	test,
 } from "bun:test";
+import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
 	__setTestDatabase,
@@ -69,13 +69,13 @@ interface CircleReleaseGroup {
 }
 
 describe("Admin Circle Subroutes API", () => {
-	let sqlite: Database;
+	let client: PGlite;
 	let artistsApp: ReturnType<typeof createTestAdminApp>;
 	let releasesApp: ReturnType<typeof createTestAdminApp>;
 
-	beforeAll(() => {
-		const testDb = createTestDatabase();
-		sqlite = testDb.sqlite;
+	beforeAll(async () => {
+		const testDb = await createTestDatabase();
+		client = testDb.client;
 		__setTestDatabase(testDb.db);
 
 		// 複合ルーターを作成（circleArtistsRouterとcircleReleasesRouterを統合）
@@ -88,13 +88,13 @@ describe("Admin Circle Subroutes API", () => {
 		releasesApp = createTestAdminApp(combinedReleasesRouter);
 	});
 
-	beforeEach(() => {
-		truncateAllTables(sqlite);
+	beforeEach(async () => {
+		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		sqlite.close();
+		await client.close();
 	});
 
 	describe("GET /:circleId/artists - サークルの参加アーティスト一覧取得", () => {

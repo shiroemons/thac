@@ -5,8 +5,8 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	insertAliasTypeSchema,
-	like,
 	max,
 	or,
 	updateAliasTypeSchema,
@@ -15,6 +15,7 @@ import { Hono } from "hono";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const aliasTypesRouter = new Hono<AdminContext>();
 
@@ -23,7 +24,7 @@ aliasTypesRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "sortOrder";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 
@@ -32,8 +33,8 @@ aliasTypesRouter.get("/", async (c) => {
 		// 条件を構築
 		const whereCondition = search
 			? or(
-					like(aliasTypes.code, `%${search}%`),
-					like(aliasTypes.label, `%${search}%`),
+					ilike(aliasTypes.code, `%${search}%`),
+					ilike(aliasTypes.label, `%${search}%`),
 				)
 			: undefined;
 
@@ -59,7 +60,7 @@ aliasTypesRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(aliasTypes).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,
@@ -140,7 +141,7 @@ aliasTypesRouter.post("/", async (c) => {
 
 		// 重複チェック
 		const existing = await db
-			.select()
+			.select({ code: aliasTypes.code })
 			.from(aliasTypes)
 			.where(eq(aliasTypes.code, parsed.data.code))
 			.limit(1);
@@ -178,7 +179,7 @@ aliasTypesRouter.put("/:code", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ code: aliasTypes.code })
 			.from(aliasTypes)
 			.where(eq(aliasTypes.code, code))
 			.limit(1);
@@ -219,7 +220,7 @@ aliasTypesRouter.delete("/:code", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ code: aliasTypes.code })
 			.from(aliasTypes)
 			.where(eq(aliasTypes.code, code))
 			.limit(1);

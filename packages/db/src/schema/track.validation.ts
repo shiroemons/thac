@@ -23,7 +23,7 @@ const dateSchema = z
 // Note: releaseDate, releaseYear/Month/Day, eventId, eventDayId are auto-set from parent release
 export const insertTrackSchema = createInsertSchema(tracks, {
 	id: nonEmptyString,
-	releaseId: optionalString,
+	releaseId: nonEmptyString,
 	discId: optionalString,
 	trackNumber: z.number().int().positive("1以上の整数を入力してください"),
 	name: nonEmptyString.max(200, "200文字以内で入力してください"),

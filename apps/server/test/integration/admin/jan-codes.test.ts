@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
 	afterAll,
 	beforeAll,
@@ -7,6 +6,7 @@ import {
 	expect,
 	test,
 } from "bun:test";
+import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
 	__setTestDatabase,
@@ -41,23 +41,23 @@ interface JanCodeResponse {
 }
 
 describe("Admin JAN Codes API", () => {
-	let sqlite: Database;
+	let client: PGlite;
 	let app: ReturnType<typeof createTestAdminApp>;
 
-	beforeAll(() => {
-		const testDb = createTestDatabase();
-		sqlite = testDb.sqlite;
+	beforeAll(async () => {
+		const testDb = await createTestDatabase();
+		client = testDb.client;
 		__setTestDatabase(testDb.db);
 		app = createTestAdminApp(releaseJanCodesRouter);
 	});
 
-	beforeEach(() => {
-		truncateAllTables(sqlite);
+	beforeEach(async () => {
+		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		sqlite.close();
+		await client.close();
 	});
 
 	describe("GET /:releaseId/jan-codes - JANコード一覧取得", () => {

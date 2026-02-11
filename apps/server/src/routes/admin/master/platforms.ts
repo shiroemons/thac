@@ -5,8 +5,8 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	insertPlatformSchema,
-	like,
 	max,
 	or,
 	platforms,
@@ -17,6 +17,7 @@ import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const platformsRouter = new Hono<AdminContext>();
 
@@ -26,7 +27,7 @@ platformsRouter.get("/", async (c) => {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const category = c.req.query("category");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "code";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 
@@ -43,8 +44,8 @@ platformsRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(platforms.code, searchPattern),
-					like(platforms.name, searchPattern),
+					ilike(platforms.code, searchPattern),
+					ilike(platforms.name, searchPattern),
 				),
 			);
 		}
@@ -76,7 +77,7 @@ platformsRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(platforms).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,
@@ -157,7 +158,7 @@ platformsRouter.post("/", async (c) => {
 
 		// 重複チェック
 		const existing = await db
-			.select()
+			.select({ code: platforms.code })
 			.from(platforms)
 			.where(eq(platforms.code, parsed.data.code))
 			.limit(1);
@@ -248,7 +249,7 @@ platformsRouter.delete("/:code", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ code: platforms.code })
 			.from(platforms)
 			.where(eq(platforms.code, code))
 			.limit(1);

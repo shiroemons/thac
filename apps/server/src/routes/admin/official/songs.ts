@@ -5,9 +5,9 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	insertOfficialSongLinkSchema,
 	insertOfficialSongSchema,
-	like,
 	officialSongLinks,
 	officialSongs,
 	officialWorkCategories,
@@ -23,6 +23,7 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 import { parseAndValidate } from "../../../utils/import-parser";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const songsRouter = new Hono<AdminContext>();
 
@@ -32,7 +33,7 @@ songsRouter.get("/", async (c) => {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 5000);
 		const workId = c.req.query("workId");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "id";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 
@@ -49,9 +50,9 @@ songsRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(officialSongs.name, searchPattern),
-					like(officialSongs.nameJa, searchPattern),
-					like(officialSongs.nameEn, searchPattern),
+					ilike(officialSongs.name, searchPattern),
+					ilike(officialSongs.nameJa, searchPattern),
+					ilike(officialSongs.nameEn, searchPattern),
 				),
 			);
 		}
@@ -107,7 +108,7 @@ songsRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(officialSongs).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,
@@ -179,7 +180,7 @@ songsRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: officialSongs.id })
 			.from(officialSongs)
 			.where(eq(officialSongs.id, parsed.data.id))
 			.limit(1);
@@ -277,7 +278,7 @@ songsRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialSongs.id })
 			.from(officialSongs)
 			.where(eq(officialSongs.id, id))
 			.limit(1);
@@ -396,7 +397,7 @@ songsRouter.get("/:songId/links", async (c) => {
 
 		// 楽曲存在チェック
 		const existingSong = await db
-			.select()
+			.select({ id: officialSongs.id })
 			.from(officialSongs)
 			.where(eq(officialSongs.id, songId))
 			.limit(1);
@@ -435,7 +436,7 @@ songsRouter.post("/:songId/links", async (c) => {
 
 		// 楽曲存在チェック
 		const existingSong = await db
-			.select()
+			.select({ id: officialSongs.id })
 			.from(officialSongs)
 			.where(eq(officialSongs.id, songId))
 			.limit(1);
@@ -461,7 +462,7 @@ songsRouter.post("/:songId/links", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: officialSongLinks.id })
 			.from(officialSongLinks)
 			.where(eq(officialSongLinks.id, parsed.data.id))
 			.limit(1);
@@ -472,7 +473,7 @@ songsRouter.post("/:songId/links", async (c) => {
 
 		// URL重複チェック（同一楽曲内）
 		const existingUrl = await db
-			.select()
+			.select({ id: officialSongLinks.id })
 			.from(officialSongLinks)
 			.where(
 				and(
@@ -547,7 +548,7 @@ songsRouter.put("/:songId/links/:linkId", async (c) => {
 		// URL重複チェック（同一楽曲内、自身以外）
 		if (parsed.data.url) {
 			const existingUrl = await db
-				.select()
+				.select({ id: officialSongLinks.id })
 				.from(officialSongLinks)
 				.where(
 					and(
@@ -589,7 +590,7 @@ songsRouter.delete("/:songId/links/:linkId", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialSongLinks.id })
 			.from(officialSongLinks)
 			.where(
 				and(
@@ -625,7 +626,7 @@ songsRouter.put("/:songId/links/:linkId/reorder", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialSongLinks.id })
 			.from(officialSongLinks)
 			.where(
 				and(

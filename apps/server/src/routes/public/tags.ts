@@ -1,4 +1,14 @@
-import { asc, count, db, desc, eq, like, sql, tags, trackTags } from "@thac/db";
+import {
+	asc,
+	count,
+	db,
+	desc,
+	eq,
+	ilike,
+	sql,
+	tags,
+	trackTags,
+} from "@thac/db";
 import { Hono } from "hono";
 import { handleDbError } from "../../utils/api-error";
 import {
@@ -7,6 +17,7 @@ import {
 	setCache,
 	setCacheHeaders,
 } from "../../utils/cache";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const tagsRouter = new Hono();
 
@@ -36,7 +47,7 @@ function calculateWeight(
  */
 tagsRouter.get("/", async (c) => {
 	try {
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const limit = Math.min(Number(c.req.query("limit")) || 100, 100);
 
 		const cacheKey = cacheKeys.tagsList({ search, limit });
@@ -59,31 +70,30 @@ tagsRouter.get("/", async (c) => {
 			.select({
 				id: tags.id,
 				name: tags.name,
-				usageCount: sql<number>`coalesce(count(${trackTags.trackId}), 0)`.as(
-					"usageCount",
-				),
+				usageCount:
+					sql<number>`coalesce(count(${trackTags.trackId}), 0)::int`.as(
+						"usageCount",
+					),
 			})
 			.from(tags)
 			.leftJoin(trackTags, eq(tags.id, trackTags.tagId))
 			.groupBy(tags.id, tags.name)
-			.orderBy(asc(tags.name))
-			.limit(limit)
 			.$dynamic();
 
 		// 検索条件を追加
 		if (search) {
-			query = query.where(like(tags.name, `%${search}%`));
+			query = query.where(ilike(tags.name, `%${search}%`));
 		}
 
-		const data = await query;
+		const data = await query.orderBy(asc(tags.name)).limit(limit);
 
 		// 合計件数を取得（検索条件付き）
 		let totalQuery = db.select({ count: count() }).from(tags).$dynamic();
 		if (search) {
-			totalQuery = totalQuery.where(like(tags.name, `%${search}%`));
+			totalQuery = totalQuery.where(ilike(tags.name, `%${search}%`));
 		}
 		const totalResult = await totalQuery;
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		const page = 1; // 現在ページ（TODO: ページネーションパラメータ対応時に修正）
 
@@ -156,14 +166,18 @@ tagsRouter.get("/cloud", async (c) => {
 
 		const firstTag = data[0];
 		const lastTag = data[data.length - 1];
-		const maxUsageCount = firstTag?.usageCount ?? 0;
-		const minUsageCount = lastTag?.usageCount ?? 0;
+		const maxUsageCount = Number(firstTag?.usageCount ?? 0);
+		const minUsageCount = Number(lastTag?.usageCount ?? 0);
 
 		const tagsWithWeight = data.map((tag) => ({
 			id: tag.id,
 			name: tag.name,
-			count: tag.usageCount,
-			weight: calculateWeight(tag.usageCount, maxUsageCount, minUsageCount),
+			count: Number(tag.usageCount),
+			weight: calculateWeight(
+				Number(tag.usageCount),
+				maxUsageCount,
+				minUsageCount,
+			),
 		}));
 
 		const response = {

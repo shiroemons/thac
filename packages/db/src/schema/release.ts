@@ -1,12 +1,15 @@
 import { sql } from "drizzle-orm";
 import {
+	check,
+	date,
 	index,
 	integer,
+	pgTable,
 	primaryKey,
-	sqliteTable,
 	text,
+	timestamp,
 	uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 import { circles } from "./artist-circle";
 import { eventDays, events } from "./event";
 
@@ -33,14 +36,14 @@ export const PARTICIPATION_TYPES = [
 export type ParticipationType = (typeof PARTICIPATION_TYPES)[number];
 
 // リリーステーブル
-export const releases = sqliteTable(
+export const releases = pgTable(
 	"releases",
 	{
 		id: text("id").primaryKey(),
 		name: text("name").notNull(),
 		nameJa: text("name_ja"),
 		nameEn: text("name_en"),
-		releaseDate: text("release_date"),
+		releaseDate: date("release_date", { mode: "string" }),
 		releaseYear: integer("release_year"),
 		releaseMonth: integer("release_month"),
 		releaseDay: integer("release_day"),
@@ -52,11 +55,11 @@ export const releases = sqliteTable(
 			onDelete: "set null",
 		}),
 		notes: text("notes"),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -67,11 +70,21 @@ export const releases = sqliteTable(
 		index("idx_releases_type").on(table.releaseType),
 		index("idx_releases_event").on(table.eventId),
 		index("idx_releases_event_day").on(table.eventDayId),
+		index("idx_releases_updated_at").on(table.updatedAt),
+		check(
+			"check_release_year",
+			sql`"release_year" >= 1900 AND "release_year" <= 2200`,
+		),
+		check(
+			"check_release_month",
+			sql`"release_month" >= 1 AND "release_month" <= 12`,
+		),
+		check("check_release_day", sql`"release_day" >= 1 AND "release_day" <= 31`),
 	],
 );
 
 // ディスクテーブル
-export const discs = sqliteTable(
+export const discs = pgTable(
 	"discs",
 	{
 		id: text("id").primaryKey(),
@@ -80,11 +93,11 @@ export const discs = sqliteTable(
 			.references(() => releases.id, { onDelete: "cascade" }),
 		discNumber: integer("disc_number").notNull(),
 		discName: text("disc_name"),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -98,7 +111,7 @@ export const discs = sqliteTable(
 );
 
 // リリースサークル関連テーブル
-export const releaseCircles = sqliteTable(
+export const releaseCircles = pgTable(
 	"release_circles",
 	{
 		releaseId: text("release_id")
@@ -116,5 +129,10 @@ export const releaseCircles = sqliteTable(
 		}),
 		index("idx_release_circles_release").on(table.releaseId),
 		index("idx_release_circles_circle").on(table.circleId),
+		// Composite index for release+participation queries (used in artist circles)
+		index("idx_release_circles_release_participation").on(
+			table.releaseId,
+			table.participationType,
+		),
 	],
 );

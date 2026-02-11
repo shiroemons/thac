@@ -28,7 +28,7 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 
 ### Shared
 - **ORM**: Drizzle ORM + drizzle-zod（スキーマ検証）
-- **Database**: SQLite（Turso/libsql）
+- **Database**: PostgreSQL
 - **Auth**: Better-Auth（メール/パスワード + OAuth: Google, Discord, GitHub）
 - **Validation**: Zod v4
 - **ID生成**: TypeID（プレフィックス + UUIDv7ベース、時系列ソート可能）
@@ -71,7 +71,7 @@ bun test --coverage     # カバレッジ付き
 
 **テストヘルパー**:
 - `test-app.ts`: テスト用アプリケーションインスタンス
-- `test-db.ts`: インメモリSQLiteセットアップ
+- `test-db.ts`: PGliteインメモリPostgreSQLセットアップ
 - `test-auth.ts`: 管理者認証モック
 - `test-response.ts`: 型安全なレスポンスアサーション（`expectSuccess`, `expectCreated`, `expectNotFound`等）
 - `fixtures.ts`: テストデータ生成ユーティリティ
@@ -108,7 +108,7 @@ devbox run -- bunx @hono/cli docs
 - Bun 1.3.8（devbox.json で管理）
 
 ### データディレクトリ
-- `data/local.db` - SQLiteデータベース（ローカル開発）
+- `.devbox/virtenv/postgresql_18/data/` - PostgreSQLデータ（devboxプラグイン管理）
 - `data/meilisearch/` - Meilisearchインデックス
 
 ## API Error Handling

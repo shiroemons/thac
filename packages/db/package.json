@@ -14,8 +14,6 @@
 	},
 	"scripts": {
 		"check-types": "tsc --noEmit",
-		"dev": "turso dev --db-file local.db",
-		"db:local": "turso dev --db-file local.db",
 		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
 		"db:studio": "drizzle-kit studio",
@@ -28,16 +26,16 @@
 		"test": "bun test"
 	},
 	"devDependencies": {
+		"@electric-sql/pglite": "catalog:",
 		"drizzle-kit": "^0.31.8",
 		"typescript": "catalog:",
 		"@thac/config": "workspace:*"
 	},
 	"dependencies": {
-		"@libsql/client": "catalog:",
 		"dotenv": "catalog:",
 		"drizzle-orm": "^0.45.1",
 		"drizzle-zod": "^0.8.3",
-		"libsql": "catalog:",
+		"postgres": "catalog:",
 		"zod": "catalog:"
 	}
 }

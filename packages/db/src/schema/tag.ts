@@ -1,35 +1,43 @@
 import { type InferSelectModel, relations, sql } from "drizzle-orm";
 import {
+	boolean,
+	check,
 	index,
 	integer,
+	jsonb,
+	pgTable,
 	primaryKey,
-	sqliteTable,
 	text,
-} from "drizzle-orm/sqlite-core";
+	timestamp,
+} from "drizzle-orm/pg-core";
 import { tracks } from "./track";
 
 /**
  * Tags table - master table for user-defined tags
  * id is TypeID format with "tag_" prefix
  */
-export const tags = sqliteTable("tags", {
-	id: text("id").primaryKey(),
-	name: text("name").notNull().unique(),
-	attributes: text("attributes"), // JSON format (nullable)
-	createdAt: integer("created_at", { mode: "timestamp_ms" })
-		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-		.notNull(),
-	updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-		.$onUpdate(() => new Date())
-		.notNull(),
-});
+export const tags = pgTable(
+	"tags",
+	{
+		id: text("id").primaryKey(),
+		name: text("name").notNull().unique(),
+		attributes: jsonb("attributes").$type<Record<string, unknown>>(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
+	},
+	(table) => [index("idx_tags_attributes_gin").using("gin", table.attributes)],
+);
 
 /**
  * Track Tags table - junction table for track-tag many-to-many relationship
  * Maximum 15 tags per track
  */
-export const trackTags = sqliteTable(
+export const trackTags = pgTable(
 	"track_tags",
 	{
 		trackId: text("track_id")
@@ -39,11 +47,9 @@ export const trackTags = sqliteTable(
 			.notNull()
 			.references(() => tags.id, { onDelete: "restrict" }),
 		position: integer("position").notNull(), // 1-15
-		isLocked: integer("is_locked", { mode: "boolean" })
-			.notNull()
-			.default(false),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		isLocked: boolean("is_locked").notNull().default(false),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
 	},
 	(table) => [
@@ -52,6 +58,15 @@ export const trackTags = sqliteTable(
 		}),
 		index("idx_track_tags_track").on(table.trackId),
 		index("idx_track_tags_tag").on(table.tagId),
+		index("idx_track_tags_track_locked_pos").on(
+			table.trackId,
+			table.isLocked,
+			table.position,
+		),
+		check(
+			"check_track_tags_position",
+			sql`"position" >= 1 AND "position" <= 15`,
+		),
 	],
 );
 

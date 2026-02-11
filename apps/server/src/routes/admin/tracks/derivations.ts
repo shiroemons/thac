@@ -22,7 +22,7 @@ trackDerivationsRouter.get("/:trackId/derivations", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);
@@ -67,7 +67,7 @@ trackDerivationsRouter.post("/:trackId/derivations", async (c) => {
 
 		// トラック存在チェック（子トラック）
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);
@@ -78,7 +78,7 @@ trackDerivationsRouter.post("/:trackId/derivations", async (c) => {
 
 		// 親トラック存在チェック
 		const existingParentTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, body.parentTrackId))
 			.limit(1);
@@ -104,7 +104,7 @@ trackDerivationsRouter.post("/:trackId/derivations", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: trackDerivations.id })
 			.from(trackDerivations)
 			.where(eq(trackDerivations.id, parsed.data.id))
 			.limit(1);
@@ -115,7 +115,7 @@ trackDerivationsRouter.post("/:trackId/derivations", async (c) => {
 
 		// 一意性チェック（子トラック × 親トラック）
 		const duplicateCheck = await db
-			.select()
+			.select({ id: trackDerivations.id })
 			.from(trackDerivations)
 			.where(
 				and(
@@ -157,7 +157,7 @@ trackDerivationsRouter.delete("/:trackId/derivations/:id", async (c) => {
 
 		// 派生関係存在チェック
 		const existingDerivation = await db
-			.select()
+			.select({ id: trackDerivations.id })
 			.from(trackDerivations)
 			.where(
 				and(

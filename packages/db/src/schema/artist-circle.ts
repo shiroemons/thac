@@ -1,11 +1,13 @@
 import { sql } from "drizzle-orm";
 import {
+	boolean,
+	date,
 	index,
-	integer,
-	sqliteTable,
+	pgTable,
 	text,
+	timestamp,
 	uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 import { aliasTypes, platforms } from "./master";
 
 // 頭文字の文字種（共通enum値として使用）
@@ -22,7 +24,7 @@ export const INITIAL_SCRIPTS = [
 export type InitialScript = (typeof INITIAL_SCRIPTS)[number];
 
 // アーティストテーブル
-export const artists = sqliteTable(
+export const artists = pgTable(
 	"artists",
 	{
 		id: text("id").primaryKey(),
@@ -33,11 +35,11 @@ export const artists = sqliteTable(
 		nameInitial: text("name_initial"),
 		initialScript: text("initial_script").notNull(),
 		notes: text("notes"),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -45,11 +47,16 @@ export const artists = sqliteTable(
 		uniqueIndex("uq_artists_name").on(table.name),
 		index("idx_artists_sort").on(table.sortName),
 		index("idx_artists_initial").on(table.nameInitial, table.initialScript),
+		index("idx_artists_name_lower").on(sql`lower(${table.name})`),
+		index("idx_artists_name_trgm").using(
+			"gin",
+			sql`${table.name} gin_trgm_ops`,
+		),
 	],
 );
 
 // アーティスト別名義テーブル
-export const artistAliases = sqliteTable(
+export const artistAliases = pgTable(
 	"artist_aliases",
 	{
 		id: text("id").primaryKey(),
@@ -60,24 +67,30 @@ export const artistAliases = sqliteTable(
 		aliasTypeCode: text("alias_type_code").references(() => aliasTypes.code),
 		nameInitial: text("name_initial"),
 		initialScript: text("initial_script").notNull(),
-		periodFrom: text("period_from"),
-		periodTo: text("period_to"),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		periodFrom: date("period_from", { mode: "string" }),
+		periodTo: date("period_to", { mode: "string" }),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
 	(table) => [
 		index("idx_artist_aliases_artist_id").on(table.artistId),
+		index("idx_artist_aliases_alias_type").on(table.aliasTypeCode),
 		uniqueIndex("uq_artist_aliases_name").on(table.artistId, table.name),
+		index("idx_artist_aliases_name_lower").on(sql`lower(${table.name})`),
+		index("idx_artist_aliases_name_trgm").using(
+			"gin",
+			sql`${table.name} gin_trgm_ops`,
+		),
 	],
 );
 
 // サークルテーブル
-export const circles = sqliteTable(
+export const circles = pgTable(
 	"circles",
 	{
 		id: text("id").primaryKey(),
@@ -88,22 +101,35 @@ export const circles = sqliteTable(
 		nameInitial: text("name_initial"),
 		initialScript: text("initial_script").notNull(),
 		notes: text("notes"),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
 	(table) => [
 		uniqueIndex("uq_circles_name").on(table.name),
 		index("idx_circles_initial").on(table.nameInitial, table.initialScript),
+		index("idx_circles_name_lower").on(sql`lower(${table.name})`),
+		index("idx_circles_name_trgm").using(
+			"gin",
+			sql`${table.name} gin_trgm_ops`,
+		),
+		index("idx_circles_name_ja_trgm").using(
+			"gin",
+			sql`${table.nameJa} gin_trgm_ops`,
+		),
+		index("idx_circles_name_en_trgm").using(
+			"gin",
+			sql`${table.nameEn} gin_trgm_ops`,
+		),
 	],
 );
 
 // サークル外部リンクテーブル
-export const circleLinks = sqliteTable(
+export const circleLinks = pgTable(
 	"circle_links",
 	{
 		id: text("id").primaryKey(),
@@ -116,22 +142,19 @@ export const circleLinks = sqliteTable(
 		url: text("url").notNull(),
 		platformId: text("platform_id"),
 		handle: text("handle"),
-		isOfficial: integer("is_official", { mode: "boolean" })
-			.default(true)
+		isOfficial: boolean("is_official").default(true).notNull(),
+		isPrimary: boolean("is_primary").default(false).notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		isPrimary: integer("is_primary", { mode: "boolean" })
-			.default(false)
-			.notNull(),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
 	(table) => [
 		index("idx_circle_links_circle_id").on(table.circleId),
+		index("idx_circle_links_platform").on(table.platformCode),
 		uniqueIndex("uq_circle_links_circle_url").on(table.circleId, table.url),
 	],
 );

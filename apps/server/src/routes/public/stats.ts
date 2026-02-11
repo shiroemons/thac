@@ -8,10 +8,8 @@ import {
 	db,
 	desc,
 	eq,
-	eventSeries,
-	events,
+	inArray,
 	isNotNull,
-	ne,
 	officialSongs,
 	officialWorks,
 	releaseCircles,
@@ -20,7 +18,6 @@ import {
 	trackCreditRoles,
 	trackCredits,
 	trackOfficialSongs,
-	tracks,
 } from "@thac/db";
 import { Hono } from "hono";
 import { handleDbError } from "../../utils/api-error";
@@ -31,6 +28,28 @@ import {
 	setCache,
 	setCacheHeaders,
 } from "../../utils/cache";
+
+/**
+ * pg_class.reltuplesを使用した近似行数の取得
+ * VACUUM/ANALYZEで更新される統計値を利用し、COUNT(*)のシーケンシャルスキャンを回避
+ * キャッシュと併用するため、近似値で十分な精度を提供
+ */
+async function getApproximateCounts(
+	tableNames: string[],
+): Promise<Map<string, number>> {
+	const result = await db.execute<{ relname: string; reltuples: string }>(
+		sql`SELECT relname, reltuples::bigint AS reltuples FROM pg_class WHERE relname IN (${sql.join(
+			tableNames.map((name) => sql`${name}`),
+			sql`, `,
+		)})`,
+	);
+	const counts = new Map<string, number>();
+	for (const row of result) {
+		// reltuplesが負の場合（未ANALYZE）は0にフォールバック
+		counts.set(row.relname, Math.max(0, Number(row.reltuples)));
+	}
+	return counts;
+}
 
 const statsRouter = new Hono();
 
@@ -55,22 +74,25 @@ statsRouter.get("/", async (c) => {
 			ELSE ${trackCredits.artistAliasId}
 		END`;
 
+		// 近似カウント: pg_class.reltuplesでシーケンシャルスキャンを回避
+		const approximateCountsPromise = getApproximateCounts([
+			"events",
+			"circles",
+			"artist_aliases",
+			"official_songs",
+			"releases",
+			"event_series",
+			"tracks",
+		]);
+
 		const [
-			eventsResult,
-			circlesResult,
-			artistsResult,
+			approximateCounts,
 			tracksResult,
-			originalSongsResult,
-			releasesResult,
-			eventSeriesResult,
-			totalTracksResult,
 			vocalistsResult,
 			arrangersResult,
 			lyricistsResult,
 		] = await Promise.all([
-			db.select({ count: count() }).from(events),
-			db.select({ count: count() }).from(circles),
-			db.select({ count: count() }).from(artistAliases),
+			approximateCountsPromise,
 			// 東方原曲に紐付くトラックのみをカウント
 			// - officialSongIdがNOT NULL
 			// - officialWorks.idが「0799」（その他）でない
@@ -88,22 +110,9 @@ statsRouter.get("/", async (c) => {
 				.where(
 					and(
 						isNotNull(trackOfficialSongs.officialSongId),
-						ne(officialWorks.id, "0799"),
+						sql`${officialWorks.id} <> '0799'`,
 					),
 				),
-			// 原曲の数を取得
-			db
-				.select({ count: count() })
-				.from(officialSongs),
-			db.select({ count: count() }).from(releases),
-			// イベントシリーズ数を取得
-			db
-				.select({ count: count() })
-				.from(eventSeries),
-			// 全トラック数を取得
-			db
-				.select({ count: count() })
-				.from(tracks),
 			// ボーカリスト数を取得（名義単位でユニークカウント）
 			db
 				.select({ count: countDistinct(artistAliasIdentifier) })
@@ -134,17 +143,17 @@ statsRouter.get("/", async (c) => {
 		]);
 
 		const response = {
-			events: eventsResult[0]?.count ?? 0,
-			circles: circlesResult[0]?.count ?? 0,
-			artists: artistsResult[0]?.count ?? 0,
-			tracks: tracksResult[0]?.count ?? 0,
-			originalSongs: originalSongsResult[0]?.count ?? 0,
-			releases: releasesResult[0]?.count ?? 0,
-			eventSeries: eventSeriesResult[0]?.count ?? 0,
-			totalTracks: totalTracksResult[0]?.count ?? 0,
-			vocalists: vocalistsResult[0]?.count ?? 0,
-			arrangers: arrangersResult[0]?.count ?? 0,
-			lyricists: lyricistsResult[0]?.count ?? 0,
+			events: approximateCounts.get("events") ?? 0,
+			circles: approximateCounts.get("circles") ?? 0,
+			artists: approximateCounts.get("artist_aliases") ?? 0,
+			tracks: Number(tracksResult[0]?.count ?? 0),
+			originalSongs: approximateCounts.get("official_songs") ?? 0,
+			releases: approximateCounts.get("releases") ?? 0,
+			eventSeries: approximateCounts.get("event_series") ?? 0,
+			totalTracks: approximateCounts.get("tracks") ?? 0,
+			vocalists: Number(vocalistsResult[0]?.count ?? 0),
+			arrangers: Number(arrangersResult[0]?.count ?? 0),
+			lyricists: Number(lyricistsResult[0]?.count ?? 0),
 		};
 
 		setCache(cacheKey, response, CACHE_TTL.PUBLIC_STATS);
@@ -189,7 +198,7 @@ statsRouter.get("/rankings", async (c) => {
 						and(
 							isNotNull(trackOfficialSongs.officialSongId),
 							isNotNull(officialSongs.officialWorkId),
-							ne(officialSongs.officialWorkId, "0799"),
+							sql`${officialSongs.officialWorkId} <> '0799'`,
 						),
 					)
 					.groupBy(officialSongs.id)
@@ -251,17 +260,17 @@ statsRouter.get("/rankings", async (c) => {
 			popularSongs: popularSongsResult.map((row) => ({
 				id: row.id,
 				name: row.name,
-				count: row.count,
+				count: Number(row.count),
 			})),
 			activeCircles: activeCirclesResult.map((row) => ({
 				id: row.id,
 				name: row.name,
-				count: row.count,
+				count: Number(row.count),
 			})),
 			activeArtists: activeArtistsResult.map((row) => ({
 				id: row.id, // クエリで既に正しいID形式（メイン名義: {artistId}__main__、別名義: artistAliasId）
 				name: row.name,
-				count: row.count,
+				count: Number(row.count),
 			})),
 		};
 
@@ -300,9 +309,9 @@ statsRouter.get("/rankings/original-songs", async (c) => {
 				officialWorks,
 				eq(officialSongs.officialWorkId, officialWorks.id),
 			)
-			.where(ne(officialWorks.id, "0799"));
+			.where(sql`${officialWorks.id} <> '0799'`);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		// アレンジ数でソートしたランキングを取得
 		const rankingResult = await db
@@ -322,7 +331,7 @@ statsRouter.get("/rankings/original-songs", async (c) => {
 				trackOfficialSongs,
 				eq(officialSongs.id, trackOfficialSongs.officialSongId),
 			)
-			.where(ne(officialWorks.id, "0799"))
+			.where(sql`${officialWorks.id} <> '0799'`)
 			.groupBy(officialSongs.id, officialWorks.id)
 			.orderBy(desc(count(trackOfficialSongs.trackId)))
 			.limit(limit)
@@ -334,7 +343,7 @@ statsRouter.get("/rankings/original-songs", async (c) => {
 				name: row.name,
 				workId: row.workId,
 				workName: row.workName,
-				count: row.count,
+				count: Number(row.count),
 			})),
 			total,
 			page,
@@ -375,7 +384,7 @@ statsRouter.get("/rankings/circles", async (c) => {
 		// 総件数を取得
 		const totalResult = await db.select({ count: count() }).from(circles);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		// 作品数でソートしたランキングを取得
 		const rankingResult = await db
@@ -395,7 +404,7 @@ statsRouter.get("/rankings/circles", async (c) => {
 			data: rankingResult.map((row) => ({
 				id: row.id,
 				name: row.name,
-				count: row.count,
+				count: Number(row.count),
 			})),
 			total,
 			page,
@@ -442,7 +451,7 @@ statsRouter.get("/rankings/artists", async (c) => {
 			})
 			.from(trackCredits);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		// 楽曲数でソートしたランキングを取得（名義単位）
 		const rankingResult = await db
@@ -485,7 +494,7 @@ statsRouter.get("/rankings/artists", async (c) => {
 				id: row.id,
 				name: row.name,
 				artistId: row.artistId,
-				count: row.count,
+				count: Number(row.count),
 			})),
 			total,
 			page,
@@ -535,7 +544,7 @@ statsRouter.get("/rankings/song-pairs", async (c) => {
 			.where(
 				and(
 					isNotNull(trackOfficialSongs.officialSongId),
-					ne(officialWorks.id, "0799"),
+					sql`${officialWorks.id} <> '0799'`,
 				),
 			)
 			.groupBy(trackOfficialSongs.trackId)
@@ -575,9 +584,9 @@ statsRouter.get("/rankings/song-pairs", async (c) => {
 				twoSongTracksSubquery,
 				eq(trackOfficialSongs.trackId, twoSongTracksSubquery.trackId),
 			)
-			.where(and(ne(officialWorks.id, "0799"), sql`ow2.id != '0799'`));
+			.where(and(sql`${officialWorks.id} <> '0799'`, sql`ow2.id != '0799'`));
 
-		const total = totalPairsResult[0]?.count ?? 0;
+		const total = Number(totalPairsResult[0]?.count ?? 0);
 
 		// ペアごとのカウントを取得してランキング
 		// 「その他」(0799)を両方の曲で除外
@@ -612,7 +621,7 @@ statsRouter.get("/rankings/song-pairs", async (c) => {
 				twoSongTracksSubquery,
 				eq(trackOfficialSongs.trackId, twoSongTracksSubquery.trackId),
 			)
-			.where(and(ne(officialWorks.id, "0799"), sql`ow2.id != '0799'`))
+			.where(and(sql`${officialWorks.id} <> '0799'`, sql`ow2.id != '0799'`))
 			.groupBy(
 				sql`MIN(${trackOfficialSongs.officialSongId}, t2.official_song_id)`,
 				sql`MAX(${trackOfficialSongs.officialSongId}, t2.official_song_id)`,
@@ -655,7 +664,7 @@ statsRouter.get("/rankings/song-pairs", async (c) => {
 				song1Name: songNames.get(row.song1Id) ?? "",
 				song2Id: row.song2Id,
 				song2Name: songNames.get(row.song2Id) ?? "",
-				count: row.count,
+				count: Number(row.count),
 			})),
 			total,
 			page,
@@ -685,28 +694,65 @@ statsRouter.get("/recent-updates", async (c) => {
 			return c.json(cached);
 		}
 
-		// 最新の作品を取得し、サークル情報をJOIN
-		const recentReleasesResult = await db
+		// Step 1: 最新の10リリースIDを取得（重複なし）
+		const recentReleaseIds = await db
 			.select({
 				id: releases.id,
-				title: releases.name,
-				circleName: circles.name,
-				circleId: circles.id,
-				createdAt: releases.createdAt,
-				updatedAt: releases.updatedAt,
 			})
 			.from(releases)
-			.leftJoin(releaseCircles, eq(releases.id, releaseCircles.releaseId))
-			.leftJoin(circles, eq(releaseCircles.circleId, circles.id))
 			.orderBy(desc(releases.updatedAt))
 			.limit(10);
 
+		if (recentReleaseIds.length === 0) {
+			const response = { data: [] };
+			setCache(cacheKey, response, CACHE_TTL.STATS_RECENT_UPDATES);
+			setCacheHeaders(c, { maxAge: CACHE_TTL.STATS_RECENT_UPDATES });
+			return c.json(response);
+		}
+
+		const ids = recentReleaseIds.map((r) => r.id);
+
+		// Step 2: リリース詳細とサークル情報を取得
+		const [releasesData, circlesData] = await Promise.all([
+			db
+				.select({
+					id: releases.id,
+					title: releases.name,
+					createdAt: releases.createdAt,
+					updatedAt: releases.updatedAt,
+				})
+				.from(releases)
+				.where(inArray(releases.id, ids))
+				.orderBy(desc(releases.updatedAt)),
+			db
+				.select({
+					releaseId: releaseCircles.releaseId,
+					circleId: circles.id,
+					circleName: circles.name,
+				})
+				.from(releaseCircles)
+				.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
+				.where(inArray(releaseCircles.releaseId, ids)),
+		]);
+
+		// Step 3: サークルをリリースIDでグルーピング
+		const circlesByRelease = new Map<
+			string,
+			Array<{ id: string; name: string }>
+		>();
+		for (const c of circlesData) {
+			const existing = circlesByRelease.get(c.releaseId) ?? [];
+			if (!circlesByRelease.has(c.releaseId)) {
+				circlesByRelease.set(c.releaseId, existing);
+			}
+			existing.push({ id: c.circleId, name: c.circleName });
+		}
+
 		const response = {
-			data: recentReleasesResult.map((row) => ({
+			data: releasesData.map((row) => ({
 				id: row.id,
 				title: row.title,
-				circleName: row.circleName ?? null,
-				circleId: row.circleId ?? null,
+				circles: circlesByRelease.get(row.id) ?? [],
 				date: row.updatedAt?.toISOString() ?? null,
 				type:
 					row.createdAt?.getTime() === row.updatedAt?.getTime()

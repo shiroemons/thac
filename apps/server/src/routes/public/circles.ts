@@ -12,8 +12,8 @@ import {
 	eq,
 	events,
 	genres,
+	ilike,
 	inArray,
-	like,
 	officialSongs,
 	officialWorks,
 	or,
@@ -37,6 +37,7 @@ import {
 	setCache,
 	setCacheHeaders,
 } from "../../utils/cache";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const circlesRouter = new Hono();
 
@@ -69,11 +70,11 @@ const KANA_ROW_PATTERNS: Record<string, string[]> = {
 circlesRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
-		const limit = Math.min(Number(c.req.query("limit")) || 20, 5000);
+		const limit = Math.min(Number(c.req.query("limit")) || 20, 500);
 		const initialScript = c.req.query("initialScript"); // all | alphabet | kana | kanji | other
 		const initial = c.req.query("initial"); // A-Z
 		const row = c.req.query("row"); // あ, か, さ, ...
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "releaseCount";
 		const sortOrder = c.req.query("sortOrder") || "desc";
 
@@ -124,9 +125,9 @@ circlesRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(circles.name, searchPattern),
-					like(circles.nameJa, searchPattern),
-					like(circles.nameEn, searchPattern),
+					ilike(circles.name, searchPattern),
+					ilike(circles.nameJa, searchPattern),
+					ilike(circles.nameEn, searchPattern),
 				),
 			);
 		}
@@ -156,7 +157,7 @@ circlesRouter.get("/", async (c) => {
 			.as("trackCountSq");
 
 		// ソート条件を構築
-		const releaseCountCol = sql<number>`COALESCE(${releaseCountSq.count}, 0)`;
+		const releaseCountCol = sql<number>`COALESCE(${releaseCountSq.count}, 0)::int`;
 		const sortColumn = sortBy === "name" ? circles.name : releaseCountCol;
 		const orderByClause =
 			sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
@@ -172,8 +173,8 @@ circlesRouter.get("/", async (c) => {
 					sortName: circles.sortName,
 					nameInitial: circles.nameInitial,
 					initialScript: circles.initialScript,
-					releaseCount: sql<number>`COALESCE(${releaseCountSq.count}, 0)`,
-					trackCount: sql<number>`COALESCE(${trackCountSq.count}, 0)`,
+					releaseCount: sql<number>`COALESCE(${releaseCountSq.count}, 0)::int`,
+					trackCount: sql<number>`COALESCE(${trackCountSq.count}, 0)::int`,
 				})
 				.from(circles)
 				.leftJoin(releaseCountSq, eq(circles.id, releaseCountSq.circleId))
@@ -185,7 +186,7 @@ circlesRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(circles).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		const response = {
 			data,
@@ -276,8 +277,8 @@ circlesRouter.get("/:id", async (c) => {
 			...circle,
 			links: linksData,
 			stats: {
-				releaseCount: stats.releaseCount,
-				trackCount: stats.trackCount,
+				releaseCount: Number(stats.releaseCount),
+				trackCount: Number(stats.trackCount),
 			},
 		};
 
@@ -323,11 +324,15 @@ circlesRouter.get("/:id/releases", async (c) => {
 
 		const offset = (page - 1) * limit;
 
-		// トラック数サブクエリ
-		const trackCountSubquery = db
-			.select({ count: count() })
+		// トラック数を事前集計（相関サブクエリ → LEFT JOIN最適化）
+		const trackCountSq = db
+			.select({
+				releaseId: tracks.releaseId,
+				trackCount: count().as("track_count"),
+			})
 			.from(tracks)
-			.where(eq(tracks.releaseId, releases.id));
+			.groupBy(tracks.releaseId)
+			.as("track_counts");
 
 		// データ取得
 		const [data, totalResult] = await Promise.all([
@@ -341,10 +346,11 @@ circlesRouter.get("/:id/releases", async (c) => {
 					participationType: releaseCircles.participationType,
 					eventId: events.id,
 					eventName: events.name,
-					trackCount: sql<number>`(${trackCountSubquery})`,
+					trackCount: sql<number>`COALESCE(${trackCountSq.trackCount}, 0)::int`,
 				})
 				.from(releaseCircles)
 				.innerJoin(releases, eq(releaseCircles.releaseId, releases.id))
+				.leftJoin(trackCountSq, eq(releases.id, trackCountSq.releaseId))
 				.leftJoin(events, eq(releases.eventId, events.id))
 				.where(eq(releaseCircles.circleId, circleId))
 				.orderBy(desc(releases.releaseDate))
@@ -356,7 +362,7 @@ circlesRouter.get("/:id/releases", async (c) => {
 				.where(eq(releaseCircles.circleId, circleId)),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		// イベント情報を整形
 		const formattedData = data.map((item) => ({
@@ -444,7 +450,7 @@ circlesRouter.get("/:id/tracks", async (c) => {
 				.where(eq(releaseCircles.circleId, circleId)),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		if (tracksData.length === 0) {
 			const response = { data: [], total, page, limit };
@@ -661,7 +667,7 @@ circlesRouter.get("/:id/stats/works", async (c) => {
 				songs: songsStats.map((s) => ({
 					id: s.songId,
 					name: s.songName,
-					trackCount: s.trackCount,
+					trackCount: Number(s.trackCount),
 				})),
 			};
 
@@ -718,9 +724,9 @@ circlesRouter.get("/:id/stats/works", async (c) => {
 					existing.songs.push({
 						id: row.songId,
 						name: row.songName,
-						trackCount: row.trackCount,
+						trackCount: Number(row.trackCount),
 					});
-					existing.totalTrackCount += row.trackCount;
+					existing.totalTrackCount += Number(row.trackCount);
 				} else {
 					worksMap.set(row.workId, {
 						id: row.workId,
@@ -730,10 +736,10 @@ circlesRouter.get("/:id/stats/works", async (c) => {
 							{
 								id: row.songId,
 								name: row.songName,
-								trackCount: row.trackCount,
+								trackCount: Number(row.trackCount),
 							},
 						],
-						totalTrackCount: row.trackCount,
+						totalTrackCount: Number(row.trackCount),
 					});
 				}
 			}
@@ -779,7 +785,7 @@ circlesRouter.get("/:id/stats/works", async (c) => {
 				id: w.workId,
 				name: w.workName,
 				shortName: w.shortName,
-				trackCount: w.trackCount,
+				trackCount: Number(w.trackCount),
 			})),
 		};
 

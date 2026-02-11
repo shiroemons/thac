@@ -4,8 +4,8 @@ import {
 	db,
 	eq,
 	genres,
+	ilike,
 	insertGenreSchema,
-	like,
 	max,
 	or,
 	trackGenres,
@@ -17,22 +17,23 @@ import { ERROR_MESSAGES } from "../../constants/error-messages";
 import type { AdminContext } from "../../middleware/admin-auth";
 import { handleDbError } from "../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../utils/conflict-check";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const genresRouter = new Hono<AdminContext>();
 
 // 一覧取得（sortOrder順でソート）
 genresRouter.get("/", async (c) => {
 	try {
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 
 		// 検索条件を構築
 		let whereCondition: SQL<unknown> | undefined;
 		if (search) {
 			const searchPattern = `%${search}%`;
 			whereCondition = or(
-				like(genres.code, searchPattern),
-				like(genres.nameJa, searchPattern),
-				like(genres.nameEn, searchPattern),
+				ilike(genres.code, searchPattern),
+				ilike(genres.nameJa, searchPattern),
+				ilike(genres.nameEn, searchPattern),
 			);
 		}
 
@@ -116,7 +117,7 @@ genresRouter.post("/", async (c) => {
 
 		// 重複チェック
 		const existing = await db
-			.select()
+			.select({ code: genres.code })
 			.from(genres)
 			.where(eq(genres.code, parsed.data.code))
 			.limit(1);
@@ -207,7 +208,7 @@ genresRouter.delete("/:code", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ code: genres.code })
 			.from(genres)
 			.where(eq(genres.code, code))
 			.limit(1);

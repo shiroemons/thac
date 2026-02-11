@@ -4,8 +4,8 @@ import {
 	db,
 	discs,
 	eq,
+	ilike,
 	inArray,
-	like,
 	or,
 	releaseCircles,
 	releaseJanCodes,
@@ -22,6 +22,7 @@ import {
 	formatToTSV,
 	generateFilename,
 } from "../../../utils/export-formatter";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const releaseExportRouter = new Hono<AdminContext>();
 
@@ -65,7 +66,7 @@ releaseExportRouter.get("/", async (c) => {
 		const includeRelations = c.req.query("includeRelations") === "true";
 		const releaseType = c.req.query("releaseType");
 		const eventId = c.req.query("eventId");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 
 		// フィルタ条件を構築
 		const conditions = [];
@@ -82,9 +83,9 @@ releaseExportRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(releases.name, searchPattern),
-					like(releases.nameJa, searchPattern),
-					like(releases.nameEn, searchPattern),
+					ilike(releases.name, searchPattern),
+					ilike(releases.nameJa, searchPattern),
+					ilike(releases.nameEn, searchPattern),
 				),
 			);
 		}

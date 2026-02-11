@@ -1,6 +1,4 @@
-import { createClient } from "@libsql/client";
-import dotenv from "dotenv";
-import { drizzle } from "drizzle-orm/libsql";
+import { sql } from "drizzle-orm";
 import { genres } from "./schema/genre";
 import {
 	aliasTypes,
@@ -8,18 +6,9 @@ import {
 	officialWorkCategories,
 	platforms,
 } from "./schema/master";
+import { createScriptClient } from "./utils/script-client";
 
-// Load environment variables
-dotenv.config({
-	path: "../../apps/server/.env",
-});
-
-const client = createClient({
-	url: process.env.DATABASE_URL || "",
-	authToken: process.env.DATABASE_AUTH_TOKEN,
-});
-
-const db = drizzle({ client });
+const { client, db } = createScriptClient();
 
 // 初期データ定義
 const platformsData = [
@@ -463,111 +452,114 @@ const genresData = [
 async function seed() {
 	console.log("Seeding master data...");
 
-	// Upsert platforms
+	// Upsert platforms (batch)
 	console.log("Seeding platforms...");
-	for (let i = 0; i < platformsData.length; i++) {
-		const data = platformsData[i];
-		if (!data) continue;
-		await db
-			.insert(platforms)
-			.values({ ...data, sortOrder: i })
-			.onConflictDoUpdate({
-				target: platforms.code,
-				set: {
-					name: data.name,
-					category: data.category,
-					urlPattern: data.urlPattern,
-					sortOrder: i,
-				},
-			});
-	}
+	const platformValues = platformsData.map((data, i) => ({
+		...data,
+		sortOrder: i,
+	}));
+	await db
+		.insert(platforms)
+		.values(platformValues)
+		.onConflictDoUpdate({
+			target: platforms.code,
+			set: {
+				name: sql`excluded.name`,
+				category: sql`excluded.category`,
+				urlPattern: sql`excluded.url_pattern`,
+				sortOrder: sql`excluded.sort_order`,
+			},
+		});
 	console.log(`  ✓ ${platformsData.length} platforms seeded`);
 
-	// Upsert alias_types
+	// Upsert alias_types (batch)
 	console.log("Seeding alias_types...");
-	for (let i = 0; i < aliasTypesData.length; i++) {
-		const data = aliasTypesData[i];
-		if (!data) continue;
-		await db
-			.insert(aliasTypes)
-			.values({ ...data, sortOrder: i })
-			.onConflictDoUpdate({
-				target: aliasTypes.code,
-				set: {
-					label: data.label,
-					description: data.description,
-					sortOrder: i,
-				},
-			});
-	}
+	const aliasTypeValues = aliasTypesData.map((data, i) => ({
+		...data,
+		sortOrder: i,
+	}));
+	await db
+		.insert(aliasTypes)
+		.values(aliasTypeValues)
+		.onConflictDoUpdate({
+			target: aliasTypes.code,
+			set: {
+				label: sql`excluded.label`,
+				description: sql`excluded.description`,
+				sortOrder: sql`excluded.sort_order`,
+			},
+		});
 	console.log(`  ✓ ${aliasTypesData.length} alias types seeded`);
 
-	// Upsert credit_roles
+	// Upsert credit_roles (batch)
 	console.log("Seeding credit_roles...");
-	for (let i = 0; i < creditRolesData.length; i++) {
-		const data = creditRolesData[i];
-		if (!data) continue;
-		await db
-			.insert(creditRoles)
-			.values({ ...data, sortOrder: i })
-			.onConflictDoUpdate({
-				target: creditRoles.code,
-				set: {
-					label: data.label,
-					description: data.description,
-					sortOrder: i,
-				},
-			});
-	}
+	const creditRoleValues = creditRolesData.map((data, i) => ({
+		...data,
+		sortOrder: i,
+	}));
+	await db
+		.insert(creditRoles)
+		.values(creditRoleValues)
+		.onConflictDoUpdate({
+			target: creditRoles.code,
+			set: {
+				label: sql`excluded.label`,
+				description: sql`excluded.description`,
+				sortOrder: sql`excluded.sort_order`,
+			},
+		});
 	console.log(`  ✓ ${creditRolesData.length} credit roles seeded`);
 
-	// Upsert official_work_categories
+	// Upsert official_work_categories (batch)
 	console.log("Seeding official_work_categories...");
-	for (let i = 0; i < officialWorkCategoriesData.length; i++) {
-		const data = officialWorkCategoriesData[i];
-		if (!data) continue;
-		await db
-			.insert(officialWorkCategories)
-			.values({ ...data, sortOrder: i })
-			.onConflictDoUpdate({
-				target: officialWorkCategories.code,
-				set: {
-					name: data.name,
-					description: data.description,
-					sortOrder: i,
-				},
-			});
-	}
+	const categoryValues = officialWorkCategoriesData.map((data, i) => ({
+		...data,
+		sortOrder: i,
+	}));
+	await db
+		.insert(officialWorkCategories)
+		.values(categoryValues)
+		.onConflictDoUpdate({
+			target: officialWorkCategories.code,
+			set: {
+				name: sql`excluded.name`,
+				description: sql`excluded.description`,
+				sortOrder: sql`excluded.sort_order`,
+			},
+		});
 	console.log(
 		`  ✓ ${officialWorkCategoriesData.length} official work categories seeded`,
 	);
 
-	// Upsert genres
+	// Upsert genres (batch)
 	console.log("Seeding genres...");
-	for (let i = 0; i < genresData.length; i++) {
-		const data = genresData[i];
-		if (!data) continue;
-		await db
-			.insert(genres)
-			.values({ ...data, sortOrder: i })
-			.onConflictDoUpdate({
-				target: genres.code,
-				set: {
-					nameJa: data.nameJa,
-					nameEn: data.nameEn,
-					color: data.color,
-					icon: data.icon,
-					sortOrder: i,
-				},
-			});
-	}
+	const genreValues = genresData.map((data, i) => ({
+		...data,
+		sortOrder: i,
+	}));
+	await db
+		.insert(genres)
+		.values(genreValues)
+		.onConflictDoUpdate({
+			target: genres.code,
+			set: {
+				nameJa: sql`excluded.name_ja`,
+				nameEn: sql`excluded.name_en`,
+				color: sql`excluded.color`,
+				icon: sql`excluded.icon`,
+				sortOrder: sql`excluded.sort_order`,
+			},
+		});
 	console.log(`  ✓ ${genresData.length} genres seeded`);
 
 	console.log("✓ Master data seeding completed!");
 }
 
 seed()
-	.then(() => process.exit(0))
+	.then(async () => {
+		await client.end({ timeout: 2 });
+		process.exit(0);
+	})
 	.catch((error) => {
 		console.error("Error seeding master data:", error);
 		process.exit(1);

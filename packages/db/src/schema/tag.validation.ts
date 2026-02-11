@@ -38,20 +38,11 @@ export const tagNameSchema = z
 		"タグ名が長すぎます（全角20文字、半角40文字以内）",
 	);
 
-// attributes フィールド（JSON形式のオプショナル）
+// attributes フィールド（jsonbオブジェクトのオプショナル）
 const attributesSchema = z
-	.string()
+	.record(z.string(), z.unknown())
 	.nullable()
-	.optional()
-	.refine((val) => {
-		if (val === null || val === undefined) return true;
-		try {
-			JSON.parse(val);
-			return true;
-		} catch {
-			return false;
-		}
-	}, "有効なJSON形式で入力してください");
+	.optional();
 
 // Tags
 export const insertTagSchema = createInsertSchema(tags, {

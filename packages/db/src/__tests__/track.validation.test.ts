@@ -61,39 +61,33 @@ describe("track validation schemas", () => {
 			expect(result.success).toBe(false);
 		});
 
-		test("should convert empty releaseId to null", () => {
+		test("should reject empty releaseId", () => {
 			const result = insertTrackSchema.safeParse({
 				id: "trk_12345",
 				releaseId: "",
 				trackNumber: 1,
 				name: "Track Name",
 			});
-			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data.releaseId).toBe(null);
-			}
+			expect(result.success).toBe(false);
 		});
 
-		test("should accept null releaseId for standalone tracks", () => {
+		test("should reject null releaseId", () => {
 			const result = insertTrackSchema.safeParse({
 				id: "trk_12345",
 				releaseId: null,
 				trackNumber: 1,
 				name: "Single Track",
 			});
-			expect(result.success).toBe(true);
+			expect(result.success).toBe(false);
 		});
 
-		test("should accept undefined releaseId", () => {
+		test("should reject missing releaseId", () => {
 			const result = insertTrackSchema.safeParse({
 				id: "trk_12345",
 				trackNumber: 1,
 				name: "Standalone Track",
 			});
-			expect(result.success).toBe(true);
-			if (result.success) {
-				expect(result.data.releaseId).toBeUndefined();
-			}
+			expect(result.success).toBe(false);
 		});
 
 		test("should reject empty name", () => {

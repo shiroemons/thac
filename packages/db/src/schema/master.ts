@@ -1,7 +1,6 @@
-import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-export const platforms = sqliteTable(
+export const platforms = pgTable(
 	"platforms",
 	{
 		code: text("code").primaryKey(),
@@ -9,11 +8,11 @@ export const platforms = sqliteTable(
 		category: text("category"),
 		urlPattern: text("url_pattern"),
 		sortOrder: integer("sort_order").default(0).notNull(),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -23,35 +22,56 @@ export const platforms = sqliteTable(
 	],
 );
 
-export const aliasTypes = sqliteTable(
+export const aliasTypes = pgTable(
 	"alias_types",
 	{
 		code: text("code").primaryKey(),
 		label: text("label").notNull(),
 		description: text("description"),
 		sortOrder: integer("sort_order").default(0).notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
 	},
 	(table) => [index("idx_alias_types_sort_order").on(table.sortOrder)],
 );
 
-export const creditRoles = sqliteTable(
+export const creditRoles = pgTable(
 	"credit_roles",
 	{
 		code: text("code").primaryKey(),
 		label: text("label").notNull(),
 		description: text("description"),
 		sortOrder: integer("sort_order").default(0).notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
 	},
 	(table) => [index("idx_credit_roles_sort_order").on(table.sortOrder)],
 );
 
-export const officialWorkCategories = sqliteTable(
+export const officialWorkCategories = pgTable(
 	"official_work_categories",
 	{
 		code: text("code").primaryKey(),
 		name: text("name").notNull(),
 		description: text("description"),
 		sortOrder: integer("sort_order").default(0).notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
 	},
 	(table) => [
 		index("idx_official_work_categories_sort_order").on(table.sortOrder),

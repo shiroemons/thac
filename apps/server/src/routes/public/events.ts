@@ -10,8 +10,8 @@ import {
 	eventDays,
 	eventSeries,
 	events,
+	ilike,
 	inArray,
-	like,
 	officialSongs,
 	officialWorks,
 	or,
@@ -31,6 +31,7 @@ import {
 	setCache,
 	setCacheHeaders,
 } from "../../utils/cache";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const eventsRouter = new Hono();
 
@@ -43,7 +44,7 @@ eventsRouter.get("/", async (c) => {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const seriesId = c.req.query("seriesId");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "startDate";
 		const sortOrder = c.req.query("sortOrder") || "desc";
 
@@ -77,7 +78,10 @@ eventsRouter.get("/", async (c) => {
 		if (search) {
 			const searchPattern = `%${search}%`;
 			conditions.push(
-				or(like(events.name, searchPattern), like(events.venue, searchPattern)),
+				or(
+					ilike(events.name, searchPattern),
+					ilike(events.venue, searchPattern),
+				),
 			);
 		}
 
@@ -88,25 +92,33 @@ eventsRouter.get("/", async (c) => {
 					: sql`${conditions[0]} AND ${conditions[1]}`
 				: undefined;
 
-		// releaseCountサブクエリ（N+1回避）
-		const releaseCountSubquery = db
-			.select({ count: count() })
+		// カウントをサブクエリでJOIN（相関サブクエリを回避）
+		const releaseCountSq = db
+			.select({
+				eventId: releases.eventId,
+				count: count().as("releaseCount"),
+			})
 			.from(releases)
-			.where(eq(releases.eventId, events.id));
+			.groupBy(releases.eventId)
+			.as("releaseCountSq");
 
-		// trackCountサブクエリ（N+1回避）
-		const trackCountSubquery = db
-			.select({ count: count() })
+		const trackCountSq = db
+			.select({
+				eventId: releases.eventId,
+				count: count().as("trackCount"),
+			})
 			.from(tracks)
 			.innerJoin(releases, eq(tracks.releaseId, releases.id))
-			.where(eq(releases.eventId, events.id));
+			.groupBy(releases.eventId)
+			.as("trackCountSq");
 
 		// ソート条件を構築
+		const releaseCountCol = sql<number>`COALESCE(${releaseCountSq.count}, 0)::int`;
 		const sortColumn =
 			sortBy === "name"
 				? events.name
 				: sortBy === "releaseCount"
-					? sql<number>`(${releaseCountSubquery})`
+					? releaseCountCol
 					: events.startDate;
 		const orderByClause =
 			sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
@@ -124,11 +136,13 @@ eventsRouter.get("/", async (c) => {
 					endDate: events.endDate,
 					totalDays: events.totalDays,
 					venue: events.venue,
-					releaseCount: sql<number>`(${releaseCountSubquery})`,
-					trackCount: sql<number>`(${trackCountSubquery})`,
+					releaseCount: sql<number>`COALESCE(${releaseCountSq.count}, 0)::int`,
+					trackCount: sql<number>`COALESCE(${trackCountSq.count}, 0)::int`,
 				})
 				.from(events)
 				.leftJoin(eventSeries, eq(events.eventSeriesId, eventSeries.id))
+				.leftJoin(releaseCountSq, eq(events.id, releaseCountSq.eventId))
+				.leftJoin(trackCountSq, eq(events.id, trackCountSq.eventId))
 				.where(whereCondition)
 				.orderBy(orderByClause)
 				.limit(limit)
@@ -136,7 +150,7 @@ eventsRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(events).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		const response = {
 			data,
@@ -231,9 +245,9 @@ eventsRouter.get("/:id", async (c) => {
 			...event,
 			eventDays: daysData,
 			stats: {
-				releaseCount: stats.releaseCount,
-				circleCount: stats.circleCount,
-				trackCount: stats.trackCount,
+				releaseCount: Number(stats.releaseCount),
+				circleCount: Number(stats.circleCount),
+				trackCount: Number(stats.trackCount),
 			},
 		};
 
@@ -256,7 +270,7 @@ eventsRouter.get("/:id/releases", async (c) => {
 		const eventId = c.req.param("id");
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "name";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 
@@ -299,11 +313,11 @@ eventsRouter.get("/:id/releases", async (c) => {
 				.selectDistinct({ releaseId: releaseCircles.releaseId })
 				.from(releaseCircles)
 				.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
-				.where(like(circles.name, searchPattern));
+				.where(ilike(circles.name, searchPattern));
 
 			const searchCondition = or(
-				like(releases.name, searchPattern),
-				like(releases.nameJa, searchPattern),
+				ilike(releases.name, searchPattern),
+				ilike(releases.nameJa, searchPattern),
 				inArray(releases.id, circleSearchSubquery),
 			);
 			if (searchCondition) {
@@ -313,25 +327,33 @@ eventsRouter.get("/:id/releases", async (c) => {
 
 		const whereCondition = and(...conditions);
 
-		// トラック数サブクエリ
-		const trackCountSubquery = db
-			.select({ count: count() })
+		// トラック数を事前集計（相関サブクエリ → LEFT JOIN最適化）
+		const trackCountSq = db
+			.select({
+				releaseId: tracks.releaseId,
+				count: count().as("trackCount"),
+			})
 			.from(tracks)
-			.where(eq(tracks.releaseId, releases.id));
+			.groupBy(tracks.releaseId)
+			.as("trackCountSq");
 
-		// サークル名サブクエリ（最小の名前を取得）
-		const circleNameSubquery = db
-			.select({ minName: sql<string>`MIN(${circles.name})` })
+		// サークル名を事前集計（最小の名前を取得）
+		const circleNameSq = db
+			.select({
+				releaseId: releaseCircles.releaseId,
+				minName: sql<string>`MIN(${circles.name})`.as("minCircleName"),
+			})
 			.from(circles)
 			.innerJoin(releaseCircles, eq(circles.id, releaseCircles.circleId))
-			.where(eq(releaseCircles.releaseId, releases.id));
+			.groupBy(releaseCircles.releaseId)
+			.as("circleNameSq");
 
 		// ソートカラムの決定
 		const sortColumn =
 			sortBy === "circleName"
-				? sql<string>`(${circleNameSubquery})`
+				? sql<string>`COALESCE(${circleNameSq.minName}, '')`
 				: sortBy === "trackCount"
-					? sql<number>`(${trackCountSubquery})`
+					? sql<number>`COALESCE(${trackCountSq.count}, 0)::int`
 					: releases.name;
 
 		const orderByClause =
@@ -346,9 +368,11 @@ eventsRouter.get("/:id/releases", async (c) => {
 					nameJa: releases.nameJa,
 					releaseDate: releases.releaseDate,
 					releaseType: releases.releaseType,
-					trackCount: sql<number>`(${trackCountSubquery})`,
+					trackCount: sql<number>`COALESCE(${trackCountSq.count}, 0)::int`,
 				})
 				.from(releases)
+				.leftJoin(trackCountSq, eq(releases.id, trackCountSq.releaseId))
+				.leftJoin(circleNameSq, eq(releases.id, circleNameSq.releaseId))
 				.where(whereCondition)
 				.orderBy(orderByClause)
 				.limit(limit)
@@ -356,7 +380,7 @@ eventsRouter.get("/:id/releases", async (c) => {
 			db.select({ count: count() }).from(releases).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		if (releasesData.length === 0) {
 			const response = { data: [], total, page, limit };
@@ -482,7 +506,7 @@ eventsRouter.get("/:id/stats/works", async (c) => {
 				songs: songsStats.map((s) => ({
 					id: s.songId,
 					name: s.songName,
-					trackCount: s.trackCount,
+					trackCount: Number(s.trackCount),
 				})),
 			};
 
@@ -538,9 +562,9 @@ eventsRouter.get("/:id/stats/works", async (c) => {
 					existing.songs.push({
 						id: row.songId,
 						name: row.songName,
-						trackCount: row.trackCount,
+						trackCount: Number(row.trackCount),
 					});
-					existing.totalTrackCount += row.trackCount;
+					existing.totalTrackCount += Number(row.trackCount);
 				} else {
 					worksMap.set(row.workId, {
 						id: row.workId,
@@ -550,10 +574,10 @@ eventsRouter.get("/:id/stats/works", async (c) => {
 							{
 								id: row.songId,
 								name: row.songName,
-								trackCount: row.trackCount,
+								trackCount: Number(row.trackCount),
 							},
 						],
-						totalTrackCount: row.trackCount,
+						totalTrackCount: Number(row.trackCount),
 					});
 				}
 			}
@@ -598,7 +622,7 @@ eventsRouter.get("/:id/stats/works", async (c) => {
 				id: w.workId,
 				name: w.workName,
 				shortName: w.shortName,
-				trackCount: w.trackCount,
+				trackCount: Number(w.trackCount),
 			})),
 		};
 

@@ -1,75 +1,33 @@
 {
 	"version": "7",
-	"dialect": "sqlite",
+	"dialect": "postgresql",
 	"entries": [
 		{
 			"idx": 0,
-			"version": "6",
-			"when": 1765692345739,
-			"tag": "0000_lucky_cardiac",
+			"version": "7",
+			"when": 1770737615837,
+			"tag": "0000_clumsy_dazzler",
 			"breakpoints": true
 		},
 		{
 			"idx": 1,
-			"version": "6",
-			"when": 1765983592277,
-			"tag": "0001_furry_starjammers",
+			"version": "7",
+			"when": 1770772097759,
+			"tag": "0001_narrow_trauma",
 			"breakpoints": true
 		},
 		{
 			"idx": 2,
-			"version": "6",
-			"when": 1766027147558,
-			"tag": "0002_massive_synch",
+			"version": "7",
+			"when": 1770775004360,
+			"tag": "0002_serious_praxagora",
 			"breakpoints": true
 		},
 		{
 			"idx": 3,
-			"version": "6",
-			"when": 1766037671990,
-			"tag": "0003_even_oracle",
-			"breakpoints": true
-		},
-		{
-			"idx": 4,
-			"version": "6",
-			"when": 1766059637669,
-			"tag": "0004_dizzy_korath",
-			"breakpoints": true
-		},
-		{
-			"idx": 5,
-			"version": "6",
-			"when": 1766059938500,
-			"tag": "0005_woozy_zarek",
-			"breakpoints": true
-		},
-		{
-			"idx": 6,
-			"version": "6",
-			"when": 1766065517563,
-			"tag": "0006_stormy_blonde_phantom",
-			"breakpoints": true
-		},
-		{
-			"idx": 7,
-			"version": "6",
-			"when": 1766217042142,
-			"tag": "0007_messy_lightspeed",
-			"breakpoints": true
-		},
-		{
-			"idx": 8,
-			"version": "6",
-			"when": 1766217216055,
-			"tag": "0008_clean_black_queen",
-			"breakpoints": true
-		},
-		{
-			"idx": 9,
-			"version": "6",
-			"when": 1766553628537,
-			"tag": "0009_low_kingpin",
+			"version": "7",
+			"when": 1770775729518,
+			"tag": "0003_cooing_betty_brant",
 			"breakpoints": true
 		}
 	]

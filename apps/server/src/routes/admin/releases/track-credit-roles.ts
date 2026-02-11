@@ -27,7 +27,7 @@ trackCreditRolesRouter.post(
 
 			// クレジット存在チェック（トラック・作品との関連確認含む）
 			const existingCredit = await db
-				.select()
+				.select({ id: trackCredits.id })
 				.from(trackCredits)
 				.innerJoin(tracks, eq(trackCredits.trackId, tracks.id))
 				.where(
@@ -45,7 +45,7 @@ trackCreditRolesRouter.post(
 
 			// 役割マスター存在チェック
 			const existingRole = await db
-				.select()
+				.select({ code: creditRoles.code })
 				.from(creditRoles)
 				.where(eq(creditRoles.code, body.roleCode))
 				.limit(1);
@@ -71,7 +71,7 @@ trackCreditRolesRouter.post(
 
 			// 重複チェック（同一クレジット・同一役割・同一表示順）
 			const existingRoleAssignment = await db
-				.select()
+				.select({ trackCreditId: trackCreditRoles.trackCreditId })
 				.from(trackCreditRoles)
 				.where(
 					and(
@@ -141,7 +141,7 @@ trackCreditRolesRouter.delete(
 
 			// クレジット存在チェック（トラック・作品との関連確認含む）
 			const existingCredit = await db
-				.select()
+				.select({ id: trackCredits.id })
 				.from(trackCredits)
 				.innerJoin(tracks, eq(trackCredits.trackId, tracks.id))
 				.where(
@@ -159,7 +159,7 @@ trackCreditRolesRouter.delete(
 
 			// 役割存在チェック
 			const existingRoleAssignment = await db
-				.select()
+				.select({ trackCreditId: trackCreditRoles.trackCreditId })
 				.from(trackCreditRoles)
 				.where(
 					and(

@@ -6,8 +6,8 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	inArray,
-	like,
 	releases,
 	sql,
 	tags,
@@ -21,6 +21,7 @@ import { z } from "zod";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
 import type { AdminContext } from "../../middleware/admin-auth";
 import { handleDbError } from "../../utils/api-error";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const tagsRouter = new Hono<AdminContext>();
 
@@ -42,7 +43,7 @@ const tagNameSchema = z
 // タグ一覧取得（検索、使用数付き、ページネーション）
 tagsRouter.get("/", async (c) => {
 	try {
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const page = Number.parseInt(c.req.query("page") ?? "1", 10);
 		const limit = Math.min(
 			Number.parseInt(c.req.query("limit") ?? "50", 10),
@@ -57,7 +58,7 @@ tagsRouter.get("/", async (c) => {
 		let whereCondition: SQL<unknown> | undefined;
 		if (search) {
 			const searchPattern = `%${search}%`;
-			whereCondition = like(tags.name, searchPattern);
+			whereCondition = ilike(tags.name, searchPattern);
 		}
 
 		// サブクエリで使用数を取得
@@ -95,7 +96,7 @@ tagsRouter.get("/", async (c) => {
 				id: tags.id,
 				name: tags.name,
 				attributes: tags.attributes,
-				trackCount: sql<number>`COALESCE(${usageCountSubquery.usageCount}, 0)`,
+				trackCount: sql<number>`COALESCE(${usageCountSubquery.usageCount}, 0)::int`,
 				createdAt: tags.createdAt,
 				updatedAt: tags.updatedAt,
 			})
@@ -112,12 +113,11 @@ tagsRouter.get("/", async (c) => {
 			.from(tags)
 			.where(whereCondition);
 
-		const total = totalResult?.count ?? 0;
+		const total = Number(totalResult?.count ?? 0);
 
 		return c.json({
 			data: result.map((tag) => ({
 				...tag,
-				attributes: tag.attributes ? JSON.parse(tag.attributes) : null,
 				createdAt: tag.createdAt.toISOString(),
 				updatedAt: tag.updatedAt.toISOString(),
 			})),
@@ -150,38 +150,28 @@ tagsRouter.post("/", async (c) => {
 		const name = nameResult.data;
 
 		// attributes のバリデーション
-		let attributesStr: string | null = null;
+		let attributesVal: Record<string, unknown> | null = null;
 		if (body.attributes) {
-			try {
-				if (typeof body.attributes === "string") {
-					JSON.parse(body.attributes);
-					attributesStr = body.attributes;
-				} else {
-					attributesStr = JSON.stringify(body.attributes);
-				}
-				if (attributesStr && attributesStr.length > 1000) {
-					return c.json(
-						{
-							error: ERROR_MESSAGES.VALIDATION_FAILED,
-							details: { attributes: ["属性は1000文字以内で入力してください"] },
-						},
-						400,
-					);
-				}
-			} catch {
+			if (
+				typeof body.attributes !== "object" ||
+				Array.isArray(body.attributes)
+			) {
 				return c.json(
 					{
 						error: ERROR_MESSAGES.VALIDATION_FAILED,
-						details: { attributes: ["有効なJSON形式で入力してください"] },
+						details: {
+							attributes: ["有効なオブジェクト形式で入力してください"],
+						},
 					},
 					400,
 				);
 			}
+			attributesVal = body.attributes;
 		}
 
 		// 既存タグ検索（大文字小文字無視）
 		const existing = await db
-			.select()
+			.select({ id: tags.id, name: tags.name })
 			.from(tags)
 			.where(sql`LOWER(${tags.name}) = LOWER(${name})`)
 			.limit(1);
@@ -209,7 +199,7 @@ tagsRouter.post("/", async (c) => {
 			.values({
 				id: newId,
 				name,
-				attributes: attributesStr,
+				attributes: attributesVal,
 			})
 			.returning();
 
@@ -221,9 +211,7 @@ tagsRouter.post("/", async (c) => {
 			{
 				id: createdTag.id,
 				name: createdTag.name,
-				attributes: createdTag.attributes
-					? JSON.parse(createdTag.attributes)
-					: null,
+				attributes: createdTag.attributes ?? null,
 				createdAt: createdTag.createdAt.toISOString(),
 				updatedAt: createdTag.updatedAt.toISOString(),
 			},
@@ -353,7 +341,7 @@ tagsRouter.post("/merge", async (c) => {
 
 			return {
 				mergedCount,
-				usageCount: usageResult?.count ?? 0,
+				usageCount: Number(usageResult?.count ?? 0),
 			};
 		});
 
@@ -406,9 +394,9 @@ tagsRouter.get("/:id", async (c) => {
 		return c.json({
 			id: tag.id,
 			name: tag.name,
-			attributes: tag.attributes ? JSON.parse(tag.attributes) : null,
-			usageCount: usageResult?.count ?? 0,
-			lockedCount: lockedResult?.count ?? 0,
+			attributes: tag.attributes ?? null,
+			usageCount: Number(usageResult?.count ?? 0),
+			lockedCount: Number(lockedResult?.count ?? 0),
 			createdAt: tag.createdAt.toISOString(),
 			updatedAt: tag.updatedAt.toISOString(),
 		});
@@ -465,7 +453,7 @@ tagsRouter.get("/:id/tracks", async (c) => {
 			.from(trackTags)
 			.where(eq(trackTags.tagId, id));
 
-		const total = totalResult?.count ?? 0;
+		const total = Number(totalResult?.count ?? 0);
 		const totalPages = Math.ceil(total / limit);
 
 		return c.json({
@@ -494,7 +482,7 @@ tagsRouter.put("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: tags.id })
 			.from(tags)
 			.where(eq(tags.id, id))
 			.limit(1);
@@ -558,48 +546,39 @@ tagsRouter.put("/:id", async (c) => {
 		}
 
 		// attributes の処理
-		let attributesStr: string | null | undefined;
+		let attributesVal: Record<string, unknown> | null | undefined;
 		if (body.attributes !== undefined) {
 			if (body.attributes === null) {
-				attributesStr = null;
+				attributesVal = null;
 			} else {
-				try {
-					if (typeof body.attributes === "string") {
-						JSON.parse(body.attributes);
-						attributesStr = body.attributes;
-					} else {
-						attributesStr = JSON.stringify(body.attributes);
-					}
-					if (attributesStr && attributesStr.length > 1000) {
-						return c.json(
-							{
-								error: ERROR_MESSAGES.VALIDATION_FAILED,
-								details: {
-									attributes: ["属性は1000文字以内で入力してください"],
-								},
-							},
-							400,
-						);
-					}
-				} catch {
+				if (
+					typeof body.attributes !== "object" ||
+					Array.isArray(body.attributes)
+				) {
 					return c.json(
 						{
 							error: ERROR_MESSAGES.VALIDATION_FAILED,
-							details: { attributes: ["有効なJSON形式で入力してください"] },
+							details: {
+								attributes: ["有効なオブジェクト形式で入力してください"],
+							},
 						},
 						400,
 					);
 				}
+				attributesVal = body.attributes;
 			}
 		}
 
 		// 更新データを構築
-		const updateData: { name?: string; attributes?: string | null } = {};
+		const updateData: {
+			name?: string;
+			attributes?: Record<string, unknown> | null;
+		} = {};
 		if (body.name) {
 			updateData.name = body.name;
 		}
-		if (attributesStr !== undefined) {
-			updateData.attributes = attributesStr;
+		if (attributesVal !== undefined) {
+			updateData.attributes = attributesVal;
 		}
 
 		// 更新
@@ -616,9 +595,7 @@ tagsRouter.put("/:id", async (c) => {
 		return c.json({
 			id: updatedTag.id,
 			name: updatedTag.name,
-			attributes: updatedTag.attributes
-				? JSON.parse(updatedTag.attributes)
-				: null,
+			attributes: updatedTag.attributes ?? null,
 			createdAt: updatedTag.createdAt.toISOString(),
 			updatedAt: updatedTag.updatedAt.toISOString(),
 		});
@@ -635,7 +612,7 @@ tagsRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: tags.id })
 			.from(tags)
 			.where(eq(tags.id, id))
 			.limit(1);
@@ -650,7 +627,7 @@ tagsRouter.delete("/:id", async (c) => {
 			.from(trackTags)
 			.where(eq(trackTags.tagId, id));
 
-		const usageCount = usageResult?.count ?? 0;
+		const usageCount = Number(usageResult?.count ?? 0);
 
 		if (usageCount > 0 && !force) {
 			return c.json(

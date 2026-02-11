@@ -39,6 +39,7 @@ import { z } from "zod";
 import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
+import { sanitizeSearch } from "../../../utils/query-params";
 import { trackDerivationsRouter } from "./derivations";
 import { trackIsrcsRouter } from "./isrcs";
 import { trackOfficialSongsRouter } from "./official-songs";
@@ -61,7 +62,7 @@ tracksAdminRouter.get("/", async (c) => {
 	try {
 		const page = Number.parseInt(c.req.query("page") ?? "1", 10);
 		const limit = Number.parseInt(c.req.query("limit") ?? "20", 10);
-		const search = c.req.query("search") ?? "";
+		const search = sanitizeSearch(c.req.query("search")) ?? "";
 		const releaseId = c.req.query("releaseId") ?? "";
 		const sortBy = c.req.query("sortBy") || "name";
 		const sortOrder = c.req.query("sortOrder") || "asc";
@@ -267,7 +268,7 @@ tracksAdminRouter.get("/", async (c) => {
 			.leftJoin(releases, eq(tracks.releaseId, releases.id))
 			.where(whereCondition);
 
-		const total = totalResult?.count ?? 0;
+		const total = Number(totalResult?.count ?? 0);
 
 		// レスポンス形成
 		const data = result.map((row) => {
@@ -462,36 +463,51 @@ tracksAdminRouter.delete("/batch", async (c) => {
 		const deleted: string[] = [];
 		const failed: Array<{ trackId: string; error: string }> = [];
 
+		const requestedIds = items.map((item) => item.trackId);
+
+		// 一括存在チェック（trackId と releaseId の組み合わせで検証）
+		const existingTracks = await db
+			.select({ id: tracks.id, releaseId: tracks.releaseId })
+			.from(tracks)
+			.where(inArray(tracks.id, requestedIds));
+
+		// 存在するトラックを (trackId, releaseId) のペアでマップ化
+		const existingMap = new Map(existingTracks.map((t) => [t.id, t.releaseId]));
+
+		// リクエストされた各アイテムを検証し、存在するものと失敗するものを分類
+		const idsToDelete: string[] = [];
 		for (const item of items) {
-			try {
-				// 存在チェック
-				const existing = await db
-					.select()
-					.from(tracks)
-					.where(
-						and(
-							eq(tracks.id, item.trackId),
-							eq(tracks.releaseId, item.releaseId),
-						),
-					)
-					.limit(1);
-
-				if (existing.length === 0) {
-					failed.push({
-						trackId: item.trackId,
-						error: ERROR_MESSAGES.TRACK_NOT_FOUND,
-					});
-					continue;
-				}
-
-				// 削除（カスケードでクレジット等も削除される）
-				await db.delete(tracks).where(eq(tracks.id, item.trackId));
-				deleted.push(item.trackId);
-			} catch (e) {
+			const existingReleaseId = existingMap.get(item.trackId);
+			if (existingReleaseId === undefined) {
+				// トラックが存在しない
 				failed.push({
 					trackId: item.trackId,
-					error: e instanceof Error ? e.message : "Unknown error",
+					error: ERROR_MESSAGES.TRACK_NOT_FOUND,
 				});
+			} else if (existingReleaseId !== item.releaseId) {
+				// トラックは存在するが releaseId が一致しない
+				failed.push({
+					trackId: item.trackId,
+					error: ERROR_MESSAGES.TRACK_NOT_FOUND,
+				});
+			} else {
+				idsToDelete.push(item.trackId);
+			}
+		}
+
+		// 一括削除（カスケードでクレジット等も削除される）
+		if (idsToDelete.length > 0) {
+			try {
+				await db.delete(tracks).where(inArray(tracks.id, idsToDelete));
+				deleted.push(...idsToDelete);
+			} catch (e) {
+				// 一括削除が失敗した場合、全てのアイテムを失敗として記録
+				for (const id of idsToDelete) {
+					failed.push({
+						trackId: id,
+						error: e instanceof Error ? e.message : "Unknown error",
+					});
+				}
 			}
 		}
 
@@ -544,7 +560,7 @@ tracksAdminRouter.put("/:trackId/genres", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);
@@ -636,7 +652,7 @@ tracksAdminRouter.get("/:trackId/tags", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);
@@ -696,7 +712,7 @@ tracksAdminRouter.put("/:trackId/tags", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);
@@ -737,29 +753,33 @@ tracksAdminRouter.put("/:trackId/tags", async (c) => {
 				(t) => !lockedTagNames.has(t.name.toLowerCase()),
 			);
 
-			// 各タグ名に対して既存タグを検索、なければ作成
+			// 全タグ名をバッチで検索（N+1クエリ解消）
 			const resolvedTags: Array<{ id: string; name: string }> = [];
-			for (const data of newTagData) {
-				// 既存タグを検索（大文字小文字区別なし）
-				const existingTag = await tx
+			if (newTagData.length > 0) {
+				const tagNames = newTagData.map((d) => d.name.toLowerCase());
+				const existingTags = await tx
 					.select({ id: tags.id, name: tags.name })
 					.from(tags)
-					.where(sql`LOWER(${tags.name}) = LOWER(${data.name})`)
-					.limit(1);
+					.where(sql`LOWER(${tags.name}) IN ${tagNames}`);
 
-				if (existingTag.length > 0 && existingTag[0]) {
-					resolvedTags.push({
-						id: existingTag[0].id,
-						name: existingTag[0].name,
-					});
-				} else {
-					// 新規タグを作成
-					const newId = `tag_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-					await tx.insert(tags).values({
-						id: newId,
-						name: data.name,
-					});
-					resolvedTags.push({ id: newId, name: data.name });
+				const existingTagMap = new Map(
+					existingTags.map((t) => [t.name.toLowerCase(), t]),
+				);
+
+				// 新規タグをバッチ作成
+				const newTags: Array<{ id: string; name: string }> = [];
+				for (const data of newTagData) {
+					const existing = existingTagMap.get(data.name.toLowerCase());
+					if (existing) {
+						resolvedTags.push({ id: existing.id, name: existing.name });
+					} else {
+						const newId = `tag_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+						newTags.push({ id: newId, name: data.name });
+						resolvedTags.push({ id: newId, name: data.name });
+					}
+				}
+				if (newTags.length > 0) {
+					await tx.insert(tags).values(newTags);
 				}
 			}
 
@@ -769,16 +789,14 @@ tracksAdminRouter.put("/:trackId/tags", async (c) => {
 			);
 
 			// position計算: ロック済みタグの数 + 新規タグの順序
-			let position = lockedTags.length + 1;
-			for (const tag of resolvedTags) {
-				const isLocked = tagDataMap.get(tag.name.toLowerCase()) ?? false;
-				await tx.insert(trackTags).values({
+			if (resolvedTags.length > 0) {
+				const trackTagValues = resolvedTags.map((tag, i) => ({
 					trackId,
 					tagId: tag.id,
-					position,
-					isLocked,
-				});
-				position++;
+					position: lockedTags.length + 1 + i,
+					isLocked: tagDataMap.get(tag.name.toLowerCase()) ?? false,
+				}));
+				await tx.insert(trackTags).values(trackTagValues);
 			}
 
 			// 更新後のタグ情報を取得
@@ -935,7 +953,7 @@ tracksAdminRouter.post("/:trackId/sync", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);

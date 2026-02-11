@@ -7,9 +7,9 @@ erDiagram
     tags {
         text id PK "tag_xxx"
         text name UK "タグ名"
-        text attributes "JSON (NULL)"
-        integer created_at
-        integer updated_at
+        jsonb attributes "JSONB (NULL)"
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     tracks {
@@ -21,8 +21,8 @@ erDiagram
         text track_id PK,FK
         text tag_id PK,FK
         integer position "1-15"
-        integer is_locked "0/1"
-        integer created_at
+        boolean is_locked "true/false"
+        timestamptz created_at
     }
 
     tags ||--o{ track_tags : "has"
@@ -41,9 +41,9 @@ erDiagram
 |--------|-----|------|------|
 | id | TEXT | PK | TypeID形式 `tag_xxx`（プレフィックス + 26文字のbase32エンコード） |
 | name | TEXT | UNIQUE, NOT NULL | タグ名（文字数制限あり） |
-| attributes | TEXT | NULL | JSON形式の属性データ |
-| created_at | INTEGER | NOT NULL | 作成日時（ms） |
-| updated_at | INTEGER | NOT NULL | 更新日時（ms） |
+| attributes | JSONB | NULL | JSONB形式の属性データ |
+| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | 作成日時 |
+| updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | 更新日時 |
 
 #### ID形式
 
@@ -113,8 +113,8 @@ function hasEmoji(text: string): boolean {
 | track_id | TEXT | PK, FK → tracks.id (CASCADE) | トラックID |
 | tag_id | TEXT | PK, FK → tags.id (RESTRICT) | タグID |
 | position | INTEGER | NOT NULL, 1-15 | 表示順序 |
-| is_locked | INTEGER | NOT NULL, DEFAULT 0 | ロック状態（0/1） |
-| created_at | INTEGER | NOT NULL | 作成日時（ms） |
+| is_locked | BOOLEAN | NOT NULL, DEFAULT false | ロック状態 |
+| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | 作成日時 |
 
 #### 複合主キー
 
@@ -139,8 +139,8 @@ PRIMARY KEY (track_id, tag_id)
 
 | 値 | 意味 |
 |----|------|
-| 0 | アンロック状態（編集可能） |
-| 1 | ロック状態（編集不可） |
+| false | アンロック状態（編集可能） |
+| true | ロック状態（編集不可） |
 
 ---
 
@@ -168,22 +168,20 @@ CREATE INDEX idx_track_tags_tag ON track_tags(tag_id);
 ## 4. Drizzle ORMスキーマ定義
 
 ```typescript
-import { integer, sqliteTable, text, primaryKey, index, uniqueIndex } from "drizzle-orm/sqlite-core";
-import { tracks } from "./tracks";
+import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
+import { tracks } from "./track";
 
 // タグマスターテーブル
-export const tags = sqliteTable("tags", {
+export const tags = pgTable("tags", {
   id: text("id").primaryKey(), // tag_xxx
   name: text("name").notNull().unique(),
-  attributes: text("attributes"), // JSON
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
-}, (table) => [
-  uniqueIndex("idx_tags_name").on(table.name),
-]);
+  attributes: jsonb("attributes").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
+});
 
 // トラック-タグ紐付けテーブル
-export const trackTags = sqliteTable("track_tags", {
+export const trackTags = pgTable("track_tags", {
   trackId: text("track_id")
     .notNull()
     .references(() => tracks.id, { onDelete: "cascade" }),
@@ -191,12 +189,13 @@ export const trackTags = sqliteTable("track_tags", {
     .notNull()
     .references(() => tags.id, { onDelete: "restrict" }),
   position: integer("position").notNull(), // 1-15
-  isLocked: integer("is_locked", { mode: "boolean" }).notNull().default(false),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  isLocked: boolean("is_locked").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   primaryKey({ columns: [table.trackId, table.tagId] }),
   index("idx_track_tags_track").on(table.trackId),
   index("idx_track_tags_tag").on(table.tagId),
+  index("idx_track_tags_track_locked_pos").on(table.trackId, table.isLocked, table.position),
 ]);
 ```
 
@@ -211,8 +210,7 @@ const newTag = await db.insert(tags).values({
   id: createId.tag(), // TypeID形式: tag_01h455vb4pex5vsknk084sn02q
   name: "vocal",
   attributes: null,
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
+  // createdAt, updatedAt は defaultNow() で自動設定
 }).returning();
 ```
 
@@ -234,7 +232,7 @@ await db.transaction(async (tx) => {
     tagId,
     position: index + 1,
     isLocked: false,
-    createdAt: Date.now(),
+    // createdAt は defaultNow() で自動設定
   }));
 
   await tx.insert(trackTags).values(insertValues);

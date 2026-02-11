@@ -40,6 +40,20 @@ import {
 // 「本名義」のエイリアスタイプコード
 const MAIN_ALIAS_TYPE_CODE = "main";
 
+// バッチ処理のデフォルトサイズ
+const BATCH_SIZE = 1000;
+
+/**
+ * 配列を指定サイズのチャンクに分割する
+ */
+function chunk<T>(array: T[], size: number): T[][] {
+	const chunks: T[][] = [];
+	for (let i = 0; i < array.length; i += size) {
+		chunks.push(array.slice(i, i + size));
+	}
+	return chunks;
+}
+
 export interface ImportInput {
 	records: LegacyCSVRecord[];
 	songMappings: Map<string, string>; // originalName -> officialSongId
@@ -100,6 +114,12 @@ export interface ImportError {
 	message: string;
 }
 
+export interface BatchSummary {
+	totalBatches: number;
+	successfulBatches: number;
+	failedBatches: number;
+}
+
 export interface ImportResult {
 	success: boolean;
 	events: EntityCount;
@@ -113,6 +133,7 @@ export interface ImportResult {
 	credits: EntityCount;
 	officialSongLinks: EntityCount;
 	errors: ImportError[];
+	batchSummary: BatchSummary;
 }
 
 // 進捗通知用インターフェース
@@ -1376,7 +1397,11 @@ async function batchInsertOfficialSongLinks(
 }
 
 /**
- * レガシーCSVデータをインポートする（最適化版: 一括プリフェッチ＆一括挿入）
+ * レガシーCSVデータをインポートする（バッチ処理版: ロック競合を軽減）
+ *
+ * 大量データのインポート時にPostgreSQLのロック競合を軽減するため、
+ * 単一トランザクションではなくBATCH_SIZE件ごとのバッチトランザクションで処理する。
+ *
  * @param input インポート入力データ
  * @param onProgress 進捗コールバック（オプション）
  */
@@ -1397,6 +1422,7 @@ export async function executeLegacyImport(
 		credits: { created: 0, updated: 0, skipped: 0 },
 		officialSongLinks: { created: 0, updated: 0, skipped: 0 },
 		errors: [],
+		batchSummary: { totalBatches: 0, successfulBatches: 0, failedBatches: 0 },
 	};
 
 	const cache: ImportCache = {
@@ -1432,72 +1458,125 @@ export async function executeLegacyImport(
 		}
 	};
 
+	/**
+	 * バッチ単位でトランザクションを実行するヘルパー
+	 * 各バッチは個別のトランザクションで処理され、失敗してもエラーを記録して続行する
+	 */
+	async function executeBatch<T>(
+		items: T[],
+		entityName: string,
+		processFn: (tx: DbTransaction, batchItems: T[]) => Promise<void>,
+	): Promise<void> {
+		const batches = chunk(items, BATCH_SIZE);
+		for (let i = 0; i < batches.length; i++) {
+			const batch = batches[i];
+			if (!batch || batch.length === 0) continue;
+
+			result.batchSummary.totalBatches++;
+			try {
+				await db.transaction(async (tx) => {
+					await processFn(tx, batch);
+				});
+				result.batchSummary.successfulBatches++;
+			} catch (error) {
+				result.batchSummary.failedBatches++;
+				const message =
+					error instanceof Error ? error.message : "Unknown error";
+				result.errors.push({
+					row: 0,
+					entity: entityName,
+					message: `バッチ ${i + 1}/${batches.length} 失敗: ${message}`,
+				});
+			}
+		}
+	}
+
 	try {
 		notifyProgress("preparing", 0, totalRecords, "データを解析中...");
 
 		// Phase 1: 全レコードからユニークなエンティティを抽出（1パス）
 		const extracted = extractUniqueEntities(input.records);
 
-		// トランザクション内で一括処理
+		// Phase 2: 既存エンティティを一括プリフェッチ（読み取り専用トランザクション）
+		notifyProgress("preparing", 0, totalRecords, "既存データを確認中...");
 		await db.transaction(async (tx) => {
-			// Phase 2: 既存エンティティを一括プリフェッチ
-			notifyProgress("preparing", 0, totalRecords, "既存データを確認中...");
 			await prefetchExistingEntities(tx, extracted, cache);
+		});
 
-			// Phase 3: 新規イベントを処理（これは個別処理が必要）
-			if (input.newEvents && input.newEvents.length > 0) {
-				notifyProgress(
-					"events",
-					0,
-					entityProgress.events.total,
-					"イベントを登録中...",
-				);
-				for (let i = 0; i < input.newEvents.length; i++) {
-					const newEvent = input.newEvents[i];
-					if (newEvent) {
-						await processNewEvent(tx, newEvent, cache, result);
-						entityProgress.events.processed++;
-						notifyProgress(
-							"events",
-							entityProgress.events.processed,
-							entityProgress.events.total,
-							`イベント: ${newEvent.name}`,
-						);
-					}
-				}
-			}
-
-			// CSV内のイベントも処理
-			for (const eventName of extracted.eventNames) {
-				if (!cache.events.has(eventName)) {
-					// 新規イベントを作成
-					const editionInfo = parseEventEdition(eventName);
-					let eventSeriesId: string | null = null;
-
-					if (editionInfo.baseName) {
-						const series = await tx
-							.select()
-							.from(eventSeries)
-							.where(like(eventSeries.name, `%${editionInfo.baseName}%`))
-							.limit(1);
-						if (series.length > 0 && series[0]) {
-							eventSeriesId = series[0].id;
+		// Phase 3: イベントを処理（通常は少数なので単一トランザクション）
+		if (
+			(input.newEvents && input.newEvents.length > 0) ||
+			extracted.eventNames.size > 0
+		) {
+			notifyProgress(
+				"events",
+				0,
+				entityProgress.events.total,
+				"イベントを登録中...",
+			);
+			result.batchSummary.totalBatches++;
+			try {
+				await db.transaction(async (tx) => {
+					// 新規イベント入力を処理
+					if (input.newEvents && input.newEvents.length > 0) {
+						for (let i = 0; i < input.newEvents.length; i++) {
+							const newEvent = input.newEvents[i];
+							if (newEvent) {
+								await processNewEvent(tx, newEvent, cache, result);
+								entityProgress.events.processed++;
+								notifyProgress(
+									"events",
+									entityProgress.events.processed,
+									entityProgress.events.total,
+									`イベント: ${newEvent.name}`,
+								);
+							}
 						}
 					}
 
-					const newId = createId.event();
-					await tx.insert(events).values({
-						id: newId,
-						name: eventName,
-						eventSeriesId,
-						edition: editionInfo.edition,
-					});
-					cache.events.set(eventName, newId);
-					result.events.created++;
-				} else {
-					result.events.skipped++;
-				}
-				entityProgress.events.processed++;
+					// CSV内のイベントも処理
+					for (const eventName of extracted.eventNames) {
+						if (!cache.events.has(eventName)) {
+							// 新規イベントを作成
+							const editionInfo = parseEventEdition(eventName);
+							let eventSeriesId: string | null = null;
+
+							if (editionInfo.baseName) {
+								const series = await tx
+									.select()
+									.from(eventSeries)
+									.where(like(eventSeries.name, `%${editionInfo.baseName}%`))
+									.limit(1);
+								if (series.length > 0 && series[0]) {
+									eventSeriesId = series[0].id;
+								}
+							}
+
+							const newId = createId.event();
+							await tx.insert(events).values({
+								id: newId,
+								name: eventName,
+								eventSeriesId,
+								edition: editionInfo.edition,
+							});
+							cache.events.set(eventName, newId);
+							result.events.created++;
+						} else {
+							result.events.skipped++;
+						}
+						entityProgress.events.processed++;
+					}
+				});
+				result.batchSummary.successfulBatches++;
+			} catch (error) {
+				result.batchSummary.failedBatches++;
+				const message =
+					error instanceof Error ? error.message : "Unknown error";
+				result.errors.push({
+					row: 0,
+					entity: "events",
+					message: `イベント登録バッチ失敗: ${message}`,
+				});
 			}
 			notifyProgress(
 				"events",
@@ -1505,108 +1584,161 @@ export async function executeLegacyImport(
 				entityProgress.events.total,
 				`イベント: ${entityProgress.events.processed}/${entityProgress.events.total}件`,
 			);
+		}
 
-			// Phase 4: サークルを一括挿入
-			notifyProgress(
-				"circles",
-				0,
-				entityProgress.circles.total,
-				"サークルを登録中...",
-			);
-			await batchInsertCircles(tx, extracted, cache, result);
-			entityProgress.circles.processed = extracted.circleNames.size;
-			notifyProgress(
-				"circles",
-				entityProgress.circles.processed,
-				entityProgress.circles.total,
-				`サークル: ${entityProgress.circles.processed}/${entityProgress.circles.total}件`,
-			);
+		// Phase 4: サークルをバッチ挿入
+		notifyProgress(
+			"circles",
+			0,
+			entityProgress.circles.total,
+			"サークルを登録中...",
+		);
+		const circleNameList = [...extracted.circleNames];
+		await executeBatch(circleNameList, "circles", async (tx, batchNames) => {
+			// バッチ用の部分的なExtractedEntitiesを作成
+			const batchExtracted: ExtractedEntities = {
+				...extracted,
+				circleNames: new Set(batchNames),
+			};
+			await batchInsertCircles(tx, batchExtracted, cache, result);
+		});
+		entityProgress.circles.processed = extracted.circleNames.size;
+		notifyProgress(
+			"circles",
+			entityProgress.circles.processed,
+			entityProgress.circles.total,
+			`サークル: ${entityProgress.circles.processed}/${entityProgress.circles.total}件`,
+		);
 
-			// Phase 5: アーティストを一括挿入
-			notifyProgress(
-				"artists",
-				0,
-				entityProgress.artists.total,
-				"アーティストを登録中...",
-			);
-			await batchInsertArtists(tx, extracted, cache, result);
-			entityProgress.artists.processed = extracted.artistNames.size;
-			notifyProgress(
-				"artists",
-				entityProgress.artists.processed,
-				entityProgress.artists.total,
-				`アーティスト: ${entityProgress.artists.processed}/${entityProgress.artists.total}件`,
-			);
+		// Phase 5: アーティストをバッチ挿入
+		notifyProgress(
+			"artists",
+			0,
+			entityProgress.artists.total,
+			"アーティストを登録中...",
+		);
+		const artistNameList = [...extracted.artistNames];
+		await executeBatch(artistNameList, "artists", async (tx, batchNames) => {
+			const batchExtracted: ExtractedEntities = {
+				...extracted,
+				artistNames: new Set(batchNames),
+			};
+			await batchInsertArtists(tx, batchExtracted, cache, result);
+		});
+		entityProgress.artists.processed = extracted.artistNames.size;
+		notifyProgress(
+			"artists",
+			entityProgress.artists.processed,
+			entityProgress.artists.total,
+			`アーティスト: ${entityProgress.artists.processed}/${entityProgress.artists.total}件`,
+		);
 
-			// Phase 6: 作品を一括挿入
-			notifyProgress(
-				"releases",
-				0,
-				entityProgress.releases.total,
-				"作品を登録中...",
-			);
+		// Phase 6: 作品をバッチ挿入
+		notifyProgress(
+			"releases",
+			0,
+			entityProgress.releases.total,
+			"作品を登録中...",
+		);
+		const releaseKeyList = [...extracted.releaseKeys.entries()];
+		await executeBatch(releaseKeyList, "releases", async (tx, batchEntries) => {
+			const batchExtracted: ExtractedEntities = {
+				...extracted,
+				releaseKeys: new Map(batchEntries),
+			};
 			await batchInsertReleases(
 				tx,
-				extracted,
+				batchExtracted,
 				cache,
 				result,
 				input.eventDayMappings,
 			);
-			entityProgress.releases.processed = extracted.releaseKeys.size;
-			notifyProgress(
-				"releases",
-				entityProgress.releases.processed,
-				entityProgress.releases.total,
-				`作品: ${entityProgress.releases.processed}/${entityProgress.releases.total}件`,
-			);
-
-			// Phase 7: ディスクを一括挿入
-			notifyProgress(
-				"tracks",
-				0,
-				entityProgress.tracks.total,
-				"ディスクを登録中...",
-			);
-			await batchInsertDiscs(tx, extracted, cache, result);
-
-			// Phase 8: トラックを一括挿入
-			notifyProgress(
-				"tracks",
-				0,
-				entityProgress.tracks.total,
-				"トラックを登録中...",
-			);
-			await batchInsertTracks(tx, extracted, cache, result);
-			entityProgress.tracks.processed = extracted.trackData.size;
-			notifyProgress(
-				"tracks",
-				entityProgress.tracks.processed,
-				entityProgress.tracks.total,
-				`トラック: ${entityProgress.tracks.processed}/${entityProgress.tracks.total}件`,
-			);
-
-			// Phase 9: クレジットを一括挿入
-			notifyProgress("credits", 0, totalRecords, "クレジットを登録中...");
-			await batchInsertCredits(tx, extracted, cache, result);
-			notifyProgress(
-				"credits",
-				totalRecords,
-				totalRecords,
-				"クレジット登録完了",
-			);
-
-			// Phase 10: 原曲紐付けを一括挿入
-			notifyProgress("links", 0, totalRecords, "原曲紐付けを登録中...");
-			await batchInsertOfficialSongLinks(
-				tx,
-				extracted,
-				cache,
-				input.songMappings,
-				input.customSongNames,
-				result,
-			);
-			notifyProgress("links", totalRecords, totalRecords, "原曲紐付け登録完了");
 		});
+		entityProgress.releases.processed = extracted.releaseKeys.size;
+		notifyProgress(
+			"releases",
+			entityProgress.releases.processed,
+			entityProgress.releases.total,
+			`作品: ${entityProgress.releases.processed}/${entityProgress.releases.total}件`,
+		);
+
+		// Phase 7: ディスクをバッチ挿入
+		notifyProgress(
+			"tracks",
+			0,
+			entityProgress.tracks.total,
+			"ディスクを登録中...",
+		);
+		const discKeyList = [...extracted.discKeys.entries()];
+		await executeBatch(discKeyList, "discs", async (tx, batchEntries) => {
+			const batchExtracted: ExtractedEntities = {
+				...extracted,
+				discKeys: new Map(batchEntries),
+			};
+			await batchInsertDiscs(tx, batchExtracted, cache, result);
+		});
+
+		// Phase 8: トラックをバッチ挿入
+		notifyProgress(
+			"tracks",
+			0,
+			entityProgress.tracks.total,
+			"トラックを登録中...",
+		);
+		const trackDataList = [...extracted.trackData.entries()];
+		await executeBatch(trackDataList, "tracks", async (tx, batchEntries) => {
+			const batchExtracted: ExtractedEntities = {
+				...extracted,
+				trackData: new Map(batchEntries),
+			};
+			await batchInsertTracks(tx, batchExtracted, cache, result);
+		});
+		entityProgress.tracks.processed = extracted.trackData.size;
+		notifyProgress(
+			"tracks",
+			entityProgress.tracks.processed,
+			entityProgress.tracks.total,
+			`トラック: ${entityProgress.tracks.processed}/${entityProgress.tracks.total}件`,
+		);
+
+		// Phase 9: クレジットをバッチ挿入
+		notifyProgress("credits", 0, totalRecords, "クレジットを登録中...");
+		const trackDataForCredits = [...extracted.trackData.entries()];
+		await executeBatch(
+			trackDataForCredits,
+			"credits",
+			async (tx, batchEntries) => {
+				const batchExtracted: ExtractedEntities = {
+					...extracted,
+					trackData: new Map(batchEntries),
+				};
+				await batchInsertCredits(tx, batchExtracted, cache, result);
+			},
+		);
+		notifyProgress("credits", totalRecords, totalRecords, "クレジット登録完了");
+
+		// Phase 10: 原曲紐付けをバッチ挿入
+		notifyProgress("links", 0, totalRecords, "原曲紐付けを登録中...");
+		const trackDataForLinks = [...extracted.trackData.entries()];
+		await executeBatch(
+			trackDataForLinks,
+			"officialSongLinks",
+			async (tx, batchEntries) => {
+				const batchExtracted: ExtractedEntities = {
+					...extracted,
+					trackData: new Map(batchEntries),
+				};
+				await batchInsertOfficialSongLinks(
+					tx,
+					batchExtracted,
+					cache,
+					input.songMappings,
+					input.customSongNames,
+					result,
+				);
+			},
+		);
+		notifyProgress("links", totalRecords, totalRecords, "原曲紐付け登録完了");
 
 		notifyProgress("complete", totalRecords, totalRecords, "インポート完了");
 	} catch (error) {
@@ -1614,8 +1746,8 @@ export async function executeLegacyImport(
 		const message = error instanceof Error ? error.message : "Unknown error";
 		result.errors.push({
 			row: 0,
-			entity: "transaction",
-			message: `トランザクションエラー: ${message}`,
+			entity: "import",
+			message: `インポートエラー: ${message}`,
 		});
 		notifyProgress("complete", 0, totalRecords, `エラー: ${message}`);
 	}

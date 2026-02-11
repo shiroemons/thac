@@ -558,6 +558,11 @@ export interface LegacyImportResult {
 	credits: { created: number; updated: number; skipped: number };
 	officialSongLinks: { created: number; updated: number; skipped: number };
 	errors: { row: number; entity: string; message: string }[];
+	batchSummary?: {
+		totalBatches: number;
+		successfulBatches: number;
+		failedBatches: number;
+	};
 }
 
 // SSEストリーミング進捗用の型定義

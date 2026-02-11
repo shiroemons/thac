@@ -2,6 +2,7 @@ import {
 	and,
 	circles,
 	db,
+	desc,
 	eq,
 	insertReleaseCircleSchema,
 	releaseCircles,
@@ -49,7 +50,7 @@ releaseCirclesRouter.get("/:releaseId/circles", async (c) => {
 
 		// 作品存在チェック
 		const existingRelease = await db
-			.select()
+			.select({ id: releases.id })
 			.from(releases)
 			.where(eq(releases.id, releaseId))
 			.limit(1);
@@ -73,7 +74,7 @@ releaseCirclesRouter.post("/:releaseId/circles", async (c) => {
 
 		// 作品存在チェック
 		const existingRelease = await db
-			.select()
+			.select({ id: releases.id })
 			.from(releases)
 			.where(eq(releases.id, releaseId))
 			.limit(1);
@@ -99,7 +100,7 @@ releaseCirclesRouter.post("/:releaseId/circles", async (c) => {
 
 		// サークル存在チェック
 		const existingCircle = await db
-			.select()
+			.select({ id: circles.id })
 			.from(circles)
 			.where(eq(circles.id, parsed.data.circleId))
 			.limit(1);
@@ -110,7 +111,7 @@ releaseCirclesRouter.post("/:releaseId/circles", async (c) => {
 
 		// 重複チェック（同一作品・同一サークル・同一参加形態）
 		const existingAssociation = await db
-			.select()
+			.select({ releaseId: releaseCircles.releaseId })
 			.from(releaseCircles)
 			.where(
 				and(
@@ -132,7 +133,7 @@ releaseCirclesRouter.post("/:releaseId/circles", async (c) => {
 				.select({ maxPos: releaseCircles.position })
 				.from(releaseCircles)
 				.where(eq(releaseCircles.releaseId, releaseId))
-				.orderBy(releaseCircles.position)
+				.orderBy(desc(releaseCircles.position))
 				.limit(1);
 
 			const maxPos = maxPositionResult[0]?.maxPos ?? 0;
@@ -169,7 +170,7 @@ releaseCirclesRouter.patch("/:releaseId/circles/:circleId", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ releaseId: releaseCircles.releaseId })
 			.from(releaseCircles)
 			.where(
 				and(
@@ -233,7 +234,7 @@ releaseCirclesRouter.delete("/:releaseId/circles/:circleId", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ releaseId: releaseCircles.releaseId })
 			.from(releaseCircles)
 			.where(
 				and(

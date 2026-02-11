@@ -55,27 +55,27 @@ export async function getArtistTracks(artistId: string) {
 	const creditIds = credits.map((c) => c.creditId);
 	const trackIds = [...new Set(credits.map((c) => c.trackId))];
 
-	// クレジットの役割を取得
-	const creditRoles = await db
-		.select({
-			trackCreditId: trackCreditRoles.trackCreditId,
-			roleCode: trackCreditRoles.roleCode,
-		})
-		.from(trackCreditRoles)
-		.where(inArray(trackCreditRoles.trackCreditId, creditIds));
-
-	// トラック情報を取得
-	const trackList = await db
-		.select({
-			id: tracks.id,
-			name: tracks.name,
-			nameJa: tracks.nameJa,
-			releaseId: tracks.releaseId,
-			trackNumber: tracks.trackNumber,
-		})
-		.from(tracks)
-		.where(inArray(tracks.id, trackIds))
-		.orderBy(tracks.name);
+	// クレジットの役割とトラック情報を並列で取得（両方ともquery 1の結果のみに依存）
+	const [creditRoles, trackList] = await Promise.all([
+		db
+			.select({
+				trackCreditId: trackCreditRoles.trackCreditId,
+				roleCode: trackCreditRoles.roleCode,
+			})
+			.from(trackCreditRoles)
+			.where(inArray(trackCreditRoles.trackCreditId, creditIds)),
+		db
+			.select({
+				id: tracks.id,
+				name: tracks.name,
+				nameJa: tracks.nameJa,
+				releaseId: tracks.releaseId,
+				trackNumber: tracks.trackNumber,
+			})
+			.from(tracks)
+			.where(inArray(tracks.id, trackIds))
+			.orderBy(tracks.name),
+	]);
 
 	// 作品情報を取得（nullを除外）
 	const releaseIds = [
@@ -85,55 +85,40 @@ export async function getArtistTracks(artistId: string) {
 				.filter((id): id is string => id !== null),
 		),
 	];
-	const releaseList = await db
-		.select({
-			id: releases.id,
-			name: releases.name,
-			releaseDate: releases.releaseDate,
-		})
-		.from(releases)
-		.where(inArray(releases.id, releaseIds));
+
+	// 作品情報とサークル情報を並列で取得（両方ともreleaseIdsのみに依存）
+	const [releaseList, circleData] =
+		releaseIds.length > 0
+			? await Promise.all([
+					db
+						.select({
+							id: releases.id,
+							name: releases.name,
+							releaseDate: releases.releaseDate,
+						})
+						.from(releases)
+						.where(inArray(releases.id, releaseIds)),
+					db
+						.select({
+							releaseId: releaseCircles.releaseId,
+							circleName: circles.name,
+						})
+						.from(releaseCircles)
+						.innerJoin(circles, eq(releaseCircles.circleId, circles.id))
+						.where(inArray(releaseCircles.releaseId, releaseIds)),
+				])
+			: [[], []];
 
 	const releaseMap = new Map(releaseList.map((r) => [r.id, r]));
 
-	// 作品サークル情報を取得
-	const releaseCirclesList =
-		releaseIds.length > 0
-			? await db
-					.select({
-						releaseId: releaseCircles.releaseId,
-						circleId: releaseCircles.circleId,
-					})
-					.from(releaseCircles)
-					.where(inArray(releaseCircles.releaseId, releaseIds))
-			: [];
-
-	// サークル情報を取得
-	const circleIds = [...new Set(releaseCirclesList.map((rc) => rc.circleId))];
-	const circleList =
-		circleIds.length > 0
-			? await db
-					.select({
-						id: circles.id,
-						name: circles.name,
-					})
-					.from(circles)
-					.where(inArray(circles.id, circleIds))
-			: [];
-
-	const circleMap = new Map(circleList.map((c) => [c.id, c.name]));
-
-	// 作品IDからサークル名一覧へのマップを作成
+	// 作品IDからサークル名一覧へのマップを作成（JOINで取得済みのデータから構築）
 	const releaseCircleNamesMap = new Map<string, string[]>();
-	for (const rc of releaseCirclesList) {
-		const circleName = circleMap.get(rc.circleId);
-		if (circleName) {
-			const names = releaseCircleNamesMap.get(rc.releaseId) || [];
-			if (!names.includes(circleName)) {
-				names.push(circleName);
-			}
-			releaseCircleNamesMap.set(rc.releaseId, names);
+	for (const rc of circleData) {
+		const names = releaseCircleNamesMap.get(rc.releaseId) || [];
+		if (!names.includes(rc.circleName)) {
+			names.push(rc.circleName);
 		}
+		releaseCircleNamesMap.set(rc.releaseId, names);
 	}
 
 	// クレジットIDからトラックIDへのマップ

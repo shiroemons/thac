@@ -400,7 +400,7 @@ export function createTestDisc(
 export function createTestTrack(
 	overrides?: Partial<{
 		id: string;
-		releaseId: string | null;
+		releaseId: string;
 		discId: string | null;
 		trackNumber: number;
 		name: string;
@@ -419,7 +419,7 @@ export function createTestTrack(
 	const uniqueId = nanoid(8);
 	return {
 		id: `tr_test_${uniqueId}`,
-		releaseId: null,
+		releaseId: "rel_test_default",
 		discId: null,
 		trackNumber: 1,
 		name: `Test Track ${uniqueId}`,

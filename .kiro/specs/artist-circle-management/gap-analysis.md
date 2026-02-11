@@ -1,3 +1,5 @@
+> **注意**: このドキュメントはPostgreSQL移行前に作成されました。コード例の`sqliteTable()`は現在`pgTable()`に移行済みです。実装時は現在のスキーマ（`packages/db/src/schema/`）を参照してください。
+
 # ギャップ分析: artist-circle-management
 
 ## 1. 現状調査

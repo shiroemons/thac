@@ -5,9 +5,9 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	insertOfficialWorkLinkSchema,
 	insertOfficialWorkSchema,
-	like,
 	officialWorkLinks,
 	officialWorks,
 	or,
@@ -21,6 +21,7 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
 import { parseAndValidate } from "../../../utils/import-parser";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const worksRouter = new Hono<AdminContext>();
 
@@ -30,7 +31,7 @@ worksRouter.get("/", async (c) => {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const category = c.req.query("category");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "position";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 
@@ -47,9 +48,9 @@ worksRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(officialWorks.name, searchPattern),
-					like(officialWorks.nameJa, searchPattern),
-					like(officialWorks.nameEn, searchPattern),
+					ilike(officialWorks.name, searchPattern),
+					ilike(officialWorks.nameJa, searchPattern),
+					ilike(officialWorks.nameEn, searchPattern),
 				),
 			);
 		}
@@ -84,7 +85,7 @@ worksRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(officialWorks).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,
@@ -137,7 +138,7 @@ worksRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: officialWorks.id })
 			.from(officialWorks)
 			.where(eq(officialWorks.id, parsed.data.id))
 			.limit(1);
@@ -219,7 +220,7 @@ worksRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialWorks.id })
 			.from(officialWorks)
 			.where(eq(officialWorks.id, id))
 			.limit(1);
@@ -317,7 +318,7 @@ worksRouter.get("/:workId/links", async (c) => {
 
 		// 作品存在チェック
 		const existingWork = await db
-			.select()
+			.select({ id: officialWorks.id })
 			.from(officialWorks)
 			.where(eq(officialWorks.id, workId))
 			.limit(1);
@@ -356,7 +357,7 @@ worksRouter.post("/:workId/links", async (c) => {
 
 		// 作品存在チェック
 		const existingWork = await db
-			.select()
+			.select({ id: officialWorks.id })
 			.from(officialWorks)
 			.where(eq(officialWorks.id, workId))
 			.limit(1);
@@ -382,7 +383,7 @@ worksRouter.post("/:workId/links", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: officialWorkLinks.id })
 			.from(officialWorkLinks)
 			.where(eq(officialWorkLinks.id, parsed.data.id))
 			.limit(1);
@@ -393,7 +394,7 @@ worksRouter.post("/:workId/links", async (c) => {
 
 		// URL重複チェック（同一作品内）
 		const existingUrl = await db
-			.select()
+			.select({ id: officialWorkLinks.id })
 			.from(officialWorkLinks)
 			.where(
 				and(
@@ -468,7 +469,7 @@ worksRouter.put("/:workId/links/:linkId", async (c) => {
 		// URL重複チェック（同一作品内、自身以外）
 		if (parsed.data.url) {
 			const existingUrl = await db
-				.select()
+				.select({ id: officialWorkLinks.id })
 				.from(officialWorkLinks)
 				.where(
 					and(
@@ -510,7 +511,7 @@ worksRouter.delete("/:workId/links/:linkId", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialWorkLinks.id })
 			.from(officialWorkLinks)
 			.where(
 				and(
@@ -546,7 +547,7 @@ worksRouter.put("/:workId/links/:linkId/reorder", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: officialWorkLinks.id })
 			.from(officialWorkLinks)
 			.where(
 				and(

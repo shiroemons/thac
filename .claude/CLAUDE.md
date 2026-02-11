@@ -28,7 +28,7 @@ Turborepoによるモノレポ構成のフルスタックWebアプリケーシ�
 - **apps/server**: Bun上で動作するHono APIサーバー
 
 ### Packages（共有ライブラリ）
-- **packages/db**: Drizzle ORMとSQLite/Turso、`db`クライアントとスキーマをエクスポート
+- **packages/db**: Drizzle ORMとPostgreSQL、`db`クライアントとスキーマをエクスポート
 - **packages/auth**: Better-Auth設定、永続化に`@thac/db`を使用
 - **packages/config**: 共有TypeScript設定（`tsconfig.base.json`）
 

@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
 	afterAll,
 	beforeAll,
@@ -7,6 +6,7 @@ import {
 	expect,
 	test,
 } from "bun:test";
+import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
 	__setTestDatabase,
@@ -42,23 +42,23 @@ interface EventDayResponse {
 }
 
 describe("Admin Event Days API", () => {
-	let sqlite: Database;
+	let client: PGlite;
 	let app: ReturnType<typeof createTestAdminApp>;
 
-	beforeAll(() => {
-		const testDb = createTestDatabase();
-		sqlite = testDb.sqlite;
+	beforeAll(async () => {
+		const testDb = await createTestDatabase();
+		client = testDb.client;
 		__setTestDatabase(testDb.db);
 		app = createTestAdminApp(eventDaysRouter);
 	});
 
-	beforeEach(() => {
-		truncateAllTables(sqlite);
+	beforeEach(async () => {
+		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		sqlite.close();
+		await client.close();
 	});
 
 	describe("GET /:eventId/days - 開催日一覧取得", () => {

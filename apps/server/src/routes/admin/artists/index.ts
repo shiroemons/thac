@@ -7,9 +7,9 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	inArray,
 	insertArtistSchema,
-	like,
 	or,
 	sql,
 	updateArtistSchema,
@@ -19,6 +19,7 @@ import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
+import { sanitizeSearch } from "../../../utils/query-params";
 import { artistCirclesRouter, getArtistCircles } from "./circles";
 import { artistTracksRouter, getArtistTracks } from "./tracks";
 
@@ -34,7 +35,7 @@ artistsRouter.get("/", async (c) => {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const initialScript = c.req.query("initialScript");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "name";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 
@@ -51,10 +52,10 @@ artistsRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(artists.name, searchPattern),
-					like(artists.nameJa, searchPattern),
-					like(artists.nameEn, searchPattern),
-					like(artists.sortName, searchPattern),
+					ilike(artists.name, searchPattern),
+					ilike(artists.nameJa, searchPattern),
+					ilike(artists.nameEn, searchPattern),
+					ilike(artists.sortName, searchPattern),
 				),
 			);
 		}
@@ -87,7 +88,7 @@ artistsRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(artists).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,
@@ -193,7 +194,7 @@ artistsRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: artists.id })
 			.from(artists)
 			.where(eq(artists.id, parsed.data.id))
 			.limit(1);
@@ -204,7 +205,7 @@ artistsRouter.post("/", async (c) => {
 
 		// 名前重複チェック（大文字小文字無視）
 		const existingName = await db
-			.select()
+			.select({ id: artists.id })
 			.from(artists)
 			.where(sql`lower(${artists.name}) = lower(${parsed.data.name})`)
 			.limit(1);
@@ -266,7 +267,7 @@ artistsRouter.put("/:id", async (c) => {
 		// 名前重複チェック（自身以外に同じ名前がある場合）
 		if (parsed.data.name) {
 			const existingName = await db
-				.select()
+				.select({ id: artists.id })
 				.from(artists)
 				.where(sql`lower(${artists.name}) = lower(${parsed.data.name})`)
 				.limit(1);
@@ -296,7 +297,7 @@ artistsRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: artists.id })
 			.from(artists)
 			.where(eq(artists.id, id))
 			.limit(1);

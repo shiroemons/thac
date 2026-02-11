@@ -1,12 +1,14 @@
 import { type InferSelectModel, sql } from "drizzle-orm";
 import {
+	date,
 	index,
 	integer,
+	pgTable,
 	primaryKey,
-	sqliteTable,
 	text,
+	timestamp,
 	uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 import { artistAliases, artists } from "./artist-circle";
 import { eventDays, events } from "./event";
 import { aliasTypes, creditRoles } from "./master";
@@ -16,19 +18,21 @@ import { discs, releases } from "./release";
  * Tracks table - holds individual track/song information within a release
  * disc_id is nullable to support single-track releases without disc structure
  */
-export const tracks = sqliteTable(
+export const tracks = pgTable(
 	"tracks",
 	{
 		id: text("id").primaryKey(),
-		releaseId: text("release_id").references(() => releases.id, {
-			onDelete: "cascade",
-		}),
+		releaseId: text("release_id")
+			.notNull()
+			.references(() => releases.id, {
+				onDelete: "cascade",
+			}),
 		discId: text("disc_id").references(() => discs.id, { onDelete: "cascade" }),
 		trackNumber: integer("track_number").notNull(),
 		name: text("name").notNull(),
 		nameJa: text("name_ja"),
 		nameEn: text("name_en"),
-		releaseDate: text("release_date"),
+		releaseDate: date("release_date", { mode: "string" }),
 		releaseYear: integer("release_year"),
 		releaseMonth: integer("release_month"),
 		releaseDay: integer("release_day"),
@@ -38,11 +42,11 @@ export const tracks = sqliteTable(
 		eventDayId: text("event_day_id").references(() => eventDays.id, {
 			onDelete: "set null",
 		}),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -74,7 +78,7 @@ export const tracks = sqliteTable(
  * Track Credits table - maps credit display names to artists/aliases
  * creditName is the name shown on the physical/digital release
  */
-export const trackCredits = sqliteTable(
+export const trackCredits = pgTable(
 	"track_credits",
 	{
 		id: text("id").primaryKey(),
@@ -90,11 +94,11 @@ export const trackCredits = sqliteTable(
 		artistAliasId: text("artist_alias_id").references(() => artistAliases.id, {
 			onDelete: "set null",
 		}),
-		createdAt: integer("created_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
 			.notNull(),
-		updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
@@ -102,6 +106,11 @@ export const trackCredits = sqliteTable(
 		index("idx_track_credits_track").on(table.trackId),
 		index("idx_track_credits_artist").on(table.artistId),
 		index("idx_track_credits_alias").on(table.artistAliasId),
+		index("idx_track_credits_alias_type").on(table.aliasTypeCode),
+		// Composite index for track+artist queries (used in N+1 elimination)
+		index("idx_track_credits_track_artist").on(table.trackId, table.artistId),
+		// Reverse composite index for efficient "all tracks by artist" queries
+		index("idx_track_credits_artist_track").on(table.artistId, table.trackId),
 		// Prevent duplicate credits: artist without alias on same track
 		uniqueIndex("uq_track_credits_no_alias")
 			.on(table.trackId, table.artistId)
@@ -117,7 +126,7 @@ export const trackCredits = sqliteTable(
  * Track Credit Roles table - many-to-many relationship between credits and roles
  * Composite primary key: (trackCreditId, roleCode, rolePosition)
  */
-export const trackCreditRoles = sqliteTable(
+export const trackCreditRoles = pgTable(
 	"track_credit_roles",
 	{
 		trackCreditId: text("track_credit_id")
@@ -133,6 +142,7 @@ export const trackCreditRoles = sqliteTable(
 			columns: [table.trackCreditId, table.roleCode, table.rolePosition],
 		}),
 		index("idx_track_credit_roles_credit").on(table.trackCreditId),
+		index("idx_track_credit_roles_role").on(table.roleCode),
 		// Composite index for role-based credit queries
 		index("idx_track_credit_roles_composite").on(
 			table.trackCreditId,

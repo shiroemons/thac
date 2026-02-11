@@ -498,12 +498,13 @@ export function OfficialWorkEditDialog({
 								<Input
 									id={`${mode}-work-numberInSeries`}
 									type="number"
+									step="any"
 									value={form.numberInSeries ?? ""}
 									onChange={(e) =>
 										setForm({
 											...form,
 											numberInSeries: e.target.value
-												? Number.parseInt(e.target.value, 10)
+												? Number(e.target.value)
 												: null,
 										})
 									}

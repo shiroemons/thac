@@ -6,8 +6,8 @@ import {
 	eq,
 	eventSeries,
 	events,
+	ilike,
 	insertEventSeriesSchema,
-	like,
 	max,
 	sql,
 	updateEventSeriesSchema,
@@ -17,19 +17,20 @@ import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const eventSeriesRouter = new Hono<AdminContext>();
 
 // イベントシリーズ一覧取得（検索対応）
 eventSeriesRouter.get("/", async (c) => {
 	try {
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "sortOrder";
 		const sortOrderParam = c.req.query("sortOrder") || "asc";
 
 		// 条件を構築
 		const whereCondition = search
-			? like(eventSeries.name, `%${search}%`)
+			? ilike(eventSeries.name, `%${search}%`)
 			: undefined;
 
 		// ソート列のマッピング
@@ -53,7 +54,7 @@ eventSeriesRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(eventSeries).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,
@@ -83,7 +84,7 @@ eventSeriesRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: eventSeries.id })
 			.from(eventSeries)
 			.where(eq(eventSeries.id, parsed.data.id))
 			.limit(1);
@@ -94,7 +95,7 @@ eventSeriesRouter.post("/", async (c) => {
 
 		// 名前重複チェック（大文字小文字無視）
 		const existingName = await db
-			.select()
+			.select({ id: eventSeries.id })
 			.from(eventSeries)
 			.where(sql`lower(${eventSeries.name}) = lower(${parsed.data.name})`)
 			.limit(1);
@@ -232,7 +233,7 @@ eventSeriesRouter.put("/:id", async (c) => {
 		// 名前重複チェック（自身以外に同じ名前がある場合）
 		if (parsed.data.name) {
 			const existingName = await db
-				.select()
+				.select({ id: eventSeries.id })
 				.from(eventSeries)
 				.where(sql`lower(${eventSeries.name}) = lower(${parsed.data.name})`)
 				.limit(1);
@@ -262,7 +263,7 @@ eventSeriesRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: eventSeries.id })
 			.from(eventSeries)
 			.where(eq(eventSeries.id, id))
 			.limit(1);
@@ -277,7 +278,7 @@ eventSeriesRouter.delete("/:id", async (c) => {
 			.from(events)
 			.where(eq(events.eventSeriesId, id));
 
-		if ((linkedEvents[0]?.count ?? 0) > 0) {
+		if (Number(linkedEvents[0]?.count ?? 0) > 0) {
 			return c.json(
 				{ error: ERROR_MESSAGES.CANNOT_DELETE_SERIES_WITH_EVENTS },
 				409,

@@ -64,22 +64,24 @@ statsRouter.get("/", async (c) => {
 		]);
 
 		return c.json({
-			users: usersResult[0]?.count ?? 0,
-			platforms: platformsResult[0]?.count ?? 0,
-			aliasTypes: aliasTypesResult[0]?.count ?? 0,
-			creditRoles: creditRolesResult[0]?.count ?? 0,
-			officialWorkCategories: officialWorkCategoriesResult[0]?.count ?? 0,
-			officialWorks: officialWorksResult[0]?.count ?? 0,
-			officialSongs: officialSongsResult[0]?.count ?? 0,
-			artists: artistsResult[0]?.count ?? 0,
-			artistAliases: artistAliasesResult[0]?.count ?? 0,
-			circles: circlesResult[0]?.count ?? 0,
-			events: eventsResult[0]?.count ?? 0,
-			eventSeries: eventSeriesResult[0]?.count ?? 0,
-			releases: releasesResult[0]?.count ?? 0,
-			tracks: tracksResult[0]?.count ?? 0,
-			genres: genresResult[0]?.count ?? 0,
-			tags: tagsResult[0]?.count ?? 0,
+			users: Number(usersResult[0]?.count ?? 0),
+			platforms: Number(platformsResult[0]?.count ?? 0),
+			aliasTypes: Number(aliasTypesResult[0]?.count ?? 0),
+			creditRoles: Number(creditRolesResult[0]?.count ?? 0),
+			officialWorkCategories: Number(
+				officialWorkCategoriesResult[0]?.count ?? 0,
+			),
+			officialWorks: Number(officialWorksResult[0]?.count ?? 0),
+			officialSongs: Number(officialSongsResult[0]?.count ?? 0),
+			artists: Number(artistsResult[0]?.count ?? 0),
+			artistAliases: Number(artistAliasesResult[0]?.count ?? 0),
+			circles: Number(circlesResult[0]?.count ?? 0),
+			events: Number(eventsResult[0]?.count ?? 0),
+			eventSeries: Number(eventSeriesResult[0]?.count ?? 0),
+			releases: Number(releasesResult[0]?.count ?? 0),
+			tracks: Number(tracksResult[0]?.count ?? 0),
+			genres: Number(genresResult[0]?.count ?? 0),
+			tags: Number(tagsResult[0]?.count ?? 0),
 		});
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/stats");

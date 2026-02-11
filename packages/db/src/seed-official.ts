@@ -1,21 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createClient } from "@libsql/client";
-import dotenv from "dotenv";
-import { drizzle } from "drizzle-orm/libsql";
+import { sql } from "drizzle-orm";
 import { officialSongs, officialWorks } from "./schema/official";
+import { createScriptClient } from "./utils/script-client";
 
-// Load environment variables
-dotenv.config({
-	path: "../../apps/server/.env",
-});
-
-const client = createClient({
-	url: process.env.DATABASE_URL || "",
-	authToken: process.env.DATABASE_AUTH_TOKEN,
-});
-
-const db = drizzle({ client });
+const { client, db } = createScriptClient();
 
 // TSVファイルをパースする関数
 function parseTsv<T>(filePath: string): T[] {
@@ -60,75 +49,73 @@ async function seed() {
 
 	const dataDir = join(import.meta.dir, "data");
 
-	// Seed official works
+	// Seed official works (batch)
 	console.log("Seeding official_works...");
 	const worksData = parseTsv<WorkTsv>(join(dataDir, "official_works.tsv"));
 
-	for (let i = 0; i < worksData.length; i++) {
-		const row = worksData[i];
-		if (!row) continue;
+	const workValues = worksData.map((row, i) => ({
+		id: row.id,
+		name: row.name,
+		nameJa: row.name,
+		shortNameJa: row.short_name || null,
+		categoryCode: row.product_type,
+		numberInSeries: row.series_number
+			? Number.parseFloat(row.series_number)
+			: null,
+		position: i,
+	}));
+
+	if (workValues.length > 0) {
 		await db
 			.insert(officialWorks)
-			.values({
-				id: row.id,
-				name: row.name,
-				nameJa: row.name,
-				shortNameJa: row.short_name || null,
-				categoryCode: row.product_type,
-				numberInSeries: row.series_number
-					? Number.parseFloat(row.series_number)
-					: null,
-				position: i,
-			})
+			.values(workValues)
 			.onConflictDoUpdate({
 				target: officialWorks.id,
 				set: {
-					name: row.name,
-					nameJa: row.name,
-					shortNameJa: row.short_name || null,
-					categoryCode: row.product_type,
-					numberInSeries: row.series_number
-						? Number.parseFloat(row.series_number)
-						: null,
-					position: i,
+					name: sql`excluded.name`,
+					nameJa: sql`excluded.name_ja`,
+					shortNameJa: sql`excluded.short_name_ja`,
+					categoryCode: sql`excluded.category_code`,
+					numberInSeries: sql`excluded.number_in_series`,
+					position: sql`excluded.position`,
 				},
 			});
 	}
 	console.log(`  ✓ ${worksData.length} official works seeded`);
 
-	// Seed official songs
+	// Seed official songs (batch)
 	console.log("Seeding official_songs...");
 	const songsData = parseTsv<SongTsv>(join(dataDir, "official_songs.tsv"));
 
-	for (const row of songsData) {
+	const songValues = songsData.map((row) => ({
+		id: row.id,
+		officialWorkId: row.product_id || null,
+		trackNumber: row.track_number
+			? Number.parseInt(row.track_number, 10)
+			: null,
+		name: row.name,
+		nameJa: row.name,
+		composerName: row.composer || null,
+		arrangerName: row.arranger || null,
+		isOriginal: row.is_original === "1",
+		sourceSongId: row.origin_original_song_id || null,
+	}));
+
+	if (songValues.length > 0) {
 		await db
 			.insert(officialSongs)
-			.values({
-				id: row.id,
-				officialWorkId: row.product_id || null,
-				trackNumber: row.track_number
-					? Number.parseInt(row.track_number, 10)
-					: null,
-				name: row.name,
-				nameJa: row.name,
-				composerName: row.composer || null,
-				arrangerName: row.arranger || null,
-				isOriginal: row.is_original === "1",
-				sourceSongId: row.origin_original_song_id || null,
-			})
+			.values(songValues)
 			.onConflictDoUpdate({
 				target: officialSongs.id,
 				set: {
-					officialWorkId: row.product_id || null,
-					trackNumber: row.track_number
-						? Number.parseInt(row.track_number, 10)
-						: null,
-					name: row.name,
-					nameJa: row.name,
-					composerName: row.composer || null,
-					arrangerName: row.arranger || null,
-					isOriginal: row.is_original === "1",
-					sourceSongId: row.origin_original_song_id || null,
+					officialWorkId: sql`excluded.official_work_id`,
+					trackNumber: sql`excluded.track_number`,
+					name: sql`excluded.name`,
+					nameJa: sql`excluded.name_ja`,
+					composerName: sql`excluded.composer_name`,
+					arrangerName: sql`excluded.arranger_name`,
+					isOriginal: sql`excluded.is_original`,
+					sourceSongId: sql`excluded.source_song_id`,
 				},
 			});
 	}
@@ -138,7 +125,10 @@ async function seed() {
 }
 
 seed()
-	.then(() => process.exit(0))
+	.then(async () => {
+		await client.end({ timeout: 2 });
+		process.exit(0);
+	})
 	.catch((error) => {
 		console.error("Error seeding official data:", error);
 		process.exit(1);

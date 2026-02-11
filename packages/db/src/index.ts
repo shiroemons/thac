@@ -1,37 +1,13 @@
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
-
-// リトライ機能付きfetch
-const fetchWithRetry = async (
-	input: string | URL | Request,
-	init?: RequestInit,
-): Promise<Response> => {
-	const maxRetries = 3;
-	const baseDelay = 1000; // 1秒
-
-	for (let attempt = 0; attempt < maxRetries; attempt++) {
-		try {
-			return await fetch(input, init);
-		} catch (error) {
-			const isLastAttempt = attempt === maxRetries - 1;
-			if (isLastAttempt) {
-				throw error;
-			}
-
-			// 指数バックオフで待機
-			const delay = baseDelay * 2 ** attempt;
-			await new Promise((resolve) => setTimeout(resolve, delay));
-		}
-	}
-
-	// TypeScript用（到達しない）
-	throw new Error("Unexpected: all retries exhausted");
-};
+import { resolveSslConfig } from "./utils/ssl";
 
 // 遅延初期化: ブラウザ側でのモジュールロード時にDBクライアントを初期化しない
 type DrizzleDB = ReturnType<typeof drizzle<typeof schema>>;
+type PostgresClient = ReturnType<typeof postgres>;
 let _db: DrizzleDB | null = null;
+let _sql: PostgresClient | null = null;
 
 // テスト用DB注入機能
 // biome-ignore lint/suspicious/noExplicitAny: テスト用の汎用DB型
@@ -39,7 +15,7 @@ let _testDb: any = null;
 
 /**
  * テスト用DBを設定する（テストでのみ使用）
- * @param testDb - drizzle-orm/bun-sqlite等で作成したテスト用DBインスタンス
+ * @param testDb - drizzle-orm/pglite等で作成したテスト用DBインスタンス
  */
 // biome-ignore lint/suspicious/noExplicitAny: テスト用の汎用DB型
 export function __setTestDatabase(testDb: any): void {
@@ -51,6 +27,7 @@ export function __setTestDatabase(testDb: any): void {
  */
 export function __resetDatabase(): void {
 	_db = null;
+	_sql = null;
 	_testDb = null;
 }
 
@@ -61,14 +38,42 @@ function getDb(): DrizzleDB {
 	}
 
 	if (!_db) {
-		const client = createClient({
-			url: process.env.DATABASE_URL || "",
-			authToken: process.env.DATABASE_AUTH_TOKEN,
-			fetch: fetchWithRetry,
+		const url = process.env.DATABASE_URL || "postgresql://localhost:5432/thac";
+		const client = postgres(url, {
+			max: Number(process.env.DB_POOL_MAX) || 10,
+			idle_timeout: 20,
+			max_lifetime: 60 * 30,
+			connect_timeout: 10,
+			ssl: resolveSslConfig(url),
+			onnotice: (notice) => console.warn("[PostgreSQL Notice]", notice.message),
+			connection: {
+				application_name: "thac-server",
+				statement_timeout: 30000, // 30 seconds
+				idle_in_transaction_session_timeout: 300000, // 5 minutes
+				lock_timeout: 10000, // 10 seconds
+			},
 		});
+		_sql = client;
 		_db = drizzle({ client, schema });
 	}
 	return _db;
+}
+
+/**
+ * DB接続をクリーンアップする（graceful shutdown用）
+ * 複数回呼び出しても安全
+ */
+export async function cleanup(): Promise<void> {
+	if (_sql) {
+		const client = _sql;
+		_sql = null;
+		_db = null;
+		try {
+			await client.end({ timeout: 5 });
+		} catch (error) {
+			console.error("[Database] Cleanup error:", error);
+		}
+	}
 }
 
 // Proxyを使用して遅延初期化を実現
@@ -87,6 +92,7 @@ export {
 	desc,
 	eq,
 	gt,
+	ilike,
 	inArray,
 	isNotNull,
 	isNull,

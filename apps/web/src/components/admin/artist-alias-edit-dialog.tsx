@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createId } from "@thac/db";
+import { createId } from "@thac/db/utils/id";
 import { detectInitial } from "@thac/utils";
 import { useEffect, useMemo, useState } from "react";
 import { useConflictHandler } from "@/hooks/use-conflict-handler";

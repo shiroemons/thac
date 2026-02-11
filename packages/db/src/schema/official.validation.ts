@@ -21,7 +21,12 @@ export const insertOfficialWorkSchema = createInsertSchema(officialWorks, {
 	shortNameJa: optionalString,
 	shortNameEn: optionalString,
 	numberInSeries: z.number().optional().nullable(),
-	releaseDate: optionalString,
+	releaseDate: z
+		.string()
+		.trim()
+		.regex(/^\d{4}-\d{2}-\d{2}$/, "日付はYYYY-MM-DD形式で入力してください")
+		.optional()
+		.nullable(),
 	officialOrganization: optionalString,
 	position: z.number().int().optional().nullable(),
 	notes: optionalString,

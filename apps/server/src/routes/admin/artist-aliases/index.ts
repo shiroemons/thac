@@ -7,9 +7,9 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	inArray,
 	insertArtistAliasSchema,
-	like,
 	sql,
 	updateArtistAliasSchema,
 } from "@thac/db";
@@ -18,6 +18,7 @@ import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
+import { sanitizeSearch } from "../../../utils/query-params";
 import { aliasCirclesRouter } from "./circles";
 import { aliasTracksRouter } from "./tracks";
 
@@ -33,7 +34,7 @@ artistAliasesRouter.get("/", async (c) => {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const artistId = c.req.query("artistId");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "name";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 
@@ -48,7 +49,7 @@ artistAliasesRouter.get("/", async (c) => {
 
 		if (search) {
 			const searchPattern = `%${search}%`;
-			conditions.push(like(artistAliases.name, searchPattern));
+			conditions.push(ilike(artistAliases.name, searchPattern));
 		}
 
 		const whereCondition =
@@ -91,7 +92,7 @@ artistAliasesRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(artistAliases).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,
@@ -157,7 +158,7 @@ artistAliasesRouter.post("/", async (c) => {
 
 		// 親アーティスト存在チェック
 		const existingArtist = await db
-			.select()
+			.select({ id: artists.id })
 			.from(artists)
 			.where(eq(artists.id, parsed.data.artistId))
 			.limit(1);
@@ -168,7 +169,7 @@ artistAliasesRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: artistAliases.id })
 			.from(artistAliases)
 			.where(eq(artistAliases.id, parsed.data.id))
 			.limit(1);
@@ -179,7 +180,7 @@ artistAliasesRouter.post("/", async (c) => {
 
 		// 同一アーティスト内での名前重複チェック（大文字小文字無視）
 		const existingName = await db
-			.select()
+			.select({ id: artistAliases.id })
 			.from(artistAliases)
 			.where(
 				and(
@@ -251,7 +252,7 @@ artistAliasesRouter.put("/:id", async (c) => {
 		// 名前重複チェック（同一アーティスト内、自身以外）
 		if (parsed.data.name && currentArtistId) {
 			const existingName = await db
-				.select()
+				.select({ id: artistAliases.id })
 				.from(artistAliases)
 				.where(
 					and(
@@ -286,7 +287,7 @@ artistAliasesRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: artistAliases.id })
 			.from(artistAliases)
 			.where(eq(artistAliases.id, id))
 			.limit(1);

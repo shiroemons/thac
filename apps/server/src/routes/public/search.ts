@@ -9,6 +9,7 @@ import {
 	type OptionalAuthContext,
 	optionalAuthMiddleware,
 } from "../../middleware/optional-auth";
+import { sanitizeSearch } from "../../utils/query-params";
 import {
 	buildMeilisearchFilter,
 	parseSearchQuery,
@@ -52,7 +53,7 @@ searchRouter.get("/tracks", optionalAuthMiddleware, async (c) => {
 	// 認証済みの場合はユーザーオブジェクト、未認証の場合はnull
 	const user = c.get("user");
 
-	const query = c.req.query("q");
+	const query = sanitizeSearch(c.req.query("q"));
 	const pageParam = c.req.query("page");
 	const limitParam = c.req.query("limit");
 	const sortParam = c.req.query("sort");

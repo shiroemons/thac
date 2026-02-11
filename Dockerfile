@@ -1,5 +1,5 @@
 # Stage 1: Base
-FROM oven/bun:1.3.6 AS base
+FROM oven/bun:1.3.8 AS base
 WORKDIR /app
 
 # Stage 2: Install dependencies
@@ -25,7 +25,7 @@ COPY . .
 RUN bun run build
 
 # Stage 4: Runner (non-root)
-FROM oven/bun:1.3.6-slim AS runner
+FROM oven/bun:1.3.8-slim AS runner
 WORKDIR /app
 
 # Metadata
@@ -38,6 +38,13 @@ COPY --from=builder /app/apps/server/dist ./apps/server/dist
 
 # Copy web build output (TanStack Start SSR)
 COPY --from=builder /app/apps/web/dist ./apps/web/dist
+
+# Copy database package for db:push and db:seed operations
+COPY --from=builder /app/packages/db ./packages/db
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/turbo.json ./turbo.json
 
 # Copy entrypoint script
 COPY entrypoint.sh ./

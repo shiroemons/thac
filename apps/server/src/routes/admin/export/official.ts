@@ -3,8 +3,8 @@ import {
 	asc,
 	db,
 	eq,
+	ilike,
 	inArray,
-	like,
 	officialSongLinks,
 	officialSongs,
 	officialWorkLinks,
@@ -21,6 +21,7 @@ import {
 	formatToTSV,
 	generateFilename,
 } from "../../../utils/export-formatter";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const officialExportRouter = new Hono<AdminContext>();
 
@@ -94,7 +95,7 @@ officialExportRouter.get("/works", async (c) => {
 		const format = (c.req.query("format") || "json") as "tsv" | "json";
 		const includeRelations = c.req.query("includeRelations") === "true";
 		const categoryCode = c.req.query("categoryCode");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 
 		// フィルタ条件を構築
 		const conditions = [];
@@ -107,9 +108,9 @@ officialExportRouter.get("/works", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(officialWorks.name, searchPattern),
-					like(officialWorks.nameJa, searchPattern),
-					like(officialWorks.nameEn, searchPattern),
+					ilike(officialWorks.name, searchPattern),
+					ilike(officialWorks.nameJa, searchPattern),
+					ilike(officialWorks.nameEn, searchPattern),
 				),
 			);
 		}
@@ -224,7 +225,7 @@ officialExportRouter.get("/songs", async (c) => {
 		const includeRelations = c.req.query("includeRelations") === "true";
 		const workId = c.req.query("workId");
 		const isOriginal = c.req.query("isOriginal");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 
 		// フィルタ条件を構築
 		const conditions = [];
@@ -241,9 +242,9 @@ officialExportRouter.get("/songs", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(officialSongs.name, searchPattern),
-					like(officialSongs.nameJa, searchPattern),
-					like(officialSongs.nameEn, searchPattern),
+					ilike(officialSongs.name, searchPattern),
+					ilike(officialSongs.nameJa, searchPattern),
+					ilike(officialSongs.nameEn, searchPattern),
 				),
 			);
 		}

@@ -3,8 +3,8 @@ import {
 	asc,
 	db,
 	eq,
+	ilike,
 	inArray,
-	like,
 	or,
 	trackCreditRoles,
 	trackCredits,
@@ -23,6 +23,7 @@ import {
 	formatToTSV,
 	generateFilename,
 } from "../../../utils/export-formatter";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const trackExportRouter = new Hono<AdminContext>();
 
@@ -67,7 +68,7 @@ trackExportRouter.get("/", async (c) => {
 		const format = (c.req.query("format") || "json") as "tsv" | "json";
 		const includeRelations = c.req.query("includeRelations") === "true";
 		const releaseId = c.req.query("releaseId");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 
 		// フィルタ条件を構築
 		const conditions = [];
@@ -80,9 +81,9 @@ trackExportRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(tracks.name, searchPattern),
-					like(tracks.nameJa, searchPattern),
-					like(tracks.nameEn, searchPattern),
+					ilike(tracks.name, searchPattern),
+					ilike(tracks.nameJa, searchPattern),
+					ilike(tracks.nameEn, searchPattern),
 				),
 			);
 		}

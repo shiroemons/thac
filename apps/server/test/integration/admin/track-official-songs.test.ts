@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
 	afterAll,
 	beforeAll,
@@ -7,17 +6,20 @@ import {
 	expect,
 	test,
 } from "bun:test";
+import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
 	__setTestDatabase,
 	db,
 	officialSongs,
+	releases,
 	trackOfficialSongs,
 	tracks,
 } from "@thac/db";
 import { trackOfficialSongsRouter } from "../../../src/routes/admin/tracks/official-songs";
 import {
 	createTestOfficialSong,
+	createTestRelease,
 	createTestTrack,
 } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
@@ -51,23 +53,26 @@ interface TrackOfficialSongResponse {
 }
 
 describe("Admin Track Official Songs API", () => {
-	let sqlite: Database;
+	let client: PGlite;
 	let app: ReturnType<typeof createTestAdminApp>;
 
-	beforeAll(() => {
-		const testDb = createTestDatabase();
-		sqlite = testDb.sqlite;
+	beforeAll(async () => {
+		const testDb = await createTestDatabase();
+		client = testDb.client;
 		__setTestDatabase(testDb.db);
 		app = createTestAdminApp(trackOfficialSongsRouter);
 	});
 
-	beforeEach(() => {
-		truncateAllTables(sqlite);
+	beforeEach(async () => {
+		await truncateAllTables(client);
+		await db
+			.insert(releases)
+			.values(createTestRelease({ id: "rel_test_default" }));
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		sqlite.close();
+		await client.close();
 	});
 
 	describe("GET /:trackId/official-songs - 原曲紐付け一覧取得", () => {

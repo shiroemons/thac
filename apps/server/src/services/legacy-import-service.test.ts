@@ -42,6 +42,11 @@ describe("LegacyImportService", () => {
 				credits: { created: 2, updated: 0, skipped: 0 },
 				officialSongLinks: { created: 1, updated: 0, skipped: 0 },
 				errors: [],
+				batchSummary: {
+					totalBatches: 5,
+					successfulBatches: 5,
+					failedBatches: 0,
+				},
 			};
 
 			expect(result.success).toBe(true);

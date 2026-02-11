@@ -8,8 +8,8 @@ import {
 	eventDays,
 	eventSeries,
 	events,
+	ilike,
 	insertEventSchema,
-	like,
 	or,
 	updateEventSchema,
 } from "@thac/db";
@@ -18,6 +18,7 @@ import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
+import { sanitizeSearch } from "../../../utils/query-params";
 
 const eventsRouter = new Hono<AdminContext>();
 
@@ -27,7 +28,7 @@ eventsRouter.get("/", async (c) => {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const seriesId = c.req.query("seriesId");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "startDate";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 
@@ -43,7 +44,10 @@ eventsRouter.get("/", async (c) => {
 		if (search) {
 			const searchPattern = `%${search}%`;
 			conditions.push(
-				or(like(events.name, searchPattern), like(events.venue, searchPattern)),
+				or(
+					ilike(events.name, searchPattern),
+					ilike(events.venue, searchPattern),
+				),
 			);
 		}
 
@@ -88,7 +92,7 @@ eventsRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(events).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,
@@ -164,7 +168,7 @@ eventsRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: events.id })
 			.from(events)
 			.where(eq(events.id, parsed.data.id))
 			.limit(1);
@@ -176,7 +180,7 @@ eventsRouter.post("/", async (c) => {
 		// シリーズ存在チェック（eventSeriesIdが指定されている場合のみ）
 		if (parsed.data.eventSeriesId) {
 			const existingSeries = await db
-				.select()
+				.select({ id: eventSeries.id })
 				.from(eventSeries)
 				.where(eq(eventSeries.id, parsed.data.eventSeriesId))
 				.limit(1);
@@ -188,7 +192,7 @@ eventsRouter.post("/", async (c) => {
 			// 回次重複チェック（同一シリーズ内）
 			if (parsed.data.edition !== null && parsed.data.edition !== undefined) {
 				const existingEdition = await db
-					.select()
+					.select({ id: events.id })
 					.from(events)
 					.where(
 						and(
@@ -258,7 +262,7 @@ eventsRouter.put("/:id", async (c) => {
 		// シリーズ存在チェック（変更がある場合）
 		if (parsed.data.eventSeriesId) {
 			const existingSeries = await db
-				.select()
+				.select({ id: eventSeries.id })
 				.from(eventSeries)
 				.where(eq(eventSeries.id, parsed.data.eventSeriesId))
 				.limit(1);
@@ -280,7 +284,7 @@ eventsRouter.put("/:id", async (c) => {
 			targetEdition !== undefined
 		) {
 			const existingEdition = await db
-				.select()
+				.select({ id: events.id })
 				.from(events)
 				.where(
 					and(
@@ -315,7 +319,7 @@ eventsRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: events.id })
 			.from(events)
 			.where(eq(events.id, id))
 			.limit(1);

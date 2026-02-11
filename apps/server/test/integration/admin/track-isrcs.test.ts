@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
 	afterAll,
 	beforeAll,
@@ -7,15 +6,17 @@ import {
 	expect,
 	test,
 } from "bun:test";
+import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
 	__setTestDatabase,
 	db,
+	releases,
 	trackIsrcs,
 	tracks,
 } from "@thac/db";
 import { trackIsrcsRouter } from "../../../src/routes/admin/tracks/isrcs";
-import { createTestTrack } from "../../helpers/fixtures";
+import { createTestRelease, createTestTrack } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
 import {
@@ -41,23 +42,26 @@ interface IsrcResponse {
 }
 
 describe("Admin Track ISRCs API", () => {
-	let sqlite: Database;
+	let client: PGlite;
 	let app: ReturnType<typeof createTestAdminApp>;
 
-	beforeAll(() => {
-		const testDb = createTestDatabase();
-		sqlite = testDb.sqlite;
+	beforeAll(async () => {
+		const testDb = await createTestDatabase();
+		client = testDb.client;
 		__setTestDatabase(testDb.db);
 		app = createTestAdminApp(trackIsrcsRouter);
 	});
 
-	beforeEach(() => {
-		truncateAllTables(sqlite);
+	beforeEach(async () => {
+		await truncateAllTables(client);
+		await db
+			.insert(releases)
+			.values(createTestRelease({ id: "rel_test_default" }));
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		sqlite.close();
+		await client.close();
 	});
 
 	describe("GET /:trackId/isrcs - ISRC一覧取得", () => {

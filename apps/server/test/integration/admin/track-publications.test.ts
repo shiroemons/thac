@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
 	afterAll,
 	beforeAll,
@@ -7,16 +6,22 @@ import {
 	expect,
 	test,
 } from "bun:test";
+import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
 	__setTestDatabase,
 	db,
 	platforms,
+	releases,
 	trackPublications,
 	tracks,
 } from "@thac/db";
 import { trackPublicationsRouter } from "../../../src/routes/admin/tracks/publications";
-import { createTestPlatform, createTestTrack } from "../../helpers/fixtures";
+import {
+	createTestPlatform,
+	createTestRelease,
+	createTestTrack,
+} from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";
 import { createTestDatabase, truncateAllTables } from "../../helpers/test-db";
 import {
@@ -47,23 +52,26 @@ interface PublicationResponse {
 }
 
 describe("Admin Track Publications API", () => {
-	let sqlite: Database;
+	let client: PGlite;
 	let app: ReturnType<typeof createTestAdminApp>;
 
-	beforeAll(() => {
-		const testDb = createTestDatabase();
-		sqlite = testDb.sqlite;
+	beforeAll(async () => {
+		const testDb = await createTestDatabase();
+		client = testDb.client;
 		__setTestDatabase(testDb.db);
 		app = createTestAdminApp(trackPublicationsRouter);
 	});
 
-	beforeEach(() => {
-		truncateAllTables(sqlite);
+	beforeEach(async () => {
+		await truncateAllTables(client);
+		await db
+			.insert(releases)
+			.values(createTestRelease({ id: "rel_test_default" }));
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		sqlite.close();
+		await client.close();
 	});
 
 	describe("GET /:trackId/publications - 公開リンク一覧取得", () => {
@@ -220,7 +228,7 @@ describe("Admin Track Publications API", () => {
 				.insert(tracks)
 				.values([
 					createTestTrack({ id: "tr_test_001" }),
-					createTestTrack({ id: "tr_test_002" }),
+					createTestTrack({ id: "tr_test_002", trackNumber: 2 }),
 				]);
 			await db
 				.insert(platforms)

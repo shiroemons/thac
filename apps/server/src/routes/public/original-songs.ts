@@ -11,8 +11,8 @@ import {
 	eq,
 	genres,
 	gt,
+	ilike,
 	inArray,
-	like,
 	lt,
 	officialSongLinks,
 	officialSongs,
@@ -39,6 +39,7 @@ import {
 	setCache,
 	setCacheHeaders,
 } from "../../utils/cache";
+import { sanitizeSearch } from "../../utils/query-params";
 
 const originalSongsRouter = new Hono();
 
@@ -49,10 +50,10 @@ const originalSongsRouter = new Hono();
 originalSongsRouter.get("/", async (c) => {
 	try {
 		const page = Number(c.req.query("page")) || 1;
-		const limit = Math.min(Number(c.req.query("limit")) || 20, 5000);
+		const limit = Math.min(Number(c.req.query("limit")) || 20, 500);
 		const workId = c.req.query("workId");
 		const category = c.req.query("category");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "id";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 
@@ -88,9 +89,9 @@ originalSongsRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(officialSongs.name, searchPattern),
-					like(officialSongs.nameJa, searchPattern),
-					like(officialSongs.nameEn, searchPattern),
+					ilike(officialSongs.name, searchPattern),
+					ilike(officialSongs.nameJa, searchPattern),
+					ilike(officialSongs.nameEn, searchPattern),
 				),
 			);
 		}
@@ -135,7 +136,7 @@ originalSongsRouter.get("/", async (c) => {
 					composerName: officialSongs.composerName,
 					arrangerName: officialSongs.arrangerName,
 					isOriginal: officialSongs.isOriginal,
-					arrangeCount: sql<number>`COALESCE(${arrangeCountSq.count}, 0)`,
+					arrangeCount: sql<number>`COALESCE(${arrangeCountSq.count}, 0)::int`,
 				})
 				.from(officialSongs)
 				.leftJoin(
@@ -161,7 +162,7 @@ originalSongsRouter.get("/", async (c) => {
 				.where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		const response = {
 			data,
@@ -334,9 +335,9 @@ originalSongsRouter.get("/:id", async (c) => {
 			sourceSongName,
 			work,
 			links: linksData,
-			arrangeCount: stats.arrangeCount,
-			circleCount: stats.circleCount,
-			artistCount: stats.artistCount,
+			arrangeCount: Number(stats.arrangeCount),
+			circleCount: Number(stats.circleCount),
+			artistCount: Number(stats.artistCount),
 			prevSong,
 			nextSong,
 		};
@@ -418,7 +419,7 @@ originalSongsRouter.get("/:id/tracks", async (c) => {
 				.where(eq(trackOfficialSongs.officialSongId, songId)),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		if (tracksData.length === 0) {
 			const response = { data: [], total, page, limit };

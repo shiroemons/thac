@@ -1,4 +1,3 @@
-import type { Database } from "bun:sqlite";
 import {
 	afterAll,
 	beforeAll,
@@ -7,6 +6,7 @@ import {
 	expect,
 	test,
 } from "bun:test";
+import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
 	__setTestDatabase,
@@ -69,13 +69,13 @@ interface ArtistTracksResult {
 }
 
 describe("Admin Artist Subroutes API", () => {
-	let sqlite: Database;
+	let client: PGlite;
 	let circlesApp: ReturnType<typeof createTestAdminApp>;
 	let tracksApp: ReturnType<typeof createTestAdminApp>;
 
-	beforeAll(() => {
-		const testDb = createTestDatabase();
-		sqlite = testDb.sqlite;
+	beforeAll(async () => {
+		const testDb = await createTestDatabase();
+		client = testDb.client;
 		__setTestDatabase(testDb.db);
 
 		// 複合ルーターを作成
@@ -88,13 +88,13 @@ describe("Admin Artist Subroutes API", () => {
 		tracksApp = createTestAdminApp(combinedTracksRouter);
 	});
 
-	beforeEach(() => {
-		truncateAllTables(sqlite);
+	beforeEach(async () => {
+		await truncateAllTables(client);
 	});
 
-	afterAll(() => {
+	afterAll(async () => {
 		__resetDatabase();
-		sqlite.close();
+		await client.close();
 	});
 
 	describe("GET /:artistId/circles - アーティストの参加サークル一覧取得", () => {
@@ -269,11 +269,13 @@ describe("Admin Artist Subroutes API", () => {
 					id: "tr_test_001",
 					releaseId: "rel_test_001",
 					name: "Track 1",
+					trackNumber: 1,
 				}),
 				createTestTrack({
 					id: "tr_test_002",
 					releaseId: "rel_test_001",
 					name: "Track 2",
+					trackNumber: 2,
 				}),
 			]);
 			await db.insert(creditRoles).values([

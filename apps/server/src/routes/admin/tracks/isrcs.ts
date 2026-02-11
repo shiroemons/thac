@@ -22,7 +22,7 @@ trackIsrcsRouter.get("/:trackId/isrcs", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);
@@ -51,7 +51,7 @@ trackIsrcsRouter.post("/:trackId/isrcs", async (c) => {
 
 		// トラック存在チェック
 		const existingTrack = await db
-			.select()
+			.select({ id: tracks.id })
 			.from(tracks)
 			.where(eq(tracks.id, trackId))
 			.limit(1);
@@ -77,7 +77,7 @@ trackIsrcsRouter.post("/:trackId/isrcs", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: trackIsrcs.id })
 			.from(trackIsrcs)
 			.where(eq(trackIsrcs.id, parsed.data.id))
 			.limit(1);
@@ -88,7 +88,7 @@ trackIsrcsRouter.post("/:trackId/isrcs", async (c) => {
 
 		// トラック×ISRCの一意性チェック
 		const isrcDuplicateCheck = await db
-			.select()
+			.select({ id: trackIsrcs.id })
 			.from(trackIsrcs)
 			.where(
 				and(
@@ -105,7 +105,7 @@ trackIsrcsRouter.post("/:trackId/isrcs", async (c) => {
 		// isPrimary制約チェック（同一トラック内でisPrimaryは1件のみ）
 		if (parsed.data.isPrimary) {
 			const primaryCheck = await db
-				.select()
+				.select({ id: trackIsrcs.id })
 				.from(trackIsrcs)
 				.where(
 					and(eq(trackIsrcs.trackId, trackId), eq(trackIsrcs.isPrimary, true)),
@@ -146,7 +146,7 @@ trackIsrcsRouter.put("/:trackId/isrcs/:id", async (c) => {
 
 		// ISRC存在チェック
 		const existingIsrc = await db
-			.select()
+			.select({ id: trackIsrcs.id })
 			.from(trackIsrcs)
 			.where(and(eq(trackIsrcs.id, id), eq(trackIsrcs.trackId, trackId)))
 			.limit(1);
@@ -170,7 +170,7 @@ trackIsrcsRouter.put("/:trackId/isrcs/:id", async (c) => {
 		// isPrimary変更時の制約チェック
 		if (parsed.data.isPrimary) {
 			const primaryCheck = await db
-				.select()
+				.select({ id: trackIsrcs.id })
 				.from(trackIsrcs)
 				.where(
 					and(eq(trackIsrcs.trackId, trackId), eq(trackIsrcs.isPrimary, true)),
@@ -214,7 +214,7 @@ trackIsrcsRouter.delete("/:trackId/isrcs/:id", async (c) => {
 
 		// ISRC存在チェック
 		const existingIsrc = await db
-			.select()
+			.select({ id: trackIsrcs.id })
 			.from(trackIsrcs)
 			.where(and(eq(trackIsrcs.id, id), eq(trackIsrcs.trackId, trackId)))
 			.limit(1);

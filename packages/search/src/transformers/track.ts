@@ -332,7 +332,7 @@ export async function* fetchTracksForIndexing(
 					// Format numberInSeries as "NN.N" (e.g., 4.0 -> "04.0", 10.5 -> "10.5")
 					const lvl1 =
 						lvl0 && s.numberInSeries != null && s.shortNameJa
-							? `${lvl0} > ${s.numberInSeries.toFixed(1).padStart(4, "0")}. ${s.shortNameJa}`
+							? `${lvl0} > ${Number(s.numberInSeries).toFixed(1).padStart(4, "0")}. ${s.shortNameJa}`
 							: null;
 
 					// lvl2: lvl1 + " > " + formatted trackNumber + ". " + name
@@ -771,7 +771,7 @@ export async function fetchTrackForIndexing(
 				// Format numberInSeries as "NN.N" (e.g., 4.0 -> "04.0", 10.5 -> "10.5")
 				const lvl1 =
 					lvl0 && s.numberInSeries != null && s.shortNameJa
-						? `${lvl0} > ${s.numberInSeries.toFixed(1).padStart(4, "0")}. ${s.shortNameJa}`
+						? `${lvl0} > ${Number(s.numberInSeries).toFixed(1).padStart(4, "0")}. ${s.shortNameJa}`
 						: null;
 
 				// lvl2: lvl1 + " > " + formatted trackNumber + ". " + name

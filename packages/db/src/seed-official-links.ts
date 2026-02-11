@@ -1,22 +1,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createClient } from "@libsql/client";
-import dotenv from "dotenv";
-import { drizzle } from "drizzle-orm/libsql";
+import { sql } from "drizzle-orm";
 import { officialSongLinks, officialWorkLinks } from "./schema/official";
 import { createId } from "./utils/id";
+import { createScriptClient } from "./utils/script-client";
 
-// Load environment variables
-dotenv.config({
-	path: "../../apps/server/.env",
-});
-
-const client = createClient({
-	url: process.env.DATABASE_URL || "",
-	authToken: process.env.DATABASE_AUTH_TOKEN,
-});
-
-const db = drizzle({ client });
+const { client, db } = createScriptClient();
 
 // TSVファイルをパースする関数
 function parseTsv<T>(filePath: string): T[] {
@@ -68,77 +57,98 @@ async function seed() {
 
 	const dataDir = join(import.meta.dir, "data");
 
-	// Seed official work links
+	// Seed official work links (batch)
 	console.log("Seeding official_work_links...");
 	const workLinksData = parseTsv<WorkLinkTsv>(
 		join(dataDir, "official_work_links.tsv"),
 	);
 
-	let workLinkCount = 0;
+	const workLinkValues: {
+		id: string;
+		officialWorkId: string;
+		platformCode: string;
+		url: string;
+		sortOrder: number;
+	}[] = [];
 	for (const row of workLinksData) {
 		for (const [urlKey, platform] of Object.entries(platformMapping)) {
 			const url = row[urlKey as keyof WorkLinkTsv];
 			if (url) {
-				await db
-					.insert(officialWorkLinks)
-					.values({
-						id: createId.officialWorkLink(),
-						officialWorkId: row.official_work_id,
-						platformCode: platform.code,
-						url: url,
-						sortOrder: platform.sortOrder,
-					})
-					.onConflictDoUpdate({
-						target: [officialWorkLinks.officialWorkId, officialWorkLinks.url],
-						set: {
-							platformCode: platform.code,
-							sortOrder: platform.sortOrder,
-						},
-					});
-				workLinkCount++;
+				workLinkValues.push({
+					id: createId.officialWorkLink(),
+					officialWorkId: row.official_work_id,
+					platformCode: platform.code,
+					url: url,
+					sortOrder: platform.sortOrder,
+				});
 			}
 		}
 	}
-	console.log(`  ✓ ${workLinkCount} official work links seeded`);
 
-	// Seed official song links
+	if (workLinkValues.length > 0) {
+		await db
+			.insert(officialWorkLinks)
+			.values(workLinkValues)
+			.onConflictDoUpdate({
+				target: [officialWorkLinks.officialWorkId, officialWorkLinks.url],
+				set: {
+					platformCode: sql`excluded.platform_code`,
+					sortOrder: sql`excluded.sort_order`,
+				},
+			});
+	}
+	console.log(`  ✓ ${workLinkValues.length} official work links seeded`);
+
+	// Seed official song links (batch)
 	console.log("Seeding official_song_links...");
 	const songLinksData = parseTsv<SongLinkTsv>(
 		join(dataDir, "official_song_links.tsv"),
 	);
 
-	let songLinkCount = 0;
+	const songLinkValues: {
+		id: string;
+		officialSongId: string;
+		platformCode: string;
+		url: string;
+		sortOrder: number;
+	}[] = [];
 	for (const row of songLinksData) {
 		for (const [urlKey, platform] of Object.entries(platformMapping)) {
 			const url = row[urlKey as keyof SongLinkTsv];
 			if (url) {
-				await db
-					.insert(officialSongLinks)
-					.values({
-						id: createId.officialSongLink(),
-						officialSongId: row.official_song_id,
-						platformCode: platform.code,
-						url: url,
-						sortOrder: platform.sortOrder,
-					})
-					.onConflictDoUpdate({
-						target: [officialSongLinks.officialSongId, officialSongLinks.url],
-						set: {
-							platformCode: platform.code,
-							sortOrder: platform.sortOrder,
-						},
-					});
-				songLinkCount++;
+				songLinkValues.push({
+					id: createId.officialSongLink(),
+					officialSongId: row.official_song_id,
+					platformCode: platform.code,
+					url: url,
+					sortOrder: platform.sortOrder,
+				});
 			}
 		}
 	}
-	console.log(`  ✓ ${songLinkCount} official song links seeded`);
+
+	if (songLinkValues.length > 0) {
+		await db
+			.insert(officialSongLinks)
+			.values(songLinkValues)
+			.onConflictDoUpdate({
+				target: [officialSongLinks.officialSongId, officialSongLinks.url],
+				set: {
+					platformCode: sql`excluded.platform_code`,
+					sortOrder: sql`excluded.sort_order`,
+				},
+			});
+	}
+	console.log(`  ✓ ${songLinkValues.length} official song links seeded`);
 
 	console.log("✓ Official links data seeding completed!");
 }
 
 seed()
-	.then(() => process.exit(0))
+	.then(async () => {
+		await client.end({ timeout: 2 });
+		process.exit(0);
+	})
 	.catch((error) => {
 		console.error("Error seeding official links data:", error);
 		process.exit(1);

@@ -3,7 +3,7 @@
 	"packages": [
 		"bun@1.3.8",
 		"meilisearch@latest",
-		"sqlite@latest",
+		"postgresql_18@18.1",
 		"git@latest",
 		"curl@latest",
 		"gnumake@latest"
@@ -15,14 +15,29 @@
 		"MEILI_NO_ANALYTICS": "true",
 		"MEILI_URL": "http://localhost:7700",
 		"CORS_ORIGIN": "http://localhost:3000",
-		"BETTER_AUTH_URL": "http://localhost:3000"
+		"BETTER_AUTH_URL": "http://localhost:3000",
+		"DATABASE_URL": "postgresql://localhost:5432/thac",
+		"PGDATABASE": "thac"
 	},
 	"shell": {
 		"init_hook": [
+			"# PostgreSQL初期化（初回のみ）",
+			"if [ ! -f $PGDATA/PG_VERSION ]; then",
+			"  initdb --no-locale --encoding=UTF8",
+			"  echo \"listen_addresses = 'localhost'\" >> $PGDATA/postgresql.conf",
+			"  echo \"port = 5432\" >> $PGDATA/postgresql.conf",
+			"  echo \"# Development-optimized settings\" >> $PGDATA/postgresql.conf",
+			"  echo \"shared_buffers = 128MB\" >> $PGDATA/postgresql.conf",
+			"  echo \"work_mem = 4MB\" >> $PGDATA/postgresql.conf",
+			"  echo \"effective_cache_size = 512MB\" >> $PGDATA/postgresql.conf",
+			"  echo \"random_page_cost = 1.1\" >> $PGDATA/postgresql.conf",
+			"  echo \"log_min_duration_statement = 1000\" >> $PGDATA/postgresql.conf",
+			"fi",
 			"echo ''",
 			"echo '📦 thac devbox environment'",
 			"echo '   Bun: '$(bun --version)",
 			"echo '   Meilisearch: '$(meilisearch --version | head -1)",
+			"echo '   PostgreSQL: '$(postgres --version)",
 			"echo ''",
 			"echo '🚀 Quick start:'",
 			"echo '   devbox services up     - Start all services'",
@@ -35,7 +50,8 @@
 			"build": "bun run build",
 			"check": "bun run check",
 			"check-types": "bun run check-types",
-			"install": "bun install"
+			"install": "bun install",
+			"setup": "bun install && (pg_isready -q || pg_ctl start -l $PGDATA/postgresql.log -w) && (createdb thac 2>/dev/null || true) && make db-setup"
 		}
 	}
 }

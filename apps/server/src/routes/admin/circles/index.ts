@@ -7,10 +7,10 @@ import {
 	db,
 	desc,
 	eq,
+	ilike,
 	inArray,
 	insertCircleLinkSchema,
 	insertCircleSchema,
-	like,
 	or,
 	platforms,
 	sql,
@@ -22,6 +22,7 @@ import { ERROR_MESSAGES } from "../../../constants/error-messages";
 import type { AdminContext } from "../../../middleware/admin-auth";
 import { handleDbError } from "../../../utils/api-error";
 import { checkOptimisticLockConflict } from "../../../utils/conflict-check";
+import { sanitizeSearch } from "../../../utils/query-params";
 import { circleArtistsRouter, getCircleArtists } from "./artists";
 import { circleReleasesRouter, getCircleReleases } from "./releases";
 
@@ -37,7 +38,7 @@ circlesRouter.get("/", async (c) => {
 		const page = Number(c.req.query("page")) || 1;
 		const limit = Math.min(Number(c.req.query("limit")) || 20, 100);
 		const initialScript = c.req.query("initialScript");
-		const search = c.req.query("search");
+		const search = sanitizeSearch(c.req.query("search"));
 		const sortBy = c.req.query("sortBy") || "name";
 		const sortOrder = c.req.query("sortOrder") || "asc";
 
@@ -54,9 +55,9 @@ circlesRouter.get("/", async (c) => {
 			const searchPattern = `%${search}%`;
 			conditions.push(
 				or(
-					like(circles.name, searchPattern),
-					like(circles.nameJa, searchPattern),
-					like(circles.nameEn, searchPattern),
+					ilike(circles.name, searchPattern),
+					ilike(circles.nameJa, searchPattern),
+					ilike(circles.nameEn, searchPattern),
 				),
 			);
 		}
@@ -89,7 +90,7 @@ circlesRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(circles).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,
@@ -222,7 +223,7 @@ circlesRouter.post("/", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: circles.id })
 			.from(circles)
 			.where(eq(circles.id, parsed.data.id))
 			.limit(1);
@@ -233,7 +234,7 @@ circlesRouter.post("/", async (c) => {
 
 		// 名前重複チェック（大文字小文字無視）
 		const existingName = await db
-			.select()
+			.select({ id: circles.id })
 			.from(circles)
 			.where(sql`lower(${circles.name}) = lower(${parsed.data.name})`)
 			.limit(1);
@@ -295,7 +296,7 @@ circlesRouter.put("/:id", async (c) => {
 		// 名前重複チェック（自身以外に同じ名前がある場合）
 		if (parsed.data.name) {
 			const existingName = await db
-				.select()
+				.select({ id: circles.id })
 				.from(circles)
 				.where(sql`lower(${circles.name}) = lower(${parsed.data.name})`)
 				.limit(1);
@@ -325,7 +326,7 @@ circlesRouter.delete("/:id", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: circles.id })
 			.from(circles)
 			.where(eq(circles.id, id))
 			.limit(1);
@@ -352,7 +353,7 @@ circlesRouter.get("/:circleId/links", async (c) => {
 
 		// サークル存在チェック
 		const existingCircle = await db
-			.select()
+			.select({ id: circles.id })
 			.from(circles)
 			.where(eq(circles.id, circleId))
 			.limit(1);
@@ -394,7 +395,7 @@ circlesRouter.post("/:circleId/links", async (c) => {
 
 		// サークル存在チェック
 		const existingCircle = await db
-			.select()
+			.select({ id: circles.id })
 			.from(circles)
 			.where(eq(circles.id, circleId))
 			.limit(1);
@@ -420,7 +421,7 @@ circlesRouter.post("/:circleId/links", async (c) => {
 
 		// ID重複チェック
 		const existingId = await db
-			.select()
+			.select({ id: circleLinks.id })
 			.from(circleLinks)
 			.where(eq(circleLinks.id, parsed.data.id))
 			.limit(1);
@@ -431,7 +432,7 @@ circlesRouter.post("/:circleId/links", async (c) => {
 
 		// URL重複チェック（同一サークル内）
 		const existingUrl = await db
-			.select()
+			.select({ id: circleLinks.id })
 			.from(circleLinks)
 			.where(
 				and(
@@ -523,7 +524,7 @@ circlesRouter.put("/:circleId/links/:linkId", async (c) => {
 		// URL重複チェック（同一サークル内、自身以外）
 		if (parsed.data.url) {
 			const existingUrl = await db
-				.select()
+				.select({ id: circleLinks.id })
 				.from(circleLinks)
 				.where(
 					and(
@@ -590,7 +591,7 @@ circlesRouter.delete("/:circleId/links/:linkId", async (c) => {
 
 		// 存在チェック
 		const existing = await db
-			.select()
+			.select({ id: circleLinks.id })
 			.from(circleLinks)
 			.where(
 				and(eq(circleLinks.id, linkId), eq(circleLinks.circleId, circleId)),

@@ -1,4 +1,3 @@
-import type { auth } from "@thac/auth";
 import { adminClient, inferAdditionalFields } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
@@ -11,7 +10,16 @@ const getBaseURL = () => {
 
 export const authClient = createAuthClient({
 	baseURL: getBaseURL(),
-	plugins: [adminClient(), inferAdditionalFields<typeof auth>()],
+	plugins: [
+		adminClient(),
+		inferAdditionalFields({
+			user: {
+				onboardingCompleted: {
+					type: "boolean",
+				},
+			},
+		}),
+	],
 	fetchOptions: {
 		credentials: "include",
 	},
