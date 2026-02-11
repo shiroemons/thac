@@ -521,6 +521,8 @@ export interface NewEventInput {
 	startDate: string;
 	endDate: string;
 	eventDates: string[];
+	eventSeriesId?: string | null;
+	eventSeriesName?: string | null;
 }
 
 export interface ExistingEventDay {

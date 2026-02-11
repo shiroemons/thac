@@ -68,6 +68,8 @@ export interface NewEventInput {
 	startDate: string;
 	endDate: string;
 	eventDates: string[]; // 各日の日付
+	eventSeriesId?: string | null;
+	eventSeriesName?: string | null;
 }
 
 /**
@@ -1865,13 +1867,37 @@ async function processNewEvent(
 		return;
 	}
 
-	// イベントシリーズを検索
+	// イベントシリーズを解決
 	const editionInfo = parseEventEdition(eventName);
 	let eventSeriesId: string | null = null;
 
-	if (editionInfo.baseName) {
+	if (input.eventSeriesId) {
+		// ユーザーが既存シリーズを明示的に選択
+		eventSeriesId = input.eventSeriesId;
+	} else if (input.eventSeriesName) {
+		// ユーザーが新規シリーズ名を指定 → 同名チェック後に作成
+		const trimmedName = input.eventSeriesName.trim();
+		if (trimmedName) {
+			const existingSeries = await tx
+				.select({ id: eventSeries.id })
+				.from(eventSeries)
+				.where(eq(eventSeries.name, trimmedName))
+				.limit(1);
+			if (existingSeries.length > 0 && existingSeries[0]) {
+				eventSeriesId = existingSeries[0].id;
+			} else {
+				const newSeriesId = createId.eventSeries();
+				await tx.insert(eventSeries).values({
+					id: newSeriesId,
+					name: trimmedName,
+				});
+				eventSeriesId = newSeriesId;
+			}
+		}
+	} else if (editionInfo.baseName) {
+		// フォールバック: イベント名からLIKE検索で自動検出
 		const series = await tx
-			.select()
+			.select({ id: eventSeries.id })
 			.from(eventSeries)
 			.where(like(eventSeries.name, `%${editionInfo.baseName}%`))
 			.limit(1);

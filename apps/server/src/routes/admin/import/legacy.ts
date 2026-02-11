@@ -27,6 +27,8 @@ const newEventInputSchema = z.object({
 	startDate: z.string(),
 	endDate: z.string(),
 	eventDates: z.array(z.string()),
+	eventSeriesId: z.string().nullable().optional(),
+	eventSeriesName: z.string().nullable().optional(),
 });
 
 // 実行リクエスト型

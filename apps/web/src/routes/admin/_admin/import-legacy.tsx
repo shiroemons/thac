@@ -7,7 +7,7 @@
  * 3. 原曲マッピング
  * 4. インポート結果
  */
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	AlertCircle,
@@ -17,15 +17,21 @@ import {
 	ChevronRight,
 	FileUp,
 	Home,
+	Info,
 	Loader2,
 	Music,
+	Plus,
+	Sparkles,
 	Upload,
 	XCircle,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
+import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
 	type EntityProgressMap,
 	type ExistingEventWithDays,
+	eventSeriesApi,
 	type ImportProgress,
 	type ImportStage,
 	type LegacyCSVRecord,
@@ -35,6 +41,10 @@ import {
 	type NewEventNeeded,
 	type SongMatchResult,
 } from "@/lib/api-client";
+import {
+	type EventSeries as EventSeriesType,
+	suggestFromEventName,
+} from "@/lib/event-name-parser";
 import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/import-legacy")({
@@ -76,7 +86,7 @@ function LegacyImportPage() {
 	// プレビューAPI
 	const previewMutation = useMutation({
 		mutationFn: legacyImportApi.preview,
-		onSuccess: (data) => {
+		onSuccess: async (data) => {
 			if (data.success) {
 				setRecords(data.records);
 				setSongMatches(data.songMatches);
@@ -98,18 +108,40 @@ function LegacyImportPage() {
 				setMappings(autoMappings);
 				setCustomSongNames(autoCustomSongNames);
 
-				// 新規イベントのデフォルト値を設定
-				const defaultEventInputs: Record<string, NewEventInput> = {};
-				for (const event of data.newEventsNeeded) {
-					defaultEventInputs[event.name] = {
-						name: event.name,
-						totalDays: 1,
-						startDate: "",
-						endDate: "",
-						eventDates: [""],
-					};
+				// 新規イベントのデフォルト値を設定（イベントシリーズの自動推察付き）
+				try {
+					const seriesResponse = await eventSeriesApi.list();
+					const seriesList = seriesResponse.data;
+					const defaultEventInputs: Record<string, NewEventInput> = {};
+					for (const event of data.newEventsNeeded) {
+						const suggestion = suggestFromEventName(event.name, seriesList);
+						defaultEventInputs[event.name] = {
+							name: event.name,
+							totalDays: 1,
+							startDate: "",
+							endDate: "",
+							eventDates: [""],
+							eventSeriesId: suggestion.seriesId ?? null,
+							eventSeriesName: null,
+						};
+					}
+					setNewEventInputs(defaultEventInputs);
+				} catch {
+					// シリーズ取得に失敗した場合はシリーズなしで初期化
+					const defaultEventInputs: Record<string, NewEventInput> = {};
+					for (const event of data.newEventsNeeded) {
+						defaultEventInputs[event.name] = {
+							name: event.name,
+							totalDays: 1,
+							startDate: "",
+							endDate: "",
+							eventDates: [""],
+							eventSeriesId: null,
+							eventSeriesName: null,
+						};
+					}
+					setNewEventInputs(defaultEventInputs);
 				}
-				setNewEventInputs(defaultEventInputs);
 
 				// 複数日を持つ既存イベントのデフォルト選択（1日目）
 				const existingEvents = data.existingEventsWithDays || [];
@@ -775,6 +807,42 @@ function EventRegistrationStep({
 	eventDayMappings,
 	onEventDayChange,
 }: EventRegistrationStepProps) {
+	const [pendingNewSeries, setPendingNewSeries] = useState<string[]>([]);
+
+	const { data: seriesData, isLoading: isSeriesLoading } = useQuery({
+		queryKey: ["eventSeries"],
+		queryFn: () => eventSeriesApi.list(),
+	});
+
+	const seriesList: EventSeriesType[] = useMemo(
+		() => seriesData?.data.map((s) => ({ id: s.id, name: s.name })) ?? [],
+		[seriesData],
+	);
+
+	const seriesOptions = useMemo(() => {
+		const options = seriesList.map((s) => ({
+			value: s.id,
+			label: s.name,
+		}));
+		for (const name of pendingNewSeries) {
+			options.push({ value: `new:${name}`, label: `${name} (新規)` });
+		}
+		return options;
+	}, [seriesList, pendingNewSeries]);
+
+	const handleCreateNewSeries = useCallback(
+		(name: string, eventName: string) => {
+			setPendingNewSeries((prev) =>
+				prev.includes(name) ? prev : [...prev, name],
+			);
+			onEventInputChange(eventName, {
+				eventSeriesId: null,
+				eventSeriesName: name,
+			});
+		},
+		[onEventInputChange],
+	);
+
 	return (
 		<div className="space-y-6">
 			{/* 既存イベントのイベント日選択 */}
@@ -839,6 +907,12 @@ function EventRegistrationStep({
 								event={event}
 								input={eventInputs[event.name]}
 								onChange={(input) => onEventInputChange(event.name, input)}
+								seriesList={seriesList}
+								seriesOptions={seriesOptions}
+								onCreateNewSeries={(name) =>
+									handleCreateNewSeries(name, event.name)
+								}
+								isSeriesLoading={isSeriesLoading}
 							/>
 						))}
 					</div>
@@ -853,9 +927,75 @@ interface EventInputCardProps {
 	event: NewEventNeeded;
 	input: NewEventInput | undefined;
 	onChange: (input: Partial<NewEventInput>) => void;
+	seriesList: EventSeriesType[];
+	seriesOptions: { value: string; label: string }[];
+	onCreateNewSeries: (name: string) => void;
+	isSeriesLoading?: boolean;
 }
 
-function EventInputCard({ event, input, onChange }: EventInputCardProps) {
+function EventInputCard({
+	event,
+	input,
+	onChange,
+	seriesList,
+	seriesOptions,
+	onCreateNewSeries,
+	isSeriesLoading,
+}: EventInputCardProps) {
+	const [showCreateModal, setShowCreateModal] = useState(false);
+	const [newSeriesName, setNewSeriesName] = useState("");
+	const modalRef = useRef<HTMLDialogElement>(null);
+	const stableId = useId();
+
+	const suggestion = useMemo(
+		() => suggestFromEventName(event.name, seriesList),
+		[event.name, seriesList],
+	);
+
+	const selectValue = input?.eventSeriesName
+		? `new:${input.eventSeriesName}`
+		: input?.eventSeriesId || "";
+
+	const isAutoSuggested =
+		!!input?.eventSeriesId &&
+		!input?.eventSeriesName &&
+		suggestion.seriesId === input.eventSeriesId;
+
+	const handleSeriesChange = useCallback(
+		(value: string) => {
+			if (value.startsWith("new:")) {
+				onChange({
+					eventSeriesId: null,
+					eventSeriesName: value.slice(4),
+				});
+			} else if (value) {
+				onChange({ eventSeriesId: value, eventSeriesName: null });
+			} else {
+				onChange({ eventSeriesId: null, eventSeriesName: null });
+			}
+		},
+		[onChange],
+	);
+
+	const handleOpenCreateModal = useCallback(() => {
+		setNewSeriesName("");
+		setShowCreateModal(true);
+		setTimeout(() => modalRef.current?.showModal(), 0);
+	}, []);
+
+	const handleCloseCreateModal = useCallback(() => {
+		setShowCreateModal(false);
+		modalRef.current?.close();
+	}, []);
+
+	const handleSubmitNewSeries = useCallback(() => {
+		const trimmed = newSeriesName.trim();
+		if (!trimmed) return;
+		onCreateNewSeries(trimmed);
+		setShowCreateModal(false);
+		modalRef.current?.close();
+	}, [newSeriesName, onCreateNewSeries]);
+
 	const handleTotalDaysChange = useCallback(
 		(totalDays: number) => {
 			const eventDates = Array(totalDays).fill("");
@@ -909,14 +1049,55 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 					)}
 				</div>
 
-				<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+				{/* イベントシリーズ選択 */}
+				<div className="grid gap-2">
+					<Label htmlFor={`${stableId}-series`}>イベントシリーズ</Label>
+					<div className="flex items-center gap-3">
+						<div className="w-full max-w-md">
+							<SearchableSelect
+								id={`${stableId}-series`}
+								value={selectValue}
+								onChange={handleSeriesChange}
+								options={seriesOptions}
+								placeholder={
+									isSeriesLoading
+										? "シリーズを読み込み中..."
+										: "シリーズを選択..."
+								}
+								searchPlaceholder="シリーズ名で検索..."
+								emptyMessage="シリーズが見つかりません"
+								disabled={isSeriesLoading}
+							/>
+						</div>
+						<button
+							type="button"
+							className="btn btn-ghost btn-sm shrink-0 gap-1"
+							onClick={handleOpenCreateModal}
+						>
+							<Plus className="h-3.5 w-3.5" />
+							新規シリーズ作成
+						</button>
+					</div>
+					{isAutoSuggested && (
+						<p className="mt-1 flex items-center gap-1 text-info text-xs">
+							<Info className="h-3 w-3 shrink-0" />
+							イベント名から自動推察しました
+						</p>
+					)}
+					{input?.eventSeriesName && (
+						<p className="mt-1 flex items-center gap-1 text-success text-xs">
+							<Sparkles className="h-3 w-3 shrink-0" />
+							新規シリーズ「{input.eventSeriesName}」をインポート時に作成します
+						</p>
+					)}
+				</div>
+
+				<div className="mt-1 grid grid-cols-1 gap-4 md:grid-cols-3">
 					{/* 開催日数 */}
-					<div className="form-control">
-						<label className="label" htmlFor="event-total-days">
-							<span className="label-text">開催日数</span>
-						</label>
+					<div className="grid gap-2">
+						<Label htmlFor={`${stableId}-total-days`}>開催日数</Label>
 						<select
-							id="event-total-days"
+							id={`${stableId}-total-days`}
 							className="select select-bordered"
 							value={input?.totalDays || 1}
 							onChange={(e) =>
@@ -932,12 +1113,10 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 					</div>
 
 					{/* 開始日 */}
-					<div className="form-control">
-						<label className="label" htmlFor="event-start-date">
-							<span className="label-text">開始日</span>
-						</label>
+					<div className="grid gap-2">
+						<Label htmlFor={`${stableId}-start-date`}>開始日</Label>
 						<input
-							id="event-start-date"
+							id={`${stableId}-start-date`}
 							type="date"
 							className="input input-bordered"
 							value={input?.startDate || ""}
@@ -946,12 +1125,10 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 					</div>
 
 					{/* 終了日 */}
-					<div className="form-control">
-						<label className="label" htmlFor="event-end-date">
-							<span className="label-text">終了日</span>
-						</label>
+					<div className="grid gap-2">
+						<Label htmlFor={`${stableId}-end-date`}>終了日</Label>
 						<input
-							id="event-end-date"
+							id={`${stableId}-end-date`}
 							type="date"
 							className="input input-bordered"
 							value={input?.endDate || ""}
@@ -967,12 +1144,10 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 						<h5 className="mb-2 font-medium text-sm">開催日</h5>
 						<div className="grid grid-cols-2 gap-2 md:grid-cols-5">
 							{Array.from({ length: input?.totalDays || 1 }).map((_, i) => (
-								<div key={`day-${event.name}-${i}`} className="form-control">
-									<label className="label" htmlFor={`event-date-${i}`}>
-										<span className="label-text">{i + 1}日目</span>
-									</label>
+								<div key={`day-${event.name}-${i}`} className="grid gap-1">
+									<Label htmlFor={`${stableId}-date-${i}`}>{i + 1}日目</Label>
 									<input
-										id={`event-date-${i}`}
+										id={`${stableId}-date-${i}`}
 										type="date"
 										className="input input-bordered input-sm"
 										value={input?.eventDates?.[i] || ""}
@@ -982,6 +1157,65 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 							))}
 						</div>
 					</div>
+				)}
+
+				{/* 新規シリーズ作成モーダル */}
+				{showCreateModal && (
+					<dialog ref={modalRef} className="modal">
+						<div className="modal-box">
+							<h3 className="font-bold text-lg">新規イベントシリーズ作成</h3>
+							<div className="mt-4 grid gap-2">
+								<Label htmlFor={`${stableId}-new-series-name`}>
+									シリーズ名
+								</Label>
+								<input
+									id={`${stableId}-new-series-name`}
+									type="text"
+									className="input input-bordered"
+									value={newSeriesName}
+									onChange={(e) => setNewSeriesName(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") {
+											e.preventDefault();
+											handleSubmitNewSeries();
+										}
+									}}
+									placeholder="例: 博麗神社例大祭"
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
+								/>
+							</div>
+							<div className="modal-action">
+								<button
+									type="button"
+									className="btn"
+									onClick={handleCloseCreateModal}
+								>
+									キャンセル
+								</button>
+								<button
+									type="button"
+									className="btn btn-primary"
+									onClick={handleSubmitNewSeries}
+									disabled={!newSeriesName.trim()}
+								>
+									作成
+								</button>
+							</div>
+						</div>
+						<div className="modal-backdrop" aria-hidden="true">
+							<button
+								type="button"
+								tabIndex={-1}
+								onClick={handleCloseCreateModal}
+								aria-label="閉じる"
+							>
+								close
+							</button>
+						</div>
+					</dialog>
 				)}
 			</div>
 		</div>
