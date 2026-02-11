@@ -113,7 +113,7 @@ eventsRouter.get("/", async (c) => {
 			.as("trackCountSq");
 
 		// ソート条件を構築
-		const releaseCountCol = sql<number>`COALESCE(${releaseCountSq.count}, 0)`;
+		const releaseCountCol = sql<number>`COALESCE(${releaseCountSq.count}, 0)::int`;
 		const sortColumn =
 			sortBy === "name"
 				? events.name
@@ -136,8 +136,8 @@ eventsRouter.get("/", async (c) => {
 					endDate: events.endDate,
 					totalDays: events.totalDays,
 					venue: events.venue,
-					releaseCount: sql<number>`COALESCE(${releaseCountSq.count}, 0)`,
-					trackCount: sql<number>`COALESCE(${trackCountSq.count}, 0)`,
+					releaseCount: sql<number>`COALESCE(${releaseCountSq.count}, 0)::int`,
+					trackCount: sql<number>`COALESCE(${trackCountSq.count}, 0)::int`,
 				})
 				.from(events)
 				.leftJoin(eventSeries, eq(events.eventSeriesId, eventSeries.id))
@@ -245,9 +245,9 @@ eventsRouter.get("/:id", async (c) => {
 			...event,
 			eventDays: daysData,
 			stats: {
-				releaseCount: stats.releaseCount,
-				circleCount: stats.circleCount,
-				trackCount: stats.trackCount,
+				releaseCount: Number(stats.releaseCount),
+				circleCount: Number(stats.circleCount),
+				trackCount: Number(stats.trackCount),
 			},
 		};
 
@@ -353,7 +353,7 @@ eventsRouter.get("/:id/releases", async (c) => {
 			sortBy === "circleName"
 				? sql<string>`COALESCE(${circleNameSq.minName}, '')`
 				: sortBy === "trackCount"
-					? sql<number>`COALESCE(${trackCountSq.count}, 0)`
+					? sql<number>`COALESCE(${trackCountSq.count}, 0)::int`
 					: releases.name;
 
 		const orderByClause =
@@ -368,7 +368,7 @@ eventsRouter.get("/:id/releases", async (c) => {
 					nameJa: releases.nameJa,
 					releaseDate: releases.releaseDate,
 					releaseType: releases.releaseType,
-					trackCount: sql<number>`COALESCE(${trackCountSq.count}, 0)`,
+					trackCount: sql<number>`COALESCE(${trackCountSq.count}, 0)::int`,
 				})
 				.from(releases)
 				.leftJoin(trackCountSq, eq(releases.id, trackCountSq.releaseId))
@@ -506,7 +506,7 @@ eventsRouter.get("/:id/stats/works", async (c) => {
 				songs: songsStats.map((s) => ({
 					id: s.songId,
 					name: s.songName,
-					trackCount: s.trackCount,
+					trackCount: Number(s.trackCount),
 				})),
 			};
 
@@ -562,9 +562,9 @@ eventsRouter.get("/:id/stats/works", async (c) => {
 					existing.songs.push({
 						id: row.songId,
 						name: row.songName,
-						trackCount: row.trackCount,
+						trackCount: Number(row.trackCount),
 					});
-					existing.totalTrackCount += row.trackCount;
+					existing.totalTrackCount += Number(row.trackCount);
 				} else {
 					worksMap.set(row.workId, {
 						id: row.workId,
@@ -574,10 +574,10 @@ eventsRouter.get("/:id/stats/works", async (c) => {
 							{
 								id: row.songId,
 								name: row.songName,
-								trackCount: row.trackCount,
+								trackCount: Number(row.trackCount),
 							},
 						],
-						totalTrackCount: row.trackCount,
+						totalTrackCount: Number(row.trackCount),
 					});
 				}
 			}
@@ -622,7 +622,7 @@ eventsRouter.get("/:id/stats/works", async (c) => {
 				id: w.workId,
 				name: w.workName,
 				shortName: w.shortName,
-				trackCount: w.trackCount,
+				trackCount: Number(w.trackCount),
 			})),
 		};
 

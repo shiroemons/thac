@@ -70,9 +70,10 @@ tagsRouter.get("/", async (c) => {
 			.select({
 				id: tags.id,
 				name: tags.name,
-				usageCount: sql<number>`coalesce(count(${trackTags.trackId}), 0)`.as(
-					"usageCount",
-				),
+				usageCount:
+					sql<number>`coalesce(count(${trackTags.trackId}), 0)::int`.as(
+						"usageCount",
+					),
 			})
 			.from(tags)
 			.leftJoin(trackTags, eq(tags.id, trackTags.tagId))
@@ -92,7 +93,7 @@ tagsRouter.get("/", async (c) => {
 			totalQuery = totalQuery.where(ilike(tags.name, `%${search}%`));
 		}
 		const totalResult = await totalQuery;
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		const page = 1; // 現在ページ（TODO: ページネーションパラメータ対応時に修正）
 
@@ -165,14 +166,18 @@ tagsRouter.get("/cloud", async (c) => {
 
 		const firstTag = data[0];
 		const lastTag = data[data.length - 1];
-		const maxUsageCount = firstTag?.usageCount ?? 0;
-		const minUsageCount = lastTag?.usageCount ?? 0;
+		const maxUsageCount = Number(firstTag?.usageCount ?? 0);
+		const minUsageCount = Number(lastTag?.usageCount ?? 0);
 
 		const tagsWithWeight = data.map((tag) => ({
 			id: tag.id,
 			name: tag.name,
-			count: tag.usageCount,
-			weight: calculateWeight(tag.usageCount, maxUsageCount, minUsageCount),
+			count: Number(tag.usageCount),
+			weight: calculateWeight(
+				Number(tag.usageCount),
+				maxUsageCount,
+				minUsageCount,
+			),
 		}));
 
 		const response = {

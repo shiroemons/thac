@@ -146,14 +146,14 @@ statsRouter.get("/", async (c) => {
 			events: approximateCounts.get("events") ?? 0,
 			circles: approximateCounts.get("circles") ?? 0,
 			artists: approximateCounts.get("artist_aliases") ?? 0,
-			tracks: tracksResult[0]?.count ?? 0,
+			tracks: Number(tracksResult[0]?.count ?? 0),
 			originalSongs: approximateCounts.get("official_songs") ?? 0,
 			releases: approximateCounts.get("releases") ?? 0,
 			eventSeries: approximateCounts.get("event_series") ?? 0,
 			totalTracks: approximateCounts.get("tracks") ?? 0,
-			vocalists: vocalistsResult[0]?.count ?? 0,
-			arrangers: arrangersResult[0]?.count ?? 0,
-			lyricists: lyricistsResult[0]?.count ?? 0,
+			vocalists: Number(vocalistsResult[0]?.count ?? 0),
+			arrangers: Number(arrangersResult[0]?.count ?? 0),
+			lyricists: Number(lyricistsResult[0]?.count ?? 0),
 		};
 
 		setCache(cacheKey, response, CACHE_TTL.PUBLIC_STATS);
@@ -260,17 +260,17 @@ statsRouter.get("/rankings", async (c) => {
 			popularSongs: popularSongsResult.map((row) => ({
 				id: row.id,
 				name: row.name,
-				count: row.count,
+				count: Number(row.count),
 			})),
 			activeCircles: activeCirclesResult.map((row) => ({
 				id: row.id,
 				name: row.name,
-				count: row.count,
+				count: Number(row.count),
 			})),
 			activeArtists: activeArtistsResult.map((row) => ({
 				id: row.id, // クエリで既に正しいID形式（メイン名義: {artistId}__main__、別名義: artistAliasId）
 				name: row.name,
-				count: row.count,
+				count: Number(row.count),
 			})),
 		};
 
@@ -311,7 +311,7 @@ statsRouter.get("/rankings/original-songs", async (c) => {
 			)
 			.where(sql`${officialWorks.id} <> '0799'`);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		// アレンジ数でソートしたランキングを取得
 		const rankingResult = await db
@@ -343,7 +343,7 @@ statsRouter.get("/rankings/original-songs", async (c) => {
 				name: row.name,
 				workId: row.workId,
 				workName: row.workName,
-				count: row.count,
+				count: Number(row.count),
 			})),
 			total,
 			page,
@@ -384,7 +384,7 @@ statsRouter.get("/rankings/circles", async (c) => {
 		// 総件数を取得
 		const totalResult = await db.select({ count: count() }).from(circles);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		// 作品数でソートしたランキングを取得
 		const rankingResult = await db
@@ -404,7 +404,7 @@ statsRouter.get("/rankings/circles", async (c) => {
 			data: rankingResult.map((row) => ({
 				id: row.id,
 				name: row.name,
-				count: row.count,
+				count: Number(row.count),
 			})),
 			total,
 			page,
@@ -451,7 +451,7 @@ statsRouter.get("/rankings/artists", async (c) => {
 			})
 			.from(trackCredits);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		// 楽曲数でソートしたランキングを取得（名義単位）
 		const rankingResult = await db
@@ -494,7 +494,7 @@ statsRouter.get("/rankings/artists", async (c) => {
 				id: row.id,
 				name: row.name,
 				artistId: row.artistId,
-				count: row.count,
+				count: Number(row.count),
 			})),
 			total,
 			page,
@@ -586,7 +586,7 @@ statsRouter.get("/rankings/song-pairs", async (c) => {
 			)
 			.where(and(sql`${officialWorks.id} <> '0799'`, sql`ow2.id != '0799'`));
 
-		const total = totalPairsResult[0]?.count ?? 0;
+		const total = Number(totalPairsResult[0]?.count ?? 0);
 
 		// ペアごとのカウントを取得してランキング
 		// 「その他」(0799)を両方の曲で除外
@@ -664,7 +664,7 @@ statsRouter.get("/rankings/song-pairs", async (c) => {
 				song1Name: songNames.get(row.song1Id) ?? "",
 				song2Id: row.song2Id,
 				song2Name: songNames.get(row.song2Id) ?? "",
-				count: row.count,
+				count: Number(row.count),
 			})),
 			total,
 			page,

@@ -175,7 +175,7 @@ artistsRouter.get("/", async (c) => {
 		const aliasTrackCountSq = db
 			.select({
 				aliasId: trackCredits.artistAliasId,
-				count: sql<number>`count(distinct ${trackCredits.trackId})`.as(
+				count: sql<number>`count(distinct ${trackCredits.trackId})::int`.as(
 					"track_count",
 				),
 			})
@@ -185,7 +185,7 @@ artistsRouter.get("/", async (c) => {
 			.as("alias_track_count_sq");
 
 		// ソート条件を構築
-		const trackCountCol = sql<number>`${aliasTrackCountSq.count}`;
+		const trackCountCol = sql<number>`(${aliasTrackCountSq.count})::int`;
 		const sortColumn = sortBy === "name" ? artistAliases.name : trackCountCol;
 		const orderByClause =
 			sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn);
@@ -201,7 +201,7 @@ artistsRouter.get("/", async (c) => {
 					aliasInitialScript: artistAliases.initialScript,
 					artistId: artists.id,
 					artistName: artists.name,
-					trackCount: sql<number>`${aliasTrackCountSq.count}`,
+					trackCount: sql<number>`(${aliasTrackCountSq.count})::int`,
 				})
 				.from(artistAliases)
 				.innerJoin(artists, eq(artistAliases.artistId, artists.id))
@@ -215,7 +215,7 @@ artistsRouter.get("/", async (c) => {
 				.offset(offset),
 			db
 				.select({
-					count: sql<number>`count(*)`,
+					count: sql<number>`count(*)::int`,
 				})
 				.from(artistAliases)
 				.innerJoin(
@@ -437,7 +437,7 @@ artistsRouter.get("/:id", async (c) => {
 				),
 			);
 
-		const mainTrackCount = mainTrackCountResult[0]?.trackCount ?? 0;
+		const mainTrackCount = Number(mainTrackCountResult[0]?.trackCount ?? 0);
 
 		// 現在の名義がメイン名義でない場合、メイン名義を他名義として追加
 		if (!parsed.isMainName && mainTrackCount > 0) {
@@ -454,7 +454,7 @@ artistsRouter.get("/:id", async (c) => {
 		const detailAliasTrackCountSq = db
 			.select({
 				aliasId: trackCredits.artistAliasId,
-				count: sql<number>`count(distinct ${trackCredits.trackId})`.as(
+				count: sql<number>`count(distinct ${trackCredits.trackId})::int`.as(
 					"track_count",
 				),
 			})
@@ -469,7 +469,7 @@ artistsRouter.get("/:id", async (c) => {
 				id: artistAliases.id,
 				name: artistAliases.name,
 				aliasTypeCode: artistAliases.aliasTypeCode,
-				trackCount: sql<number>`coalesce(${detailAliasTrackCountSq.count}, 0)`,
+				trackCount: sql<number>`coalesce(${detailAliasTrackCountSq.count}, 0)::int`,
 			})
 			.from(artistAliases)
 			.leftJoin(
@@ -501,8 +501,8 @@ artistsRouter.get("/:id", async (c) => {
 			aliasTypeCode,
 			roles,
 			stats: {
-				trackCount: stats.trackCount,
-				releaseCount: stats.releaseCount,
+				trackCount: Number(stats.trackCount),
+				releaseCount: Number(stats.releaseCount),
 			},
 			otherAliases,
 		};
@@ -908,7 +908,7 @@ artistsRouter.get("/:id/stats/works", async (c) => {
 				songs: songsStats.map((s) => ({
 					id: s.songId,
 					name: s.songName,
-					trackCount: s.trackCount,
+					trackCount: Number(s.trackCount),
 				})),
 			};
 
@@ -964,9 +964,9 @@ artistsRouter.get("/:id/stats/works", async (c) => {
 					existing.songs.push({
 						id: row.songId,
 						name: row.songName,
-						trackCount: row.trackCount,
+						trackCount: Number(row.trackCount),
 					});
-					existing.totalTrackCount += row.trackCount;
+					existing.totalTrackCount += Number(row.trackCount);
 				} else {
 					worksMap.set(row.workId, {
 						id: row.workId,
@@ -976,10 +976,10 @@ artistsRouter.get("/:id/stats/works", async (c) => {
 							{
 								id: row.songId,
 								name: row.songName,
-								trackCount: row.trackCount,
+								trackCount: Number(row.trackCount),
 							},
 						],
-						totalTrackCount: row.trackCount,
+						totalTrackCount: Number(row.trackCount),
 					});
 				}
 			}
@@ -1024,7 +1024,7 @@ artistsRouter.get("/:id/stats/works", async (c) => {
 				id: w.workId,
 				name: w.workName,
 				shortName: w.shortName,
-				trackCount: w.trackCount,
+				trackCount: Number(w.trackCount),
 			})),
 		};
 

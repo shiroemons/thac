@@ -109,8 +109,8 @@ officialWorksRouter.get("/", async (c) => {
 					shortNameEn: officialWorks.shortNameEn,
 					numberInSeries: officialWorks.numberInSeries,
 					releaseDate: officialWorks.releaseDate,
-					songCount: sql<number>`COALESCE(${songCountSq.count}, 0)`,
-					totalArrangeCount: sql<number>`COALESCE(${arrangeCountSq.count}, 0)`,
+					songCount: sql<number>`COALESCE(${songCountSq.count}, 0)::int`,
+					totalArrangeCount: sql<number>`COALESCE(${arrangeCountSq.count}, 0)::int`,
 				})
 				.from(officialWorks)
 				.leftJoin(
@@ -129,7 +129,7 @@ officialWorksRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(officialWorks).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		const response = {
 			data,
@@ -215,7 +215,7 @@ officialWorksRouter.get("/:id", async (c) => {
 					nameJa: officialSongs.nameJa,
 					nameEn: officialSongs.nameEn,
 					composerName: officialSongs.composerName,
-					arrangeCount: sql<number>`COALESCE(${arrangeCountSq.count}, 0)`,
+					arrangeCount: sql<number>`COALESCE(${arrangeCountSq.count}, 0)::int`,
 				})
 				.from(officialSongs)
 				.leftJoin(arrangeCountSq, eq(officialSongs.id, arrangeCountSq.songId))
@@ -243,7 +243,7 @@ officialWorksRouter.get("/:id", async (c) => {
 						FROM ${officialSongs} os
 						INNER JOIN ${trackOfficialSongs} ON ${trackOfficialSongs.officialSongId} = os.id
 						WHERE os.official_work_id = ${id}
-					)`,
+					)::int`,
 				})
 				.from(officialSongs)
 				.where(eq(officialSongs.officialWorkId, id)),
@@ -253,8 +253,8 @@ officialWorksRouter.get("/:id", async (c) => {
 
 		const response = {
 			...work,
-			songCount: stats.songCount,
-			totalArrangeCount: stats.totalArrangeCount,
+			songCount: Number(stats.songCount),
+			totalArrangeCount: Number(stats.totalArrangeCount),
 			links: linksData,
 			songs: songsData,
 		};

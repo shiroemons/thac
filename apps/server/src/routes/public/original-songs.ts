@@ -136,7 +136,7 @@ originalSongsRouter.get("/", async (c) => {
 					composerName: officialSongs.composerName,
 					arrangerName: officialSongs.arrangerName,
 					isOriginal: officialSongs.isOriginal,
-					arrangeCount: sql<number>`COALESCE(${arrangeCountSq.count}, 0)`,
+					arrangeCount: sql<number>`COALESCE(${arrangeCountSq.count}, 0)::int`,
 				})
 				.from(officialSongs)
 				.leftJoin(
@@ -162,7 +162,7 @@ originalSongsRouter.get("/", async (c) => {
 				.where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		const response = {
 			data,
@@ -335,9 +335,9 @@ originalSongsRouter.get("/:id", async (c) => {
 			sourceSongName,
 			work,
 			links: linksData,
-			arrangeCount: stats.arrangeCount,
-			circleCount: stats.circleCount,
-			artistCount: stats.artistCount,
+			arrangeCount: Number(stats.arrangeCount),
+			circleCount: Number(stats.circleCount),
+			artistCount: Number(stats.artistCount),
 			prevSong,
 			nextSong,
 		};
@@ -419,7 +419,7 @@ originalSongsRouter.get("/:id/tracks", async (c) => {
 				.where(eq(trackOfficialSongs.officialSongId, songId)),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		if (tracksData.length === 0) {
 			const response = { data: [], total, page, limit };
