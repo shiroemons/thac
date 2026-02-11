@@ -54,7 +54,7 @@ eventSeriesRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(eventSeries).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,
@@ -278,7 +278,7 @@ eventSeriesRouter.delete("/:id", async (c) => {
 			.from(events)
 			.where(eq(events.eventSeriesId, id));
 
-		if ((linkedEvents[0]?.count ?? 0) > 0) {
+		if (Number(linkedEvents[0]?.count ?? 0) > 0) {
 			return c.json(
 				{ error: ERROR_MESSAGES.CANNOT_DELETE_SERIES_WITH_EVENTS },
 				409,

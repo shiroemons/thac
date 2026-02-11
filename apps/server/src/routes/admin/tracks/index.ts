@@ -268,7 +268,7 @@ tracksAdminRouter.get("/", async (c) => {
 			.leftJoin(releases, eq(tracks.releaseId, releases.id))
 			.where(whereCondition);
 
-		const total = totalResult?.count ?? 0;
+		const total = Number(totalResult?.count ?? 0);
 
 		// レスポンス形成
 		const data = result.map((row) => {

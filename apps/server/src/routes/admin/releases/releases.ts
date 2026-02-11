@@ -192,7 +192,7 @@ releasesRouter.get("/", async (c) => {
 			trackCount: trackCounts[release.id] ?? 0,
 		}));
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data: dataWithCounts,

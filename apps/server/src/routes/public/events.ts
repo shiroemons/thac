@@ -150,7 +150,7 @@ eventsRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(events).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		const response = {
 			data,
@@ -380,7 +380,7 @@ eventsRouter.get("/:id/releases", async (c) => {
 			db.select({ count: count() }).from(releases).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		if (releasesData.length === 0) {
 			const response = { data: [], total, page, limit };

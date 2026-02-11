@@ -186,7 +186,7 @@ circlesRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(circles).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		const response = {
 			data,
@@ -362,7 +362,7 @@ circlesRouter.get("/:id/releases", async (c) => {
 				.where(eq(releaseCircles.circleId, circleId)),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		// イベント情報を整形
 		const formattedData = data.map((item) => ({
@@ -450,7 +450,7 @@ circlesRouter.get("/:id/tracks", async (c) => {
 				.where(eq(releaseCircles.circleId, circleId)),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		if (tracksData.length === 0) {
 			const response = { data: [], total, page, limit };

@@ -225,7 +225,7 @@ artistsRouter.get("/", async (c) => {
 				.where(whereClause),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		if (aliasesData.length === 0) {
 			const response = {
@@ -655,7 +655,7 @@ artistsRouter.get("/:id/tracks", async (c) => {
 			countQuery,
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		if (creditsData.length === 0) {
 			const response = { data: [], total, page, limit };

@@ -77,7 +77,7 @@ platformsRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(platforms).where(whereCondition),
 		]);
 
-		const total = totalResult[0]?.count ?? 0;
+		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,

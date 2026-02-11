@@ -96,7 +96,7 @@ tagsRouter.get("/", async (c) => {
 				id: tags.id,
 				name: tags.name,
 				attributes: tags.attributes,
-				trackCount: sql<number>`COALESCE(${usageCountSubquery.usageCount}, 0)`,
+				trackCount: sql<number>`COALESCE(${usageCountSubquery.usageCount}, 0)::int`,
 				createdAt: tags.createdAt,
 				updatedAt: tags.updatedAt,
 			})
@@ -113,7 +113,7 @@ tagsRouter.get("/", async (c) => {
 			.from(tags)
 			.where(whereCondition);
 
-		const total = totalResult?.count ?? 0;
+		const total = Number(totalResult?.count ?? 0);
 
 		return c.json({
 			data: result.map((tag) => ({
@@ -341,7 +341,7 @@ tagsRouter.post("/merge", async (c) => {
 
 			return {
 				mergedCount,
-				usageCount: usageResult?.count ?? 0,
+				usageCount: Number(usageResult?.count ?? 0),
 			};
 		});
 
@@ -395,8 +395,8 @@ tagsRouter.get("/:id", async (c) => {
 			id: tag.id,
 			name: tag.name,
 			attributes: tag.attributes ?? null,
-			usageCount: usageResult?.count ?? 0,
-			lockedCount: lockedResult?.count ?? 0,
+			usageCount: Number(usageResult?.count ?? 0),
+			lockedCount: Number(lockedResult?.count ?? 0),
 			createdAt: tag.createdAt.toISOString(),
 			updatedAt: tag.updatedAt.toISOString(),
 		});
@@ -453,7 +453,7 @@ tagsRouter.get("/:id/tracks", async (c) => {
 			.from(trackTags)
 			.where(eq(trackTags.tagId, id));
 
-		const total = totalResult?.count ?? 0;
+		const total = Number(totalResult?.count ?? 0);
 		const totalPages = Math.ceil(total / limit);
 
 		return c.json({
@@ -627,7 +627,7 @@ tagsRouter.delete("/:id", async (c) => {
 			.from(trackTags)
 			.where(eq(trackTags.tagId, id));
 
-		const usageCount = usageResult?.count ?? 0;
+		const usageCount = Number(usageResult?.count ?? 0);
 
 		if (usageCount > 0 && !force) {
 			return c.json(
