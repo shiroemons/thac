@@ -34,6 +34,7 @@ import {
 	generateSortName,
 	normalizeFullWidthSymbols,
 	parseDiscInfo,
+	parseEventAnnotation,
 	parseEventEdition,
 } from "../utils/name-utils";
 
@@ -60,6 +61,7 @@ export interface ImportInput {
 	customSongNames: Map<string, string>; // originalName -> customSongName（マッチしない原曲用）
 	newEvents?: NewEventInput[]; // 新規イベント情報
 	eventDayMappings?: Map<string, string>; // eventName -> eventDayId（既存イベントのイベント日選択用）
+	eventNameMappings?: Map<string, string>; // csvEventName -> resolvedEventName（イベントマッピング）
 }
 
 export interface NewEventInput {
@@ -68,6 +70,8 @@ export interface NewEventInput {
 	startDate: string;
 	endDate: string;
 	eventDates: string[]; // 各日の日付
+	eventSeriesId?: string | null;
+	eventSeriesName?: string | null;
 }
 
 /**
@@ -213,8 +217,9 @@ function countUniqueEntities(records: LegacyCSVRecord[]): EntityProgressMap {
 		const primaryCircle = normalizeFullWidthSymbols(
 			circleNames[0]?.trim() || "",
 		);
-		if (primaryCircle && discInfo.name) {
-			uniqueReleases.add(`${primaryCircle}:${discInfo.name}`);
+		const normalizedAlbumName = normalizeFullWidthSymbols(discInfo.name);
+		if (primaryCircle && normalizedAlbumName) {
+			uniqueReleases.add(`${primaryCircle}:${normalizedAlbumName}`);
 		}
 	}
 
@@ -351,10 +356,11 @@ function extractUniqueEntities(records: LegacyCSVRecord[]): ExtractedEntities {
 		const primaryCircle = normalizeFullWidthSymbols(
 			circleNameList[0]?.trim() || "",
 		);
-		const releaseKey = `${primaryCircle}:${discInfo.name}`;
+		const normalizedAlbumBaseName = normalizeFullWidthSymbols(discInfo.name);
+		const releaseKey = `${primaryCircle}:${normalizedAlbumBaseName}`;
 		if (!result.releaseKeys.has(releaseKey)) {
 			result.releaseKeys.set(releaseKey, {
-				albumBaseName: discInfo.name,
+				albumBaseName: normalizedAlbumBaseName,
 				circleNames: circleNameList.map((n) =>
 					normalizeFullWidthSymbols(n.trim()),
 				),
@@ -1494,6 +1500,16 @@ export async function executeLegacyImport(
 	try {
 		notifyProgress("preparing", 0, totalRecords, "データを解析中...");
 
+		// イベント名マッピングを適用（レコードのeventフィールドを変換後の名前に置換）
+		if (input.eventNameMappings && input.eventNameMappings.size > 0) {
+			for (const record of input.records) {
+				const mapped = input.eventNameMappings.get(record.event.trim());
+				if (mapped) {
+					record.event = mapped;
+				}
+			}
+		}
+
 		// Phase 1: 全レコードからユニークなエンティティを抽出（1パス）
 		const extracted = extractUniqueEntities(input.records);
 
@@ -1865,13 +1881,37 @@ async function processNewEvent(
 		return;
 	}
 
-	// イベントシリーズを検索
+	// イベントシリーズを解決
 	const editionInfo = parseEventEdition(eventName);
 	let eventSeriesId: string | null = null;
 
-	if (editionInfo.baseName) {
+	if (input.eventSeriesId) {
+		// ユーザーが既存シリーズを明示的に選択
+		eventSeriesId = input.eventSeriesId;
+	} else if (input.eventSeriesName) {
+		// ユーザーが新規シリーズ名を指定 → 同名チェック後に作成
+		const trimmedName = input.eventSeriesName.trim();
+		if (trimmedName) {
+			const existingSeries = await tx
+				.select({ id: eventSeries.id })
+				.from(eventSeries)
+				.where(eq(eventSeries.name, trimmedName))
+				.limit(1);
+			if (existingSeries.length > 0 && existingSeries[0]) {
+				eventSeriesId = existingSeries[0].id;
+			} else {
+				const newSeriesId = createId.eventSeries();
+				await tx.insert(eventSeries).values({
+					id: newSeriesId,
+					name: trimmedName,
+				});
+				eventSeriesId = newSeriesId;
+			}
+		}
+	} else if (editionInfo.baseName) {
+		// フォールバック: イベント名からLIKE検索で自動検出
 		const series = await tx
-			.select()
+			.select({ id: eventSeries.id })
 			.from(eventSeries)
 			.where(like(eventSeries.name, `%${editionInfo.baseName}%`))
 			.limit(1);
@@ -1921,6 +1961,212 @@ async function processNewEvent(
 			});
 		}
 	}
+}
+
+/**
+ * イベントマッチング候補
+ */
+export interface EventMatchSuggestion {
+	csvEventName: string;
+	annotation: string | null;
+	strippedName: string;
+	matchType: "exact" | "annotation_pair" | "fuzzy" | "none";
+	suggestedEventId: string | null;
+	suggestedEventName: string | null;
+	allCandidates: Array<{
+		eventId: string;
+		eventName: string;
+		edition: number | null;
+		seriesName: string | null;
+	}>;
+}
+
+/**
+ * CSVのイベント名に対するマッチング候補を生成
+ *
+ * Phase 1: 既存イベントの完全一致チェック
+ * Phase 2: 括弧付きサフィックス検出（中止、延期等）
+ * Phase 3: 回次+シリーズによるファジーマッチ
+ */
+export async function generateEventMatchSuggestions(
+	csvEventNames: string[],
+): Promise<EventMatchSuggestion[]> {
+	const uniqueNames = [
+		...new Set(csvEventNames.map((n) => n.trim()).filter(Boolean)),
+	];
+	const results: EventMatchSuggestion[] = [];
+	const csvNameSet = new Set(uniqueNames);
+
+	// Phase 1: 既存イベントの完全一致チェック
+	const exactMatchNames = new Set<string>();
+	for (const name of uniqueNames) {
+		const existing = await db
+			.select({ id: events.id, name: events.name })
+			.from(events)
+			.where(eq(events.name, name))
+			.limit(1);
+
+		if (existing.length > 0 && existing[0]) {
+			exactMatchNames.add(name);
+			results.push({
+				csvEventName: name,
+				annotation: null,
+				strippedName: name,
+				matchType: "exact",
+				suggestedEventId: existing[0].id,
+				suggestedEventName: existing[0].name,
+				allCandidates: [],
+			});
+		}
+	}
+
+	// Phase 2: 括弧付きサフィックス検出
+	const remainingAfterPhase2 = new Set<string>();
+	for (const name of uniqueNames) {
+		if (exactMatchNames.has(name)) continue;
+
+		const annotationInfo = parseEventAnnotation(name);
+		if (annotationInfo.annotation) {
+			// baseName が CSV内の別イベント名と一致
+			if (csvNameSet.has(annotationInfo.baseName)) {
+				results.push({
+					csvEventName: name,
+					annotation: annotationInfo.annotation,
+					strippedName: annotationInfo.baseName,
+					matchType: "annotation_pair",
+					suggestedEventId: null,
+					suggestedEventName: annotationInfo.baseName,
+					allCandidates: [],
+				});
+				continue;
+			}
+
+			// baseName が DB既存イベントと一致
+			const existingBase = await db
+				.select({ id: events.id, name: events.name })
+				.from(events)
+				.where(eq(events.name, annotationInfo.baseName))
+				.limit(1);
+
+			if (existingBase.length > 0 && existingBase[0]) {
+				results.push({
+					csvEventName: name,
+					annotation: annotationInfo.annotation,
+					strippedName: annotationInfo.baseName,
+					matchType: "fuzzy",
+					suggestedEventId: existingBase[0].id,
+					suggestedEventName: existingBase[0].name,
+					allCandidates: [
+						{
+							eventId: existingBase[0].id,
+							eventName: existingBase[0].name,
+							edition: null,
+							seriesName: null,
+						},
+					],
+				});
+				continue;
+			}
+
+			// annotationありだがマッチなし
+			results.push({
+				csvEventName: name,
+				annotation: annotationInfo.annotation,
+				strippedName: annotationInfo.baseName,
+				matchType: "none",
+				suggestedEventId: null,
+				suggestedEventName: null,
+				allCandidates: [],
+			});
+			continue;
+		}
+
+		remainingAfterPhase2.add(name);
+	}
+
+	// Phase 3: 回次+シリーズによるファジーマッチ
+	for (const name of remainingAfterPhase2) {
+		const editionInfo = parseEventEdition(name);
+
+		if (editionInfo.edition !== null && editionInfo.baseName) {
+			// シリーズテーブルで baseName を ILIKE 検索
+			const matchingSeries = await db
+				.select({ id: eventSeries.id, name: eventSeries.name })
+				.from(eventSeries)
+				.where(like(eventSeries.name, `%${editionInfo.baseName}%`))
+				.limit(10);
+
+			if (matchingSeries.length > 0) {
+				const allCandidates: EventMatchSuggestion["allCandidates"] = [];
+				let suggestedEventId: string | null = null;
+				let suggestedEventName: string | null = null;
+
+				for (const series of matchingSeries) {
+					// シリーズに紐づくイベントを取得
+					const seriesEvents = await db
+						.select({ id: events.id, name: events.name })
+						.from(events)
+						.where(eq(events.eventSeriesId, series.id));
+
+					for (const evt of seriesEvents) {
+						const evtEdition = parseEventEdition(evt.name);
+						allCandidates.push({
+							eventId: evt.id,
+							eventName: evt.name,
+							edition: evtEdition.edition,
+							seriesName: series.name,
+						});
+
+						// 同一 edition のイベントを推奨候補に
+						if (evtEdition.edition === editionInfo.edition) {
+							suggestedEventId = evt.id;
+							suggestedEventName = evt.name;
+						}
+					}
+				}
+
+				if (suggestedEventId) {
+					results.push({
+						csvEventName: name,
+						annotation: null,
+						strippedName: name,
+						matchType: "fuzzy",
+						suggestedEventId,
+						suggestedEventName,
+						allCandidates,
+					});
+					continue;
+				}
+
+				// シリーズはマッチしたが同一editionのイベントがない
+				if (allCandidates.length > 0) {
+					results.push({
+						csvEventName: name,
+						annotation: null,
+						strippedName: name,
+						matchType: "none",
+						suggestedEventId: null,
+						suggestedEventName: null,
+						allCandidates,
+					});
+					continue;
+				}
+			}
+		}
+
+		// マッチなし（annotation もない）→ そのままイベント登録ステップへ
+		results.push({
+			csvEventName: name,
+			annotation: null,
+			strippedName: name,
+			matchType: "none",
+			suggestedEventId: null,
+			suggestedEventName: null,
+			allCandidates: [],
+		});
+	}
+
+	return results;
 }
 
 /**

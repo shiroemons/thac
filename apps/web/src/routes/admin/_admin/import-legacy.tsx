@@ -3,29 +3,39 @@
  *
  * 4ステップウィザード:
  * 1. CSVアップロード
- * 2. 原曲マッピング
- * 3. イベント登録（新規イベントがある場合のみ）
+ * 2. イベント登録（新規イベントがある場合のみ）
+ * 3. 原曲マッピング
  * 4. インポート結果
  */
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	AlertCircle,
+	ArrowRight,
 	Calendar,
 	CheckCircle,
 	ChevronLeft,
 	ChevronRight,
 	FileUp,
 	Home,
+	Info,
+	Link2,
 	Loader2,
 	Music,
+	Plus,
+	Search,
+	Sparkles,
 	Upload,
 	XCircle,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
+import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
 	type EntityProgressMap,
+	type EventMatchSuggestion,
 	type ExistingEventWithDays,
+	eventSeriesApi,
 	type ImportProgress,
 	type ImportStage,
 	type LegacyCSVRecord,
@@ -35,6 +45,11 @@ import {
 	type NewEventNeeded,
 	type SongMatchResult,
 } from "@/lib/api-client";
+import {
+	type EventSeries as EventSeriesType,
+	extractSeriesName,
+	suggestFromEventName,
+} from "@/lib/event-name-parser";
 import { createPageHead } from "@/lib/head";
 
 export const Route = createFileRoute("/admin/_admin/import-legacy")({
@@ -42,7 +57,13 @@ export const Route = createFileRoute("/admin/_admin/import-legacy")({
 	component: LegacyImportPage,
 });
 
-type WizardStep = "upload" | "mapping" | "events" | "importing" | "result";
+type WizardStep =
+	| "upload"
+	| "event-mapping"
+	| "events"
+	| "mapping"
+	| "importing"
+	| "result";
 
 function LegacyImportPage() {
 	const [step, setStep] = useState<WizardStep>("upload");
@@ -62,6 +83,12 @@ function LegacyImportPage() {
 	const [eventDayMappings, setEventDayMappings] = useState<
 		Record<string, string>
 	>({});
+	const [eventMatchSuggestions, setEventMatchSuggestions] = useState<
+		EventMatchSuggestion[]
+	>([]);
+	const [eventNameMappings, setEventNameMappings] = useState<
+		Record<string, string>
+	>({});
 	const [parseErrors, setParseErrors] = useState<
 		{ row: number; message: string }[]
 	>([]);
@@ -76,7 +103,7 @@ function LegacyImportPage() {
 	// プレビューAPI
 	const previewMutation = useMutation({
 		mutationFn: legacyImportApi.preview,
-		onSuccess: (data) => {
+		onSuccess: async (data) => {
 			if (data.success) {
 				setRecords(data.records);
 				setSongMatches(data.songMatches);
@@ -98,18 +125,40 @@ function LegacyImportPage() {
 				setMappings(autoMappings);
 				setCustomSongNames(autoCustomSongNames);
 
-				// 新規イベントのデフォルト値を設定
-				const defaultEventInputs: Record<string, NewEventInput> = {};
-				for (const event of data.newEventsNeeded) {
-					defaultEventInputs[event.name] = {
-						name: event.name,
-						totalDays: 1,
-						startDate: "",
-						endDate: "",
-						eventDates: [""],
-					};
+				// 新規イベントのデフォルト値を設定（イベントシリーズの自動推察付き）
+				try {
+					const seriesResponse = await eventSeriesApi.list();
+					const seriesList = seriesResponse.data;
+					const defaultEventInputs: Record<string, NewEventInput> = {};
+					for (const event of data.newEventsNeeded) {
+						const suggestion = suggestFromEventName(event.name, seriesList);
+						defaultEventInputs[event.name] = {
+							name: event.name,
+							totalDays: 1,
+							startDate: "",
+							endDate: "",
+							eventDates: [""],
+							eventSeriesId: suggestion.seriesId ?? null,
+							eventSeriesName: null,
+						};
+					}
+					setNewEventInputs(defaultEventInputs);
+				} catch {
+					// シリーズ取得に失敗した場合はシリーズなしで初期化
+					const defaultEventInputs: Record<string, NewEventInput> = {};
+					for (const event of data.newEventsNeeded) {
+						defaultEventInputs[event.name] = {
+							name: event.name,
+							totalDays: 1,
+							startDate: "",
+							endDate: "",
+							eventDates: [""],
+							eventSeriesId: null,
+							eventSeriesName: null,
+						};
+					}
+					setNewEventInputs(defaultEventInputs);
 				}
-				setNewEventInputs(defaultEventInputs);
 
 				// 複数日を持つ既存イベントのデフォルト選択（1日目）
 				const existingEvents = data.existingEventsWithDays || [];
@@ -122,7 +171,39 @@ function LegacyImportPage() {
 				}
 				setEventDayMappings(defaultEventDayMappings);
 
-				setStep("mapping");
+				// イベントマッチング候補を設定
+				const suggestions = data.eventMatchSuggestions || [];
+				setEventMatchSuggestions(suggestions);
+
+				// 自動マッピングを設定（annotation_pair の自動マッピング）
+				const autoEventMappings: Record<string, string> = {};
+				for (const s of suggestions) {
+					if (s.matchType === "annotation_pair" && s.suggestedEventName) {
+						autoEventMappings[s.csvEventName] = s.suggestedEventName;
+					} else if (s.matchType === "fuzzy" && s.suggestedEventName) {
+						autoEventMappings[s.csvEventName] = s.suggestedEventName;
+					}
+				}
+				setEventNameMappings(autoEventMappings);
+
+				// イベントマッピングが必要かチェック
+				const needsEventMapping = suggestions.some(
+					(s) =>
+						s.matchType === "annotation_pair" ||
+						s.matchType === "fuzzy" ||
+						(s.matchType === "none" && s.annotation !== null),
+				);
+
+				if (needsEventMapping) {
+					setStep("event-mapping");
+				} else if (
+					data.newEventsNeeded.length > 0 ||
+					(data.existingEventsWithDays || []).length > 0
+				) {
+					setStep("events");
+				} else {
+					setStep("mapping");
+				}
 			} else {
 				setParseErrors(data.errors);
 			}
@@ -149,9 +230,12 @@ function LegacyImportPage() {
 				newEventsNeeded.length > 0
 					? Object.values(newEventInputs).filter((e) => e.startDate !== "")
 					: undefined;
-			// イベント日マッピングは既存イベントがある場合のみ渡す
 			const eventDayMappingsToSend =
 				existingEventsWithDays.length > 0 ? eventDayMappings : undefined;
+			const eventNameMappingsToSend =
+				Object.keys(eventNameMappings).length > 0
+					? eventNameMappings
+					: undefined;
 			return legacyImportApi.executeWithProgress(
 				records,
 				mappings,
@@ -159,6 +243,7 @@ function LegacyImportPage() {
 				newEvents,
 				handleProgress,
 				eventDayMappingsToSend,
+				eventNameMappingsToSend,
 			);
 		},
 		onMutate: () => {
@@ -236,31 +321,66 @@ function LegacyImportPage() {
 		[],
 	);
 
+	// イベントマッピングが必要かどうか
+	const needsEventMappingStep = eventMatchSuggestions.some(
+		(s) =>
+			s.matchType === "annotation_pair" ||
+			s.matchType === "fuzzy" ||
+			(s.matchType === "none" && s.annotation !== null),
+	);
+
 	// イベント設定が必要かどうか
 	const needsEventStep =
 		newEventsNeeded.length > 0 || existingEventsWithDays.length > 0;
 
 	// 次へハンドラ
 	const handleNext = useCallback(() => {
-		if (step === "mapping") {
-			if (needsEventStep) {
+		if (step === "event-mapping") {
+			// マッピング結果を適用して、新規イベントリストを更新
+			const mappedEventNames = new Set(Object.keys(eventNameMappings));
+			const updatedNewEvents = newEventsNeeded.filter(
+				(e) => !mappedEventNames.has(e.name),
+			);
+			setNewEventsNeeded(updatedNewEvents);
+
+			if (updatedNewEvents.length > 0 || existingEventsWithDays.length > 0) {
 				setStep("events");
 			} else {
-				executeMutation.mutate();
+				setStep("mapping");
 			}
 		} else if (step === "events") {
+			setStep("mapping");
+		} else if (step === "mapping") {
 			executeMutation.mutate();
 		}
-	}, [step, needsEventStep, executeMutation]);
+	}, [
+		step,
+		executeMutation,
+		eventNameMappings,
+		newEventsNeeded,
+		existingEventsWithDays,
+	]);
 
 	// 戻るハンドラ
 	const handleBack = useCallback(() => {
-		if (step === "mapping") {
+		if (step === "event-mapping") {
 			setStep("upload");
 		} else if (step === "events") {
-			setStep("mapping");
+			if (needsEventMappingStep) {
+				setStep("event-mapping");
+			} else {
+				setStep("upload");
+			}
+		} else if (step === "mapping") {
+			if (needsEventStep) {
+				setStep("events");
+			} else if (needsEventMappingStep) {
+				setStep("event-mapping");
+			} else {
+				setStep("upload");
+			}
 		}
-	}, [step]);
+	}, [step, needsEventStep, needsEventMappingStep]);
 
 	// リセットハンドラ
 	const handleReset = useCallback(() => {
@@ -271,12 +391,17 @@ function LegacyImportPage() {
 		setMappings({});
 		setCustomSongNames({});
 		setNewEventInputs({});
+		setExistingEventsWithDays([]);
+		setEventDayMappings({});
+		setEventMatchSuggestions([]);
+		setEventNameMappings({});
 		setParseErrors([]);
 		setImportResult(null);
 	}, []);
 
 	// イベントステップをスキップするかどうか
 	const skipEventsStep = !needsEventStep;
+	const skipEventMappingStep = !needsEventMappingStep;
 
 	return (
 		<div className="container mx-auto space-y-6 p-6">
@@ -302,21 +427,28 @@ function LegacyImportPage() {
 			<div className="mb-8">
 				<ul className="steps w-full">
 					<li
-						className={`step ${["upload", "mapping", "events", "importing", "result"].includes(step) ? "step-primary" : ""}`}
+						className={`step ${["upload", "event-mapping", "events", "mapping", "importing", "result"].includes(step) ? "step-primary" : ""}`}
 					>
 						CSVアップロード
 					</li>
 					<li
-						className={`step ${["mapping", "events", "importing", "result"].includes(step) ? "step-primary" : ""}`}
+						className={`step ${["event-mapping", "events", "mapping", "importing", "result"].includes(step) ? "step-primary" : ""}`}
 					>
-						原曲マッピング
+						{step !== "upload" && skipEventMappingStep
+							? "イベントマッピング（スキップ）"
+							: "イベントマッピング"}
 					</li>
 					<li
-						className={`step ${["events", "importing", "result"].includes(step) ? "step-primary" : ""}`}
+						className={`step ${["events", "mapping", "importing", "result"].includes(step) ? "step-primary" : ""}`}
 					>
-						{step !== "upload" && skipEventsStep
+						{step !== "upload" && step !== "event-mapping" && skipEventsStep
 							? "イベント登録（スキップ）"
 							: "イベント登録"}
+					</li>
+					<li
+						className={`step ${["mapping", "importing", "result"].includes(step) ? "step-primary" : ""}`}
+					>
+						原曲マッピング
 					</li>
 					<li
 						className={`step ${["importing", "result"].includes(step) ? "step-primary" : ""}`}
@@ -340,14 +472,19 @@ function LegacyImportPage() {
 						/>
 					)}
 
-					{step === "mapping" && (
-						<MappingStep
-							records={records}
-							songMatches={songMatches}
-							mappings={mappings}
-							customSongNames={customSongNames}
-							onMappingChange={handleMappingChange}
-							onCustomSongNameChange={handleCustomSongNameChange}
+					{step === "event-mapping" && (
+						<EventMappingStep
+							suggestions={eventMatchSuggestions}
+							eventNameMappings={eventNameMappings}
+							onMappingChange={(csvName, resolvedName) => {
+								setEventNameMappings((prev) => {
+									if (resolvedName === null) {
+										const { [csvName]: _, ...rest } = prev;
+										return rest;
+									}
+									return { ...prev, [csvName]: resolvedName };
+								});
+							}}
 						/>
 					)}
 
@@ -359,6 +496,17 @@ function LegacyImportPage() {
 							existingEventsWithDays={existingEventsWithDays}
 							eventDayMappings={eventDayMappings}
 							onEventDayChange={handleEventDayChange}
+						/>
+					)}
+
+					{step === "mapping" && (
+						<MappingStep
+							records={records}
+							songMatches={songMatches}
+							mappings={mappings}
+							customSongNames={customSongNames}
+							onMappingChange={handleMappingChange}
+							onCustomSongNameChange={handleCustomSongNameChange}
 						/>
 					)}
 
@@ -388,14 +536,16 @@ function LegacyImportPage() {
 							戻る
 						</button>
 
-						{(step === "mapping" || step === "events") && (
+						{(step === "event-mapping" ||
+							step === "events" ||
+							step === "mapping") && (
 							<button
 								type="button"
 								className="btn btn-primary"
 								onClick={handleNext}
 								disabled={executeMutation.isPending}
 							>
-								{step === "mapping" && !skipEventsStep ? (
+								{step === "event-mapping" || step === "events" ? (
 									<>
 										次へ
 										<ChevronRight className="h-4 w-4" />
@@ -597,7 +747,262 @@ function UploadStep({ onUpload, isLoading, errors }: UploadStepProps) {
 	);
 }
 
-// ステップ2: 原曲マッピング
+// イベントマッピングステップ
+interface EventMappingStepProps {
+	suggestions: EventMatchSuggestion[];
+	eventNameMappings: Record<string, string>;
+	onMappingChange: (csvName: string, resolvedName: string | null) => void;
+}
+
+function EventMappingStep({
+	suggestions,
+	eventNameMappings,
+	onMappingChange,
+}: EventMappingStepProps) {
+	// 表示対象のみフィルタ（exactはスキップ、annotationなしのnoneもスキップ）
+	const annotationPairs = useMemo(
+		() => suggestions.filter((s) => s.matchType === "annotation_pair"),
+		[suggestions],
+	);
+	const fuzzySuggestions = useMemo(
+		() => suggestions.filter((s) => s.matchType === "fuzzy"),
+		[suggestions],
+	);
+	const noMatchWithAnnotation = useMemo(
+		() =>
+			suggestions.filter(
+				(s) => s.matchType === "none" && s.annotation !== null,
+			),
+		[suggestions],
+	);
+
+	return (
+		<div className="space-y-6">
+			<div className="text-center">
+				<h3 className="font-semibold text-lg">イベントマッピング</h3>
+				<p className="text-base-content/70 text-sm">
+					CSVのイベント名を既存イベントにマッピングします
+				</p>
+			</div>
+
+			{/* 自動マッピング済み（annotation_pair） */}
+			{annotationPairs.length > 0 && (
+				<div className="space-y-2">
+					<h4 className="flex items-center gap-2 font-medium text-sm">
+						<CheckCircle className="h-4 w-4 text-success" />
+						自動マッピング済み
+					</h4>
+					<div className="collapse-arrow collapse border border-base-300 bg-base-200">
+						<input type="checkbox" />
+						<div className="collapse-title text-sm">
+							{annotationPairs.length}件のイベントが自動マッピングされました
+						</div>
+						<div className="collapse-content space-y-1">
+							{annotationPairs.map((s) => (
+								<div
+									key={s.csvEventName}
+									className="flex items-center gap-2 rounded-lg bg-base-100 p-3 text-sm"
+								>
+									<CheckCircle className="h-4 w-4 shrink-0 text-success" />
+									<span className="font-medium">{s.csvEventName}</span>
+									<ArrowRight className="h-4 w-4 shrink-0 text-base-content/40" />
+									<span className="text-success">
+										{eventNameMappings[s.csvEventName] || s.suggestedEventName}
+									</span>
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* ファジーマッチ候補（fuzzy） */}
+			{fuzzySuggestions.length > 0 && (
+				<div className="space-y-2">
+					<h4 className="flex items-center gap-2 font-medium text-sm">
+						<Search className="h-4 w-4 text-info" />
+						マッチング候補（確認が必要）
+					</h4>
+					<div className="space-y-2">
+						{fuzzySuggestions.map((s) => (
+							<FuzzyMatchCard
+								key={s.csvEventName}
+								suggestion={s}
+								currentMapping={eventNameMappings[s.csvEventName] || null}
+								onMappingChange={onMappingChange}
+							/>
+						))}
+					</div>
+				</div>
+			)}
+
+			{/* マッチなし（annotationあり） */}
+			{noMatchWithAnnotation.length > 0 && (
+				<div className="space-y-2">
+					<h4 className="flex items-center gap-2 font-medium text-sm">
+						<AlertCircle className="h-4 w-4 text-warning" />
+						マッチなし（操作が必要）
+					</h4>
+					<div className="space-y-2">
+						{noMatchWithAnnotation.map((s) => (
+							<NoMatchCard
+								key={s.csvEventName}
+								suggestion={s}
+								currentMapping={eventNameMappings[s.csvEventName] || null}
+								onMappingChange={onMappingChange}
+							/>
+						))}
+					</div>
+				</div>
+			)}
+
+			{annotationPairs.length === 0 &&
+				fuzzySuggestions.length === 0 &&
+				noMatchWithAnnotation.length === 0 && (
+					<div className="flex flex-col items-center gap-2 py-8 text-success">
+						<CheckCircle className="h-8 w-8" />
+						<p className="text-sm">すべてのイベントが自動解決されました</p>
+					</div>
+				)}
+		</div>
+	);
+}
+
+// ファジーマッチカード
+interface FuzzyMatchCardProps {
+	suggestion: EventMatchSuggestion;
+	currentMapping: string | null;
+	onMappingChange: (csvName: string, resolvedName: string | null) => void;
+}
+
+function FuzzyMatchCard({
+	suggestion,
+	currentMapping,
+	onMappingChange,
+}: FuzzyMatchCardProps) {
+	const isAccepted = currentMapping === suggestion.suggestedEventName;
+	const isNewEvent = currentMapping === null;
+
+	return (
+		<div className="rounded-lg border border-base-300 bg-base-100 p-4">
+			<div className="flex items-center gap-2">
+				<Link2 className="h-4 w-4 text-info" />
+				<span className="font-medium">{suggestion.csvEventName}</span>
+			</div>
+			<div className="mt-3 space-y-2 pl-6">
+				<label className="flex cursor-pointer items-center gap-2">
+					<input
+						type="radio"
+						name={`fuzzy-${suggestion.csvEventName}`}
+						className="radio radio-primary radio-sm"
+						checked={isAccepted}
+						onChange={() =>
+							onMappingChange(
+								suggestion.csvEventName,
+								suggestion.suggestedEventName,
+							)
+						}
+					/>
+					<span className="text-sm">
+						推奨: <strong>{suggestion.suggestedEventName}</strong>
+						（既存イベント）
+					</span>
+				</label>
+				{suggestion.allCandidates.length > 1 && (
+					<div className="ml-6">
+						<select
+							className="select select-bordered select-sm w-full max-w-xs"
+							value={isAccepted || isNewEvent ? "" : currentMapping || ""}
+							onChange={(e) => {
+								if (e.target.value) {
+									onMappingChange(suggestion.csvEventName, e.target.value);
+								}
+							}}
+						>
+							<option value="">他のイベントを選択...</option>
+							{suggestion.allCandidates
+								.filter((c) => c.eventName !== suggestion.suggestedEventName)
+								.map((c) => (
+									<option key={c.eventId} value={c.eventName}>
+										{c.eventName}
+										{c.seriesName ? ` (${c.seriesName})` : ""}
+									</option>
+								))}
+						</select>
+					</div>
+				)}
+				<label className="flex cursor-pointer items-center gap-2">
+					<input
+						type="radio"
+						name={`fuzzy-${suggestion.csvEventName}`}
+						className="radio radio-sm"
+						checked={isNewEvent}
+						onChange={() => onMappingChange(suggestion.csvEventName, null)}
+					/>
+					<span className="text-sm">新規イベントとして作成する</span>
+				</label>
+			</div>
+		</div>
+	);
+}
+
+// マッチなしカード（annotationあり）
+interface NoMatchCardProps {
+	suggestion: EventMatchSuggestion;
+	currentMapping: string | null;
+	onMappingChange: (csvName: string, resolvedName: string | null) => void;
+}
+
+function NoMatchCard({
+	suggestion,
+	currentMapping,
+	onMappingChange,
+}: NoMatchCardProps) {
+	return (
+		<div className="rounded-lg border border-base-300 bg-base-100 p-4">
+			<div className="flex items-center gap-2">
+				<AlertCircle className="h-4 w-4 text-warning" />
+				<span className="font-medium">{suggestion.csvEventName}</span>
+				{suggestion.annotation && (
+					<span className="badge badge-warning badge-sm">
+						{suggestion.annotation}
+					</span>
+				)}
+			</div>
+			<div className="mt-3 space-y-2 pl-6">
+				<label className="flex cursor-pointer items-center gap-2">
+					<input
+						type="radio"
+						name={`nomatch-${suggestion.csvEventName}`}
+						className="radio radio-primary radio-sm"
+						checked={currentMapping === suggestion.strippedName}
+						onChange={() =>
+							onMappingChange(suggestion.csvEventName, suggestion.strippedName)
+						}
+					/>
+					<span className="text-sm">
+						サフィックスを除去して作成: 「
+						<strong>{suggestion.strippedName}</strong>」
+					</span>
+				</label>
+				<label className="flex cursor-pointer items-center gap-2">
+					<input
+						type="radio"
+						name={`nomatch-${suggestion.csvEventName}`}
+						className="radio radio-sm"
+						checked={currentMapping === null}
+						onChange={() => onMappingChange(suggestion.csvEventName, null)}
+					/>
+					<span className="text-sm">
+						そのまま作成: 「{suggestion.csvEventName}」
+					</span>
+				</label>
+			</div>
+		</div>
+	);
+}
+
+// ステップ3: 原曲マッピング
 interface MappingStepProps {
 	records: LegacyCSVRecord[];
 	songMatches: SongMatchResult[];
@@ -618,6 +1023,15 @@ function MappingStep({
 	const mappedCount = Object.keys(mappings).length;
 	const totalCount = songMatches.length;
 	const unmappedCount = totalCount - mappedCount;
+
+	const [hideMapped, setHideMapped] = useState(false);
+
+	const filteredMatches = useMemo(() => {
+		if (!hideMapped) return songMatches;
+		return songMatches.filter(
+			(match) => match.matchType === "none" || !mappings[match.originalName],
+		);
+	}, [hideMapped, songMatches, mappings]);
 
 	return (
 		<div className="space-y-6">
@@ -650,20 +1064,45 @@ function MappingStep({
 				</div>
 			</div>
 
+			{/* フィルター */}
+			<div className="flex items-center justify-between">
+				<label className="flex cursor-pointer items-center gap-2">
+					<input
+						type="checkbox"
+						className="checkbox checkbox-sm"
+						checked={hideMapped}
+						onChange={(e) => setHideMapped(e.target.checked)}
+					/>
+					<span className="text-sm">未マッピングのみ表示</span>
+				</label>
+				{hideMapped && (
+					<span className="text-base-content/70 text-sm">
+						表示中: {filteredMatches.length}件 / 全{totalCount}件
+					</span>
+				)}
+			</div>
+
 			{/* マッピングリスト */}
 			<div className="space-y-2">
-				{songMatches.map((match) => (
-					<SongMappingRow
-						key={match.originalName}
-						match={match}
-						selectedId={mappings[match.originalName] || null}
-						customSongName={customSongNames[match.originalName] || null}
-						onSelect={(id) => onMappingChange(match.originalName, id)}
-						onCustomSongNameChange={(name) =>
-							onCustomSongNameChange(match.originalName, name)
-						}
-					/>
-				))}
+				{filteredMatches.length === 0 && hideMapped ? (
+					<div className="flex flex-col items-center gap-2 py-8 text-success">
+						<CheckCircle className="h-8 w-8" />
+						<p className="text-sm">すべての原曲がマッピング済みです</p>
+					</div>
+				) : (
+					filteredMatches.map((match) => (
+						<SongMappingRow
+							key={match.originalName}
+							match={match}
+							selectedId={mappings[match.originalName] || null}
+							customSongName={customSongNames[match.originalName] || null}
+							onSelect={(id) => onMappingChange(match.originalName, id)}
+							onCustomSongNameChange={(name) =>
+								onCustomSongNameChange(match.originalName, name)
+							}
+						/>
+					))
+				)}
 			</div>
 		</div>
 	);
@@ -746,7 +1185,7 @@ function SongMappingRow({
 	);
 }
 
-// ステップ3: イベント登録
+// ステップ2: イベント登録
 interface EventRegistrationStepProps {
 	events: NewEventNeeded[];
 	eventInputs: Record<string, NewEventInput>;
@@ -767,6 +1206,42 @@ function EventRegistrationStep({
 	eventDayMappings,
 	onEventDayChange,
 }: EventRegistrationStepProps) {
+	const [pendingNewSeries, setPendingNewSeries] = useState<string[]>([]);
+
+	const { data: seriesData, isLoading: isSeriesLoading } = useQuery({
+		queryKey: ["eventSeries"],
+		queryFn: () => eventSeriesApi.list(),
+	});
+
+	const seriesList: EventSeriesType[] = useMemo(
+		() => seriesData?.data.map((s) => ({ id: s.id, name: s.name })) ?? [],
+		[seriesData],
+	);
+
+	const seriesOptions = useMemo(() => {
+		const options = seriesList.map((s) => ({
+			value: s.id,
+			label: s.name,
+		}));
+		for (const name of pendingNewSeries) {
+			options.push({ value: `new:${name}`, label: `${name} (新規)` });
+		}
+		return options;
+	}, [seriesList, pendingNewSeries]);
+
+	const handleCreateNewSeries = useCallback(
+		(name: string, eventName: string) => {
+			setPendingNewSeries((prev) =>
+				prev.includes(name) ? prev : [...prev, name],
+			);
+			onEventInputChange(eventName, {
+				eventSeriesId: null,
+				eventSeriesName: name,
+			});
+		},
+		[onEventInputChange],
+	);
+
 	return (
 		<div className="space-y-6">
 			{/* 既存イベントのイベント日選択 */}
@@ -831,6 +1306,12 @@ function EventRegistrationStep({
 								event={event}
 								input={eventInputs[event.name]}
 								onChange={(input) => onEventInputChange(event.name, input)}
+								seriesList={seriesList}
+								seriesOptions={seriesOptions}
+								onCreateNewSeries={(name) =>
+									handleCreateNewSeries(name, event.name)
+								}
+								isSeriesLoading={isSeriesLoading}
 							/>
 						))}
 					</div>
@@ -845,9 +1326,75 @@ interface EventInputCardProps {
 	event: NewEventNeeded;
 	input: NewEventInput | undefined;
 	onChange: (input: Partial<NewEventInput>) => void;
+	seriesList: EventSeriesType[];
+	seriesOptions: { value: string; label: string }[];
+	onCreateNewSeries: (name: string) => void;
+	isSeriesLoading?: boolean;
 }
 
-function EventInputCard({ event, input, onChange }: EventInputCardProps) {
+function EventInputCard({
+	event,
+	input,
+	onChange,
+	seriesList,
+	seriesOptions,
+	onCreateNewSeries,
+	isSeriesLoading,
+}: EventInputCardProps) {
+	const [showCreateModal, setShowCreateModal] = useState(false);
+	const [newSeriesName, setNewSeriesName] = useState("");
+	const modalRef = useRef<HTMLDialogElement>(null);
+	const stableId = useId();
+
+	const suggestion = useMemo(
+		() => suggestFromEventName(event.name, seriesList),
+		[event.name, seriesList],
+	);
+
+	const selectValue = input?.eventSeriesName
+		? `new:${input.eventSeriesName}`
+		: input?.eventSeriesId || "";
+
+	const isAutoSuggested =
+		!!input?.eventSeriesId &&
+		!input?.eventSeriesName &&
+		suggestion.seriesId === input.eventSeriesId;
+
+	const handleSeriesChange = useCallback(
+		(value: string) => {
+			if (value.startsWith("new:")) {
+				onChange({
+					eventSeriesId: null,
+					eventSeriesName: value.slice(4),
+				});
+			} else if (value) {
+				onChange({ eventSeriesId: value, eventSeriesName: null });
+			} else {
+				onChange({ eventSeriesId: null, eventSeriesName: null });
+			}
+		},
+		[onChange],
+	);
+
+	const handleOpenCreateModal = useCallback(() => {
+		setNewSeriesName(extractSeriesName(event.name));
+		setShowCreateModal(true);
+		setTimeout(() => modalRef.current?.showModal(), 0);
+	}, [event.name]);
+
+	const handleCloseCreateModal = useCallback(() => {
+		setShowCreateModal(false);
+		modalRef.current?.close();
+	}, []);
+
+	const handleSubmitNewSeries = useCallback(() => {
+		const trimmed = newSeriesName.trim();
+		if (!trimmed) return;
+		onCreateNewSeries(trimmed);
+		setShowCreateModal(false);
+		modalRef.current?.close();
+	}, [newSeriesName, onCreateNewSeries]);
+
 	const handleTotalDaysChange = useCallback(
 		(totalDays: number) => {
 			const eventDates = Array(totalDays).fill("");
@@ -901,14 +1448,55 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 					)}
 				</div>
 
-				<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+				{/* イベントシリーズ選択 */}
+				<div className="grid gap-2">
+					<Label htmlFor={`${stableId}-series`}>イベントシリーズ</Label>
+					<div className="flex items-center gap-3">
+						<div className="w-full max-w-md">
+							<SearchableSelect
+								id={`${stableId}-series`}
+								value={selectValue}
+								onChange={handleSeriesChange}
+								options={seriesOptions}
+								placeholder={
+									isSeriesLoading
+										? "シリーズを読み込み中..."
+										: "シリーズを選択..."
+								}
+								searchPlaceholder="シリーズ名で検索..."
+								emptyMessage="シリーズが見つかりません"
+								disabled={isSeriesLoading}
+							/>
+						</div>
+						<button
+							type="button"
+							className="btn btn-ghost btn-sm shrink-0 gap-1"
+							onClick={handleOpenCreateModal}
+						>
+							<Plus className="h-3.5 w-3.5" />
+							新規シリーズ作成
+						</button>
+					</div>
+					{isAutoSuggested && (
+						<p className="mt-1 flex items-center gap-1 text-info text-xs">
+							<Info className="h-3 w-3 shrink-0" />
+							イベント名から自動推察しました
+						</p>
+					)}
+					{input?.eventSeriesName && (
+						<p className="mt-1 flex items-center gap-1 text-success text-xs">
+							<Sparkles className="h-3 w-3 shrink-0" />
+							新規シリーズ「{input.eventSeriesName}」をインポート時に作成します
+						</p>
+					)}
+				</div>
+
+				<div className="mt-1 grid grid-cols-1 gap-4 md:grid-cols-3">
 					{/* 開催日数 */}
-					<div className="form-control">
-						<label className="label" htmlFor="event-total-days">
-							<span className="label-text">開催日数</span>
-						</label>
+					<div className="grid gap-2">
+						<Label htmlFor={`${stableId}-total-days`}>開催日数</Label>
 						<select
-							id="event-total-days"
+							id={`${stableId}-total-days`}
 							className="select select-bordered"
 							value={input?.totalDays || 1}
 							onChange={(e) =>
@@ -924,12 +1512,10 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 					</div>
 
 					{/* 開始日 */}
-					<div className="form-control">
-						<label className="label" htmlFor="event-start-date">
-							<span className="label-text">開始日</span>
-						</label>
+					<div className="grid gap-2">
+						<Label htmlFor={`${stableId}-start-date`}>開始日</Label>
 						<input
-							id="event-start-date"
+							id={`${stableId}-start-date`}
 							type="date"
 							className="input input-bordered"
 							value={input?.startDate || ""}
@@ -938,12 +1524,10 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 					</div>
 
 					{/* 終了日 */}
-					<div className="form-control">
-						<label className="label" htmlFor="event-end-date">
-							<span className="label-text">終了日</span>
-						</label>
+					<div className="grid gap-2">
+						<Label htmlFor={`${stableId}-end-date`}>終了日</Label>
 						<input
-							id="event-end-date"
+							id={`${stableId}-end-date`}
 							type="date"
 							className="input input-bordered"
 							value={input?.endDate || ""}
@@ -959,12 +1543,10 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 						<h5 className="mb-2 font-medium text-sm">開催日</h5>
 						<div className="grid grid-cols-2 gap-2 md:grid-cols-5">
 							{Array.from({ length: input?.totalDays || 1 }).map((_, i) => (
-								<div key={`day-${event.name}-${i}`} className="form-control">
-									<label className="label" htmlFor={`event-date-${i}`}>
-										<span className="label-text">{i + 1}日目</span>
-									</label>
+								<div key={`day-${event.name}-${i}`} className="grid gap-1">
+									<Label htmlFor={`${stableId}-date-${i}`}>{i + 1}日目</Label>
 									<input
-										id={`event-date-${i}`}
+										id={`${stableId}-date-${i}`}
 										type="date"
 										className="input input-bordered input-sm"
 										value={input?.eventDates?.[i] || ""}
@@ -974,6 +1556,65 @@ function EventInputCard({ event, input, onChange }: EventInputCardProps) {
 							))}
 						</div>
 					</div>
+				)}
+
+				{/* 新規シリーズ作成モーダル */}
+				{showCreateModal && (
+					<dialog ref={modalRef} className="modal">
+						<div className="modal-box">
+							<h3 className="font-bold text-lg">新規イベントシリーズ作成</h3>
+							<div className="mt-4 grid gap-2">
+								<Label htmlFor={`${stableId}-new-series-name`}>
+									シリーズ名
+								</Label>
+								<input
+									id={`${stableId}-new-series-name`}
+									type="text"
+									className="input input-bordered"
+									value={newSeriesName}
+									onChange={(e) => setNewSeriesName(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") {
+											e.preventDefault();
+											handleSubmitNewSeries();
+										}
+									}}
+									placeholder="例: 博麗神社例大祭"
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
+								/>
+							</div>
+							<div className="modal-action">
+								<button
+									type="button"
+									className="btn"
+									onClick={handleCloseCreateModal}
+								>
+									キャンセル
+								</button>
+								<button
+									type="button"
+									className="btn btn-primary"
+									onClick={handleSubmitNewSeries}
+									disabled={!newSeriesName.trim()}
+								>
+									作成
+								</button>
+							</div>
+						</div>
+						<div className="modal-backdrop" aria-hidden="true">
+							<button
+								type="button"
+								tabIndex={-1}
+								onClick={handleCloseCreateModal}
+								aria-label="閉じる"
+							>
+								close
+							</button>
+						</div>
+					</dialog>
 				)}
 			</div>
 		</div>

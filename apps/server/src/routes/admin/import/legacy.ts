@@ -9,6 +9,7 @@ import type { AdminContext } from "../../../middleware/admin-auth";
 import {
 	checkNewEventsNeeded,
 	executeLegacyImport,
+	generateEventMatchSuggestions,
 	getExistingEventsWithMultipleDays,
 	type ImportInput,
 	type ImportProgress,
@@ -27,6 +28,8 @@ const newEventInputSchema = z.object({
 	startDate: z.string(),
 	endDate: z.string(),
 	eventDates: z.array(z.string()),
+	eventSeriesId: z.string().nullable().optional(),
+	eventSeriesName: z.string().nullable().optional(),
 });
 
 // 実行リクエスト型
@@ -48,6 +51,7 @@ const executeRequestSchema = z.object({
 	customSongNames: z.record(z.string(), z.string()),
 	newEvents: z.array(newEventInputSchema).optional(),
 	eventDayMappings: z.record(z.string(), z.string()).optional(), // イベント名 -> イベント日ID
+	eventNameMappings: z.record(z.string(), z.string()).optional(), // CSVイベント名 -> 変換後イベント名
 });
 
 const legacyImportRouter = new Hono<AdminContext>();
@@ -126,7 +130,11 @@ legacyImportRouter.post("/preview", async (c) => {
 			...new Set(parseResult.records.map((r) => r.event)),
 		].filter((name) => name.trim() !== "");
 
-		// 新規イベントが必要かチェック
+		// イベントマッチング候補を生成
+		const eventMatchSuggestions =
+			await generateEventMatchSuggestions(uniqueEventNames);
+
+		// 新規イベントが必要かチェック（互換性のため残す）
 		const newEventsNeeded = await checkNewEventsNeeded(uniqueEventNames);
 
 		// 新規イベントの回次を推測
@@ -148,6 +156,7 @@ legacyImportRouter.post("/preview", async (c) => {
 			records: parseResult.records,
 			songMatches,
 			newEventsNeeded: newEventsWithEdition,
+			eventMatchSuggestions,
 			existingEventsWithDays,
 			errors: [],
 		});
@@ -200,6 +209,9 @@ legacyImportRouter.post("/execute", async (c) => {
 		const eventDayMappings = parsed.data.eventDayMappings
 			? new Map<string, string>(Object.entries(parsed.data.eventDayMappings))
 			: undefined;
+		const eventNameMappings = parsed.data.eventNameMappings
+			? new Map<string, string>(Object.entries(parsed.data.eventNameMappings))
+			: undefined;
 
 		// インポート実行
 		const input: ImportInput = {
@@ -208,6 +220,7 @@ legacyImportRouter.post("/execute", async (c) => {
 			customSongNames,
 			newEvents: parsed.data.newEvents,
 			eventDayMappings,
+			eventNameMappings,
 		};
 
 		// SSEでストリーミングレスポンス
