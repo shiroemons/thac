@@ -32,7 +32,7 @@
 		"db:studio": "turbo -F @thac/db db:studio",
 		"db:generate": "turbo -F @thac/db db:generate",
 		"db:migrate": "turbo -F @thac/db db:migrate",
-		"db:seed": "bun run --cwd packages/db db:seed",
+		"db:seed": "bun run --cwd packages/auth db:seed:admin && bun run --cwd packages/db db:seed",
 		"db:truncate": "bun run --cwd packages/db db:truncate"
 	},
 	"dependencies": {

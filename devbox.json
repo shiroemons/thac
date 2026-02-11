@@ -50,7 +50,8 @@
 			"build": "bun run build",
 			"check": "bun run check",
 			"check-types": "bun run check-types",
-			"install": "bun install"
+			"install": "bun install",
+			"setup": "bun install && (pg_isready -q || pg_ctl start -l $PGDATA/postgresql.log -w) && (createdb thac 2>/dev/null || true) && make db-setup"
 		}
 	}
 }
