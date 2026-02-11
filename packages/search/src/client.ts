@@ -71,6 +71,27 @@ export async function isMeilisearchAvailable(): Promise<boolean> {
 }
 
 /**
+ * Check if a Meilisearch index exists
+ * @returns true if the index exists, false if not found
+ */
+export async function isIndexExists(indexName: string): Promise<boolean> {
+	try {
+		const meili = getMeilisearchClient();
+		await meili.getIndex(indexName);
+		return true;
+	} catch (error: unknown) {
+		if (
+			error instanceof Error &&
+			"code" in error &&
+			(error as { code: string }).code === "index_not_found"
+		) {
+			return false;
+		}
+		throw error;
+	}
+}
+
+/**
  * Reset health cache (useful for testing)
  */
 export function resetHealthCache(): void {

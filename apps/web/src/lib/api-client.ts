@@ -593,6 +593,7 @@ export type ImportStage =
 	| "tracks"
 	| "credits"
 	| "links"
+	| "search_sync"
 	| "complete";
 
 export interface EntityProgress {

@@ -136,6 +136,7 @@ export interface ImportResult {
 	tracks: EntityCount;
 	credits: EntityCount;
 	officialSongLinks: EntityCount;
+	createdTrackIds: string[];
 	errors: ImportError[];
 	batchSummary: BatchSummary;
 }
@@ -150,6 +151,7 @@ export type ImportStage =
 	| "tracks"
 	| "credits"
 	| "links"
+	| "search_sync"
 	| "complete";
 
 export interface ImportProgress {
@@ -1060,6 +1062,7 @@ async function batchInsertTracks(
 		// 同一ディスク+同一トラック番号の重複はスキップ
 		await tx.insert(tracks).values(newTracks).onConflictDoNothing();
 		result.tracks.created += newTracks.length;
+		result.createdTrackIds.push(...newTracks.map((t) => t.id));
 	}
 }
 
@@ -1427,6 +1430,7 @@ export async function executeLegacyImport(
 		tracks: { created: 0, updated: 0, skipped: 0 },
 		credits: { created: 0, updated: 0, skipped: 0 },
 		officialSongLinks: { created: 0, updated: 0, skipped: 0 },
+		createdTrackIds: [],
 		errors: [],
 		batchSummary: { totalBatches: 0, successfulBatches: 0, failedBatches: 0 },
 	};
@@ -1755,6 +1759,55 @@ export async function executeLegacyImport(
 			},
 		);
 		notifyProgress("links", totalRecords, totalRecords, "原曲紐付け登録完了");
+
+		// Phase 11: 検索インデックス同期
+		if (result.createdTrackIds.length > 0) {
+			notifyProgress(
+				"search_sync",
+				0,
+				result.createdTrackIds.length,
+				"検索インデックスを同期中...",
+			);
+			try {
+				const { syncTracksToSearchIndex } = await import("@thac/search");
+				const syncResult = await syncTracksToSearchIndex(
+					result.createdTrackIds,
+					(synced, total) => {
+						notifyProgress(
+							"search_sync",
+							synced,
+							total,
+							`検索インデックス同期中: ${synced}/${total}件`,
+						);
+					},
+				);
+				if (syncResult) {
+					notifyProgress(
+						"search_sync",
+						syncResult.synced,
+						result.createdTrackIds.length,
+						`検索インデックス同期完了: ${syncResult.synced}件`,
+					);
+					for (const err of syncResult.errors) {
+						result.errors.push({
+							row: 0,
+							entity: "search_sync",
+							message: `検索同期警告: ${err}`,
+						});
+					}
+				} else {
+					notifyProgress(
+						"search_sync",
+						0,
+						0,
+						"検索インデックス同期スキップ（Meilisearch未起動またはインデックス未作成）",
+					);
+				}
+			} catch (error) {
+				console.error("[LegacyImport] Search sync failed:", error);
+				// 同期失敗はインポート全体を失敗にしない
+			}
+		}
 
 		notifyProgress("complete", totalRecords, totalRecords, "インポート完了");
 	} catch (error) {

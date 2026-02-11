@@ -1687,6 +1687,10 @@ function ImportingStep({
 			label: "原曲紐付け",
 			icon: <CheckCircle className="h-4 w-4" />,
 		},
+		search_sync: {
+			label: "検索インデックス同期",
+			icon: <Search className="h-4 w-4" />,
+		},
 		complete: {
 			label: "完了",
 			icon: <CheckCircle className="h-4 w-4 text-success" />,
@@ -1701,6 +1705,7 @@ function ImportingStep({
 		"tracks",
 		"credits",
 		"links",
+		"search_sync",
 	];
 
 	const isComplete = stage === "complete";
@@ -1721,6 +1726,7 @@ function ImportingStep({
 		if (stage === "complete") return "インポートが完了しました";
 		if (stage === "credits") return "クレジット情報を登録しています...";
 		if (stage === "links") return "原曲との紐付けを登録しています...";
+		if (stage === "search_sync") return "検索インデックスを同期しています...";
 
 		const entityKey = stageToEntity[stage];
 		if (entityKey && entityProgress) {
