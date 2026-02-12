@@ -390,7 +390,11 @@ function RecentUpdatesSection() {
 									)}
 								</td>
 								<td className="px-5 py-4 text-base-content/60">
-									{update.date}
+									{update.date
+										? new Date(update.date).toLocaleDateString("ja-JP", {
+												timeZone: "Asia/Tokyo",
+											})
+										: "-"}
 								</td>
 							</tr>
 						))}
