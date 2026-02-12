@@ -12,47 +12,51 @@
 
 ## 作業開始時のルール（計画 → 実行フロー）
 
-計画（Plan mode）で実装タスクを立てる際は、**Step 0 として worktree の作成を必ず含める**こと。
+**実装・修正を行う前に、必ず worktree を作成してから作業を開始すること。**
+main上で直接作業したり、`git checkout -b` でブランチを切ったりしてはいけない。
 
-理由: コンテキストクリア後に計画を実行すると main ブランチに戻るため、
-実行フェーズの最初に worktree を作成し、同じセッション内で worktree に `cd` して作業を続ける必要がある。
+### 基本フロー（推奨）
+
+worktree を先に作成し、その中で実装を行う。
+`git wt` は**作成と同時にworktreeディレクトリへ移動する**。
 
 ```
-Step 0: git wt <branch-name> でworktree作成
-        → cd .worktree/<branch-name>/ で移動
+Step 0: git wt <branch-name> でworktree作成 + 自動移動
         → 以降の全作業はこのディレクトリ内で実行
 Step 1〜: 実装タスク
 ```
 
-- 計画の Step 0 には必ず `git wt <branch-name>` と `cd .worktree/<branch-name>/` を含める
+計画（Plan mode）で実装タスクを立てる際も、**Step 0 として worktree の作成を必ず含める**こと。
+
+理由: コンテキストクリア後に計画を実行すると main ブランチに戻るため、
+実行フェーズの最初に worktree を作成し、同じセッション内で作業を続ける必要がある。
+
+- 計画の Step 0 には必ず `git wt <branch-name>` を含める
 - worktree内で作業することで、mainブランチをクリーンに保つ
 - 同じ Claude Code セッションで worktree 内の作業を完結させる
 
-## mainに未コミットの変更がある場合
+### 救済フロー（mainに未コミットの変更がある場合のみ）
 
-mainブランチで既に変更を行った後にworktreeを作成する場合は、**stashフロー**を使用する。
+mainブランチで既に変更を行ってしまった場合の**緊急対応手順**。
+基本フローに従い、この状況を作らないことが望ましい。
 
 ```bash
 # 1. mainの変更をstash（未追跡ファイルも含む）
 git stash --include-untracked
 
-# 2. worktreeを作成
+# 2. worktreeを作成（自動で移動される）
 git wt <branch-name>
 
-# 3. worktreeに移動
-cd .worktree/<branch-name>/
-
-# 4. stashを適用
+# 3. stashを適用
 git stash pop
 
-# 5. 以降はworktree内で作業
+# 4. 以降はworktree内で作業
 ```
-
-**重要**: `git checkout -b` でブランチを切るのではなく、必ず `git wt` を使用すること。
 
 ## Claude Code での注意事項
 
-- `git wt` 実行後、**必ず `cd` でworktreeディレクトリに移動**すること
+- `git wt <branch-name>` による新規作成時は**自動でworktreeに移動**する
+- **既存のworktreeに移動する場合は `cd .worktree/<branch-name>/` が必要**
 - サブエージェント内の `cd` はメインセッションに反映されないため、Bash ツールで直接 `cd` を実行する
 - worktree内のパスは `.worktree/<branch-name>/` 配下になる
 
