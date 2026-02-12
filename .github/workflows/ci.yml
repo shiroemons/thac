@@ -29,6 +29,7 @@ jobs:
               - '!docs/**'
               - '!.kiro/**'
               - '!.claude/**'
+              - '!.github/**'
               - '!LICENSE'
 
       - if: steps.filter.outputs.source == 'true'
