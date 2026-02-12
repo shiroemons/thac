@@ -4,8 +4,10 @@ import {
 	generateSortName,
 	isEnglishOnly,
 	normalizeFullWidthSymbols,
+	normalizeTilde,
 	parseDiscInfo,
 	parseEventEdition,
+	reverseTilde,
 } from "./name-utils";
 
 describe("isEnglishOnly", () => {
@@ -166,5 +168,53 @@ describe("generateSortName", () => {
 	it("日本語を含む名前はnullを返す", () => {
 		expect(generateSortName("東方")).toBe(null);
 		expect(generateSortName("あいう")).toBe(null);
+	});
+});
+
+describe("normalizeTilde", () => {
+	it("波ダッシュ（U+301C）を全角チルダ（U+FF5E）に変換する", () => {
+		expect(normalizeTilde("テスト\u301Cテスト")).toBe("テスト\uFF5Eテスト");
+	});
+
+	it("全角チルダ（U+FF5E）はそのまま保持する", () => {
+		expect(normalizeTilde("テスト\uFF5Eテスト")).toBe("テスト\uFF5Eテスト");
+	});
+
+	it("複数の波ダッシュを含む文字列を正しく変換する", () => {
+		expect(normalizeTilde("A\u301CB\u301CC")).toBe("A\uFF5EB\uFF5EC");
+		expect(normalizeTilde("\u301C\uFF5E\u301C")).toBe("\uFF5E\uFF5E\uFF5E");
+	});
+
+	it("空文字列は空文字列を返す", () => {
+		expect(normalizeTilde("")).toBe("");
+	});
+
+	it("チルダを含まない文字列はそのまま返す", () => {
+		expect(normalizeTilde("東方紅魔郷")).toBe("東方紅魔郷");
+		expect(normalizeTilde("Hello World")).toBe("Hello World");
+	});
+});
+
+describe("reverseTilde", () => {
+	it("全角チルダ（U+FF5E）を波ダッシュ（U+301C）に変換する", () => {
+		expect(reverseTilde("テスト\uFF5Eテスト")).toBe("テスト\u301Cテスト");
+	});
+
+	it("波ダッシュ（U+301C）はそのまま保持する", () => {
+		expect(reverseTilde("テスト\u301Cテスト")).toBe("テスト\u301Cテスト");
+	});
+
+	it("複数の全角チルダを含む文字列を正しく変換する", () => {
+		expect(reverseTilde("A\uFF5EB\uFF5EC")).toBe("A\u301CB\u301CC");
+		expect(reverseTilde("\uFF5E\u301C\uFF5E")).toBe("\u301C\u301C\u301C");
+	});
+
+	it("空文字列は空文字列を返す", () => {
+		expect(reverseTilde("")).toBe("");
+	});
+
+	it("チルダを含まない文字列はそのまま返す", () => {
+		expect(reverseTilde("東方紅魔郷")).toBe("東方紅魔郷");
+		expect(reverseTilde("Hello World")).toBe("Hello World");
 	});
 });

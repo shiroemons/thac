@@ -2,7 +2,7 @@ import { Check, Search, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-interface Option {
+export interface Option {
 	value: string;
 	label: string;
 }
