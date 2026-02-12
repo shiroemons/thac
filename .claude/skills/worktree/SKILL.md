@@ -79,7 +79,7 @@ Task: worktree一覧
 │   → マージ済みか確認                                     │
 ├──────────────────────────────────────────────────────────┤
 │ Step 4: マージ済みworktreeを削除                          │
-│   → Bash エージェント: git wt -d <target>                │
+│   → Bash エージェント: git wt -D <target>                │
 │   → 未マージはスキップ（ユーザーに報告）                  │
 ├──────────────────────────────────────────────────────────┤
 │ Step 5: リモート参照のクリーンアップ                      │
@@ -105,9 +105,10 @@ Task 3: マージ済みworktree削除（各worktreeに対して）
 - subagent_type: Bash
 - prompt: |
     以下を実行してください:
-    1. git branch --merged main で <branch-name> がマージ済みか確認
-    2. マージ済みなら git wt -d <target> で削除
+    1. GitHub上でPRがマージ済みか確認（gh pr list --state merged）
+    2. マージ済みなら git wt -D <target> で強制削除
     3. 結果を報告
+    ※ スカッシュマージのため git branch --merged では検出不可、GitHub側で確認すること
 
 Task 4: リモート参照クリーンアップ
 - subagent_type: Bash
@@ -118,7 +119,8 @@ Task 4: リモート参照クリーンアップ
 
 - devbox services（PostgreSQL, Meilisearch等）はメインworktreeのみで起動
 - 同一ブランチは1つのworktreeでのみcheckout可能
-- 削除は必ず `git wt -d` を使用（手動 `rm -rf` 禁止）
+- 削除は `git wt -D`（強制削除）を使用（スカッシュマージのため `-d` ではブランチ削除が失敗する）
+- 手動 `rm -rf` 禁止
 - worktree内の `.git` はファイル参照（ディレクトリではない）
 
 ## 関連ファイル
