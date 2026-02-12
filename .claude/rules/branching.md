@@ -100,8 +100,11 @@ PR作成 → worktree内で待機（レビュー対応・追加修正）
 main に戻ってから以下を実行する:
 
 1. `git pull` で main を最新化
-2. `git wt -d <branch-name>` でworktreeとブランチを削除
+2. `git wt -D <branch-name>` でworktreeとブランチを強制削除
 3. `git fetch --prune` でリモートの不要参照を削除
+
+**注意**: このリポジトリはスカッシュマージを使用しているため、`git wt -d`（安全削除）ではブランチ削除が
+「not fully merged」エラーで失敗する。マージ済みを確認した上で `git wt -D`（強制削除）を使用すること。
 
 ## 注意事項
 
