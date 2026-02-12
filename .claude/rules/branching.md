@@ -83,10 +83,25 @@ git config --add wt.hook "devbox run -- bun install"  # 依存関係を自動イ
 - 他のworktreeは同じDB・サービスを共有利用
 - worktree内では `devbox run -- bun run dev:web` 等で個別アプリのみ起動
 
+## PR作成後のフロー
+
+- PR作成後は**マージされるまでworktree内で待機**する（追加修正に備える）
+- マージ後に main に戻り、クリーンアップを行う
+
+```
+PR作成 → worktree内で待機（レビュー対応・追加修正）
+       → マージ確認
+       → cd <main-repo-path>
+       → クリーンアップ
+```
+
 ## マージ後のクリーンアップ
 
-1. `git wt -d <branch-name>` でworktreeとブランチを削除
-2. `git fetch --prune` でリモートの不要参照を削除
+main に戻ってから以下を実行する:
+
+1. `git pull` で main を最新化
+2. `git wt -d <branch-name>` でworktreeとブランチを削除
+3. `git fetch --prune` でリモートの不要参照を削除
 
 ## 注意事項
 
