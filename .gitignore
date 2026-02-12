@@ -59,6 +59,9 @@ temp
 # Meilisearch dumps
 .meilisearch/
 
+# Git worktrees (git-wt)
+.worktree/
+
 # Devbox
 .devbox/
 
