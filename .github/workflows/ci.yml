@@ -10,11 +10,6 @@ on:
       - 'LICENSE'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.kiro/**'
-      - 'LICENSE'
 
 jobs:
   ci:
@@ -25,9 +20,22 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            source:
+              - '!**.md'
+              - '!docs/**'
+              - '!.kiro/**'
+              - '!.claude/**'
+              - '!LICENSE'
 
-      - uses: actions/cache@v5
+      - if: steps.filter.outputs.source == 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - if: steps.filter.outputs.source == 'true'
+        uses: actions/cache@v5
         with:
           path: |
             ~/.bun/install/cache
@@ -36,7 +44,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
-      - run: bun install --frozen-lockfile
+      - if: steps.filter.outputs.source == 'true'
+        run: bun install --frozen-lockfile
 
-      - name: Run CI checks
+      - if: steps.filter.outputs.source == 'true'
+        name: Run CI checks
         run: bun run check && bun run check-types && bun run --cwd apps/web lint:jsx-nesting && bun run test
