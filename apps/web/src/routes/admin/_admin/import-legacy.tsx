@@ -30,7 +30,10 @@ import {
 } from "lucide-react";
 import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
-import { SearchableSelect } from "@/components/ui/searchable-select";
+import {
+	type Option,
+	SearchableSelect,
+} from "@/components/ui/searchable-select";
 import {
 	type EntityProgressMap,
 	type EventMatchSuggestion,
@@ -43,6 +46,7 @@ import {
 	legacyImportApi,
 	type NewEventInput,
 	type NewEventNeeded,
+	officialSongsApi,
 	type SongMatchResult,
 } from "@/lib/api-client";
 import {
@@ -56,6 +60,8 @@ export const Route = createFileRoute("/admin/_admin/import-legacy")({
 	head: () => createPageHead("レガシーCSVインポート"),
 	component: LegacyImportPage,
 });
+
+const OTHER_SONG_ID = "07999999";
 
 type WizardStep =
 	| "upload"
@@ -99,6 +105,9 @@ function LegacyImportPage() {
 	const [importProgress, setImportProgress] = useState(0);
 	const [entityProgress, setEntityProgress] =
 		useState<EntityProgressMap | null>(null);
+	const [songSelectMode, setSongSelectMode] = useState<
+		Record<string, "custom" | "select">
+	>({});
 
 	// プレビューAPI
 	const previewMutation = useMutation({
@@ -124,6 +133,15 @@ function LegacyImportPage() {
 				}
 				setMappings(autoMappings);
 				setCustomSongNames(autoCustomSongNames);
+
+				// 未マッチ曲のデフォルトモード設定
+				const autoSongSelectModes: Record<string, "custom" | "select"> = {};
+				for (const match of data.songMatches) {
+					if (match.matchType === "none") {
+						autoSongSelectModes[match.originalName] = "custom";
+					}
+				}
+				setSongSelectMode(autoSongSelectModes);
 
 				// 新規イベントのデフォルト値を設定（イベントシリーズの自動推察付き）
 				try {
@@ -299,6 +317,14 @@ function LegacyImportPage() {
 		[],
 	);
 
+	// 曲選択モード変更ハンドラ
+	const handleSongSelectModeChange = useCallback(
+		(originalName: string, mode: "custom" | "select") => {
+			setSongSelectMode((prev) => ({ ...prev, [originalName]: mode }));
+		},
+		[],
+	);
+
 	// イベント入力更新ハンドラ
 	const handleEventInputChange = useCallback(
 		(eventName: string, input: Partial<NewEventInput>) => {
@@ -390,6 +416,7 @@ function LegacyImportPage() {
 		setNewEventsNeeded([]);
 		setMappings({});
 		setCustomSongNames({});
+		setSongSelectMode({});
 		setNewEventInputs({});
 		setExistingEventsWithDays([]);
 		setEventDayMappings({});
@@ -507,6 +534,8 @@ function LegacyImportPage() {
 							customSongNames={customSongNames}
 							onMappingChange={handleMappingChange}
 							onCustomSongNameChange={handleCustomSongNameChange}
+							songSelectMode={songSelectMode}
+							onSongSelectModeChange={handleSongSelectModeChange}
 						/>
 					)}
 
@@ -1010,6 +1039,11 @@ interface MappingStepProps {
 	customSongNames: Record<string, string>;
 	onMappingChange: (originalName: string, selectedId: string | null) => void;
 	onCustomSongNameChange: (originalName: string, customName: string) => void;
+	songSelectMode: Record<string, "custom" | "select">;
+	onSongSelectModeChange: (
+		originalName: string,
+		mode: "custom" | "select",
+	) => void;
 }
 
 function MappingStep({
@@ -1019,6 +1053,8 @@ function MappingStep({
 	customSongNames,
 	onMappingChange,
 	onCustomSongNameChange,
+	songSelectMode,
+	onSongSelectModeChange,
 }: MappingStepProps) {
 	const mappedCount = Object.keys(mappings).length;
 	const totalCount = songMatches.length;
@@ -1032,6 +1068,20 @@ function MappingStep({
 			(match) => match.matchType === "none" || !mappings[match.originalName],
 		);
 	}, [hideMapped, songMatches, mappings]);
+
+	const { data: allOfficialSongsData } = useQuery({
+		queryKey: ["official-songs", { limit: 3000 }],
+		queryFn: () => officialSongsApi.list({ limit: 3000 }),
+		staleTime: 60_000,
+	});
+
+	const allSongOptions: Option[] = useMemo(() => {
+		const songs = allOfficialSongsData?.data ?? [];
+		return songs.map((song) => ({
+			value: song.id,
+			label: `${song.name}${song.workName ? ` (${song.workName})` : ""}`,
+		}));
+	}, [allOfficialSongsData?.data]);
 
 	return (
 		<div className="space-y-6">
@@ -1100,6 +1150,11 @@ function MappingStep({
 							onCustomSongNameChange={(name) =>
 								onCustomSongNameChange(match.originalName, name)
 							}
+							allSongOptions={allSongOptions}
+							selectMode={songSelectMode[match.originalName]}
+							onSelectModeChange={(mode) =>
+								onSongSelectModeChange(match.originalName, mode)
+							}
 						/>
 					))
 				)}
@@ -1115,6 +1170,9 @@ interface SongMappingRowProps {
 	customSongName: string | null;
 	onSelect: (id: string | null) => void;
 	onCustomSongNameChange: (name: string) => void;
+	allSongOptions?: Option[];
+	selectMode?: "custom" | "select";
+	onSelectModeChange?: (mode: "custom" | "select") => void;
 }
 
 function SongMappingRow({
@@ -1123,9 +1181,17 @@ function SongMappingRow({
 	customSongName,
 	onSelect,
 	onCustomSongNameChange,
+	allSongOptions,
+	selectMode,
+	onSelectModeChange,
 }: SongMappingRowProps) {
 	const getStatusBadge = () => {
 		if (match.matchType === "none") {
+			if (selectMode === "select" && selectedId) {
+				return (
+					<span className="badge badge-success badge-sm">マッピング済</span>
+				);
+			}
 			return <span className="badge badge-neutral badge-sm">その他に登録</span>;
 		}
 		if (selectedId) {
@@ -1144,46 +1210,100 @@ function SongMappingRow({
 	};
 
 	return (
-		<div className="flex items-center gap-4 rounded-lg border border-base-300 bg-base-100 p-4">
-			<div className="flex-1">
-				<div className="flex items-center gap-2">
-					<Music className="h-4 w-4 text-base-content/40" />
-					<span className="font-medium">{match.originalName}</span>
-					{getStatusBadge()}
-				</div>
+		<div className="rounded-lg border border-base-300 bg-base-100 p-4">
+			<div className="flex items-center gap-2">
+				<Music className="h-4 w-4 text-base-content/40" />
+				<span className="font-medium">{match.originalName}</span>
+				{getStatusBadge()}
 			</div>
 
-			<div className="flex-1">
-				{match.matchType === "none" ? (
-					<input
-						type="text"
-						className="input input-bordered input-sm w-full"
-						placeholder="カスタム曲名を入力"
-						value={customSongName || ""}
-						onChange={(e) => onCustomSongNameChange(e.target.value)}
-					/>
-				) : match.candidates.length > 0 ? (
-					<select
-						className="select select-bordered select-sm w-full"
-						value={selectedId || ""}
-						onChange={(e) => onSelect(e.target.value || null)}
-					>
-						<option value="">選択してください</option>
-						{match.candidates.map((candidate) => (
-							<option key={candidate.id} value={candidate.id}>
-								{candidate.name}
-								{candidate.officialWorkName
-									? ` (${candidate.officialWorkName})`
-									: ""}
-							</option>
-						))}
-					</select>
-				) : (
-					<span className="text-base-content/40 text-sm">
-						候補が見つかりません
-					</span>
-				)}
-			</div>
+			{match.matchType === "none" ? (
+				<div className="mt-3 space-y-3 pl-6">
+					{/* その他に登録 */}
+					<label className="flex cursor-pointer items-start gap-2">
+						<input
+							type="radio"
+							name={`song-mode-${match.originalName}`}
+							className="radio radio-sm mt-0.5"
+							checked={selectMode === "custom"}
+							onChange={() => {
+								onSelectModeChange?.("custom");
+								onSelect(OTHER_SONG_ID);
+								onCustomSongNameChange(customSongName || match.originalName);
+							}}
+						/>
+						<div className="flex-1">
+							<span className="block text-sm">その他に登録</span>
+							{selectMode === "custom" && (
+								<input
+									type="text"
+									className="input input-bordered input-sm mt-2 w-full max-w-md"
+									placeholder="カスタム曲名を入力"
+									value={customSongName || ""}
+									onChange={(e) => onCustomSongNameChange(e.target.value)}
+									autoComplete="off"
+									data-1p-ignore
+									data-lpignore="true"
+									data-form-type="other"
+								/>
+							)}
+						</div>
+					</label>
+
+					{/* 原曲を選択 */}
+					<label className="flex cursor-pointer items-start gap-2">
+						<input
+							type="radio"
+							name={`song-mode-${match.originalName}`}
+							className="radio radio-primary radio-sm mt-0.5"
+							checked={selectMode === "select"}
+							onChange={() => {
+								onSelectModeChange?.("select");
+								onSelect(null);
+							}}
+						/>
+						<div className="flex-1">
+							<span className="block text-sm">原曲を選択</span>
+							{selectMode === "select" && allSongOptions && (
+								<div className="mt-2 max-w-xl">
+									<SearchableSelect
+										value={selectedId || ""}
+										onChange={(value) => onSelect(value || null)}
+										options={allSongOptions}
+										placeholder="公式楽曲を検索..."
+										searchPlaceholder="曲名で検索..."
+										emptyMessage="楽曲が見つかりません"
+									/>
+								</div>
+							)}
+						</div>
+					</label>
+				</div>
+			) : (
+				<div className="mt-2 pl-6">
+					{match.candidates.length > 0 ? (
+						<select
+							className="select select-bordered select-sm w-full max-w-xl"
+							value={selectedId || ""}
+							onChange={(e) => onSelect(e.target.value || null)}
+						>
+							<option value="">選択してください</option>
+							{match.candidates.map((candidate) => (
+								<option key={candidate.id} value={candidate.id}>
+									{candidate.name}
+									{candidate.officialWorkName
+										? ` (${candidate.officialWorkName})`
+										: ""}
+								</option>
+							))}
+						</select>
+					) : (
+						<span className="text-base-content/40 text-sm">
+							候補が見つかりません
+						</span>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }
