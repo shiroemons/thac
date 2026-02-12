@@ -37,22 +37,22 @@ const [credits, tags, genres] = await Promise.all([
 
 ## COUNT最適化
 
-### 概算カウント（統計・ダッシュボード用）
+### 統計・ダッシュボード用カウント
 
-`COUNT(*)`のシーケンシャルスキャンを回避。`pg_class.reltuples`で近似値を使用。
+テーブルサイズが小規模（数千行以下）の場合は`COUNT(*)`を使用し、キャッシュと併用:
 
 ```typescript
-const result = await db.execute<{ relname: string; reltuples: string }>(
-  sql`SELECT relname, reltuples::bigint AS reltuples
-      FROM pg_class WHERE relname = ANY(${tableNames})`,
-);
-// reltuplesが負（未ANALYZE）の場合は0にフォールバック
-counts.set(row.relname, Math.max(0, Number(row.reltuples)));
+const [releasesResult, tracksResult] = await Promise.all([
+  db.select({ count: count() }).from(releases),
+  db.select({ count: count() }).from(tracks),
+]);
+// PostgreSQLのbigintはstringで返るためNumber()でラップ
+const releases = Number(releasesResult[0]?.count ?? 0);
 ```
 
-- VACUUM/ANALYZEで更新される統計値
-- ダッシュボード等の正確性が不要な場面で使用
-- キャッシュと併用で高速化
+- `COUNT(*)`はインデックスオンリースキャンが効くためサブミリ秒で完了（数千行規模）
+- キャッシュ（5分TTL等）と併用でDB負荷を最小化
+- `pg_class.reltuples`はVACUUM/ANALYZE未実行で不正確になるため使用しない
 
 ### 正確なCOUNT
 
