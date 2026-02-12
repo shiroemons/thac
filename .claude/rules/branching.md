@@ -109,5 +109,5 @@ main に戻ってから以下を実行する:
 ## 注意事項
 
 - 同一ブランチは1つのworktreeでのみcheckout可能
-- worktreeの削除は必ず `git wt -d` を使用（手動 `rm -rf` 禁止）
+- worktreeの削除は `git wt -D` を使用（手動 `rm -rf` 禁止）
 - worktree内の `.git` はファイル参照（ディレクトリではない）
