@@ -21,7 +21,7 @@ import {
 	UserRound,
 	Users,
 } from "lucide-react";
-import { Suspense } from "react";
+import { Fragment, Suspense } from "react";
 import { PublicBreadcrumb } from "@/components/public";
 import {
 	RankingsSkeleton,
@@ -369,21 +369,32 @@ function RecentUpdatesSection() {
 									</Link>
 								</td>
 								<td className="px-5 py-4">
-									{update.circleId && update.circleName ? (
-										<Link
-											to="/circles/$id"
-											params={{ id: update.circleId }}
-											preload="intent"
-											className="text-base-content/60 hover:text-primary"
-										>
-											{update.circleName}
-										</Link>
+									{update.circles.length > 0 ? (
+										update.circles.map((circle, i) => (
+											<Fragment key={circle.id}>
+												{i > 0 && (
+													<span className="text-base-content/40">, </span>
+												)}
+												<Link
+													to="/circles/$id"
+													params={{ id: circle.id }}
+													preload="intent"
+													className="text-base-content/60 hover:text-primary"
+												>
+													{circle.name}
+												</Link>
+											</Fragment>
+										))
 									) : (
 										<span className="text-base-content/40">-</span>
 									)}
 								</td>
 								<td className="px-5 py-4 text-base-content/60">
-									{update.date}
+									{update.date
+										? new Date(update.date).toLocaleDateString("ja-JP", {
+												timeZone: "Asia/Tokyo",
+											})
+										: "-"}
 								</td>
 							</tr>
 						))}
