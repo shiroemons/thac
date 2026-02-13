@@ -867,7 +867,7 @@ function RankingRulesEditor({
 							/>
 						</button>
 						{isOpen && (
-							<ul className="menu dropdown-content z-[1] w-64 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+							<ul className="menu dropdown-content z-1 w-64 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
 								{availableToAdd.map((rule) => (
 									<li key={rule.value}>
 										<button
@@ -994,7 +994,7 @@ function AttributeSelector({
 								/>
 							</button>
 							{isOpen && (
-								<ul className="menu dropdown-content z-[1] max-h-60 w-52 overflow-y-auto rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+								<ul className="menu dropdown-content z-1 max-h-60 w-52 overflow-y-auto rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
 									{availableToAdd.map((attr) => (
 										<li key={attr.value}>
 											<button
