@@ -145,7 +145,7 @@ curl -X POST -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/
 docker compose stop meilisearch
 
 # 4. docker-compose.yml のイメージタグを更新
-# image: getmeili/meilisearch:v1.31 → v1.32 など
+# image: getmeili/meilisearch:v1.34 → v1.35 など
 
 # 5. 古いコンテナ削除・新バージョンで起動
 docker compose up -d meilisearch

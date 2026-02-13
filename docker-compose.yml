@@ -90,7 +90,7 @@ services:
         condition: service_healthy
 
   meilisearch:
-    image: getmeili/meilisearch:v1.33.1
+    image: getmeili/meilisearch:v1.35.0
     ports:
       - "7700:7700"
     volumes:
