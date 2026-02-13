@@ -445,7 +445,7 @@ function StopWordsEditor({ stopWords, onChange }: StopWordsEditorProps) {
 				<div className="flex items-center gap-2">
 					<input
 						type="text"
-						className="input input-bordered input-sm flex-1"
+						className="input input-sm flex-1"
 						placeholder="単語を入力..."
 						value={inputValue}
 						onChange={(e) => setInputValue(e.target.value)}
@@ -582,7 +582,7 @@ function SynonymsEditor({ synonyms, onChange }: SynonymsEditorProps) {
 							<span className="text-xs">キーワード:</span>
 							<input
 								type="text"
-								className="input input-bordered input-sm w-24"
+								className="input input-sm w-24"
 								placeholder="例: 東方"
 								value={newKeyword}
 								onChange={(e) => setNewKeyword(e.target.value)}
@@ -592,7 +592,7 @@ function SynonymsEditor({ synonyms, onChange }: SynonymsEditorProps) {
 							<span className="text-xs">同義語:</span>
 							<input
 								type="text"
-								className="input input-bordered input-sm w-24"
+								className="input input-sm w-24"
 								placeholder="例: Touhou"
 								value={newSynonym}
 								onChange={(e) => setNewSynonym(e.target.value)}
@@ -659,7 +659,7 @@ function SynonymRow({
 			))}
 			<input
 				type="text"
-				className="input input-bordered input-xs w-20"
+				className="input input-xs w-20"
 				placeholder="追加..."
 				value={newSynonym}
 				onChange={(e) => setNewSynonym(e.target.value)}
@@ -867,7 +867,7 @@ function RankingRulesEditor({
 							/>
 						</button>
 						{isOpen && (
-							<ul className="menu dropdown-content z-[1] w-64 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+							<ul className="menu dropdown-content z-1 w-64 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
 								{availableToAdd.map((rule) => (
 									<li key={rule.value}>
 										<button
@@ -994,7 +994,7 @@ function AttributeSelector({
 								/>
 							</button>
 							{isOpen && (
-								<ul className="menu dropdown-content z-[1] max-h-60 w-52 overflow-y-auto rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+								<ul className="menu dropdown-content z-1 max-h-60 w-52 overflow-y-auto rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
 									{availableToAdd.map((attr) => (
 										<li key={attr.value}>
 											<button

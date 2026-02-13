@@ -324,7 +324,7 @@ function ArtistDetailPage() {
 					<div className="flex flex-wrap gap-2">
 						{/* 役割フィルター */}
 						<select
-							className="select select-bordered sm:select-sm min-h-[44px] sm:min-h-0"
+							className="select sm:select-sm min-h-[44px] sm:min-h-0"
 							value={roleFilter}
 							onChange={(e) => handleRoleFilterChange(e.target.value)}
 						>

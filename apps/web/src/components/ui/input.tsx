@@ -14,11 +14,7 @@ function Input({ className, type, error, errorId, ...props }: InputProps) {
 			data-slot="input"
 			aria-invalid={error || undefined}
 			aria-describedby={errorId || undefined}
-			className={cn(
-				"input input-bordered w-full",
-				error && "input-error",
-				className,
-			)}
+			className={cn("input w-full", error && "input-error", className)}
 			{...props}
 		/>
 	);

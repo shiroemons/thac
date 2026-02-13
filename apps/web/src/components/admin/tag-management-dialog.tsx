@@ -455,7 +455,7 @@ function TagManagementDialogContent({
 								マージ先（統合後のタグ名）
 							</label>
 							<select
-								className="select select-bordered w-full"
+								className="select w-full"
 								value={mergeTarget || ""}
 								onChange={(e) => setMergeTarget(e.target.value || null)}
 							>

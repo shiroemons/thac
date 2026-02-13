@@ -123,7 +123,7 @@ export function EventFilter({
 					<select
 						value={selectedSeriesId}
 						onChange={(e) => handleSeriesChange(e.target.value)}
-						className="select select-sm select-bordered flex-1"
+						className="select select-sm flex-1"
 					>
 						<option value="">選択してください</option>
 						{eventSeries.map((series) => (
@@ -141,7 +141,7 @@ export function EventFilter({
 						<select
 							value={selectedEvent?.id || ""}
 							onChange={(e) => handleEventChange(e.target.value)}
-							className="select select-sm select-bordered flex-1"
+							className="select select-sm flex-1"
 						>
 							<option value="">（すべて）</option>
 							{filteredEvents.map((event) => (

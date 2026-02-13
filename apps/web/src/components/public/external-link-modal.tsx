@@ -1,5 +1,5 @@
 import { AlertTriangle, ExternalLink, X } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 interface ExternalLinkModalProps {
 	url: string | null;
@@ -15,6 +15,8 @@ export function ExternalLinkModal({
 	isOpen,
 	onClose,
 }: ExternalLinkModalProps) {
+	const dialogRef = useRef<HTMLDialogElement>(null);
+
 	// ドメイン抽出
 	const domain = useMemo(() => {
 		if (!url) return "";
@@ -25,6 +27,28 @@ export function ExternalLinkModal({
 		}
 	}, [url]);
 
+	// showModal()/close() による開閉制御
+	useEffect(() => {
+		const dialog = dialogRef.current;
+		if (!dialog) return;
+
+		if (isOpen && url) {
+			dialog.showModal();
+		} else {
+			dialog.close();
+		}
+	}, [isOpen, url]);
+
+	// dialog の close イベントで親の状態を同期
+	useEffect(() => {
+		const dialog = dialogRef.current;
+		if (!dialog) return;
+
+		const handleClose = () => onClose();
+		dialog.addEventListener("close", handleClose);
+		return () => dialog.removeEventListener("close", handleClose);
+	}, [onClose]);
+
 	// 外部サイトを開く
 	const handleContinue = useCallback(() => {
 		if (url) {
@@ -33,10 +57,15 @@ export function ExternalLinkModal({
 		}
 	}, [url, onClose]);
 
-	if (!isOpen || !url) return null;
+	// 背景クリックで閉じる
+	const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
+		if (e.target === dialogRef.current) {
+			onClose();
+		}
+	};
 
 	return (
-		<dialog className="modal modal-open">
+		<dialog ref={dialogRef} className="modal" onClick={handleBackdropClick}>
 			<div className="modal-box max-w-lg">
 				{/* ヘッダー */}
 				<div className="flex items-center justify-between">
@@ -87,9 +116,7 @@ export function ExternalLinkModal({
 			</div>
 			{/* 背景クリックで閉じる */}
 			<form method="dialog" className="modal-backdrop">
-				<button type="button" onClick={onClose}>
-					close
-				</button>
+				<button type="submit">閉じる</button>
 			</form>
 		</dialog>
 	);

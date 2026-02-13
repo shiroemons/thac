@@ -66,7 +66,7 @@ export function RowActionMenu({ actions, className }: RowActionMenuProps) {
 					<MoreHorizontal className="h-4 w-4" />
 					<span className="sr-only">メニュー</span>
 				</button>
-				<ul className="menu dropdown-content z-[1] w-40 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+				<ul className="menu dropdown-content z-1 w-40 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
 					{actions.map((action) => {
 						const itemClassName = cn(
 							action.variant === "danger" && "text-error",

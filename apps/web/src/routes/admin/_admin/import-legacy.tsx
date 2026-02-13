@@ -940,7 +940,7 @@ function FuzzyMatchCard({
 				{suggestion.allCandidates.length > 1 && (
 					<div className="ml-6">
 						<select
-							className="select select-bordered select-sm w-full max-w-xs"
+							className="select select-sm w-full max-w-xs"
 							value={isAccepted || isNewEvent ? "" : currentMapping || ""}
 							onChange={(e) => {
 								if (e.target.value) {
@@ -1093,7 +1093,7 @@ function MappingStep({
 			</div>
 
 			{/* 統計 */}
-			<div className="stats w-full border border-base-300">
+			<div className="stats w-full border border-base-300 bg-base-100">
 				<div className="stat">
 					<div className="stat-title">レコード数</div>
 					<div className="stat-value text-2xl">{records.length}</div>
@@ -1237,7 +1237,7 @@ function SongMappingRow({
 							{selectMode === "custom" && (
 								<input
 									type="text"
-									className="input input-bordered input-sm mt-2 w-full max-w-md"
+									className="input input-sm mt-2 w-full max-w-md"
 									placeholder="カスタム曲名を入力"
 									value={customSongName || ""}
 									onChange={(e) => onCustomSongNameChange(e.target.value)}
@@ -1283,7 +1283,7 @@ function SongMappingRow({
 				<div className="mt-2 pl-6">
 					{match.candidates.length > 0 ? (
 						<select
-							className="select select-bordered select-sm w-full max-w-xl"
+							className="select select-sm w-full max-w-xl"
 							value={selectedId || ""}
 							onChange={(e) => onSelect(e.target.value || null)}
 						>
@@ -1620,7 +1620,7 @@ function EventInputCard({
 						<Label htmlFor={`${stableId}-total-days`}>開催日数</Label>
 						<select
 							id={`${stableId}-total-days`}
-							className="select select-bordered"
+							className="select"
 							value={input?.totalDays || 1}
 							onChange={(e) =>
 								handleTotalDaysChange(Number.parseInt(e.target.value, 10))
@@ -1640,7 +1640,7 @@ function EventInputCard({
 						<input
 							id={`${stableId}-start-date`}
 							type="date"
-							className="input input-bordered"
+							className="input"
 							value={input?.startDate || ""}
 							onChange={(e) => handleStartDateChange(e.target.value)}
 						/>
@@ -1652,7 +1652,7 @@ function EventInputCard({
 						<input
 							id={`${stableId}-end-date`}
 							type="date"
-							className="input input-bordered"
+							className="input"
 							value={input?.endDate || ""}
 							onChange={(e) => onChange({ endDate: e.target.value })}
 							disabled={input?.totalDays === 1}
@@ -1671,7 +1671,7 @@ function EventInputCard({
 									<input
 										id={`${stableId}-date-${i}`}
 										type="date"
-										className="input input-bordered input-sm"
+										className="input input-sm"
 										value={input?.eventDates?.[i] || ""}
 										onChange={(e) => handleEventDateChange(i, e.target.value)}
 									/>
@@ -1693,7 +1693,7 @@ function EventInputCard({
 								<input
 									id={`${stableId}-new-series-name`}
 									type="text"
-									className="input input-bordered"
+									className="input"
 									value={newSeriesName}
 									onChange={(e) => setNewSeriesName(e.target.value)}
 									onKeyDown={(e) => {
@@ -1900,7 +1900,7 @@ function ImportingStep({
 
 			{/* エンティティ別進捗 */}
 			{entityProgress && (
-				<div className="stats stats-vertical lg:stats-horizontal w-full border border-base-300">
+				<div className="stats stats-vertical lg:stats-horizontal w-full border border-base-300 bg-base-100">
 					{(
 						Object.entries(entityLabels) as [keyof EntityProgressMap, string][]
 					).map(([key, label]) => {

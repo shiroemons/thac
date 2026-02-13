@@ -85,10 +85,7 @@ export function OriginalSongCountFilter({
 					value={customValue || (isCustom ? String(value) : "")}
 					onChange={(e) => handleCustomChange(e.target.value)}
 					placeholder="4"
-					className={cn(
-						"input input-sm input-bordered w-16",
-						isCustom && "input-primary",
-					)}
+					className={cn("input input-sm w-16", isCustom && "input-primary")}
 				/>
 				<span className="text-sm">曲以上</span>
 			</div>

@@ -77,7 +77,7 @@ function GenreBadge({
 			style={{
 				backgroundColor: `${color}40`,
 				borderColor: `${color}80`,
-				color: "var(--bc)",
+				color: "var(--color-base-content)",
 			}}
 		>
 			{IconComponent && <IconComponent className={iconSizeClasses[size]} />}

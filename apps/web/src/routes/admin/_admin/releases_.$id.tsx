@@ -2334,7 +2334,7 @@ function ReleaseDetailPage() {
 												countryCode: e.target.value,
 											})
 										}
-										className="select select-bordered w-full"
+										className="select w-full"
 									>
 										<option value="">選択してください</option>
 										{COUNTRY_CODE_OPTIONS.map((opt) => (

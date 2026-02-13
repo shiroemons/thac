@@ -42,7 +42,7 @@ export function ThemeSwitcher() {
 							<button
 								type="button"
 								onClick={() => setTheme(t.value)}
-								className={theme === t.value ? "active" : ""}
+								className={theme === t.value ? "menu-active" : ""}
 							>
 								{t.icon}
 								{t.label}

@@ -114,7 +114,7 @@ function GenreMultiSelect({
 			{/* 選択済みバッジとトリガー */}
 			<div
 				className={cn(
-					"flex min-h-12 flex-wrap items-center gap-1.5 rounded-btn border border-base-300 bg-base-100 px-3 py-2",
+					"flex min-h-12 flex-wrap items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-3 py-2",
 					disabled && "cursor-not-allowed opacity-50",
 					!disabled && !isMaxReached && "cursor-pointer",
 				)}
@@ -175,7 +175,7 @@ function GenreMultiSelect({
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
 								placeholder="検索..."
-								className="input input-sm input-bordered w-full pl-9"
+								className="input input-sm w-full pl-9"
 							/>
 						</div>
 					</div>

@@ -24,6 +24,19 @@ devbox run check
 **重要**: 型チェックは全パッケージ（packages/*, apps/*）に対して実行される。
 エラーがある場合は修正してからコミットすること。
 
+## UI変更時のdaisyUI v5準拠チェック（必須）
+
+`apps/web/` のUIコンポーネント（TSX/CSS）を変更した場合、コミット前にdaisyUI v5の非推奨パターンが含まれていないことを確認する。
+詳細は `daisyui-v5.md` を参照。不明な点は context7 MCP で daisyUI の公式ドキュメントを確認すること。
+
+チェック対象:
+- `active` → `menu-active`（メニュー内）
+- `rounded-btn` → `rounded-field`
+- `stats` に `bg-base-100` が指定されているか
+- `hover` → `hover:bg-base-300`（テーブル行）
+- `input`/`select` に `w-full` が明示されているか
+- `z-[1]` → `z-1`
+
 ## コミット
 
 コンベンショナルコミット形式を使用（メッセージは日本語）:

@@ -212,7 +212,7 @@ function IndexSettingsPage() {
 						)}
 						<input
 							type="text"
-							className="input input-bordered w-full"
+							className="input w-full"
 							value={searchableAttrs.join(", ")}
 							onChange={(e) =>
 								handleArrayChange(setSearchableAttrs)(e.target.value)
@@ -245,7 +245,7 @@ function IndexSettingsPage() {
 						)}
 						<input
 							type="text"
-							className="input input-bordered w-full"
+							className="input w-full"
 							value={filterableAttrs.join(", ")}
 							onChange={(e) =>
 								handleArrayChange(setFilterableAttrs)(e.target.value)
@@ -278,7 +278,7 @@ function IndexSettingsPage() {
 						)}
 						<input
 							type="text"
-							className="input input-bordered w-full"
+							className="input w-full"
 							value={sortableAttrs.join(", ")}
 							onChange={(e) =>
 								handleArrayChange(setSortableAttrs)(e.target.value)

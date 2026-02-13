@@ -96,7 +96,7 @@ export function ImportDialog({
 						type="file"
 						accept=".csv,.json"
 						onChange={handleFileChange}
-						className="file-input file-input-bordered w-full"
+						className="file-input w-full"
 					/>
 
 					{error && (

@@ -210,7 +210,7 @@ export function OriginalSongFilter({
 									value={search}
 									onChange={(e) => setSearch(e.target.value)}
 									placeholder="原曲を検索..."
-									className="input input-sm input-bordered w-full pl-9"
+									className="input input-sm w-full pl-9"
 								/>
 							</div>
 						</div>

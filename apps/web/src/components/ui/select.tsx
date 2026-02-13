@@ -20,7 +20,7 @@ function Select({ className, size = "md", children, ...props }: SelectProps) {
 	return (
 		<select
 			data-slot="select"
-			className={cn("select select-bordered", sizeClasses[size], className)}
+			className={cn("select", sizeClasses[size], className)}
 			{...props}
 		>
 			{children}

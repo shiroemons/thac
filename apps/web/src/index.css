@@ -8,17 +8,17 @@
 
 /* Glassmorphism utilities */
 .glass-card {
-	background: oklch(from var(--b1) l c h / 0.7);
+	background: oklch(from var(--color-base-100) l c h / 0.7);
 	backdrop-filter: blur(12px);
 	-webkit-backdrop-filter: blur(12px);
-	border: 1px solid oklch(from var(--bc) l c h / 0.1);
+	border: 1px solid oklch(from var(--color-base-content) l c h / 0.1);
 }
 
 .glass-card-strong {
-	background: oklch(from var(--b1) l c h / 0.85);
+	background: oklch(from var(--color-base-100) l c h / 0.85);
 	backdrop-filter: blur(16px);
 	-webkit-backdrop-filter: blur(16px);
-	border: 1px solid oklch(from var(--bc) l c h / 0.15);
+	border: 1px solid oklch(from var(--color-base-content) l c h / 0.15);
 }
 
 /* Gradient backgrounds */
@@ -26,17 +26,17 @@
 	background:
 		radial-gradient(
 			ellipse at 20% 20%,
-			oklch(from var(--p) l c h / 0.15) 0%,
+			oklch(from var(--color-primary) l c h / 0.15) 0%,
 			transparent 50%
 		),
 		radial-gradient(
 			ellipse at 80% 80%,
-			oklch(from var(--s) l c h / 0.15) 0%,
+			oklch(from var(--color-secondary) l c h / 0.15) 0%,
 			transparent 50%
 		),
 		radial-gradient(
 			ellipse at 40% 60%,
-			oklch(from var(--a) l c h / 0.1) 0%,
+			oklch(from var(--color-accent) l c h / 0.1) 0%,
 			transparent 40%
 		);
 }
@@ -45,17 +45,17 @@
 	background:
 		radial-gradient(
 			ellipse at 50% 0%,
-			oklch(from var(--p) l c h / 0.2) 0%,
+			oklch(from var(--color-primary) l c h / 0.2) 0%,
 			transparent 60%
 		),
 		radial-gradient(
 			ellipse at 0% 50%,
-			oklch(from var(--s) l c h / 0.12) 0%,
+			oklch(from var(--color-secondary) l c h / 0.12) 0%,
 			transparent 50%
 		),
 		radial-gradient(
 			ellipse at 100% 50%,
-			oklch(from var(--a) l c h / 0.12) 0%,
+			oklch(from var(--color-accent) l c h / 0.12) 0%,
 			transparent 50%
 		);
 }
@@ -129,9 +129,9 @@
 .gradient-artist {
 	background: linear-gradient(
 		135deg,
-		oklch(from var(--p) l c h / 0.15) 0%,
-		oklch(from var(--s) l c h / 0.1) 50%,
-		oklch(from var(--a) l c h / 0.08) 100%
+		oklch(from var(--color-primary) l c h / 0.15) 0%,
+		oklch(from var(--color-secondary) l c h / 0.1) 50%,
+		oklch(from var(--color-accent) l c h / 0.08) 100%
 	);
 }
 
@@ -139,9 +139,9 @@
 .gradient-circle {
 	background: linear-gradient(
 		135deg,
-		oklch(from var(--in) l c h / 0.15) 0%,
-		oklch(from var(--p) l c h / 0.1) 50%,
-		oklch(from var(--s) l c h / 0.08) 100%
+		oklch(from var(--color-info) l c h / 0.15) 0%,
+		oklch(from var(--color-primary) l c h / 0.1) 50%,
+		oklch(from var(--color-secondary) l c h / 0.08) 100%
 	);
 }
 
@@ -149,9 +149,9 @@
 .gradient-release {
 	background: linear-gradient(
 		135deg,
-		oklch(from var(--a) l c h / 0.15) 0%,
-		oklch(from var(--p) l c h / 0.1) 50%,
-		oklch(from var(--su) l c h / 0.08) 100%
+		oklch(from var(--color-accent) l c h / 0.15) 0%,
+		oklch(from var(--color-primary) l c h / 0.1) 50%,
+		oklch(from var(--color-success) l c h / 0.08) 100%
 	);
 }
 
@@ -159,9 +159,9 @@
 .gradient-track {
 	background: linear-gradient(
 		135deg,
-		oklch(from var(--s) l c h / 0.12) 0%,
-		oklch(from var(--n) l c h / 0.08) 50%,
-		oklch(from var(--p) l c h / 0.06) 100%
+		oklch(from var(--color-secondary) l c h / 0.12) 0%,
+		oklch(from var(--color-neutral) l c h / 0.08) 50%,
+		oklch(from var(--color-primary) l c h / 0.06) 100%
 	);
 }
 
@@ -169,9 +169,9 @@
 .gradient-event {
 	background: linear-gradient(
 		135deg,
-		oklch(from var(--wa) l c h / 0.15) 0%,
-		oklch(from var(--a) l c h / 0.1) 50%,
-		oklch(from var(--s) l c h / 0.08) 100%
+		oklch(from var(--color-warning) l c h / 0.15) 0%,
+		oklch(from var(--color-accent) l c h / 0.1) 50%,
+		oklch(from var(--color-secondary) l c h / 0.08) 100%
 	);
 }
 
@@ -179,9 +179,9 @@
 .gradient-song {
 	background: linear-gradient(
 		135deg,
-		oklch(from var(--su) l c h / 0.15) 0%,
-		oklch(from var(--in) l c h / 0.1) 50%,
-		oklch(from var(--p) l c h / 0.08) 100%
+		oklch(from var(--color-success) l c h / 0.15) 0%,
+		oklch(from var(--color-info) l c h / 0.1) 50%,
+		oklch(from var(--color-primary) l c h / 0.08) 100%
 	);
 }
 
@@ -201,8 +201,8 @@
 	border-radius: inherit;
 	background: radial-gradient(
 		ellipse at center,
-		oklch(from var(--p) l c h / 0.4) 0%,
-		oklch(from var(--p) l c h / 0.1) 40%,
+		oklch(from var(--color-primary) l c h / 0.4) 0%,
+		oklch(from var(--color-primary) l c h / 0.1) 40%,
 		transparent 70%
 	);
 	filter: blur(20px);
@@ -236,9 +236,9 @@
 	background: linear-gradient(
 		110deg,
 		transparent 20%,
-		oklch(from var(--bc) l c h / 0.08) 40%,
-		oklch(from var(--bc) l c h / 0.12) 50%,
-		oklch(from var(--bc) l c h / 0.08) 60%,
+		oklch(from var(--color-base-content) l c h / 0.08) 40%,
+		oklch(from var(--color-base-content) l c h / 0.12) 50%,
+		oklch(from var(--color-base-content) l c h / 0.08) 60%,
 		transparent 80%
 	);
 	transform: translateX(-100%);
@@ -261,8 +261,8 @@
 
 /* Standard glass card with 0.8 opacity */
 .glass-card-light {
-	background: oklch(from var(--b1) l c h / 0.8);
+	background: oklch(from var(--color-base-100) l c h / 0.8);
 	backdrop-filter: blur(12px);
 	-webkit-backdrop-filter: blur(12px);
-	border: 1px solid oklch(from var(--bc) l c h / 0.1);
+	border: 1px solid oklch(from var(--color-base-content) l c h / 0.1);
 }

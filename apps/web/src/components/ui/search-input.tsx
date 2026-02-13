@@ -49,11 +49,7 @@ function SearchInput({
 			<input
 				type="search"
 				data-slot="search-input"
-				className={cn(
-					"input input-bordered w-full pl-10",
-					sizeClasses[size],
-					className,
-				)}
+				className={cn("input w-full pl-10", sizeClasses[size], className)}
 				autoComplete="off"
 				data-1p-ignore
 				data-lpignore="true"
