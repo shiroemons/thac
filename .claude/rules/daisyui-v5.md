@@ -5,6 +5,7 @@ paths: apps/web/**
 # daisyUI v5 の落とし穴
 
 本プロジェクトはdaisyUI v5 + TailwindCSS v4（`@plugin`インポート）を使用。
+クラス名や使い方に迷ったら context7 MCP で daisyUI の公式ドキュメントを参照すること。
 
 ## Statsコンポーネントの背景
 
