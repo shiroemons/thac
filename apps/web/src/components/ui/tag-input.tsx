@@ -192,7 +192,7 @@ function TagInput({
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: このdivはクリック時にinput要素へフォーカスを移動する補助的な役割のみ。実際のキーボード操作は内部のinput要素が担当 */}
 			<div
 				className={cn(
-					"flex min-h-12 flex-wrap items-center gap-1.5 rounded-btn border border-base-300 bg-base-100 px-3 py-2",
+					"flex min-h-12 flex-wrap items-center gap-1.5 rounded-field border border-base-300 bg-base-100 px-3 py-2",
 					disabled && "cursor-not-allowed opacity-50",
 					!disabled && "focus-within:border-primary focus-within:outline-none",
 				)}
