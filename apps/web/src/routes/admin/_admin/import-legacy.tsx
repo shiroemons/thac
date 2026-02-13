@@ -1093,7 +1093,7 @@ function MappingStep({
 			</div>
 
 			{/* 統計 */}
-			<div className="stats w-full border border-base-300">
+			<div className="stats w-full border border-base-300 bg-base-100">
 				<div className="stat">
 					<div className="stat-title">レコード数</div>
 					<div className="stat-value text-2xl">{records.length}</div>
@@ -1900,7 +1900,7 @@ function ImportingStep({
 
 			{/* エンティティ別進捗 */}
 			{entityProgress && (
-				<div className="stats stats-vertical lg:stats-horizontal w-full border border-base-300">
+				<div className="stats stats-vertical lg:stats-horizontal w-full border border-base-300 bg-base-100">
 					{(
 						Object.entries(entityLabels) as [keyof EntityProgressMap, string][]
 					).map(([key, label]) => {
