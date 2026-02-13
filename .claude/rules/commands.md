@@ -57,12 +57,17 @@ make db-studio
 make db-truncate
 ```
 
-## Meilisearchコマンド
+## Meilisearch再インデックス
 
-```bash
-# Meilisearchのインデックスを同期
-devbox run -- bun run meilisearch:sync
+CLIコマンドは存在しない。再インデックスは管理画面またはAPIで実行する。
+
 ```
+POST /api/admin/search/reindex          # 全インデックス再構築
+POST /api/admin/search/reindex/:index   # 特定インデックス再構築（例: tracks）
+```
+
+レスポンスはSSE（Server-Sent Events）で進捗をストリーミング配信する。
+Web管理画面（/admin）の検索管理ページから実行可能。
 
 ## devbox サービス管理
 
