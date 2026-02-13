@@ -100,7 +100,7 @@ export function SearchableGroupedSelect({
 				id={id}
 				onClick={() => setIsOpen(!isOpen)}
 				className={cn(
-					"select select-bordered flex w-full items-center justify-between text-left",
+					"select flex w-full items-center justify-between text-left",
 					!selectedLabel && "text-base-content/50",
 				)}
 			>
@@ -126,7 +126,7 @@ export function SearchableGroupedSelect({
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
 								placeholder={searchPlaceholder}
-								className="input input-sm input-bordered w-full pl-9"
+								className="input input-sm w-full pl-9"
 							/>
 						</div>
 					</div>

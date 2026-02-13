@@ -601,7 +601,7 @@ function TagsPage() {
 							</label>
 							<select
 								id="merge-target"
-								className="select select-bordered w-full"
+								className="select w-full"
 								value={mergeTarget || ""}
 								onChange={(e) => setMergeTarget(e.target.value || null)}
 							>

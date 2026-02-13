@@ -401,7 +401,7 @@ function EventDetailPage() {
 						<select
 							value={sortBy}
 							onChange={handleSortByChange}
-							className="select select-bordered select-sm"
+							className="select select-sm"
 							aria-label="並び替え項目"
 						>
 							{SORT_OPTIONS.map((option) => (

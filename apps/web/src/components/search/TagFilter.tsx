@@ -196,7 +196,7 @@ export function TagFilter({
 									onFocus={handleInputFocus}
 									onKeyDown={handleKeyDown}
 									placeholder="タグを検索..."
-									className="input input-sm input-bordered w-full pl-9"
+									className="input input-sm w-full pl-9"
 									autoComplete="off"
 									data-1p-ignore
 									data-lpignore="true"

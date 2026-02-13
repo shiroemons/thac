@@ -46,9 +46,9 @@ function CountSelector({ label, value, onChange }: CountSelectorProps) {
 	};
 
 	return (
-		<div className="form-control">
+		<fieldset className="fieldset">
 			<label className="label py-1">
-				<span className="label-text text-sm">{label}</span>
+				<span className="text-sm">{label}</span>
 			</label>
 			<div className="flex items-center gap-2">
 				<button
@@ -64,7 +64,7 @@ function CountSelector({ label, value, onChange }: CountSelectorProps) {
 					value={numericValue}
 					onChange={handleInputChange}
 					placeholder="人数"
-					className="input input-xs input-bordered w-16"
+					className="input input-xs w-16"
 				/>
 				<span className="text-sm">人</span>
 				{entry && (
@@ -102,7 +102,7 @@ function CountSelector({ label, value, onChange }: CountSelectorProps) {
 					</div>
 				)}
 			</div>
-		</div>
+		</fieldset>
 	);
 }
 

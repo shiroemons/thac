@@ -59,7 +59,7 @@ function TagsPage() {
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
 					placeholder="タグを検索..."
-					className="input input-bordered w-full rounded-xl pl-12"
+					className="input w-full rounded-xl pl-12"
 					aria-label="タグ検索"
 				/>
 			</div>

@@ -58,7 +58,7 @@ function GenreBadge({ code, name, color, icon, className }: GenreBadgeProps) {
 			style={{
 				backgroundColor: `${color}33`,
 				borderColor: `${color}66`,
-				color: "var(--bc)",
+				color: "var(--color-base-content)",
 			}}
 		>
 			{IconComponent && <IconComponent className="size-3" />}

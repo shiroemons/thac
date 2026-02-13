@@ -132,7 +132,7 @@ export function GroupedSearchableSelect({
 				onClick={() => !disabled && setIsOpen(!isOpen)}
 				disabled={disabled}
 				className={cn(
-					"select select-bordered w-full text-left",
+					"select w-full text-left",
 					!selectedLabel && "text-base-content/50",
 					disabled && "cursor-not-allowed opacity-50",
 				)}
@@ -163,7 +163,7 @@ export function GroupedSearchableSelect({
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
 								placeholder={searchPlaceholder}
-								className="input input-sm input-bordered w-full pl-9"
+								className="input input-sm w-full pl-9"
 							/>
 						</div>
 					</div>

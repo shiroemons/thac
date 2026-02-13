@@ -2173,7 +2173,7 @@ function TrackDetailPage() {
 									})
 								}
 								placeholder="備考を入力..."
-								className="textarea textarea-bordered w-full"
+								className="textarea w-full"
 								rows={3}
 							/>
 						</div>
@@ -2258,7 +2258,7 @@ function TrackDetailPage() {
 									})
 								}
 								placeholder="備考を入力..."
-								className="textarea textarea-bordered w-full"
+								className="textarea w-full"
 								rows={3}
 							/>
 						</div>

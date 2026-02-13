@@ -27,9 +27,9 @@ function InputField({
 	icon,
 }: InputFieldProps) {
 	return (
-		<div className="form-control w-full">
+		<fieldset className="fieldset w-full">
 			<label className="label py-1">
-				<span className="label-text flex items-center gap-1.5 text-sm">
+				<span className="flex items-center gap-1.5 text-sm">
 					{icon}
 					{label}
 				</span>
@@ -39,13 +39,13 @@ function InputField({
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={placeholder}
-				className="input input-sm input-bordered w-full"
+				className="input input-sm w-full"
 				autoComplete="off"
 				data-1p-ignore
 				data-lpignore="true"
 				data-form-type="other"
 			/>
-		</div>
+		</fieldset>
 	);
 }
 

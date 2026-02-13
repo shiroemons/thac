@@ -135,7 +135,7 @@ export function CircleFilter({
 									value={search}
 									onChange={(e) => setSearch(e.target.value)}
 									placeholder="サークルを検索..."
-									className="input input-sm input-bordered w-full pl-9"
+									className="input input-sm w-full pl-9"
 								/>
 							</div>
 						</div>

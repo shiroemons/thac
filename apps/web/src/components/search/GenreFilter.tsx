@@ -112,7 +112,7 @@ export function GenreFilter({
 							style={{
 								backgroundColor: `${genre.color}40`,
 								borderColor: `${genre.color}80`,
-								color: "var(--bc)",
+								color: "var(--color-base-content)",
 							}}
 							title={genre.description || genre.nameJa}
 							aria-pressed={isSelected}
