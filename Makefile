@@ -4,7 +4,7 @@
 	docker-clean docker-rebuild docker-reset docker-reset-deps docker-prune docker-shell-server docker-shell-web \
 	db-push db-generate db-migrate db-seed db-setup db-studio db-truncate \
 	docker-db-push docker-db-generate docker-db-migrate docker-db-seed docker-db-setup docker-db-truncate \
-	install check check-types test lint-markuplint
+	install check check-types test lint-markuplint stop-app wt-dev
 
 # デフォルトターゲット
 help: ## ヘルプを表示
@@ -46,6 +46,23 @@ restart: ## サービスを再起動
 	else \
 		echo "サービスは起動していません。make up で起動してください。"; \
 	fi
+
+stop-app: ## web+serverのみ停止（DB/Meilisearchは維持）
+	@lsof -i :3000 -sTCP:LISTEN -t 2>/dev/null | xargs kill 2>/dev/null || true
+	@lsof -i :3001 -sTCP:LISTEN -t 2>/dev/null | xargs kill 2>/dev/null || true
+	@echo "✅ web + server を停止しました"
+
+wt-dev: ## worktree内でweb+serverを起動（メインのDB/Meilisearchに接続）
+	@pg_isready -h localhost -p 5432 -q 2>/dev/null || { echo "❌ PostgreSQLが起動していません。メインworktreeで make up を実行してください"; exit 1; }
+	@curl -sf http://localhost:7700/health >/dev/null 2>&1 || { echo "❌ Meilisearchが起動していません。メインworktreeで make up を実行してください"; exit 1; }
+	@if lsof -i :3000 -sTCP:LISTEN -t >/dev/null 2>&1; then \
+		echo "❌ ポート3000が使用中です。make stop-app で停止してください"; exit 1; \
+	fi
+	@if lsof -i :3001 -sTCP:LISTEN -t >/dev/null 2>&1; then \
+		echo "❌ ポート3001が使用中です。make stop-app で停止してください"; exit 1; \
+	fi
+	@echo "🚀 web + server を起動します..."
+	@devbox run -- sh -c 'trap "kill 0" EXIT; bun run --cwd apps/server dev & bun run --cwd apps/web dev & wait'
 
 # =============================================================================
 # 開発環境（Docker）

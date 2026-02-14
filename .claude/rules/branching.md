@@ -82,11 +82,14 @@ git config --add wt.nocopy ".devbox/"      # devbox環境は共有
 git config --add wt.nocopy "data/"         # ローカルデータは共有
 ```
 
-## devboxサービスの共有
+## worktreeでの開発手順
 
-- devbox services（PostgreSQL, Meilisearch等）はメインworktreeのみで起動
-- 他のworktreeは同じDB・サービスを共有利用
-- worktree内では `devbox run -- bun run dev:web` 等で個別アプリのみ起動
+1. メインworktreeで `make up`（全サービス起動）
+2. メインworktreeで `make stop-app`（web+serverのみ停止、DB/Meilisearchは維持）
+3. worktreeに移動: `cd .worktree/<branch-name>/`
+4. `make wt-dev`（web+serverをworktreeのコードで起動）
+5. 作業完了後 Ctrl+C で停止
+6. メインに戻って `make restart` または `make up` で復帰
 
 ## PR作成後のフロー
 
