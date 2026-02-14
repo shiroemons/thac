@@ -1,4 +1,8 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Outlet,
+	useRouterState,
+} from "@tanstack/react-router";
 import {
 	PublicFooter,
 	PublicHeader,
@@ -14,11 +18,22 @@ export const Route = createFileRoute("/_public")({
 });
 
 function PublicLayout() {
+	const pathname = useRouterState({
+		select: (s) => s.location.pathname,
+	});
+	const isHomepage = pathname === "/";
+
 	return (
 		<ExternalLinkProvider>
 			<div className="flex min-h-screen flex-col">
 				<PublicHeader />
-				<main className="container mx-auto flex-1 px-3 py-4 sm:px-4 sm:py-6 lg:px-6">
+				<main
+					className={
+						isHomepage
+							? "flex-1"
+							: "container mx-auto flex-1 px-3 py-4 sm:px-4 sm:py-6 lg:px-6"
+					}
+				>
 					<Outlet />
 				</main>
 				<PublicFooter />
