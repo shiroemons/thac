@@ -17,7 +17,10 @@
 		"CORS_ORIGIN": "http://localhost:3000",
 		"BETTER_AUTH_URL": "http://localhost:3000",
 		"DATABASE_URL": "postgresql://localhost:5432/thac",
-		"PGDATABASE": "thac"
+		"PGDATABASE": "thac",
+		"BETTER_AUTH_SECRET": "devbox_secret_key_change_in_production",
+		"VITE_SERVER_URL": "http://localhost:3001",
+		"SERVER_URL": "http://localhost:3001"
 	},
 	"shell": {
 		"init_hook": [
