@@ -1,6 +1,6 @@
-import { MeiliSearch } from "meilisearch";
+import { Meilisearch } from "meilisearch";
 
-let client: MeiliSearch | null = null;
+let client: Meilisearch | null = null;
 
 // Health check cache
 const HEALTH_CHECK_CACHE_TTL_MS = 30_000;
@@ -9,12 +9,12 @@ let healthCache: { isAvailable: boolean; checkedAt: number } | null = null;
 /**
  * Get or create Meilisearch client singleton
  */
-export function getMeilisearchClient(): MeiliSearch {
+export function getMeilisearchClient(): Meilisearch {
 	if (!client) {
 		const host = process.env.MEILI_URL || "http://localhost:7700";
 		const apiKey = process.env.MEILI_MASTER_KEY || "";
 
-		client = new MeiliSearch({ host, apiKey });
+		client = new Meilisearch({ host, apiKey });
 	}
 	return client;
 }

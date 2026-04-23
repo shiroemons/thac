@@ -143,7 +143,7 @@
       "dependencies": {
         "@thac/db": "workspace:*",
         "dotenv": "catalog:",
-        "meilisearch": "^0.55.0",
+        "meilisearch": "^0.57.0",
       },
       "devDependencies": {
         "@thac/config": "workspace:*",
@@ -1188,7 +1188,7 @@
 
     "mdn-data": ["mdn-data@2.27.1", "", {}, "sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ=="],
 
-    "meilisearch": ["meilisearch@0.55.0", "", {}, "sha512-qSMeiezfDgIqciIeYzh5E4pXDZZD7CtHeWDCs43kN3trLgl5FtfmBAIkljL3huFaOx08feYtC8FfIFUpVwq6rg=="],
+    "meilisearch": ["meilisearch@0.57.0", "", {}, "sha512-J3ZdX6MjguEIG9Yo+duRZeVsbMdRuwM2OFvJUs8wZSeBADYZ2qc1eajlClKLRqS/mAhGh2bLiU5SbmhKXKuWSw=="],
 
     "meow": ["meow@13.2.0", "", {}, "sha512-pxQJQzB6djGPXh08dacEloMFopsOqGVRKFPYvPOt9XDZ1HasbgDZA74CJGreSU4G3Ak7EFJGoiH2auq+yXISgA=="],
 
