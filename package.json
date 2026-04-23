@@ -52,8 +52,8 @@
 		"@dnd-kit/sortable": "^10.0.0",
 		"@dnd-kit/utilities": "^3.2.2",
 		"@types/bun": "catalog:",
-		"lefthook": "^2.0.16",
-		"turbo": "^2.8.1",
+		"lefthook": "^2.1.6",
+		"turbo": "^2.9.6",
 		"typescript": "catalog:",
 		"web": "workspace:*"
 	},
