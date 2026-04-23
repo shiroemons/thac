@@ -27,13 +27,13 @@
 	},
 	"devDependencies": {
 		"@electric-sql/pglite": "catalog:",
-		"drizzle-kit": "^0.31.8",
+		"drizzle-kit": "^0.31.10",
 		"typescript": "catalog:",
 		"@thac/config": "workspace:*"
 	},
 	"dependencies": {
 		"dotenv": "catalog:",
-		"drizzle-orm": "^0.45.1",
+		"drizzle-orm": "^0.45.2",
 		"drizzle-zod": "^0.8.3",
 		"postgres": "catalog:",
 		"zod": "catalog:"
