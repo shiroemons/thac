@@ -20,7 +20,7 @@
 		"@thac/utils": "workspace:*",
 		"better-auth": "catalog:",
 		"dotenv": "catalog:",
-		"hono": "^4.11.7",
+		"hono": "^4.12.14",
 		"hono-rate-limiter": "^0.5.3",
 		"zod": "catalog:"
 	},
