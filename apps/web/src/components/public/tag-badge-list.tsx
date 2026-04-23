@@ -38,5 +38,5 @@ function TagBadgeList({ tags, maxDisplay, className }: TagBadgeListProps) {
 	);
 }
 
+export type { Tag, TagBadgeListProps };
 export { TagBadgeList };
-export type { TagBadgeListProps, Tag };

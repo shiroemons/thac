@@ -152,5 +152,5 @@ function DataTablePagination({
 	);
 }
 
-export { DataTablePagination };
 export type { DataTablePaginationProps };
+export { DataTablePagination };

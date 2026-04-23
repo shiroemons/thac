@@ -30,5 +30,5 @@ function TagBadge({ id, name, className }: TagBadgeProps) {
 	);
 }
 
-export { TagBadge };
 export type { TagBadgeProps };
+export { TagBadge };

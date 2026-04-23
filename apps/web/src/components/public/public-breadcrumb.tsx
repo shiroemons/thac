@@ -134,7 +134,7 @@ export function PublicBreadcrumb({
 
 					return (
 						<BreadcrumbItem
-							key={`${item.label}-${index}`}
+							key={item.href ?? item.label}
 							className={`${isMiddleItem ? "hidden sm:flex" : ""} ${orderClass}`.trim()}
 						>
 							{/* セパレータ */}

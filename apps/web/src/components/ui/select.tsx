@@ -57,5 +57,5 @@ function SelectTrigger({
 	);
 }
 
-export { Select, SelectTrigger };
 export type { SelectProps, SelectSize };
+export { Select, SelectTrigger };

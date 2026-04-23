@@ -261,7 +261,7 @@ function renderCircleLinks(
 ): React.ReactNode {
 	if (items.length === 0) return "-";
 	return items.map((item, index) => (
-		<span key={`${item.name}-${index}`}>
+		<span key={item.id}>
 			{index > 0 && ", "}
 			<Link
 				to="/circles/$id"
@@ -282,7 +282,7 @@ function renderArtistLinks(
 ): React.ReactNode {
 	if (items.length === 0) return "-";
 	return items.map((item, index) => (
-		<span key={`${item.name}-${index}`}>
+		<span key={item.id ?? item.name}>
 			{index > 0 && ", "}
 			{item.id ? (
 				<Link
@@ -825,7 +825,7 @@ function SearchPage() {
 													<div>
 														{hit.originalSongs.length > 0
 															? hit.originalSongs.map((song, index) => (
-																	<span key={`${song.name}-${index}`}>
+																	<span key={song.officialSongId ?? song.name}>
 																		{index > 0 && ", "}
 																		{song.officialSongId ? (
 																			<Link
@@ -891,7 +891,7 @@ function SearchPage() {
 														{hit.composers.length > 0 || hit.remixers.length > 0
 															? [...hit.composers, ...hit.remixers].map(
 																	(artist, index) => (
-																		<span key={`${artist.name}-${index}`}>
+																		<span key={artist.id ?? artist.name}>
 																			{index > 0 && ", "}
 																			{artist.id ? (
 																				<Link
@@ -1152,7 +1152,7 @@ function SearchPage() {
 									const displayLabel = historyItem.query || "(フィルターのみ)";
 									return (
 										<div
-											key={`${historyItem.timestamp}-${index}`}
+											key={historyItem.timestamp}
 											className="group flex min-h-[44px] items-center gap-1 rounded-full bg-base-content/5 py-2 pr-2 pl-4 text-sm transition-all duration-300 hover:bg-primary hover:text-primary-content hover:shadow-md"
 										>
 											<button

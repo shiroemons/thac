@@ -52,5 +52,5 @@ function ColumnVisibilityToggle({
 	);
 }
 
-export { ColumnVisibilityToggle };
 export type { ColumnVisibilityToggleProps };
+export { ColumnVisibilityToggle };

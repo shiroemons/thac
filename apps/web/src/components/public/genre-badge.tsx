@@ -67,5 +67,5 @@ function GenreBadge({ code, name, color, icon, className }: GenreBadgeProps) {
 	);
 }
 
-export { GenreBadge };
 export type { GenreBadgeProps };
+export { GenreBadge };

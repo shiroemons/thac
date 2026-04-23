@@ -85,11 +85,8 @@ export function PublicationLinks({
 						メディア
 					</h3>
 					<div className="grid gap-4 sm:grid-cols-2">
-						{embeds.map((embed, index) => (
-							<MediaEmbed
-								key={`${embed.type}-${embed.id}-${index}`}
-								embed={embed}
-							/>
+						{embeds.map((embed) => (
+							<MediaEmbed key={`${embed.type}-${embed.id}`} embed={embed} />
 						))}
 					</div>
 				</div>

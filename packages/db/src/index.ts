@@ -83,7 +83,8 @@ export const db = new Proxy({} as DrizzleDB, {
 	},
 });
 
-// Re-export drizzle-orm operators
+// Re-export drizzle-orm operators and types
+export type { SQL } from "drizzle-orm";
 export {
 	and,
 	asc,

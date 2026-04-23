@@ -49,9 +49,9 @@ export function MediaEmbedList({ embeds, className }: MediaEmbedListProps) {
 
 	return (
 		<div className={`grid gap-4 ${className ?? ""}`}>
-			{embeds.map((embed, index) => (
+			{embeds.map((embed) => (
 				<MediaEmbed
-					key={`${embed.type}-${embed.id}-${index}`}
+					key={`${embed.type}-${embed.id}`}
 					embed={embed}
 					className="w-full"
 				/>

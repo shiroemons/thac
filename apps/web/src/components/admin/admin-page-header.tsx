@@ -84,5 +84,5 @@ function AdminPageHeader({
 	);
 }
 
-export { AdminPageHeader };
 export type { AdminPageHeaderProps, BreadcrumbItemData };
+export { AdminPageHeader };

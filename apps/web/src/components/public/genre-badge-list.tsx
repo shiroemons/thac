@@ -37,5 +37,5 @@ function GenreBadgeList({ genres, className }: GenreBadgeListProps) {
 	);
 }
 
+export type { Genre, GenreBadgeListProps };
 export { GenreBadgeList };
-export type { GenreBadgeListProps, Genre };

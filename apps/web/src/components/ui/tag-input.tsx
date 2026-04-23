@@ -341,5 +341,5 @@ function TagInput({
 	);
 }
 
-export { TagInput };
 export type { TagInputProps, TagItem };
+export { TagInput };

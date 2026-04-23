@@ -161,21 +161,21 @@ function CardIcon({ className, animation = "none", ...props }: CardIconProps) {
 	);
 }
 
-export {
-	Card,
-	CardHeader,
-	CardFooter,
-	CardTitle,
-	CardAction,
-	CardDescription,
-	CardContent,
-	CardIcon,
-};
 export type {
+	CardIconProps,
 	CardProps,
 	CardVariant,
 	GradientEntity,
 	HoverEffect,
-	CardIconProps,
 	IconAnimation,
+};
+export {
+	Card,
+	CardAction,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardIcon,
+	CardTitle,
 };

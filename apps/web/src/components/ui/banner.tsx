@@ -123,5 +123,5 @@ function Banner({
 	);
 }
 
-export { Banner };
 export type { BannerProps, BannerVariant };
+export { Banner };

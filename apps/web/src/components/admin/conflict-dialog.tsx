@@ -104,5 +104,5 @@ function ConflictDialog<T>({
 	);
 }
 
-export { ConflictDialog };
 export type { ConflictDialogProps };
+export { ConflictDialog };
