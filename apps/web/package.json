@@ -6,9 +6,9 @@
 		"check-types": "tsr generate && tsc --noEmit",
 		"lint:jsx-nesting": "eslint src --max-warnings 0",
 		"lint:markuplint": "markuplint \"src/**/*.tsx\"",
-		"build": "vite build",
-		"serve": "vite preview",
-		"dev": "vite dev --port=3000",
+		"build": "vp build",
+		"serve": "vp preview",
+		"dev": "vp dev --port=3000",
 		"test": "bun test"
 	},
 	"dependencies": {
@@ -58,7 +58,8 @@
 		"jsdom": "^29.0.2",
 		"markuplint": "^4.18.0",
 		"typescript": "catalog:",
-		"vite": "^8.0.10",
+		"vite": "catalog:",
+		"vite-plus": "catalog:",
 		"web-vitals": "^5.2.0"
 	}
 }
