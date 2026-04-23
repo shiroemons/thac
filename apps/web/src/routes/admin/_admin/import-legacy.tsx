@@ -1666,6 +1666,7 @@ function EventInputCard({
 						<h5 className="mb-2 font-medium text-sm">開催日</h5>
 						<div className="grid grid-cols-2 gap-2 md:grid-cols-5">
 							{Array.from({ length: input?.totalDays || 1 }).map((_, i) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: 動的生成した日付入力フォームのためインデックスが適切
 								<div key={`day-${event.name}-${i}`} className="grid gap-1">
 									<Label htmlFor={`${stableId}-date-${i}`}>{i + 1}日目</Label>
 									<input

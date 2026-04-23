@@ -32,7 +32,7 @@ function parseDateToComponents(
 ): { year: number; month: number; day: number } | null {
 	if (!dateStr) return null;
 	const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-	if (!match || !match[1] || !match[2] || !match[3]) return null;
+	if (!match?.[1] || !match[2] || !match[3]) return null;
 	return {
 		year: Number.parseInt(match[1], 10),
 		month: Number.parseInt(match[2], 10),

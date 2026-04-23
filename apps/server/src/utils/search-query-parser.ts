@@ -188,7 +188,7 @@ function extractUnquotedValue(
  */
 function parseRangeValue(value: string): RangeFilterValue | null {
 	const rangeMatch = value.match(/^(.+)\.\.(.+)$/);
-	if (!rangeMatch || !rangeMatch[1] || !rangeMatch[2]) return null;
+	if (!rangeMatch?.[1] || !rangeMatch[2]) return null;
 	return { from: rangeMatch[1], to: rangeMatch[2] };
 }
 

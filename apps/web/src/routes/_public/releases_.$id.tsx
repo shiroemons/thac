@@ -131,11 +131,8 @@ function ReleaseDetailPage() {
 					<div className="flex flex-wrap items-center gap-2">
 						{release.circles
 							.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-							.map((circle, idx) => (
-								<CircleBadge
-									key={`${circle.circleId}-${idx}`}
-									circle={circle}
-								/>
+							.map((circle) => (
+								<CircleBadge key={circle.circleId} circle={circle} />
 							))}
 					</div>
 				)}

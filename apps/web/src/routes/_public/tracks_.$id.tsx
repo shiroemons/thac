@@ -227,9 +227,9 @@ function TrackDetailPage() {
 					</h2>
 					<div className="rounded-2xl bg-base-100 shadow-sm">
 						<ul className="divide-y divide-base-200">
-							{track.officialSongs.map((os, idx) => (
+							{track.officialSongs.map((os) => (
 								<li
-									key={`${os.officialSongId ?? "unknown"}-${idx}`}
+									key={os.officialSongId ?? os.songName}
 									className="flex items-start gap-3 p-4"
 								>
 									{/* メドレー順序 */}

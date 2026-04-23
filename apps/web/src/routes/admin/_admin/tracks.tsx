@@ -200,7 +200,7 @@ function TracksPage() {
 	};
 
 	const handleDelete = () => {
-		if (!deleteTarget || !deleteTarget.releaseId) return;
+		if (!deleteTarget?.releaseId) return;
 		deleteMutation.mutate(
 			{
 				releaseId: deleteTarget.releaseId,
