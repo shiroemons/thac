@@ -177,10 +177,10 @@ function DataTableActionBar({
 	);
 }
 
-export { DataTableActionBar };
 export type {
 	ColumnVisibilityConfig,
 	DataTableActionBarProps,
 	FilterOption,
 	SecondaryAction,
 };
+export { DataTableActionBar };

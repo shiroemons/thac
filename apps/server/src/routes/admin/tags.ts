@@ -1,3 +1,4 @@
+import type { SQL } from "@thac/db";
 import {
 	and,
 	asc,
@@ -15,7 +16,6 @@ import {
 	trackTags,
 	updateTagSchema,
 } from "@thac/db";
-import type { SQL } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { ERROR_MESSAGES } from "../../constants/error-messages";

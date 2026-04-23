@@ -78,5 +78,5 @@ function DataTableSkeleton({
 	);
 }
 
-export { DataTableSkeleton };
 export type { DataTableSkeletonProps };
+export { DataTableSkeleton };

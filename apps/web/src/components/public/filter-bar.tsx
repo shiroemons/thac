@@ -82,4 +82,4 @@ export function FilterBarGroup({ children, className }: FilterBarGroupProps) {
 	);
 }
 
-export type { FilterBarProps, FilterBarSectionProps, FilterBarGroupProps };
+export type { FilterBarGroupProps, FilterBarProps, FilterBarSectionProps };

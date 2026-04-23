@@ -38,5 +38,5 @@ function TagBadge({ name, isLocked, onRemove, className }: TagBadgeProps) {
 	);
 }
 
-export { TagBadge };
 export type { TagBadgeProps };
+export { TagBadge };

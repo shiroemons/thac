@@ -99,5 +99,5 @@ function GenreBadge({
 	);
 }
 
-export { GenreBadge };
 export type { GenreBadgeProps };
+export { GenreBadge };

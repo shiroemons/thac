@@ -97,5 +97,5 @@ function TagCloud({ limit = 50, className }: TagCloudProps) {
 	);
 }
 
-export { TagCloud };
 export type { TagCloudProps };
+export { TagCloud };

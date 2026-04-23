@@ -169,5 +169,5 @@ function RankingList<T>({
 // エクスポート
 // =============================================================================
 
-export { RankingList, RankBadge, calculateRanks, getMedalOrRank };
-export type { RankingListProps, RankBadgeProps };
+export type { RankBadgeProps, RankingListProps };
+export { calculateRanks, getMedalOrRank, RankBadge, RankingList };

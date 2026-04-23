@@ -227,5 +227,5 @@ function GenreMultiSelect({
 	);
 }
 
-export { GenreMultiSelect };
 export type { Genre, GenreMultiSelectProps };
+export { GenreMultiSelect };

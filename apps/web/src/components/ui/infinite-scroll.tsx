@@ -162,5 +162,5 @@ function InfiniteScroll({
 	);
 }
 
-export { InfiniteScroll };
 export type { InfiniteScrollProps };
+export { InfiniteScroll };
