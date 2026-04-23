@@ -38,7 +38,7 @@
 		"zod": "catalog:"
 	},
 	"devDependencies": {
-		"@happy-dom/global-registrator": "^20.4.0",
+		"@happy-dom/global-registrator": "^20.9.0",
 		"@markuplint/jsx-parser": "^4.18.0",
 		"@markuplint/react-spec": "^4.18.0",
 		"@tanstack/react-query-devtools": "^5.99.2",
@@ -54,8 +54,8 @@
 		"eslint": "^9.39.4",
 		"eslint-plugin-react-compiler": "^19.1.0-rc.2",
 		"eslint-plugin-validate-jsx-nesting": "^0.1.1",
-		"isomorphic-dompurify": "^2.35.0",
-		"jsdom": "^28.0.0",
+		"isomorphic-dompurify": "^2.36.0",
+		"jsdom": "^28.1.0",
 		"markuplint": "^4.18.0",
 		"typescript": "catalog:",
 		"vite": "^7.3.2",
