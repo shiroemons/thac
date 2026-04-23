@@ -357,51 +357,51 @@
         }
       }
     },
-    "meilisearch@latest": {
-      "last_modified": "2026-02-07T22:13:35Z",
-      "resolved": "github:NixOS/nixpkgs/e75614081d5ffa5eab27745748fd5744d55fa2b9#meilisearch",
+    "meilisearch@1.41.0": {
+      "last_modified": "2026-04-01T01:09:41Z",
+      "resolved": "github:NixOS/nixpkgs/62e3050a29278c985725a86704faa1e99236b51a#meilisearch",
       "source": "devbox-search",
-      "version": "1.35.0",
+      "version": "1.41.0",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/z9pjkmh1gr8d0kn2y8a8qjnva0783k95-meilisearch-1.35.0",
+              "path": "/nix/store/bvz303im6k6n43xxyx0gd88p56515gy6-meilisearch-1.41.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/z9pjkmh1gr8d0kn2y8a8qjnva0783k95-meilisearch-1.35.0"
+          "store_path": "/nix/store/bvz303im6k6n43xxyx0gd88p56515gy6-meilisearch-1.41.0"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/z9pjkmh1gr8d0kn2y8a8qjnva0783k95-meilisearch-1.35.0",
+              "path": "/nix/store/islhwz58hvksf8kijzwyqaary2kkkj9n-meilisearch-1.41.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/z9pjkmh1gr8d0kn2y8a8qjnva0783k95-meilisearch-1.35.0"
+          "store_path": "/nix/store/islhwz58hvksf8kijzwyqaary2kkkj9n-meilisearch-1.41.0"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/z9pjkmh1gr8d0kn2y8a8qjnva0783k95-meilisearch-1.35.0",
+              "path": "/nix/store/9a1vcymyyj5h87nk1g1as2k6ppqfsgn3-meilisearch-1.41.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/z9pjkmh1gr8d0kn2y8a8qjnva0783k95-meilisearch-1.35.0"
+          "store_path": "/nix/store/9a1vcymyyj5h87nk1g1as2k6ppqfsgn3-meilisearch-1.41.0"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/z9pjkmh1gr8d0kn2y8a8qjnva0783k95-meilisearch-1.35.0",
+              "path": "/nix/store/148jrhq35zx080dkgvjg3x4r65hv54mb-meilisearch-1.41.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/z9pjkmh1gr8d0kn2y8a8qjnva0783k95-meilisearch-1.35.0"
+          "store_path": "/nix/store/148jrhq35zx080dkgvjg3x4r65hv54mb-meilisearch-1.41.0"
         }
       }
     },

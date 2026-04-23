@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Github } from "lucide-react";
+import { Code2 } from "lucide-react";
 
 const categoryLinks = [
 	{ to: "/artists", label: "アーティスト" },
@@ -95,7 +95,7 @@ export function PublicFooter() {
 								className="btn btn-ghost btn-circle btn-sm hover:text-primary"
 								aria-label="GitHub"
 							>
-								<Github className="size-5" aria-hidden="true" />
+								<Code2 className="size-5" aria-hidden="true" />
 							</a>
 						</div>
 					</div>

@@ -64,7 +64,7 @@ export async function createTestDatabase() {
 	const db = drizzle({ client, schema });
 
 	// スキーマをプッシュ（マイグレーション不要）
-	// PGlite 0.2.17はpg_trgm拡張をサポートしないため、
+	// PGliteはpg_trgm拡張をサポートしないため、
 	// gin_trgm_opsを含むステートメントをスキップして個別実行する
 	const push = await pushSchema(schema, db);
 	for (const stmt of push.statementsToExecute) {

@@ -114,7 +114,7 @@ beforeAll(async () => {
 	db = drizzle({ client, schema });
 
 	// スキーマをプッシュ
-	// PGlite 0.2.17はpg_trgm拡張をサポートしないため、
+	// PGliteはpg_trgm拡張をサポートしないため、
 	// gin_trgm_opsを含むステートメントをスキップして個別実行する
 	// biome-ignore lint/suspicious/noExplicitAny: pushSchemaの型不一致をキャスト
 	const push = await pushSchema(schema, db as any);

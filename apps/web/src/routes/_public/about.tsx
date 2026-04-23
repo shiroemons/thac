@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ExternalLink, Github, Music } from "lucide-react";
+import { Code2, ExternalLink, Music } from "lucide-react";
 import { PublicBreadcrumb } from "@/components/public";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPageHead } from "@/lib/head";
@@ -92,7 +92,7 @@ function AboutPage() {
 						rel="noopener noreferrer"
 						className="btn btn-outline gap-2"
 					>
-						<Github className="size-5" aria-hidden="true" />
+						<Code2 className="size-5" aria-hidden="true" />
 						GitHub
 						<ExternalLink className="size-4" aria-hidden="true" />
 					</a>
