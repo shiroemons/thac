@@ -487,6 +487,65 @@ export const searchTracksQueryOptions = (params: TrackSearchParams) =>
 	});
 
 // =============================================================================
+// 詳細ページ用 ページネーションクエリオプション
+// =============================================================================
+
+/** アーティスト名義のトラック一覧パラメータ */
+interface PublicArtistTracksParams {
+	page: number;
+	limit: number;
+	role?: string;
+}
+
+/**
+ * アーティスト名義のトラック一覧クエリオプション
+ * アーティスト詳細ページのトラックタブで使用
+ */
+export const publicArtistTracksQueryOptions = (
+	artistId: string,
+	params: PublicArtistTracksParams,
+) =>
+	queryOptions({
+		queryKey: ["public", "artists", artistId, "tracks", params],
+		queryFn: () => publicApi.artists.tracks(artistId, params),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+/** サークル作品/トラック一覧パラメータ */
+interface PublicCirclePaginationParams {
+	page: number;
+	limit: number;
+}
+
+/**
+ * サークルの作品一覧クエリオプション
+ * サークル詳細ページの作品タブで使用
+ */
+export const publicCircleReleasesQueryOptions = (
+	circleId: string,
+	params: PublicCirclePaginationParams,
+) =>
+	queryOptions({
+		queryKey: ["public", "circles", circleId, "releases", params],
+		queryFn: () => publicApi.circles.releases(circleId, params),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+/**
+ * サークルのトラック一覧クエリオプション
+ * サークル詳細ページのトラックタブで使用
+ */
+export const publicCircleTracksQueryOptions = (
+	circleId: string,
+	params: PublicCirclePaginationParams,
+) =>
+	queryOptions({
+		queryKey: ["public", "circles", circleId, "tracks", params],
+		queryFn: () => publicApi.circles.tracks(circleId, params),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+// =============================================================================
 // タグ用クエリオプション
 // =============================================================================
 
