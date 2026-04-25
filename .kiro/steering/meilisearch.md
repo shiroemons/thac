@@ -6,7 +6,7 @@
 
 ## 開発環境
 
-- **バージョン**: latest（devbox.json で `meilisearch@latest` 指定）
+- **バージョン**: 1.41.0（devbox.json で `meilisearch@1.41.0` 指定、docker-compose.yml も `getmeili/meilisearch:v1.41.0` に揃える）
 - **ポート**: 7700
 - **Search Preview**: http://localhost:7700
 - **起動方法**: `devbox services up`（process-compose経由）
