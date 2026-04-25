@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
 	Calendar,
@@ -7,7 +8,7 @@ import {
 	UserRound,
 	Users,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
@@ -32,12 +33,10 @@ import {
 	TAB_LABELS,
 } from "@/lib/detail-tab-utils";
 import { createPublicCircleHead } from "@/lib/head";
+import { publicApi } from "@/lib/public-api";
 import {
-	type PublicCircleRelease,
-	type PublicCircleTrack,
-	publicApi,
-} from "@/lib/public-api";
-import {
+	publicCircleReleasesQueryOptions,
+	publicCircleTracksQueryOptions,
 	publicWorkStatsSimpleQueryOptions,
 	publicWorkStatsStackedQueryOptions,
 } from "@/lib/public-query-options";
@@ -46,13 +45,17 @@ interface CircleDetailSearchParams {
 	tab?: CircleDetailTab;
 }
 
+const STORAGE_KEY_VIEW = "circle-detail-view-mode";
+const PAGE_SIZE = 20;
+
 export const Route = createFileRoute("/_public/circles_/$id")({
 	validateSearch: (
 		search: Record<string, unknown>,
 	): CircleDetailSearchParams => ({
 		tab: parseCircleDetailTab(search.tab),
 	}),
-	loader: async ({ params, context }) => {
+	loaderDeps: ({ search }) => ({ tab: search.tab }),
+	loader: async ({ params, context, deps }) => {
 		try {
 			const circle = await publicApi.circles.get(params.id);
 
@@ -64,6 +67,24 @@ export const Route = createFileRoute("/_public/circles_/$id")({
 				publicWorkStatsSimpleQueryOptions("circle", params.id),
 			);
 
+			// アクティブタブの初回データを SSR プリフェッチ
+			const activeTab = deps.tab ?? "releases";
+			if (activeTab === "releases") {
+				await context.queryClient.ensureQueryData(
+					publicCircleReleasesQueryOptions(params.id, {
+						page: 1,
+						limit: PAGE_SIZE,
+					}),
+				);
+			} else if (activeTab === "tracks") {
+				await context.queryClient.ensureQueryData(
+					publicCircleTracksQueryOptions(params.id, {
+						page: 1,
+						limit: PAGE_SIZE,
+					}),
+				);
+			}
+
 			return { circle };
 		} catch {
 			return { circle: null };
@@ -73,9 +94,6 @@ export const Route = createFileRoute("/_public/circles_/$id")({
 	headers: () => CACHE_HEADERS.PUBLIC_DETAIL,
 	component: CircleDetailPage,
 });
-
-const STORAGE_KEY_VIEW = "circle-detail-view-mode";
-const PAGE_SIZE = 20;
 
 // プラットフォーム名
 const platformNames: Record<string, string> = {
@@ -136,19 +154,33 @@ function CircleDetailPage() {
 		}
 	}, [activeTab, contentTab]);
 
-	// 作品一覧の状態
-	const [releases, setReleases] = useState<PublicCircleRelease[]>([]);
-	const [releasesTotal, setReleasesTotal] = useState(0);
+	// ページネーション状態
 	const [releasesPage, setReleasesPage] = useState(1);
-	const [releasesLoading, setReleasesLoading] = useState(false);
-	const [releasesLoaded, setReleasesLoaded] = useState(false);
-
-	// トラック一覧の状態
-	const [tracks, setTracks] = useState<PublicCircleTrack[]>([]);
-	const [tracksTotal, setTracksTotal] = useState(0);
 	const [tracksPage, setTracksPage] = useState(1);
-	const [tracksLoading, setTracksLoading] = useState(false);
-	const [tracksLoaded, setTracksLoaded] = useState(false);
+
+	// 作品一覧クエリ
+	const releasesQuery = useQuery({
+		...publicCircleReleasesQueryOptions(id, {
+			page: releasesPage,
+			limit: PAGE_SIZE,
+		}),
+		enabled: activeTab === "releases" && !!circle,
+	});
+	const releases = releasesQuery.data?.data ?? [];
+	const releasesTotal = releasesQuery.data?.total ?? 0;
+	const releasesLoading = releasesQuery.isLoading;
+
+	// トラック一覧クエリ
+	const tracksQuery = useQuery({
+		...publicCircleTracksQueryOptions(id, {
+			page: tracksPage,
+			limit: PAGE_SIZE,
+		}),
+		enabled: activeTab === "tracks" && !!circle,
+	});
+	const tracks = tracksQuery.data?.data ?? [];
+	const tracksTotal = tracksQuery.data?.total ?? 0;
+	const tracksLoading = tracksQuery.isLoading;
 
 	// ビューモードの保存
 	useEffect(() => {
@@ -169,68 +201,6 @@ function CircleDetailPage() {
 			search: { tab },
 		});
 	};
-
-	// 作品一覧を取得
-	const fetchReleases = useCallback(
-		async (page: number) => {
-			if (!circle) return;
-			setReleasesLoading(true);
-			try {
-				const res = await publicApi.circles.releases(id, {
-					page,
-					limit: PAGE_SIZE,
-				});
-				setReleases(res.data);
-				setReleasesTotal(res.total);
-				setReleasesPage(page);
-				setReleasesLoaded(true);
-			} catch {
-				// エラー時は空配列
-			} finally {
-				setReleasesLoading(false);
-			}
-		},
-		[circle, id],
-	);
-
-	// トラック一覧を取得
-	const fetchTracks = useCallback(
-		async (page: number) => {
-			if (!circle) return;
-			setTracksLoading(true);
-			try {
-				const res = await publicApi.circles.tracks(id, {
-					page,
-					limit: PAGE_SIZE,
-				});
-				setTracks(res.data);
-				setTracksTotal(res.total);
-				setTracksPage(page);
-				setTracksLoaded(true);
-			} catch {
-				// エラー時は空配列
-			} finally {
-				setTracksLoading(false);
-			}
-		},
-		[circle, id],
-	);
-
-	// タブ切替時に遅延読み込み
-	useEffect(() => {
-		if (activeTab === "releases" && !releasesLoaded && circle) {
-			fetchReleases(1);
-		} else if (activeTab === "tracks" && !tracksLoaded && circle) {
-			fetchTracks(1);
-		}
-	}, [
-		activeTab,
-		releasesLoaded,
-		tracksLoaded,
-		circle,
-		fetchReleases,
-		fetchTracks,
-	]);
 
 	// サークルが見つからない場合
 	if (!circle) {
@@ -474,7 +444,7 @@ function CircleDetailPage() {
 						<Pagination
 							currentPage={releasesPage}
 							totalPages={releasesTotalPages}
-							onPageChange={(page) => fetchReleases(page)}
+							onPageChange={setReleasesPage}
 						/>
 					)}
 				</>
@@ -615,7 +585,7 @@ function CircleDetailPage() {
 						<Pagination
 							currentPage={tracksPage}
 							totalPages={tracksTotalPages}
-							onPageChange={(page) => fetchTracks(page)}
+							onPageChange={setTracksPage}
 						/>
 					)}
 				</>

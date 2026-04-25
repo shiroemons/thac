@@ -41,6 +41,8 @@ export const getRouter = () => {
 		scrollRestoration: true,
 		defaultPreload: "intent", // ホバー・タッチ時にプリフェッチ
 		defaultPreloadStaleTime: 30_000, // 30秒間はキャッシュを使用
+		defaultPendingMs: 1000, // loader完了が1秒以内ならpendingComponentを出さない
+		defaultPendingMinMs: 500, // pendingComponentを出した場合は最低500ms表示してちらつき防止
 		context: {
 			queryClient,
 		},

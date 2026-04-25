@@ -1,6 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calendar, Hash, Loader2, Music, UserRound } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import {
 	EmptyState,
 	EntityDetailHeader,
@@ -13,22 +14,24 @@ import {
 } from "@/components/public";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPageHead } from "@/lib/head";
-import { type PublicArrangeTrack, publicApi } from "@/lib/public-api";
+import { publicApi } from "@/lib/public-api";
+import { publicTagTracksQueryOptions } from "@/lib/public-query-options";
+
+const PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/_public/tags_/$tagId")({
-	loader: async ({ params }) => {
+	loader: async ({ params, context }) => {
 		try {
-			const [tag, tracksRes] = await Promise.all([
-				publicApi.tags.get(params.tagId),
-				publicApi.tags.tracks(params.tagId, { page: 1, limit: 20 }),
-			]);
-			return {
-				tag,
-				initialTracks: tracksRes.data,
-				totalTracks: tracksRes.total,
-			};
+			const tag = await publicApi.tags.get(params.tagId);
+			await context.queryClient.ensureQueryData(
+				publicTagTracksQueryOptions(params.tagId, {
+					page: 1,
+					limit: PAGE_SIZE,
+				}),
+			);
+			return { tag };
 		} catch {
-			return { tag: null, initialTracks: [], totalTracks: 0 };
+			return { tag: null };
 		}
 	},
 	head: ({ loaderData }) =>
@@ -38,8 +41,6 @@ export const Route = createFileRoute("/_public/tags_/$tagId")({
 	headers: () => CACHE_HEADERS.PUBLIC_DETAIL,
 	component: TagDetailPage,
 });
-
-const PAGE_SIZE = 20;
 
 // 役割名
 const roleNames: Record<string, string> = {
@@ -54,41 +55,20 @@ const roleNames: Record<string, string> = {
 
 function TagDetailPage() {
 	const { tagId } = Route.useParams();
-	const { tag, initialTracks, totalTracks } = Route.useLoaderData();
+	const { tag } = Route.useLoaderData();
 
-	const [tracks, setTracks] = useState<PublicArrangeTrack[]>(initialTracks);
-	const [tracksTotal, setTracksTotal] = useState(totalTracks);
 	const [tracksPage, setTracksPage] = useState(1);
-	const [tracksLoading, setTracksLoading] = useState(false);
 
-	// 初期データが変わったら更新
-	useEffect(() => {
-		setTracks(initialTracks);
-		setTracksTotal(totalTracks);
-		setTracksPage(1);
-	}, [initialTracks, totalTracks]);
-
-	// トラック一覧を取得
-	const fetchTracks = useCallback(
-		async (page: number) => {
-			if (!tag) return;
-			setTracksLoading(true);
-			try {
-				const res = await publicApi.tags.tracks(tagId, {
-					page,
-					limit: PAGE_SIZE,
-				});
-				setTracks(res.data);
-				setTracksTotal(res.total);
-				setTracksPage(page);
-			} catch {
-				// エラー時は空配列
-			} finally {
-				setTracksLoading(false);
-			}
-		},
-		[tag, tagId],
-	);
+	const tracksQuery = useQuery({
+		...publicTagTracksQueryOptions(tagId, {
+			page: tracksPage,
+			limit: PAGE_SIZE,
+		}),
+		enabled: !!tag,
+	});
+	const tracks = tracksQuery.data?.data ?? [];
+	const tracksTotal = tracksQuery.data?.total ?? 0;
+	const tracksLoading = tracksQuery.isLoading;
 
 	// タグが見つからない場合
 	if (!tag) {
@@ -294,7 +274,7 @@ function TagDetailPage() {
 					<Pagination
 						currentPage={tracksPage}
 						totalPages={tracksTotalPages}
-						onPageChange={(page) => fetchTracks(page)}
+						onPageChange={setTracksPage}
 					/>
 				)}
 			</div>

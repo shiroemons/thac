@@ -56,6 +56,24 @@ export const Route = createFileRoute("/_public/circles")({
 			search: typeof search.search === "string" ? search.search : undefined,
 		};
 	},
+	loaderDeps: ({ search }) => ({
+		search: search.search,
+		script: search.script,
+		initial: search.initial,
+		row: search.row,
+	}),
+	loader: async ({ deps, context }) => {
+		const scriptCategory = deps.script ?? "all";
+		await context.queryClient.ensureInfiniteQueryData(
+			publicCirclesInfiniteQueryOptions({
+				limit: PAGE_SIZE,
+				search: deps.search || undefined,
+				initialScript: scriptCategory === "all" ? undefined : scriptCategory,
+				initial: scriptCategory === "alphabet" ? deps.initial : undefined,
+				row: scriptCategory === "kana" ? deps.row : undefined,
+			}),
+		);
+	},
 });
 
 // =============================================================================

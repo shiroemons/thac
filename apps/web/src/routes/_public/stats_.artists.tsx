@@ -16,6 +16,11 @@ const PAGE_SIZE = 20;
 export const Route = createFileRoute("/_public/stats_/artists")({
 	head: () => createPageHead("アーティスト楽曲数ランキング"),
 	component: ArtistsRankingPage,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureInfiniteQueryData(
+			artistsRankingInfiniteQueryOptions(PAGE_SIZE),
+		);
+	},
 });
 
 function ArtistsRankingPage() {

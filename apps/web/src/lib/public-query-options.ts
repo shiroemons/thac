@@ -487,6 +487,79 @@ export const searchTracksQueryOptions = (params: TrackSearchParams) =>
 	});
 
 // =============================================================================
+// 詳細ページ用 ページネーションクエリオプション
+// =============================================================================
+
+/** アーティスト名義のトラック一覧パラメータ */
+interface PublicArtistTracksParams {
+	page: number;
+	limit: number;
+	role?: string;
+}
+
+/**
+ * アーティスト名義のトラック一覧クエリオプション
+ * アーティスト詳細ページのトラックタブで使用
+ */
+export const publicArtistTracksQueryOptions = (
+	artistId: string,
+	params: PublicArtistTracksParams,
+) =>
+	queryOptions({
+		queryKey: ["public", "artists", artistId, "tracks", params],
+		queryFn: () => publicApi.artists.tracks(artistId, params),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+/** サークル作品/トラック一覧パラメータ */
+interface PublicCirclePaginationParams {
+	page: number;
+	limit: number;
+}
+
+/**
+ * サークルの作品一覧クエリオプション
+ * サークル詳細ページの作品タブで使用
+ */
+export const publicCircleReleasesQueryOptions = (
+	circleId: string,
+	params: PublicCirclePaginationParams,
+) =>
+	queryOptions({
+		queryKey: ["public", "circles", circleId, "releases", params],
+		queryFn: () => publicApi.circles.releases(circleId, params),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+/**
+ * サークルのトラック一覧クエリオプション
+ * サークル詳細ページのトラックタブで使用
+ */
+export const publicCircleTracksQueryOptions = (
+	circleId: string,
+	params: PublicCirclePaginationParams,
+) =>
+	queryOptions({
+		queryKey: ["public", "circles", circleId, "tracks", params],
+		queryFn: () => publicApi.circles.tracks(circleId, params),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+/**
+ * 公式作品の楽曲一覧クエリオプション
+ * 原曲一覧ページのアコーディオン展開時に使用
+ */
+export const publicWorkSongsQueryOptions = (
+	workId: string,
+	params: { limit: number },
+) =>
+	queryOptions({
+		queryKey: ["public", "works", workId, "songs", params],
+		queryFn: () => publicApi.songs.list({ workId, limit: params.limit }),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+// =============================================================================
 // タグ用クエリオプション
 // =============================================================================
 
@@ -522,5 +595,19 @@ export const publicTagCloudQueryOptions = (limit?: number) =>
 	queryOptions({
 		queryKey: ["public", "tags", "cloud", limit],
 		queryFn: () => publicApi.tags.cloud(limit),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+/**
+ * タグのトラック一覧クエリオプション
+ * タグ詳細ページのトラック一覧で使用
+ */
+export const publicTagTracksQueryOptions = (
+	tagId: string,
+	params: { page: number; limit: number },
+) =>
+	queryOptions({
+		queryKey: ["public", "tags", tagId, "tracks", params],
+		queryFn: () => publicApi.tags.tracks(tagId, params),
 		staleTime: STALE_TIME_PUBLIC.STATS,
 	});

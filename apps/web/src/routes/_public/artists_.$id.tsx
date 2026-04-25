@@ -1,6 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronDown, Disc3, Loader2, Music, UserRound } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	DetailTabs,
 	EmptyState,
@@ -22,8 +23,9 @@ import {
 	TAB_LABELS,
 } from "@/lib/detail-tab-utils";
 import { createPublicArtistHead } from "@/lib/head";
-import { type PublicArtistTrack, publicApi } from "@/lib/public-api";
+import { publicApi } from "@/lib/public-api";
 import {
+	publicArtistTracksQueryOptions,
 	publicWorkStatsSimpleQueryOptions,
 	publicWorkStatsStackedQueryOptions,
 } from "@/lib/public-query-options";
@@ -32,13 +34,16 @@ interface ArtistDetailSearchParams {
 	tab?: ArtistDetailTab;
 }
 
+const PAGE_SIZE = 20;
+
 export const Route = createFileRoute("/_public/artists_/$id")({
 	validateSearch: (
 		search: Record<string, unknown>,
 	): ArtistDetailSearchParams => ({
 		tab: parseArtistDetailTab(search.tab),
 	}),
-	loader: async ({ params, context }) => {
+	loaderDeps: ({ search }) => ({ tab: search.tab }),
+	loader: async ({ params, context, deps }) => {
 		try {
 			const artist = await publicApi.artists.get(params.id);
 
@@ -50,6 +55,17 @@ export const Route = createFileRoute("/_public/artists_/$id")({
 				publicWorkStatsSimpleQueryOptions("artist", params.id),
 			);
 
+			// tracksタブ（デフォルト）の場合は初回トラック一覧を SSR プリフェッチ
+			const activeTab = deps.tab ?? "tracks";
+			if (activeTab === "tracks") {
+				await context.queryClient.ensureQueryData(
+					publicArtistTracksQueryOptions(params.id, {
+						page: 1,
+						limit: PAGE_SIZE,
+					}),
+				);
+			}
+
 			return { artist };
 		} catch {
 			return { artist: null };
@@ -59,8 +75,6 @@ export const Route = createFileRoute("/_public/artists_/$id")({
 	headers: () => CACHE_HEADERS.PUBLIC_DETAIL,
 	component: ArtistDetailPage,
 });
-
-const PAGE_SIZE = 20;
 
 // 名義タイプ名
 const aliasTypeNames: Record<string, string> = {
@@ -99,15 +113,23 @@ function ArtistDetailPage() {
 		}
 	}, [activeTab, contentTab]);
 
-	// トラック一覧の状態
-	const [tracks, setTracks] = useState<PublicArtistTrack[]>([]);
-	const [tracksTotal, setTracksTotal] = useState(0);
+	// トラック一覧のページネーション・フィルター状態
 	const [tracksPage, setTracksPage] = useState(1);
-	const [tracksLoading, setTracksLoading] = useState(false);
-	const [tracksLoaded, setTracksLoaded] = useState(false);
-
-	// フィルター（名義単位なので役割フィルターのみ）
 	const [roleFilter, setRoleFilter] = useState<string>("all");
+
+	// トラック一覧クエリ
+	const tracksQuery = useQuery({
+		...publicArtistTracksQueryOptions(id, {
+			page: tracksPage,
+			limit: PAGE_SIZE,
+			role: roleFilter === "all" ? undefined : roleFilter,
+		}),
+		enabled: activeTab === "tracks" && !!artist,
+	});
+
+	const tracks = tracksQuery.data?.data ?? [];
+	const tracksTotal = tracksQuery.data?.total ?? 0;
+	const tracksLoading = tracksQuery.isLoading;
 
 	// タブ切り替え
 	const handleTabChange = (tab: ArtistDetailTab) => {
@@ -118,47 +140,15 @@ function ArtistDetailPage() {
 		});
 	};
 
-	// トラック一覧を取得
-	const fetchTracks = useCallback(
-		async (page: number, role?: string) => {
-			if (!artist) return;
-			setTracksLoading(true);
-			try {
-				const res = await publicApi.artists.tracks(id, {
-					page,
-					limit: PAGE_SIZE,
-					role: role === "all" ? undefined : role,
-				});
-				setTracks(res.data);
-				setTracksTotal(res.total);
-				setTracksPage(page);
-				setTracksLoaded(true);
-			} catch {
-				setTracks([]);
-				setTracksTotal(0);
-			} finally {
-				setTracksLoading(false);
-			}
-		},
-		[artist, id],
-	);
-
-	// タブ切替時に遅延読み込み
-	useEffect(() => {
-		if (activeTab === "tracks" && !tracksLoaded && artist) {
-			fetchTracks(1, roleFilter);
-		}
-	}, [activeTab, tracksLoaded, artist, fetchTracks, roleFilter]);
-
 	// フィルター変更時
 	const handleRoleFilterChange = (value: string) => {
 		setRoleFilter(value);
-		fetchTracks(1, value);
+		setTracksPage(1);
 	};
 
 	// ページ変更時
 	const handlePageChange = (page: number) => {
-		fetchTracks(page, roleFilter);
+		setTracksPage(page);
 	};
 
 	// メタ情報の折りたたみ状態

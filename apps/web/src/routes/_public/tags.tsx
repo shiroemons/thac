@@ -15,6 +15,11 @@ export const Route = createFileRoute("/_public/tags")({
 	head: () => createPageHead("タグ一覧"),
 	headers: () => CACHE_HEADERS.PUBLIC_LIST,
 	component: TagsPage,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureQueryData(
+			publicTagsListQueryOptions({ limit: 500 }),
+		);
+	},
 });
 
 function TagsPage() {
