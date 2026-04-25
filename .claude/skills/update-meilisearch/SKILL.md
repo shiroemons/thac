@@ -70,7 +70,7 @@ Meilisearchのバージョン確認・アップグレードを自動化するス
 │   → Bash エージェント                                               │
 ├──────────────────────────────────────────────────────────────────────┤
 │ Step 7: ドキュメント更新                                             │
-│   → .kiro/steering/meilisearch.md のバージョン記載を更新            │
+│   → .claude/steering/meilisearch.md のバージョン記載を更新         │
 │   → 直接 Edit ツールを使用                                          │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -219,7 +219,7 @@ Task 5-migration: データ移行（Docker環境）
 ### Step 7: ドキュメント更新
 
 **直接 Edit ツールを使用:**
-`.kiro/steering/meilisearch.md` のバージョン記載を更新
+`.claude/steering/meilisearch.md` のバージョン記載を更新
 
 ## バージョン互換性
 
@@ -248,7 +248,7 @@ Task 5-migration: データ移行（Docker環境）
 | `devbox.json` | devbox | パッケージ指定 |
 | `devbox.lock` | devbox | バージョンロック（nixpkgs コミット参照） |
 | `docker-compose.yml` | Docker | イメージバージョン |
-| `.kiro/steering/meilisearch.md` | 共通 | ドキュメント |
+| `.claude/steering/meilisearch.md` | 共通 | ドキュメント |
 | `data/meilisearch/` | devbox | ローカルデータ（.gitignore対象） |
 | `.meilisearch/dumps/` | Docker | Dumpファイル保存先 |
 

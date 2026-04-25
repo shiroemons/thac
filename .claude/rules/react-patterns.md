@@ -86,4 +86,4 @@ bun run --cwd apps/web lint:jsx-nesting
 ### 参考
 
 - [You Might Not Need an Effect](https://ja.react.dev/learn/you-might-not-need-an-effect)
-- `.kiro/steering/react-patterns.md`（詳細なガイド）
+- `.claude/steering/react-patterns.md`（詳細なガイド）
