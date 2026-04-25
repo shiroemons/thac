@@ -82,7 +82,13 @@ export const Route = createFileRoute("/_public/events_/$id")({
 		sortBy: parseReleaseSortBy(search.sortBy),
 		sortOrder: parseSortOrder(search.sortOrder),
 	}),
-	loader: async ({ params, context }) => {
+	loaderDeps: ({ search }) => ({
+		tab: search.tab,
+		search: search.search,
+		sortBy: search.sortBy,
+		sortOrder: search.sortOrder,
+	}),
+	loader: async ({ params, context, deps }) => {
 		try {
 			const event = await publicApi.events.get(params.id);
 
@@ -93,6 +99,20 @@ export const Route = createFileRoute("/_public/events_/$id")({
 			context.queryClient.prefetchQuery(
 				publicWorkStatsSimpleQueryOptions("event", params.id),
 			);
+
+			// releasesタブ（デフォルト）の場合は無限スクロール初回ページを SSR プリフェッチ
+			const activeTab = deps.tab ?? "releases";
+			if (activeTab === "releases") {
+				await context.queryClient.ensureInfiniteQueryData(
+					publicEventReleasesInfiniteQueryOptions({
+						eventId: params.id,
+						limit: PAGE_SIZE,
+						search: deps.search || undefined,
+						sortBy: deps.sortBy ?? "name",
+						sortOrder: deps.sortOrder ?? "asc",
+					}),
+				);
+			}
 
 			return { event };
 		} catch {
