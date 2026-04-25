@@ -1,6 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight, Loader2, Music } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	FilterDrawer,
 	FilterDrawerTrigger,
@@ -17,6 +18,7 @@ import {
 	type PublicWorkItem,
 	publicApi,
 } from "@/lib/public-api";
+import { publicWorkSongsQueryOptions } from "@/lib/public-query-options";
 
 // =============================================================================
 // URL パラメータの定義と検証
@@ -120,13 +122,6 @@ function OriginalSongsPage() {
 	// モバイルフィルタードロワーの状態
 	const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
-	// 遅延読み込み用の状態管理
-	const [songCache, setSongCache] = useState<Map<string, PublicSongItem[]>>(
-		new Map(),
-	);
-	const [loadingWorks, setLoadingWorks] = useState<Set<string>>(new Set());
-	const [errorWorks, setErrorWorks] = useState<Map<string, string>>(new Map());
-
 	// 展開中の作品ID一覧（URLパラメータから取得）
 	const expandedWorkIdsFromUrl = useMemo(() => {
 		if (open) {
@@ -138,38 +133,6 @@ function OriginalSongsPage() {
 	}, [open, works]);
 
 	const expandedWorkIds = expandedWorkIdsFromUrl;
-
-	// 楽曲を遅延取得する関数
-	const fetchSongsForWork = useCallback(
-		async (workId: string) => {
-			// キャッシュ済みならスキップ
-			if (songCache.has(workId)) return;
-
-			// ローディング状態を設定
-			setLoadingWorks((prev) => new Set(prev).add(workId));
-			setErrorWorks((prev) => {
-				const next = new Map(prev);
-				next.delete(workId);
-				return next;
-			});
-
-			try {
-				const response = await publicApi.songs.list({ workId, limit: 100 });
-				setSongCache((prev) => new Map(prev).set(workId, response.data));
-			} catch (_error) {
-				setErrorWorks((prev) =>
-					new Map(prev).set(workId, "楽曲の読み込みに失敗しました"),
-				);
-			} finally {
-				setLoadingWorks((prev) => {
-					const next = new Set(prev);
-					next.delete(workId);
-					return next;
-				});
-			}
-		},
-		[songCache],
-	);
 
 	// 初回マウント時に localStorage から復元（URL パラメータがない場合のみ）
 	// biome-ignore lint/correctness/useExhaustiveDependencies: 意図的に初回マウント時のみ実行
@@ -195,14 +158,6 @@ function OriginalSongsPage() {
 		}
 	}, []);
 
-	// 展開中の作品の楽曲を取得
-	// biome-ignore lint/correctness/useExhaustiveDependencies: expandedWorkIdsの変更時のみ実行
-	useEffect(() => {
-		for (const workId of expandedWorkIds) {
-			fetchSongsForWork(workId);
-		}
-	}, [expandedWorkIds]);
-
 	// 作品アコーディオンの展開/折りたたみ
 	const handleToggle = (workId: string) => {
 		const next = new Set(expandedWorkIds);
@@ -210,11 +165,8 @@ function OriginalSongsPage() {
 			next.delete(workId);
 		} else {
 			next.add(workId);
-			// 展開時に楽曲を取得
-			fetchSongsForWork(workId);
 		}
 
-		// URLとlocalStorageを更新
 		const openParam = next.size > 0 ? [...next].join(",") : undefined;
 		if (next.size > 0) {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
@@ -229,11 +181,6 @@ function OriginalSongsPage() {
 
 	// カテゴリ変更
 	const handleTypeChange = (newType: string) => {
-		// キャッシュをクリア
-		setSongCache(new Map());
-		setLoadingWorks(new Set());
-		setErrorWorks(new Map());
-
 		navigate({
 			search: { type: newType, open: undefined },
 		});
@@ -368,10 +315,7 @@ function OriginalSongsPage() {
 							<WorkAccordion
 								key={work.id}
 								work={work}
-								songs={songCache.get(work.id)}
 								isExpanded={expandedWorkIds.has(work.id)}
-								isLoading={loadingWorks.has(work.id)}
-								error={errorWorks.get(work.id) ?? null}
 								onToggle={() => handleToggle(work.id)}
 							/>
 						))}
@@ -426,22 +370,21 @@ function OriginalSongsPage() {
 
 interface WorkAccordionProps {
 	work: PublicWorkItem;
-	songs: PublicSongItem[] | undefined;
 	isExpanded: boolean;
-	isLoading: boolean;
-	error: string | null;
 	onToggle: () => void;
 }
 
-function WorkAccordion({
-	work,
-	songs,
-	isExpanded,
-	isLoading,
-	error,
-	onToggle,
-}: WorkAccordionProps) {
+function WorkAccordion({ work, isExpanded, onToggle }: WorkAccordionProps) {
 	const displayName = work.nameJa;
+
+	const songsQuery = useQuery({
+		...publicWorkSongsQueryOptions(work.id, { limit: 100 }),
+		enabled: isExpanded,
+	});
+
+	const songs = songsQuery.data?.data;
+	const isLoading = songsQuery.isLoading;
+	const error = songsQuery.isError ? "楽曲の読み込みに失敗しました" : null;
 
 	// トラック番号でソート
 	const sortedSongs = useMemo(() => {
@@ -492,7 +435,7 @@ function WorkAccordion({
 						</tr>
 					</thead>
 					<tbody>
-						{sortedSongs.map((song) => (
+						{sortedSongs.map((song: PublicSongItem) => (
 							<tr key={song.id} className="hover:bg-base-200/50">
 								<td className="text-base-content/70">
 									{song.trackNumber != null

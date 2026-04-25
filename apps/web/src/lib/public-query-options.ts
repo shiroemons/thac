@@ -545,6 +545,20 @@ export const publicCircleTracksQueryOptions = (
 		staleTime: STALE_TIME_PUBLIC.STATS,
 	});
 
+/**
+ * 公式作品の楽曲一覧クエリオプション
+ * 原曲一覧ページのアコーディオン展開時に使用
+ */
+export const publicWorkSongsQueryOptions = (
+	workId: string,
+	params: { limit: number },
+) =>
+	queryOptions({
+		queryKey: ["public", "works", workId, "songs", params],
+		queryFn: () => publicApi.songs.list({ workId, limit: params.limit }),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
 // =============================================================================
 // タグ用クエリオプション
 // =============================================================================
@@ -581,5 +595,19 @@ export const publicTagCloudQueryOptions = (limit?: number) =>
 	queryOptions({
 		queryKey: ["public", "tags", "cloud", limit],
 		queryFn: () => publicApi.tags.cloud(limit),
+		staleTime: STALE_TIME_PUBLIC.STATS,
+	});
+
+/**
+ * タグのトラック一覧クエリオプション
+ * タグ詳細ページのトラック一覧で使用
+ */
+export const publicTagTracksQueryOptions = (
+	tagId: string,
+	params: { page: number; limit: number },
+) =>
+	queryOptions({
+		queryKey: ["public", "tags", tagId, "tracks", params],
+		queryFn: () => publicApi.tags.tracks(tagId, params),
 		staleTime: STALE_TIME_PUBLIC.STATS,
 	});
