@@ -16,6 +16,11 @@ const PAGE_SIZE = 20;
 export const Route = createFileRoute("/_public/stats_/circles")({
 	head: () => createPageHead("サークル作品数ランキング"),
 	component: CirclesRankingPage,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureInfiniteQueryData(
+			circlesRankingInfiniteQueryOptions(PAGE_SIZE),
+		);
+	},
 });
 
 function CirclesRankingPage() {

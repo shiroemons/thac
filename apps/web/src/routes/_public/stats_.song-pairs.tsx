@@ -16,6 +16,11 @@ const PAGE_SIZE = 20;
 export const Route = createFileRoute("/_public/stats_/song-pairs")({
 	head: () => createPageHead("原曲2曲組み合わせランキング"),
 	component: SongPairsRankingPage,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureInfiniteQueryData(
+			songPairsRankingInfiniteQueryOptions(PAGE_SIZE),
+		);
+	},
 });
 
 function SongPairsRankingPage() {

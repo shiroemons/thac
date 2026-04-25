@@ -16,6 +16,11 @@ const PAGE_SIZE = 20;
 export const Route = createFileRoute("/_public/stats_/original-songs")({
 	head: () => createPageHead("原曲アレンジ数ランキング"),
 	component: OriginalSongsRankingPage,
+	loader: async ({ context }) => {
+		await context.queryClient.ensureInfiniteQueryData(
+			originalSongsRankingInfiniteQueryOptions(PAGE_SIZE),
+		);
+	},
 });
 
 function OriginalSongsRankingPage() {

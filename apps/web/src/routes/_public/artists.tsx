@@ -97,6 +97,27 @@ export const Route = createFileRoute("/_public/artists")({
 			search: typeof search.search === "string" ? search.search : undefined,
 		};
 	},
+	loaderDeps: ({ search }) => ({
+		search: search.search,
+		script: search.script,
+		initial: search.initial,
+		row: search.row,
+		role: search.role,
+	}),
+	loader: async ({ deps, context }) => {
+		const scriptCategory = deps.script ?? "all";
+		const role = deps.role ?? "all";
+		await context.queryClient.ensureInfiniteQueryData(
+			publicArtistsInfiniteQueryOptions({
+				limit: PAGE_SIZE,
+				search: deps.search || undefined,
+				initialScript: scriptCategory === "all" ? undefined : scriptCategory,
+				initial: scriptCategory === "alphabet" ? deps.initial : undefined,
+				row: scriptCategory === "kana" ? deps.row : undefined,
+				role: role === "all" ? undefined : role,
+			}),
+		);
+	},
 });
 
 // =============================================================================
