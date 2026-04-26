@@ -14,7 +14,7 @@ import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPageHead } from "@/lib/head";
 import { userAlbumRequestMutations } from "@/lib/mutation-options";
 
-export const Route = createFileRoute("/user/album-requests/new")({
+export const Route = createFileRoute("/user/album-requests_/new")({
 	head: () => createPageHead("アルバム情報の提供"),
 	headers: () => CACHE_HEADERS.PRIVATE,
 	beforeLoad: async () => {
