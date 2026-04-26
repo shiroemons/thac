@@ -7,6 +7,7 @@ import { logger } from "hono/logger";
 import { authRateLimiter, methodRateLimiter } from "./middleware/rate-limit";
 import { adminRouter } from "./routes/admin";
 import { publicRouter } from "./routes/public";
+import { userRouter } from "./routes/user";
 import { pruneExpiredCache } from "./utils/cache";
 
 if (process.env.NODE_ENV === "production") {
@@ -47,6 +48,9 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 // 公開API（認証不要）
 app.use("/api/public/*", methodRateLimiter);
 app.route("/api/public", publicRouter);
+
+// ユーザーAPI（ログイン必須）
+app.route("/api/user", userRouter);
 
 // 管理者API
 app.route("/api/admin", adminRouter);

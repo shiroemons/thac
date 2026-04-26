@@ -18,6 +18,8 @@ interface SearchableSelectProps {
 	clearable?: boolean;
 	disabled?: boolean;
 	className?: string;
+	/** 外部から検索変更を受け取りたい場合に指定（APIドリブン検索用） */
+	onSearchChange?: (search: string) => void;
 }
 
 export function SearchableSelect({
@@ -31,6 +33,7 @@ export function SearchableSelect({
 	clearable = true,
 	disabled = false,
 	className,
+	onSearchChange,
 }: SearchableSelectProps) {
 	const generatedId = useId();
 	const componentId = id || generatedId;
@@ -80,6 +83,7 @@ export function SearchableSelect({
 		onChange(optionValue);
 		setIsOpen(false);
 		setSearch("");
+		onSearchChange?.("");
 	};
 
 	const handleClear = (e: React.MouseEvent) => {
@@ -87,6 +91,7 @@ export function SearchableSelect({
 		onChange("");
 		setIsOpen(false);
 		setSearch("");
+		onSearchChange?.("");
 	};
 
 	return (
@@ -136,7 +141,10 @@ export function SearchableSelect({
 								id={id ? `${id}-search` : undefined}
 								name={id ? `${id}-search` : undefined}
 								value={search}
-								onChange={(e) => setSearch(e.target.value)}
+								onChange={(e) => {
+									setSearch(e.target.value);
+									onSearchChange?.(e.target.value);
+								}}
 								placeholder={searchPlaceholder}
 								className="input input-sm w-full pl-9"
 							/>

@@ -22,6 +22,7 @@ import {
 	type ArtistAlias,
 	type ArtistFullResponse,
 	type ArtistWithAliases,
+	albumRequestsApi,
 	aliasTypesApi,
 	artistAliasesApi,
 	artistsApi,
@@ -82,6 +83,7 @@ import {
 	trackOfficialSongsApi,
 	trackPublicationsApi,
 	tracksApi,
+	userAlbumRequestsApi,
 } from "./api-client";
 
 // ===== 共通型定義 =====
@@ -3486,6 +3488,55 @@ export const trackIsrcMutations = {
 				queryKey: ["track-isrcs", variables.trackId],
 			});
 			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+};
+
+// ===== アルバム申請 =====
+
+type UpdateAlbumRequestStatusData = {
+	id: string;
+	status: "approved" | "rejected";
+	reviewerNotes?: string;
+	updatedAt: string;
+};
+
+export const albumRequestMutations = {
+	updateStatus: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			id,
+			status,
+			reviewerNotes,
+			updatedAt,
+		}: UpdateAlbumRequestStatusData) =>
+			albumRequestsApi.updateStatus(id, { status, reviewerNotes, updatedAt }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["admin", "album-requests"],
+			});
+		},
+	}),
+};
+
+// ===== ユーザー向けアルバム申請 =====
+
+type SubmitAlbumRequestData = {
+	requestType: "new" | "existing";
+	existingReleaseId?: string;
+	albumName?: string;
+	circleName?: string;
+	referenceUrls: { url: string; label?: string }[];
+	notes?: string;
+};
+
+export const userAlbumRequestMutations = {
+	submit: (queryClient: QueryClient) => ({
+		mutationFn: (data: SubmitAlbumRequestData) =>
+			userAlbumRequestsApi.submit(data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["user", "album-requests"],
+			});
 		},
 	}),
 };

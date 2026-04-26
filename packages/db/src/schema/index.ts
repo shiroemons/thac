@@ -1,3 +1,5 @@
+export * from "./album-request";
+export * from "./album-request.validation";
 export * from "./artist-circle";
 export * from "./artist-circle.validation";
 export * from "./auth";

@@ -54,6 +54,8 @@ const schema = {
 	releaseJanCodes: dbExports.releaseJanCodes,
 	// クレジットロール
 	trackCreditRoles: dbExports.trackCreditRoles,
+	// アルバム申請
+	albumRequests: dbExports.albumRequests,
 };
 
 /**

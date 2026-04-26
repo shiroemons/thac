@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
 	Calendar,
@@ -6,6 +7,7 @@ import {
 	FolderOpen,
 	Hash,
 	Import,
+	InboxIcon,
 	Layers,
 	LayoutDashboard,
 	MonitorSmartphone,
@@ -19,6 +21,7 @@ import {
 	Users,
 	UsersRound,
 } from "lucide-react";
+import { albumRequestPendingCountQueryOptions } from "@/lib/query-options";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -143,6 +146,17 @@ const navItems: NavEntry[] = [
 		],
 	},
 	{
+		label: "申請管理",
+		icon: InboxIcon,
+		items: [
+			{
+				to: "/admin/album-requests",
+				label: "アルバム申請",
+				icon: InboxIcon,
+			},
+		],
+	},
+	{
 		label: "インポート",
 		icon: Import,
 		items: [
@@ -172,6 +186,11 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 	const location = useLocation();
+
+	const { data: pendingCountData } = useQuery(
+		albumRequestPendingCountQueryOptions,
+	);
+	const pendingCount = pendingCountData?.count ?? 0;
 
 	const activeItemClasses =
 		"border-l-3 border-primary bg-primary text-primary-content font-medium";
@@ -223,7 +242,13 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 													)}
 												>
 													<Icon className="h-4 w-4" />
-													{label}
+													<span className="flex-1">{label}</span>
+													{to === "/admin/album-requests" &&
+														pendingCount > 0 && (
+															<span className="badge badge-error badge-sm">
+																{pendingCount}
+															</span>
+														)}
 												</Link>
 											</li>
 										))}

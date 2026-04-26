@@ -1,4 +1,4 @@
-import type { InitialScript } from "@thac/db";
+import type { AlbumRequestReferenceUrl, InitialScript } from "@thac/db";
 import { nanoid } from "nanoid";
 
 /**
@@ -369,6 +369,89 @@ export function createTestRelease(
 		eventId: null,
 		eventDayId: null,
 		notes: null,
+		...overrides,
+	};
+}
+
+/**
+ * テスト用ユーザーデータを生成
+ */
+export function createTestUser(
+	overrides?: Partial<{
+		id: string;
+		name: string;
+		email: string;
+		emailVerified: boolean;
+		role: string;
+		banned: boolean;
+		banReason: string | null;
+	}>,
+) {
+	const uniqueId = nanoid(8);
+	return {
+		id: `user_test_${uniqueId}`,
+		name: `Test User ${uniqueId}`,
+		email: `test_${uniqueId}@example.com`,
+		emailVerified: false,
+		role: "user",
+		banned: false,
+		banReason: null,
+		...overrides,
+	};
+}
+
+/**
+ * テスト用管理者ユーザーデータを生成
+ */
+export function createTestAdminUser(
+	overrides?: Partial<{
+		id: string;
+		name: string;
+		email: string;
+		emailVerified: boolean;
+		role: string;
+		banned: boolean;
+		banReason: string | null;
+	}>,
+) {
+	return createTestUser({ role: "admin", ...overrides });
+}
+
+/**
+ * テスト用アルバム申請データを生成
+ */
+export function createTestAlbumRequest(
+	overrides?: Partial<{
+		id: string;
+		userId: string;
+		requestType: string;
+		existingReleaseId: string | null;
+		albumName: string | null;
+		circleName: string | null;
+		referenceUrls: AlbumRequestReferenceUrl[];
+		notes: string | null;
+		status: string;
+		reviewedByUserId: string | null;
+		reviewerNotes: string | null;
+		reviewedAt: Date | null;
+	}>,
+) {
+	const uniqueId = nanoid(8);
+	return {
+		id: `aq_test_${uniqueId}`,
+		userId: `user_test_${uniqueId}`,
+		requestType: "new",
+		existingReleaseId: null,
+		albumName: "テストアルバム",
+		circleName: null,
+		referenceUrls: [
+			{ url: "https://example.com" },
+		] as AlbumRequestReferenceUrl[],
+		notes: null,
+		status: "pending",
+		reviewedByUserId: null,
+		reviewerNotes: null,
+		reviewedAt: null,
 		...overrides,
 	};
 }

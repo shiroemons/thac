@@ -4,6 +4,7 @@ import {
 	adminAuthMiddleware,
 } from "../../middleware/admin-auth";
 import { methodRateLimiter } from "../../middleware/rate-limit";
+import { albumRequestsRouter } from "./album-requests";
 import { artistAliasesRouter } from "./artist-aliases";
 import { artistsRouter } from "./artists";
 import { circlesRouter } from "./circles";
@@ -56,6 +57,9 @@ adminRouter.route("/event-series", eventSeriesRouter);
 
 // イベント管理ルート
 adminRouter.route("/events", eventsAdminRouter);
+
+// アルバム申請管理ルート
+adminRouter.route("/album-requests", albumRequestsRouter);
 
 // 作品管理ルート
 adminRouter.route("/releases", releasesAdminRouter);
