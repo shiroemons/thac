@@ -18,7 +18,7 @@ albumRequestsUserRouter.get("/", async (c) => {
 	try {
 		const user = c.get("user");
 
-		const items = await db
+		const rows = await db
 			.select({
 				id: albumRequests.id,
 				requestType: albumRequests.requestType,
@@ -31,19 +31,41 @@ albumRequestsUserRouter.get("/", async (c) => {
 				reviewedAt: albumRequests.reviewedAt,
 				createdAt: albumRequests.createdAt,
 				updatedAt: albumRequests.updatedAt,
-				existingRelease: {
-					id: releases.id,
-					name: releases.name,
-					nameJa: releases.nameJa,
-					nameEn: releases.nameEn,
-					releaseDate: releases.releaseDate,
-				},
+				existingReleaseId: releases.id,
+				existingReleaseName: releases.name,
+				existingReleaseNameJa: releases.nameJa,
+				existingReleaseNameEn: releases.nameEn,
+				existingReleaseDate: releases.releaseDate,
 			})
 			.from(albumRequests)
 			.leftJoin(releases, eq(albumRequests.existingReleaseId, releases.id))
 			.where(eq(albumRequests.userId, user.id))
 			.orderBy(desc(albumRequests.createdAt))
 			.limit(50);
+
+		const items = rows.map((row) => ({
+			id: row.id,
+			requestType: row.requestType,
+			albumName: row.albumName,
+			circleName: row.circleName,
+			referenceUrls: row.referenceUrls,
+			notes: row.notes,
+			status: row.status,
+			reviewerNotes: row.reviewerNotes,
+			reviewedAt: row.reviewedAt,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
+			existingRelease:
+				row.existingReleaseId !== null
+					? {
+							id: row.existingReleaseId,
+							name: row.existingReleaseName,
+							nameJa: row.existingReleaseNameJa,
+							nameEn: row.existingReleaseNameEn,
+							releaseDate: row.existingReleaseDate,
+						}
+					: null,
+		}));
 
 		return c.json({ items });
 	} catch (error) {

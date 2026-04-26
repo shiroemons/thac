@@ -71,12 +71,9 @@ interface AlbumRequestDetail extends AlbumRequestItem {
 
 interface AlbumRequestListResponse {
 	data: AlbumRequestItem[];
-	pagination: {
-		page: number;
-		limit: number;
-		total: number;
-		totalPages: number;
-	};
+	total: number;
+	page: number;
+	limit: number;
 }
 
 interface PendingCountResponse {
@@ -152,9 +149,8 @@ describe("Admin Album Requests API", () => {
 			const json = await expectSuccess<AlbumRequestListResponse>(res);
 
 			expect(json.data).toHaveLength(2);
-			expect(json.pagination.total).toBe(2);
-			expect(json.pagination.page).toBe(1);
-			expect(json.pagination.totalPages).toBe(1);
+			expect(json.total).toBe(2);
+			expect(json.page).toBe(1);
 		});
 
 		test("status=pending フィルタ", async () => {
@@ -181,7 +177,7 @@ describe("Admin Album Requests API", () => {
 
 			expect(json.data).toHaveLength(1);
 			expect(json.data[0].id).toBe("aq_pending_001");
-			expect(json.pagination.total).toBe(1);
+			expect(json.total).toBe(1);
 		});
 
 		test("status=approved フィルタ", async () => {
@@ -246,10 +242,9 @@ describe("Admin Album Requests API", () => {
 			const json = await expectSuccess<AlbumRequestListResponse>(res);
 
 			expect(json.data).toHaveLength(2);
-			expect(json.pagination.total).toBe(5);
-			expect(json.pagination.page).toBe(2);
-			expect(json.pagination.limit).toBe(2);
-			expect(json.pagination.totalPages).toBe(3);
+			expect(json.total).toBe(5);
+			expect(json.page).toBe(2);
+			expect(json.limit).toBe(2);
 		});
 	});
 

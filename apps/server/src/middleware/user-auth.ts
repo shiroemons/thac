@@ -1,12 +1,8 @@
 import { auth } from "@thac/auth";
 import type { Context, Next } from "hono";
+import type { User } from "./admin-auth";
 
-export type User = {
-	id: string;
-	name: string;
-	email: string;
-	role: string | null;
-};
+export type { User };
 
 export type UserAuthContext = {
 	Variables: {

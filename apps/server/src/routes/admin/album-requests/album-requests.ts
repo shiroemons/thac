@@ -1,5 +1,6 @@
 import {
 	albumRequests,
+	and,
 	count,
 	db,
 	desc,
@@ -46,7 +47,7 @@ albumRequestsAdminRouter.get("/", async (c) => {
 			? eq(albumRequests.status, status)
 			: undefined;
 
-		const [data, totalResult] = await Promise.all([
+		const [rows, totalResult] = await Promise.all([
 			db
 				.select({
 					id: albumRequests.id,
@@ -65,12 +66,10 @@ albumRequestsAdminRouter.get("/", async (c) => {
 						name: submitter.name,
 						email: submitter.email,
 					},
-					existingRelease: {
-						id: releases.id,
-						name: releases.name,
-						nameJa: releases.nameJa,
-						nameEn: releases.nameEn,
-					},
+					existingReleaseId: releases.id,
+					existingReleaseName: releases.name,
+					existingReleaseNameJa: releases.nameJa,
+					existingReleaseNameEn: releases.nameEn,
 				})
 				.from(albumRequests)
 				.leftJoin(submitter, eq(albumRequests.userId, submitter.id))
@@ -82,16 +81,37 @@ albumRequestsAdminRouter.get("/", async (c) => {
 			db.select({ count: count() }).from(albumRequests).where(whereCondition),
 		]);
 
+		const data = rows.map((row) => ({
+			id: row.id,
+			requestType: row.requestType,
+			albumName: row.albumName,
+			circleName: row.circleName,
+			referenceUrls: row.referenceUrls,
+			notes: row.notes,
+			status: row.status,
+			reviewerNotes: row.reviewerNotes,
+			reviewedAt: row.reviewedAt,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
+			submittedBy: row.submittedBy,
+			existingRelease:
+				row.existingReleaseId !== null
+					? {
+							id: row.existingReleaseId,
+							name: row.existingReleaseName,
+							nameJa: row.existingReleaseNameJa,
+							nameEn: row.existingReleaseNameEn,
+						}
+					: null,
+		}));
+
 		const total = Number(totalResult[0]?.count ?? 0);
 
 		return c.json({
 			data,
-			pagination: {
-				page,
-				limit,
-				total,
-				totalPages: Math.ceil(total / limit),
-			},
+			total,
+			page,
+			limit,
 		});
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/album-requests");
@@ -106,7 +126,7 @@ albumRequestsAdminRouter.get("/:id", async (c) => {
 		const submitter = alias(user, "submitter");
 		const reviewer = alias(user, "reviewer");
 
-		const result = await db
+		const rows = await db
 			.select({
 				id: albumRequests.id,
 				requestType: albumRequests.requestType,
@@ -129,13 +149,11 @@ albumRequestsAdminRouter.get("/:id", async (c) => {
 					name: reviewer.name,
 					email: reviewer.email,
 				},
-				existingRelease: {
-					id: releases.id,
-					name: releases.name,
-					nameJa: releases.nameJa,
-					nameEn: releases.nameEn,
-					releaseDate: releases.releaseDate,
-				},
+				existingReleaseId: releases.id,
+				existingReleaseName: releases.name,
+				existingReleaseNameJa: releases.nameJa,
+				existingReleaseNameEn: releases.nameEn,
+				existingReleaseDate: releases.releaseDate,
 			})
 			.from(albumRequests)
 			.leftJoin(submitter, eq(albumRequests.userId, submitter.id))
@@ -144,15 +162,49 @@ albumRequestsAdminRouter.get("/:id", async (c) => {
 			.where(eq(albumRequests.id, id))
 			.limit(1);
 
-		if (result.length === 0) {
+		const row = rows[0];
+		if (!row) {
 			return c.json({ error: "アルバム申請が見つかりません" }, 404);
 		}
 
-		return c.json(result[0]);
+		const result = {
+			id: row.id,
+			requestType: row.requestType,
+			albumName: row.albumName,
+			circleName: row.circleName,
+			referenceUrls: row.referenceUrls,
+			notes: row.notes,
+			status: row.status,
+			reviewerNotes: row.reviewerNotes,
+			reviewedAt: row.reviewedAt,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
+			submittedBy: row.submittedBy,
+			reviewer: row.reviewer,
+			existingRelease:
+				row.existingReleaseId !== null
+					? {
+							id: row.existingReleaseId,
+							name: row.existingReleaseName,
+							nameJa: row.existingReleaseNameJa,
+							nameEn: row.existingReleaseNameEn,
+							releaseDate: row.existingReleaseDate,
+						}
+					: null,
+		};
+
+		return c.json(result);
 	} catch (error) {
 		return handleDbError(c, error, "GET /admin/album-requests/:id");
 	}
 });
+
+// 内部処理結果の型（discriminated union）
+type PatchResult =
+	| { kind: "notFound" }
+	| { kind: "conflict"; id: string; status: string; updatedAt: Date | null }
+	| { kind: "alreadyProcessed" }
+	| { kind: "success"; data: Record<string, unknown> };
 
 // アルバム申請ステータス更新（楽観的ロック付きトランザクション）
 albumRequestsAdminRouter.patch("/:id", async (c) => {
@@ -172,7 +224,7 @@ albumRequestsAdminRouter.patch("/:id", async (c) => {
 			);
 		}
 
-		const updated = await db.transaction(async (tx) => {
+		const result = await db.transaction(async (tx): Promise<PatchResult> => {
 			// 存在確認 + 楽観的ロック用の現在データ取得
 			const existing = await tx
 				.select({
@@ -184,11 +236,11 @@ albumRequestsAdminRouter.patch("/:id", async (c) => {
 				.where(eq(albumRequests.id, id))
 				.limit(1);
 
-			if (existing.length === 0) {
-				return null;
-			}
-
 			const current = existing[0];
+
+			if (!current) {
+				return { kind: "notFound" };
+			}
 
 			// 楽観的ロックチェック
 			const conflict = checkOptimisticLockConflict({
@@ -196,16 +248,18 @@ albumRequestsAdminRouter.patch("/:id", async (c) => {
 				currentEntity: current,
 			});
 			if (conflict) {
-				return conflict;
+				// 公開可能なフィールドのみ返す
+				return {
+					kind: "conflict",
+					id: current.id,
+					status: current.status,
+					updatedAt: current.updatedAt,
+				};
 			}
 
 			// pending 以外は更新不可
-			if (current?.status !== "pending") {
-				return { __alreadyProcessed: true } as const;
-			}
-
-			// ステータス更新
-			const result = await tx
+			// WHERE に status='pending' を AND することで DB レベルでも競合を防ぐ
+			const updated = await tx
 				.update(albumRequests)
 				.set({
 					status: parsed.data.status,
@@ -213,27 +267,43 @@ albumRequestsAdminRouter.patch("/:id", async (c) => {
 					reviewedByUserId: c.get("user").id,
 					reviewedAt: new Date(),
 				})
-				.where(eq(albumRequests.id, id))
+				.where(
+					and(eq(albumRequests.id, id), eq(albumRequests.status, "pending")),
+				)
 				.returning();
 
-			return result[0];
+			if (updated.length === 0) {
+				// UPDATE が 0 件 = すでに pending 以外に遷移済み
+				return { kind: "alreadyProcessed" };
+			}
+
+			return { kind: "success", data: updated[0] as Record<string, unknown> };
 		});
 
-		if (updated === null) {
+		if (result.kind === "notFound") {
 			return c.json({ error: "アルバム申請が見つかりません" }, 404);
 		}
 
-		// 楽観的ロック競合
-		if (updated && "error" in updated && "code" in updated) {
-			return c.json(updated, 409);
+		if (result.kind === "conflict") {
+			return c.json(
+				{
+					error: "他のユーザーによってデータが更新されました",
+					code: "CONFLICT",
+					current: {
+						id: result.id,
+						status: result.status,
+						updatedAt: result.updatedAt,
+					},
+				},
+				409,
+			);
 		}
 
-		// 既処理チェック
-		if (updated && "__alreadyProcessed" in updated) {
+		if (result.kind === "alreadyProcessed") {
 			return c.json({ error: "このリクエストは既に処理済みです" }, 400);
 		}
 
-		return c.json(updated, 200);
+		return c.json(result.data, 200);
 	} catch (error) {
 		return handleDbError(c, error, "PATCH /admin/album-requests/:id");
 	}
