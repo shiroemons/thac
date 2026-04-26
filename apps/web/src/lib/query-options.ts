@@ -47,7 +47,7 @@ import type {
 	TrackDetail,
 	TrackWithCreditCount,
 } from "@/lib/api-client";
-import { albumRequestsApi } from "@/lib/api-client";
+import { albumRequestsApi, userAlbumRequestsApi } from "@/lib/api-client";
 import {
 	transformEventDaysToSelectOptions,
 	transformEventsToSelectOptions,
@@ -983,4 +983,15 @@ export const albumRequestPendingCountQueryOptions = queryOptions({
 	queryFn: () => albumRequestsApi.pendingCount(),
 	staleTime: 30_000,
 	refetchInterval: 60_000,
+});
+
+// ===== ユーザー向けアルバム申請 =====
+
+/**
+ * 自分のアルバム申請一覧のqueryOptions（ユーザー向け）
+ */
+export const userAlbumRequestsQueryOptions = queryOptions({
+	queryKey: ["user", "album-requests"],
+	queryFn: () => userAlbumRequestsApi.listMine(),
+	staleTime: STALE_TIME.SHORT,
 });

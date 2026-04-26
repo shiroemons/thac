@@ -83,6 +83,7 @@ import {
 	trackOfficialSongsApi,
 	trackPublicationsApi,
 	tracksApi,
+	userAlbumRequestsApi,
 } from "./api-client";
 
 // ===== 共通型定義 =====
@@ -3512,6 +3513,29 @@ export const albumRequestMutations = {
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: ["admin", "album-requests"],
+			});
+		},
+	}),
+};
+
+// ===== ユーザー向けアルバム申請 =====
+
+type SubmitAlbumRequestData = {
+	requestType: "new" | "existing";
+	existingReleaseId?: string;
+	albumName?: string;
+	circleName?: string;
+	referenceUrls: { url: string; label?: string }[];
+	notes?: string;
+};
+
+export const userAlbumRequestMutations = {
+	submit: (queryClient: QueryClient) => ({
+		mutationFn: (data: SubmitAlbumRequestData) =>
+			userAlbumRequestsApi.submit(data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["user", "album-requests"],
 			});
 		},
 	}),
