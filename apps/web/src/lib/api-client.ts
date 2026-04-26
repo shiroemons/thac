@@ -3066,3 +3066,118 @@ export const trackTagsApi = {
 			},
 		),
 };
+
+// ===== アルバム申請 =====
+
+export type AlbumRequestStatus = "pending" | "approved" | "rejected";
+export type AlbumRequestType = "new" | "existing";
+
+export interface AlbumRequestReferenceUrl {
+	url: string;
+	label?: string;
+}
+
+export interface AlbumRequestUser {
+	id: string | null;
+	name: string | null;
+	email: string | null;
+}
+
+export interface AlbumRequestExistingRelease {
+	id: string | null;
+	name: string | null;
+	nameJa: string | null;
+	nameEn: string | null;
+}
+
+export interface AlbumRequestListItem {
+	id: string;
+	requestType: string;
+	albumName: string | null;
+	circleName: string | null;
+	referenceUrls: AlbumRequestReferenceUrl[];
+	notes: string | null;
+	status: string;
+	reviewerNotes: string | null;
+	reviewedAt: string | null;
+	createdAt: string;
+	updatedAt: string;
+	submittedBy: AlbumRequestUser;
+	existingRelease: AlbumRequestExistingRelease;
+}
+
+export interface AlbumRequestExistingReleaseDetail
+	extends AlbumRequestExistingRelease {
+	releaseDate: string | null;
+}
+
+export interface AlbumRequestDetail {
+	id: string;
+	requestType: string;
+	albumName: string | null;
+	circleName: string | null;
+	referenceUrls: AlbumRequestReferenceUrl[];
+	notes: string | null;
+	status: string;
+	reviewerNotes: string | null;
+	reviewedAt: string | null;
+	createdAt: string;
+	updatedAt: string;
+	submittedBy: AlbumRequestUser;
+	reviewer: AlbumRequestUser;
+	existingRelease: AlbumRequestExistingReleaseDetail;
+}
+
+export interface AlbumRequestListResponse {
+	data: AlbumRequestListItem[];
+	pagination: {
+		page: number;
+		limit: number;
+		total: number;
+		totalPages: number;
+	};
+}
+
+export const ALBUM_REQUEST_STATUS_LABELS: Record<AlbumRequestStatus, string> = {
+	pending: "未処理",
+	approved: "承認済",
+	rejected: "却下",
+};
+
+export const ALBUM_REQUEST_TYPE_LABELS: Record<AlbumRequestType, string> = {
+	new: "新規",
+	existing: "既存への追記",
+};
+
+// Album Requests (管理者向け)
+export const albumRequestsApi = {
+	pendingCount: () =>
+		fetchWithAuth<{ count: number }>("/api/admin/album-requests/pending-count"),
+
+	list: (params?: { status?: string; page?: number; limit?: number }) => {
+		const searchParams = new URLSearchParams();
+		if (params?.status) searchParams.set("status", params.status);
+		if (params?.page) searchParams.set("page", String(params.page));
+		if (params?.limit) searchParams.set("limit", String(params.limit));
+		const query = searchParams.toString();
+		return fetchWithAuth<AlbumRequestListResponse>(
+			`/api/admin/album-requests${query ? `?${query}` : ""}`,
+		);
+	},
+
+	get: (id: string) =>
+		fetchWithAuth<AlbumRequestDetail>(`/api/admin/album-requests/${id}`),
+
+	updateStatus: (
+		id: string,
+		data: {
+			status: "approved" | "rejected";
+			reviewerNotes?: string;
+			updatedAt: string;
+		},
+	) =>
+		fetchWithAuth<AlbumRequestDetail>(`/api/admin/album-requests/${id}`, {
+			method: "PATCH",
+			body: JSON.stringify(data),
+		}),
+};

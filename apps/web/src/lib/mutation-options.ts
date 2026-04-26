@@ -22,6 +22,7 @@ import {
 	type ArtistAlias,
 	type ArtistFullResponse,
 	type ArtistWithAliases,
+	albumRequestsApi,
 	aliasTypesApi,
 	artistAliasesApi,
 	artistsApi,
@@ -3486,6 +3487,32 @@ export const trackIsrcMutations = {
 				queryKey: ["track-isrcs", variables.trackId],
 			});
 			queryClient.invalidateQueries({ queryKey: ["track", variables.trackId] });
+		},
+	}),
+};
+
+// ===== アルバム申請 =====
+
+type UpdateAlbumRequestStatusData = {
+	id: string;
+	status: "approved" | "rejected";
+	reviewerNotes?: string;
+	updatedAt: string;
+};
+
+export const albumRequestMutations = {
+	updateStatus: (queryClient: QueryClient) => ({
+		mutationFn: ({
+			id,
+			status,
+			reviewerNotes,
+			updatedAt,
+		}: UpdateAlbumRequestStatusData) =>
+			albumRequestsApi.updateStatus(id, { status, reviewerNotes, updatedAt }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["admin", "album-requests"],
+			});
 		},
 	}),
 };

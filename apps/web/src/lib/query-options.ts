@@ -16,6 +16,8 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { ssrFetch } from "@/functions/ssr-fetcher";
 import type {
+	AlbumRequestDetail,
+	AlbumRequestListResponse,
 	AliasType,
 	Artist,
 	ArtistAlias,
@@ -45,6 +47,7 @@ import type {
 	TrackDetail,
 	TrackWithCreditCount,
 } from "@/lib/api-client";
+import { albumRequestsApi } from "@/lib/api-client";
 import {
 	transformEventDaysToSelectOptions,
 	transformEventsToSelectOptions,
@@ -925,3 +928,59 @@ export const officialWorkCategoryDetailQueryOptions = (code: string) =>
 			),
 		staleTime: STALE_TIME.MEDIUM,
 	});
+
+// ===== アルバム申請 =====
+
+interface AlbumRequestListParams {
+	status?: string;
+	page: number;
+	limit: number;
+}
+
+/**
+ * アルバム申請一覧のqueryOptions
+ */
+export const albumRequestsListQueryOptions = (
+	params: AlbumRequestListParams,
+) => {
+	const searchParams = new URLSearchParams();
+	if (params.status) searchParams.set("status", params.status);
+	searchParams.set("page", String(params.page));
+	searchParams.set("limit", String(params.limit));
+
+	return queryOptions({
+		queryKey: [
+			"admin",
+			"album-requests",
+			params.status,
+			params.page,
+			params.limit,
+		],
+		queryFn: () =>
+			ssrFetch<AlbumRequestListResponse>(
+				`/api/admin/album-requests?${searchParams.toString()}`,
+			),
+		staleTime: STALE_TIME.SHORT,
+	});
+};
+
+/**
+ * アルバム申請詳細のqueryOptions
+ */
+export const albumRequestQueryOptions = (id: string) =>
+	queryOptions({
+		queryKey: ["admin", "album-requests", id],
+		queryFn: () =>
+			ssrFetch<AlbumRequestDetail>(`/api/admin/album-requests/${id}`),
+		staleTime: STALE_TIME.SHORT,
+	});
+
+/**
+ * アルバム申請 pending 件数のqueryOptions（サイドバーバッジ用）
+ */
+export const albumRequestPendingCountQueryOptions = queryOptions({
+	queryKey: ["admin", "album-requests", "pending-count"],
+	queryFn: () => albumRequestsApi.pendingCount(),
+	staleTime: 30_000,
+	refetchInterval: 60_000,
+});
