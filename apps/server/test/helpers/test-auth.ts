@@ -12,7 +12,17 @@ export const defaultTestAdmin: User = {
 };
 
 /**
- * テスト用の認証モックミドルウェアを作成
+ * テスト用のデフォルト一般ユーザー
+ */
+export const defaultTestUser: User = {
+	id: "test-user-id",
+	name: "Test User",
+	email: "user@test.com",
+	role: "user",
+};
+
+/**
+ * テスト用の認証モックミドルウェアを作成（管理者向け）
  * @param userOverride - ユーザー情報を上書き（nullで未認証）
  */
 export function createTestAuthMiddleware(userOverride?: Partial<User> | null) {
@@ -28,6 +38,27 @@ export function createTestAuthMiddleware(userOverride?: Partial<User> | null) {
 		if (user.role !== "admin") {
 			return c.json({ error: "Forbidden" }, 403);
 		}
+
+		// ユーザー情報をコンテキストに設定
+		c.set("user", user);
+		return next();
+	};
+}
+
+/**
+ * テスト用のユーザー認証モックミドルウェアを作成（ログイン必須エンドポイント向け）
+ * @param userOverride - ユーザー情報を上書き（nullで未認証）
+ */
+export function createTestUserAuthMiddleware(
+	userOverride?: Partial<User> | null,
+) {
+	return async function testUserAuthMiddleware(c: Context, next: Next) {
+		// nullの場合は未認証
+		if (userOverride === null) {
+			return c.json({ error: "Unauthorized" }, 401);
+		}
+
+		const user = { ...defaultTestUser, ...userOverride };
 
 		// ユーザー情報をコンテキストに設定
 		c.set("user", user);
