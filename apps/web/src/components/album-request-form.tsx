@@ -1,7 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
+import { referenceUrlsSchema } from "@thac/db/schema/album-request.validation";
 import { useState } from "react";
-import { z } from "zod";
 import { ReferenceUrlListInput } from "@/components/album-request/reference-url-list-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -9,26 +9,13 @@ import { releasesApi } from "@/lib/api-client";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 
-// バリデーションヘルパー
-const httpUrlSchema = z
-	.string()
-	.trim()
-	.url("有効なURLを入力してください")
-	.regex(/^https?:\/\//i, "URLはhttp(s)://から始めてください")
-	.max(2048, "URLは2048文字以内で入力してください");
-
 function validateReferenceUrls(
 	urls: { url: string; label?: string }[],
 ): string | null {
 	const filled = urls.filter((r) => r.url.trim());
-	if (filled.length === 0) return "参考URLを1件以上入力してください";
-	if (filled.length > 10) return "参考URLは最大10件までです";
-	for (const item of filled) {
-		const result = httpUrlSchema.safeParse(item.url);
-		if (!result.success) return result.error.issues[0]?.message ?? "無効なURL";
-		if (item.label && item.label.length > 100) {
-			return "ラベルは100文字以内で入力してください";
-		}
+	const result = referenceUrlsSchema.safeParse(filled);
+	if (!result.success) {
+		return result.error.issues[0]?.message ?? "無効なURL";
 	}
 	return null;
 }

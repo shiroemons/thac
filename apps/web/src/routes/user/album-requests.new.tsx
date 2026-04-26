@@ -36,6 +36,7 @@ function AlbumRequestNewPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [submitError, setSubmitError] = useState<string | null>(null);
+	const [submitSuccess, setSubmitSuccess] = useState(false);
 
 	const { mutateAsync, isPending } = useMutation(
 		userAlbumRequestMutations.submit(queryClient),
@@ -45,7 +46,10 @@ function AlbumRequestNewPage() {
 		setSubmitError(null);
 		try {
 			await mutateAsync(payload);
-			navigate({ to: "/user/album-requests" });
+			setSubmitSuccess(true);
+			setTimeout(() => {
+				navigate({ to: "/user/album-requests" });
+			}, 1500);
 		} catch (error) {
 			setSubmitError(
 				error instanceof Error ? error.message : "送信に失敗しました",
@@ -72,6 +76,12 @@ function AlbumRequestNewPage() {
 							新しいアルバムの登録を依頼するか、既存アルバムへの情報追記を提案できます。
 						</p>
 					</div>
+
+					{submitSuccess && (
+						<Banner variant="success" className="mb-4">
+							申請を送信しました。承認をお待ちください。
+						</Banner>
+					)}
 
 					{submitError && (
 						<Banner
