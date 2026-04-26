@@ -21,4 +21,5 @@ export const createId = {
 	officialWorkLink: () => typeid("wl").toString(),
 	officialSongLink: () => typeid("sl").toString(),
 	tag: () => typeid("tag").toString(),
+	albumRequest: () => typeid("aq").toString(),
 } as const;

@@ -5,6 +5,7 @@ const { client, db } = createScriptClient();
 
 // Non-master tables to truncate
 const NON_MASTER_TABLES = [
+	"album_requests",
 	"track_derivations",
 	"track_official_songs",
 	"track_credit_roles",

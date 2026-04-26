@@ -29,6 +29,13 @@
 			"when": 1770775729518,
 			"tag": "0003_cooing_betty_brant",
 			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1777213613998,
+			"tag": "0004_great_beast",
+			"breakpoints": true
 		}
 	]
 }
