@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { Home } from "lucide-react";
@@ -51,6 +51,7 @@ function AlbumRequestsPage() {
 	const [page, setPage] = useState(DEFAULT_PAGE);
 	const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 	const [activeTab, setActiveTab] = useState<StatusTab>("all");
+	const navigate = useNavigate();
 
 	const statusParam = activeTab === "all" ? undefined : activeTab;
 
@@ -63,7 +64,7 @@ function AlbumRequestsPage() {
 	);
 
 	const requests = data?.data ?? [];
-	const total = data?.pagination.total ?? 0;
+	const total = data?.total ?? 0;
 
 	const handleTabChange = (tab: StatusTab) => {
 		setActiveTab(tab);
@@ -101,7 +102,7 @@ function AlbumRequestsPage() {
 						key={tab.value}
 						type="button"
 						role="tab"
-						className={`tab${activeTab === tab.value ? "tab-active" : ""}`}
+						className={activeTab === tab.value ? "tab tab-active" : "tab"}
 						onClick={() => handleTabChange(tab.value)}
 					>
 						{tab.label}
@@ -153,9 +154,12 @@ function AlbumRequestsPage() {
 										<TableRow
 											key={request.id}
 											className="cursor-pointer hover:bg-base-200"
-											onClick={() => {
-												window.location.href = `/admin/album-requests/${request.id}`;
-											}}
+											onClick={() =>
+												navigate({
+													to: "/admin/album-requests/$id",
+													params: { id: request.id },
+												})
+											}
 										>
 											<TableCell>
 												<AlbumRequestStatusBadge

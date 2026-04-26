@@ -17,7 +17,7 @@ import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { ssrFetch } from "@/functions/ssr-fetcher";
 import type {
 	AlbumRequestDetail,
-	AlbumRequestListResponse,
+	AlbumRequestListItem,
 	AliasType,
 	Artist,
 	ArtistAlias,
@@ -957,7 +957,7 @@ export const albumRequestsListQueryOptions = (
 			params.limit,
 		],
 		queryFn: () =>
-			ssrFetch<AlbumRequestListResponse>(
+			ssrFetch<PaginatedResponse<AlbumRequestListItem>>(
 				`/api/admin/album-requests?${searchParams.toString()}`,
 			),
 		staleTime: STALE_TIME.SHORT,

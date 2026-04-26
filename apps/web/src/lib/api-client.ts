@@ -3103,7 +3103,7 @@ export interface AlbumRequestListItem {
 	createdAt: string;
 	updatedAt: string;
 	submittedBy: AlbumRequestUser;
-	existingRelease: AlbumRequestExistingRelease;
+	existingRelease: AlbumRequestExistingRelease | null;
 }
 
 export interface AlbumRequestExistingReleaseDetail
@@ -3124,18 +3124,8 @@ export interface AlbumRequestDetail {
 	createdAt: string;
 	updatedAt: string;
 	submittedBy: AlbumRequestUser;
-	reviewer: AlbumRequestUser;
-	existingRelease: AlbumRequestExistingReleaseDetail;
-}
-
-export interface AlbumRequestListResponse {
-	data: AlbumRequestListItem[];
-	pagination: {
-		page: number;
-		limit: number;
-		total: number;
-		totalPages: number;
-	};
+	reviewer: AlbumRequestUser | null;
+	existingRelease: AlbumRequestExistingReleaseDetail | null;
 }
 
 export const ALBUM_REQUEST_STATUS_LABELS: Record<AlbumRequestStatus, string> = {
@@ -3206,7 +3196,7 @@ export const albumRequestsApi = {
 		if (params?.page) searchParams.set("page", String(params.page));
 		if (params?.limit) searchParams.set("limit", String(params.limit));
 		const query = searchParams.toString();
-		return fetchWithAuth<AlbumRequestListResponse>(
+		return fetchWithAuth<PaginatedResponse<AlbumRequestListItem>>(
 			`/api/admin/album-requests${query ? `?${query}` : ""}`,
 		);
 	},
