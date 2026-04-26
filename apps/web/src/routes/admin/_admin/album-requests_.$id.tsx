@@ -1,11 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	useMutation,
+	useQueryClient,
+	useSuspenseQuery,
+} from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowLeft, ExternalLink, Home } from "lucide-react";
 import { useState } from "react";
 import { AlbumRequestStatusBadge } from "@/components/admin/album-request-status-badge";
-import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,15 +37,11 @@ function AlbumRequestDetailPage() {
 	const [actionError, setActionError] = useState<string | null>(null);
 	const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-	const { data: request, isPending } = useQuery(albumRequestQueryOptions(id));
+	const { data: request } = useSuspenseQuery(albumRequestQueryOptions(id));
 
 	const updateStatusMutation = useMutation(
 		albumRequestMutations.updateStatus(queryClient),
 	);
-
-	if (isPending || !request) {
-		return <DetailPageSkeleton />;
-	}
 
 	const isPending_ = request.status === "pending";
 
