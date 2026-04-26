@@ -40,7 +40,6 @@ import {
 	expectNotFound,
 	expectSuccess,
 	expectUnauthorized,
-	type PaginatedResponse,
 	patchJson,
 } from "../../helpers/test-response";
 
