@@ -6,9 +6,17 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
+      - '.claude/**'
+      - '.github/**'
       - 'LICENSE'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/**'
+      - '.github/**'
+      - 'LICENSE'
 
 jobs:
   ci:
@@ -19,22 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            source:
-              - '!**.md'
-              - '!docs/**'
-              - '!.claude/**'
-              - '!.github/**'
-              - '!LICENSE'
+      - uses: oven-sh/setup-bun@v2
 
-      - if: steps.filter.outputs.source == 'true'
-        uses: oven-sh/setup-bun@v2
-
-      - if: steps.filter.outputs.source == 'true'
-        uses: actions/cache@v5
+      - uses: actions/cache@v5
         with:
           path: |
             ~/.bun/install/cache
@@ -43,9 +38,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
-      - if: steps.filter.outputs.source == 'true'
-        run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
 
-      - if: steps.filter.outputs.source == 'true'
-        name: Run CI checks
+      - name: Run CI checks
         run: bun run check && bun run check-types && bun run --cwd apps/web lint:jsx-nesting && bun run test

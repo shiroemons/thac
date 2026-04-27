@@ -1,0 +1,21 @@
+name: CI
+
+# ドキュメント・設定ファイルのみが変更されたPR向けの no-op ワークフロー。
+# branch protection の required status check "ci" を満たすために存在する。
+# 本体の ci.yml と同じ name/job 名を使うことで、状態チェック名 "ci" を共通化している。
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/**'
+      - '.github/**'
+      - 'LICENSE'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Documentation/config-only change. Skipping full CI."
