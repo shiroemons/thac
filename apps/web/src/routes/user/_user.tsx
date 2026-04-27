@@ -4,7 +4,7 @@ import {
 	Outlet,
 	redirect,
 } from "@tanstack/react-router";
-import { Settings, User } from "lucide-react";
+import { FolderHeart, Heart, Settings, User } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import UserMenu from "@/components/user-menu";
 import { getUser } from "@/functions/get-user";
@@ -74,6 +74,22 @@ function UserLayout() {
 										設定
 									</NavLink>
 								</li>
+								<li>
+									<NavLink
+										to="/user/collections"
+										icon={<FolderHeart className="h-5 w-5" />}
+									>
+										コレクション
+									</NavLink>
+								</li>
+								<li>
+									<NavLink
+										to="/user/likes"
+										icon={<Heart className="h-5 w-5" />}
+									>
+										お気に入り
+									</NavLink>
+								</li>
 							</ul>
 						</nav>
 
@@ -104,7 +120,7 @@ function NavLink({ to, icon, children }: NavLinkProps) {
 		<Link
 			to={to}
 			className={cn("flex items-center gap-2")}
-			activeProps={{ className: "active" }}
+			activeProps={{ className: "menu-active" }}
 		>
 			{icon}
 			{children}
