@@ -75,6 +75,20 @@ export const ERROR_MESSAGES = {
 		"この公式楽曲は既に同じ順序でこのトラックに紐付けられています",
 	ITEMS_REQUIRED_NON_EMPTY: "itemsは必須で、空でない配列である必要があります",
 
+	// ===== コレクション関連 =====
+	COLLECTION_NOT_FOUND: "コレクションが見つかりません",
+	COLLECTION_DEFAULT_LIKED_DELETE_FORBIDDEN:
+		"デフォルトのお気に入りコレクションは削除できません",
+	COLLECTION_LIMIT_EXCEEDED: "コレクション数の上限（100件）を超えています",
+	COLLECTION_ITEM_LIMIT_EXCEEDED:
+		"1コレクションに登録できるアイテム数の上限（1000件）を超えています",
+	COLLECTION_ITEM_NOT_FOUND: "コレクションアイテムが見つかりません",
+	COLLECTION_TARGET_NOT_FOUND: "対象が見つかりません",
+	COLLECTION_REORDER_NOT_ORDERED:
+		"並び替えできないコレクションです（ordered=false）",
+	COLLECTION_REORDER_INVALID:
+		"並び替えデータが不正です（itemIdが一致しないかpositionに重複/欠番があります）",
+
 	// ===== 削除制約エラー =====
 	CANNOT_DELETE_SERIES_WITH_EVENTS:
 		"関連するイベントがあるため、このシリーズは削除できません",

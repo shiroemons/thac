@@ -5,6 +5,7 @@ import {
 	type UserAuthContext,
 } from "../../middleware/user-auth";
 import { albumRequestsUserRouter } from "./album-requests";
+import { collectionsUserRouter } from "./collections";
 
 const userRouter = new Hono<UserAuthContext>();
 
@@ -16,5 +17,8 @@ userRouter.use("/*", methodRateLimiter);
 
 // アルバム申請ルート
 userRouter.route("/album-requests", albumRequestsUserRouter);
+
+// コレクションルート
+userRouter.route("/collections", collectionsUserRouter);
 
 export { userRouter };
