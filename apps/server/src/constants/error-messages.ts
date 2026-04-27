@@ -75,6 +75,10 @@ export const ERROR_MESSAGES = {
 		"この公式楽曲は既に同じ順序でこのトラックに紐付けられています",
 	ITEMS_REQUIRED_NON_EMPTY: "itemsは必須で、空でない配列である必要があります",
 
+	// ===== お気に入り関連 =====
+	LIKE_TARGET_NOT_FOUND: "対象が見つかりません",
+	LIKE_NOT_FOUND: "お気に入りに登録されていません",
+
 	// ===== コレクション関連 =====
 	COLLECTION_NOT_FOUND: "コレクションが見つかりません",
 	COLLECTION_DEFAULT_LIKED_DELETE_FORBIDDEN:
