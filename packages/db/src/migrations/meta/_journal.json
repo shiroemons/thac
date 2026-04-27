@@ -36,6 +36,13 @@
 			"when": 1777213613998,
 			"tag": "0004_great_beast",
 			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "7",
+			"when": 1777256960048,
+			"tag": "0005_wakeful_clint_barton",
+			"breakpoints": true
 		}
 	]
 }

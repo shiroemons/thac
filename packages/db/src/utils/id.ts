@@ -22,4 +22,6 @@ export const createId = {
 	officialSongLink: () => typeid("sl").toString(),
 	tag: () => typeid("tag").toString(),
 	albumRequest: () => typeid("aq").toString(),
+	userCollection: () => typeid("uc").toString(),
+	userCollectionItem: () => typeid("uci").toString(),
 } as const;

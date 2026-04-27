@@ -23,3 +23,5 @@ export * from "./track";
 export * from "./track.validation";
 export * from "./track-relations";
 export * from "./track-relations.validation";
+export * from "./user-collection";
+export * from "./user-collection.validation";

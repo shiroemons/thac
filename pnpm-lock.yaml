@@ -350,6 +350,9 @@ importers:
       drizzle-zod:
         specifier: ^0.8.3
         version: 0.8.3(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(kysely@0.28.17)(postgres@3.4.9))(zod@4.4.3)
+      nanoid:
+        specifier: 'catalog:'
+        version: 5.1.11
       postgres:
         specifier: 'catalog:'
         version: 3.4.9
