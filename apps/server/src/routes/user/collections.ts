@@ -1,7 +1,6 @@
 import {
 	addUserCollectionItemSchema,
 	and,
-	asc,
 	circles,
 	count,
 	createId,
@@ -9,7 +8,6 @@ import {
 	db,
 	desc,
 	eq,
-	inArray,
 	max,
 	releases,
 	reorderUserCollectionItemsSchema,
@@ -23,6 +21,7 @@ import { nanoid } from "nanoid";
 import { ERROR_MESSAGES } from "../../constants/error-messages";
 import type { UserAuthContext } from "../../middleware/user-auth";
 import { handleDbError } from "../../utils/api-error";
+import { loadCollectionItemsWithTargets } from "../../utils/collection-items-loader";
 
 const collectionsUserRouter = new Hono<UserAuthContext>();
 
@@ -141,7 +140,9 @@ collectionsUserRouter.get("/:id", async (c) => {
 			)
 			.limit(1);
 
-		if (collectionRows.length === 0) {
+		const collection = collectionRows[0];
+
+		if (!collection) {
 			return c.json(
 				{
 					error: ERROR_MESSAGES.COLLECTION_NOT_FOUND,
@@ -151,80 +152,7 @@ collectionsUserRouter.get("/:id", async (c) => {
 			);
 		}
 
-		const collection = collectionRows[0];
-
-		const items = await db
-			.select()
-			.from(userCollectionItems)
-			.where(eq(userCollectionItems.collectionId, collectionId))
-			.orderBy(
-				asc(userCollectionItems.position),
-				desc(userCollectionItems.addedAt),
-			);
-
-		const trackIds = items
-			.filter((i) => i.targetType === "track")
-			.map((i) => i.targetId);
-		const releaseIds = items
-			.filter((i) => i.targetType === "release")
-			.map((i) => i.targetId);
-		const circleIds = items
-			.filter((i) => i.targetType === "circle")
-			.map((i) => i.targetId);
-
-		const [trackRows, releaseRows, circleRows] = await Promise.all([
-			trackIds.length > 0
-				? db
-						.select({
-							id: tracks.id,
-							name: tracks.name,
-							nameJa: tracks.nameJa,
-							nameEn: tracks.nameEn,
-							releaseId: tracks.releaseId,
-						})
-						.from(tracks)
-						.where(inArray(tracks.id, trackIds))
-				: Promise.resolve([]),
-			releaseIds.length > 0
-				? db
-						.select({
-							id: releases.id,
-							name: releases.name,
-							nameJa: releases.nameJa,
-							nameEn: releases.nameEn,
-							releaseDate: releases.releaseDate,
-						})
-						.from(releases)
-						.where(inArray(releases.id, releaseIds))
-				: Promise.resolve([]),
-			circleIds.length > 0
-				? db
-						.select({
-							id: circles.id,
-							name: circles.name,
-							nameJa: circles.nameJa,
-							nameEn: circles.nameEn,
-						})
-						.from(circles)
-						.where(inArray(circles.id, circleIds))
-				: Promise.resolve([]),
-		]);
-
-		const trackMap = new Map(trackRows.map((r) => [r.id, r]));
-		const releaseMap = new Map(releaseRows.map((r) => [r.id, r]));
-		const circleMap = new Map(circleRows.map((r) => [r.id, r]));
-
-		const itemsWithTarget = items.map((item) => {
-			let target: unknown = null;
-			if (item.targetType === "track") {
-				target = trackMap.get(item.targetId) ?? null;
-			} else if (item.targetType === "release") {
-				target = releaseMap.get(item.targetId) ?? null;
-			} else if (item.targetType === "circle") {
-				target = circleMap.get(item.targetId) ?? null;
-			}
-			return { ...item, target };
-		});
+		const itemsWithTarget = await loadCollectionItemsWithTargets(collectionId);
 
 		return c.json({ ...collection, items: itemsWithTarget });
 	} catch (error) {
