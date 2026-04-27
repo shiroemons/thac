@@ -15,6 +15,7 @@ import {
 	PublicBreadcrumb,
 	TagBadgeList,
 } from "@/components/public";
+import { LikeActions } from "@/components/user/like-actions";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPublicTrackHead } from "@/lib/head";
 import { type PublicTrackDetail, publicApi } from "@/lib/public-api";
@@ -150,6 +151,9 @@ function TrackDetailPage() {
 						: []),
 				]}
 			>
+				{/* ♥ボタン + コレクション追加 */}
+				<LikeActions targetType="track" targetId={track.id} />
+
 				{/* タグ */}
 				{track.tags && track.tags.length > 0 && (
 					<TagBadgeList tags={track.tags} />

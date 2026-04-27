@@ -26,6 +26,7 @@ import {
 	WorkStatsSection,
 	WorkStatsSkeleton,
 } from "@/components/public";
+import { LikeActions } from "@/components/user/like-actions";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import {
 	type CircleDetailTab,
@@ -255,6 +256,9 @@ function CircleDetailPage() {
 						: undefined
 				}
 			>
+				{/* ♥ボタン + コレクション追加 */}
+				<LikeActions targetType="circle" targetId={circle.id} />
+
 				{circle.links.length > 0 &&
 					circle.links.map((link) => (
 						<ExternalLink
