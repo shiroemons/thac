@@ -3217,3 +3217,154 @@ export const albumRequestsApi = {
 			body: JSON.stringify(data),
 		}),
 };
+
+// ===== ユーザーコレクション =====
+
+export type UserCollectionKind = "collection" | "playlist";
+export type UserCollectionVisibility = "private" | "unlisted" | "public";
+export type CollectionItemTargetType = "track" | "release" | "circle";
+
+export interface UserCollectionListItem {
+	id: string;
+	kind: UserCollectionKind;
+	name: string;
+	description: string | null;
+	visibility: UserCollectionVisibility;
+	ordered: boolean;
+	isDefaultLiked: boolean;
+	shortId: string | null;
+	coverImageUrl: string | null;
+	createdAt: string;
+	updatedAt: string;
+	itemCount: number;
+}
+
+export interface TrackTarget {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	releaseId: string;
+}
+
+export interface ReleaseTarget {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+	releaseDate: string | null;
+}
+
+export interface CircleTarget {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+}
+
+export type CollectionItemTarget = TrackTarget | ReleaseTarget | CircleTarget;
+
+export interface UserCollectionItem {
+	id: string;
+	collectionId: string;
+	targetType: CollectionItemTargetType;
+	targetId: string;
+	position: number | null;
+	note: string | null;
+	addedAt: string;
+	target: CollectionItemTarget | null;
+}
+
+export interface UserCollectionDetail extends UserCollectionListItem {
+	items: UserCollectionItem[];
+}
+
+export interface UserCollectionCreateInput {
+	name: string;
+	description?: string | null;
+	kind?: UserCollectionKind;
+	visibility?: UserCollectionVisibility;
+	ordered?: boolean;
+}
+
+export interface UserCollectionUpdateInput {
+	name?: string;
+	description?: string | null;
+	visibility?: UserCollectionVisibility;
+	ordered?: boolean;
+}
+
+export interface CollectionItemAddInput {
+	targetType: CollectionItemTargetType;
+	targetId: string;
+	note?: string | null;
+}
+
+export interface CollectionItemReorderInput {
+	items: Array<{ itemId: string; position: number }>;
+}
+
+export type LikeTarget = {
+	targetType: CollectionItemTargetType;
+	targetId: string;
+};
+
+export type LikeCheckResult = {
+	targetType: CollectionItemTargetType;
+	targetId: string;
+	liked: boolean;
+};
+
+export const userCollectionsApi = {
+	create: (input: UserCollectionCreateInput) =>
+		fetchWithAuth<UserCollectionListItem>("/api/user/collections", {
+			method: "POST",
+			body: JSON.stringify(input),
+		}),
+
+	update: (id: string, input: UserCollectionUpdateInput) =>
+		fetchWithAuth<UserCollectionListItem>(`/api/user/collections/${id}`, {
+			method: "PATCH",
+			body: JSON.stringify(input),
+		}),
+
+	delete: (id: string) =>
+		fetchWithAuth<void>(`/api/user/collections/${id}`, { method: "DELETE" }),
+
+	addItem: (id: string, input: CollectionItemAddInput) =>
+		fetchWithAuth<UserCollectionItem>(`/api/user/collections/${id}/items`, {
+			method: "POST",
+			body: JSON.stringify(input),
+		}),
+
+	removeItem: (id: string, itemId: string) =>
+		fetchWithAuth<void>(`/api/user/collections/${id}/items/${itemId}`, {
+			method: "DELETE",
+		}),
+
+	reorderItems: (id: string, input: CollectionItemReorderInput) =>
+		fetchWithAuth<{ success: boolean }>(
+			`/api/user/collections/${id}/items/reorder`,
+			{
+				method: "PATCH",
+				body: JSON.stringify(input),
+			},
+		),
+} as const;
+
+export const userLikesApi = {
+	add: (input: LikeTarget) =>
+		fetchWithAuth<{
+			collection: UserCollectionListItem;
+			item: UserCollectionItem;
+		}>("/api/user/likes", {
+			method: "POST",
+			body: JSON.stringify(input),
+		}),
+
+	remove: (input: LikeTarget) =>
+		fetchWithAuth<void>("/api/user/likes", {
+			method: "DELETE",
+			body: JSON.stringify(input),
+		}),
+} as const;
