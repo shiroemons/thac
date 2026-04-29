@@ -191,7 +191,7 @@ function CollectionDetailPage() {
 				</Banner>
 			)}
 
-			<div className="form-control flex-row items-center gap-2">
+			<div className="flex items-center gap-3">
 				<input
 					id="ordered-toggle"
 					type="checkbox"

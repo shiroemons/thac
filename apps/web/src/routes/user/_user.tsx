@@ -13,7 +13,7 @@ import { createPageHead } from "@/lib/head";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/user/_user")({
-	head: () => createPageHead("ユーザー設定"),
+	head: () => createPageHead("マイページ"),
 	headers: () => CACHE_HEADERS.PRIVATE,
 	beforeLoad: async () => {
 		const session = await getUser();
@@ -50,7 +50,7 @@ function UserLayout() {
 				<div className="mx-auto max-w-4xl p-4 lg:p-6">
 					{/* Header */}
 					<div className="mb-6">
-						<h1 className="font-bold text-2xl">アカウント設定</h1>
+						<h1 className="font-bold text-2xl">マイページ</h1>
 						<p className="text-base-content/70 text-sm">{user.email}</p>
 					</div>
 

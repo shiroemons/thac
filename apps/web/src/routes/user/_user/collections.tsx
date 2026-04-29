@@ -10,14 +10,20 @@ export const Route = createFileRoute("/user/_user/collections")({
 	headers: () => CACHE_HEADERS.PRIVATE,
 	loader: ({ context }) =>
 		context.queryClient.ensureQueryData(
-			userCollectionsListQueryOptions({ kind: "collection" }),
+			userCollectionsListQueryOptions({
+				kind: "collection",
+				excludeDefaultLiked: true,
+			}),
 		),
 	component: CollectionsListPage,
 });
 
 function CollectionsListPage() {
 	const { data } = useSuspenseQuery(
-		userCollectionsListQueryOptions({ kind: "collection" }),
+		userCollectionsListQueryOptions({
+			kind: "collection",
+			excludeDefaultLiked: true,
+		}),
 	);
 
 	return (
@@ -46,12 +52,7 @@ function CollectionsListPage() {
 							className="card bg-base-100 shadow-sm transition-shadow hover:shadow-md"
 						>
 							<div className="card-body">
-								<h2 className="card-title text-lg">
-									{c.name}
-									{c.isDefaultLiked && (
-										<span className="badge badge-error badge-sm">♥ Liked</span>
-									)}
-								</h2>
+								<h2 className="card-title text-lg">{c.name}</h2>
 								{c.description && (
 									<p className="line-clamp-2 text-base-content/60 text-sm">
 										{c.description}

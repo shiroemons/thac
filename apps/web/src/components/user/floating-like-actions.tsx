@@ -5,17 +5,15 @@ import { userLikesCheckQueryOptions } from "@/lib/user-collections-query-options
 import { AddToCollectionDropdown } from "./add-to-collection-dropdown";
 import { LikeButton } from "./like-button";
 
-interface LikeActionsProps {
+interface FloatingLikeActionsProps {
 	targetType: "track" | "release" | "circle";
 	targetId: string;
-	size?: "sm" | "md" | "lg";
 }
 
-export function LikeActions({
+export function FloatingLikeActions({
 	targetType,
 	targetId,
-	size = "md",
-}: LikeActionsProps) {
+}: FloatingLikeActionsProps) {
 	const { data: session } = authClient.useSession();
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -28,19 +26,24 @@ export function LikeActions({
 
 	const isLiked = checkQuery.data?.results[0]?.liked ?? false;
 
+	if (!session?.user) {
+		return null;
+	}
+
 	return (
 		<div className="flex items-center gap-2">
 			<LikeButton
 				targetType={targetType}
 				targetId={targetId}
 				isLiked={isLiked}
-				size={size}
+				size="md"
 				currentPath={currentPath}
 			/>
 			<AddToCollectionDropdown
 				targetType={targetType}
 				targetId={targetId}
 				currentPath={currentPath}
+				dropUp
 				onNavigateToNew={() => navigate({ to: "/user/collections/new" })}
 			/>
 		</div>

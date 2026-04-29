@@ -19,6 +19,7 @@ import { ssrFetch } from "@/functions/ssr-fetcher";
 import type {
 	CollectionItemAddInput,
 	CollectionItemReorderInput,
+	CollectionItemTargetType,
 	LikeTarget,
 	UserCollectionDetail,
 	UserCollectionKind,
@@ -32,9 +33,21 @@ import { STALE_TIME } from "@/lib/query-options";
 
 export function userCollectionsListQueryOptions(params?: {
 	kind?: UserCollectionKind;
+	target?: { type: CollectionItemTargetType; id: string };
+	excludeDefaultLiked?: boolean;
 }) {
-	const endpoint = params?.kind
-		? `/api/user/collections?kind=${params.kind}`
+	const searchParams = new URLSearchParams();
+	if (params?.kind) searchParams.set("kind", params.kind);
+	if (params?.target) {
+		searchParams.set("targetType", params.target.type);
+		searchParams.set("targetId", params.target.id);
+	}
+	if (params?.excludeDefaultLiked) {
+		searchParams.set("excludeDefaultLiked", "true");
+	}
+	const query = searchParams.toString();
+	const endpoint = query
+		? `/api/user/collections?${query}`
 		: "/api/user/collections";
 	return queryOptions({
 		queryKey: ["user", "collections", "list", params ?? null] as const,
@@ -139,6 +152,9 @@ export const userCollectionMutations = {
 		onSuccess: (_data: unknown, variables: { id: string; itemId: string }) => {
 			queryClient.invalidateQueries({
 				queryKey: ["user", "collections", "detail", variables.id],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["user", "collections", "list"],
 			});
 			queryClient.invalidateQueries({ queryKey: ["user", "likes"] });
 		},

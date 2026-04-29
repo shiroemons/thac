@@ -15,7 +15,7 @@ import {
 	PublicBreadcrumb,
 	TagBadgeList,
 } from "@/components/public";
-import { LikeActions } from "@/components/user/like-actions";
+import { FloatingLikeActions } from "@/components/user/floating-like-actions";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPublicTrackHead } from "@/lib/head";
 import { type PublicTrackDetail, publicApi } from "@/lib/public-api";
@@ -150,10 +150,8 @@ function TrackDetailPage() {
 							))
 						: []),
 				]}
+				actions={<FloatingLikeActions targetType="track" targetId={track.id} />}
 			>
-				{/* ♥ボタン + コレクション追加 */}
-				<LikeActions targetType="track" targetId={track.id} />
-
 				{/* タグ */}
 				{track.tags && track.tags.length > 0 && (
 					<TagBadgeList tags={track.tags} />

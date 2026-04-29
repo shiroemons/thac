@@ -143,11 +143,13 @@ function DropdownMenuTrigger({
 
 interface DropdownMenuContentProps extends React.ComponentProps<"ul"> {
 	align?: "start" | "end";
+	side?: "top" | "bottom";
 }
 
 function DropdownMenuContent({
 	className,
 	align = "end",
+	side = "bottom",
 	children,
 	...props
 }: DropdownMenuContentProps) {
@@ -160,7 +162,8 @@ function DropdownMenuContent({
 			data-slot="dropdown-menu-content"
 			role="menu"
 			className={cn(
-				"absolute z-50 mt-1 w-52 rounded-box bg-base-100 p-2 shadow-lg",
+				"absolute z-50 w-52 rounded-box bg-base-100 p-2 shadow-lg",
+				side === "top" ? "bottom-full mb-1" : "mt-1",
 				align === "end" ? "right-0" : "left-0",
 				className,
 			)}
@@ -202,7 +205,7 @@ function DropdownMenuItem({
 			tabIndex={disabled ? -1 : 0}
 			onClick={handleClick}
 			className={cn(
-				"flex cursor-pointer items-center rounded-box px-3 py-2 text-sm hover:bg-base-200 focus:bg-base-200 focus:outline-none",
+				"flex cursor-pointer items-center gap-2 rounded-box px-3 py-2 text-sm hover:bg-base-200 focus:bg-base-200 focus:outline-none",
 				inset && "pl-8",
 				disabled && "cursor-not-allowed opacity-50",
 				className,

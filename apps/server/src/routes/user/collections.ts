@@ -11,6 +11,7 @@ import {
 	max,
 	releases,
 	reorderUserCollectionItemsSchema,
+	sql,
 	tracks,
 	updateUserCollectionSchema,
 	userCollectionItems,
@@ -26,14 +27,78 @@ import { loadCollectionItemsWithTargets } from "../../utils/collection-items-loa
 const collectionsUserRouter = new Hono<UserAuthContext>();
 
 // 自分のコレクション一覧取得（kindフィルタ可、アイテム数を含む）
+// targetType + targetId を指定した場合、各コレクションに containsTarget / containsItemId を追加
 collectionsUserRouter.get("/", async (c) => {
 	try {
 		const user = c.get("user");
 		const kindParam = c.req.query("kind");
+		const targetType = c.req.query("targetType");
+		const targetId = c.req.query("targetId");
+		const hasTarget =
+			(targetType === "track" ||
+				targetType === "release" ||
+				targetType === "circle") &&
+			!!targetId;
+
+		const excludeDefaultLiked = c.req.query("excludeDefaultLiked") === "true";
 
 		const conditions = [eq(userCollections.userId, user.id)];
 		if (kindParam === "collection" || kindParam === "playlist") {
 			conditions.push(eq(userCollections.kind, kindParam));
+		}
+		if (excludeDefaultLiked) {
+			conditions.push(eq(userCollections.isDefaultLiked, false));
+		}
+
+		if (hasTarget) {
+			// target の含有判定: 専用エイリアスで left join
+			const targetItems = db.$with("target_items").as(
+				db
+					.select({
+						collectionId: userCollectionItems.collectionId,
+						itemId: userCollectionItems.id,
+					})
+					.from(userCollectionItems)
+					.where(
+						and(
+							eq(
+								userCollectionItems.targetType,
+								targetType as "track" | "release" | "circle",
+							),
+							eq(userCollectionItems.targetId, targetId),
+						),
+					),
+			);
+
+			const rows = await db
+				.with(targetItems)
+				.select({
+					id: userCollections.id,
+					kind: userCollections.kind,
+					name: userCollections.name,
+					description: userCollections.description,
+					visibility: userCollections.visibility,
+					ordered: userCollections.ordered,
+					isDefaultLiked: userCollections.isDefaultLiked,
+					shortId: userCollections.shortId,
+					coverImageUrl: userCollections.coverImageUrl,
+					createdAt: userCollections.createdAt,
+					updatedAt: userCollections.updatedAt,
+					itemCount: count(userCollectionItems.id),
+					containsTarget: sql<boolean>`${targetItems.itemId} IS NOT NULL`,
+					containsItemId: targetItems.itemId,
+				})
+				.from(userCollections)
+				.leftJoin(
+					userCollectionItems,
+					eq(userCollectionItems.collectionId, userCollections.id),
+				)
+				.leftJoin(targetItems, eq(targetItems.collectionId, userCollections.id))
+				.where(and(...conditions))
+				.groupBy(userCollections.id, targetItems.itemId)
+				.orderBy(desc(userCollections.createdAt));
+
+			return c.json({ items: rows });
 		}
 
 		const rows = await db

@@ -2,8 +2,10 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
 	BarChart3,
 	Calendar,
+	Heart,
 	Home,
 	Info,
+	Library,
 	Menu,
 	Music,
 	Search,
@@ -12,6 +14,7 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { authClient } from "@/lib/auth-client";
 import { ThemeSwitcher } from "../theme-switcher";
 import UserMenu from "../user-menu";
 
@@ -27,6 +30,7 @@ export function PublicHeader() {
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [isScrolled, setIsScrolled] = useState(false);
 	const location = useLocation();
+	const { data: session } = authClient.useSession();
 
 	const isActive = (path: string) => location.pathname.startsWith(path);
 
@@ -65,11 +69,24 @@ export function PublicHeader() {
 				>
 					東方編曲録
 				</Link>
+				<div className="hidden lg:flex">
+					<ThemeSwitcher />
+				</div>
 			</div>
 
 			{/* Desktop navigation */}
 			<nav className="navbar-center hidden lg:flex">
 				<ul className="menu menu-horizontal gap-1 px-1">
+					<li>
+						<Link
+							to="/search"
+							preload="render"
+							className="btn btn-ghost btn-circle"
+							aria-label="検索"
+						>
+							<Search className="size-5" />
+						</Link>
+					</li>
 					{navLinks.map(({ to, label }) => (
 						<li key={to}>
 							<Link
@@ -90,15 +107,29 @@ export function PublicHeader() {
 
 			{/* Right side */}
 			<div className="navbar-end gap-1">
-				<Link
-					to="/search"
-					preload="render"
-					className="btn btn-ghost btn-circle"
-					aria-label="検索"
-				>
-					<Search className="size-5" />
-				</Link>
-				<ThemeSwitcher />
+				{session && (
+					<>
+						<Link
+							to="/user/collections"
+							preload="render"
+							className="btn btn-ghost btn-circle hidden lg:flex"
+							aria-label="コレクション"
+						>
+							<Library className="size-5" />
+						</Link>
+						<Link
+							to="/user/likes"
+							preload="render"
+							className="btn btn-ghost btn-circle hidden lg:flex"
+							aria-label="お気に入り"
+						>
+							<Heart className="size-5" />
+						</Link>
+					</>
+				)}
+				<div className="lg:hidden">
+					<ThemeSwitcher />
+				</div>
 				<UserMenu />
 			</div>
 
@@ -166,6 +197,40 @@ export function PublicHeader() {
 									</Link>
 								</li>
 							))}
+							{session && (
+								<>
+									<li className="mt-4 border-base-content/10 border-t pt-4">
+										<Link
+											to="/user/collections"
+											preload="render"
+											className={`flex items-center gap-3 transition-all duration-300 ${
+												isActive("/user/collections")
+													? "bg-primary font-semibold text-primary-content"
+													: "text-base-content/70 hover:bg-base-200/60 hover:text-base-content"
+											}`}
+											onClick={() => setIsDrawerOpen(false)}
+										>
+											<Library className="size-5" />
+											コレクション
+										</Link>
+									</li>
+									<li>
+										<Link
+											to="/user/likes"
+											preload="render"
+											className={`flex items-center gap-3 transition-all duration-300 ${
+												isActive("/user/likes")
+													? "bg-primary font-semibold text-primary-content"
+													: "text-base-content/70 hover:bg-base-200/60 hover:text-base-content"
+											}`}
+											onClick={() => setIsDrawerOpen(false)}
+										>
+											<Heart className="size-5" />
+											お気に入り
+										</Link>
+									</li>
+								</>
+							)}
 							<li className="mt-4 border-base-content/10 border-t pt-4">
 								<Link
 									to="/about"

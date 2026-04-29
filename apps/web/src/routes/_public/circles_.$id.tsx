@@ -26,7 +26,7 @@ import {
 	WorkStatsSection,
 	WorkStatsSkeleton,
 } from "@/components/public";
-import { LikeActions } from "@/components/user/like-actions";
+import { FloatingLikeActions } from "@/components/user/floating-like-actions";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import {
 	type CircleDetailTab,
@@ -255,10 +255,10 @@ function CircleDetailPage() {
 							]
 						: undefined
 				}
+				actions={
+					<FloatingLikeActions targetType="circle" targetId={circle.id} />
+				}
 			>
-				{/* ♥ボタン + コレクション追加 */}
-				<LikeActions targetType="circle" targetId={circle.id} />
-
 				{circle.links.length > 0 &&
 					circle.links.map((link) => (
 						<ExternalLink

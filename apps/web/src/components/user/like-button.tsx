@@ -25,10 +25,13 @@ export function LikeButton({
 	const navigate = useNavigate();
 	const { data: session } = authClient.useSession();
 
-	const [optimisticLiked, setOptimisticLiked] = useState(isLiked);
+	// ミューテーション中のみ楽観的な値を保持する。null のときは isLiked prop を使用する
+	const [pendingLiked, setPendingLiked] = useState<boolean | null>(null);
 
 	const addMutation = useMutation(userLikesMutations.add(queryClient));
 	const removeMutation = useMutation(userLikesMutations.remove(queryClient));
+
+	const displayLiked = pendingLiked !== null ? pendingLiked : isLiked;
 
 	const handleClick = async () => {
 		if (!session?.user) {
@@ -39,8 +42,8 @@ export function LikeButton({
 			return;
 		}
 
-		const willLike = !optimisticLiked;
-		setOptimisticLiked(willLike);
+		const willLike = !displayLiked;
+		setPendingLiked(willLike);
 
 		try {
 			if (willLike) {
@@ -48,8 +51,12 @@ export function LikeButton({
 			} else {
 				await removeMutation.mutateAsync({ targetType, targetId });
 			}
+			// ミューテーション成功後は isLiked prop がキャッシュ更新で正しい値になるため
+			// pendingLiked をクリアして prop に委譲する
+			setPendingLiked(null);
 		} catch {
-			setOptimisticLiked(!willLike);
+			// エラー時は楽観更新を元に戻す
+			setPendingLiked(null);
 		}
 	};
 
@@ -66,18 +73,18 @@ export function LikeButton({
 			type="button"
 			onClick={handleClick}
 			disabled={isPending}
-			aria-pressed={optimisticLiked}
-			aria-label={optimisticLiked ? "お気に入りから削除" : "お気に入りに追加"}
+			aria-pressed={displayLiked}
+			aria-label={displayLiked ? "お気に入りから削除" : "お気に入りに追加"}
 			className={cn(
 				"btn btn-ghost gap-1",
 				size === "sm" && "btn-sm",
 				size === "lg" && "btn-lg",
-				optimisticLiked && "text-error",
+				displayLiked && "text-error",
 			)}
 		>
 			<Heart
-				className={cn(iconSizeClass, optimisticLiked && "fill-current")}
-				strokeWidth={optimisticLiked ? 1.5 : 2}
+				className={cn(iconSizeClass, displayLiked && "fill-current")}
+				strokeWidth={displayLiked ? 1.5 : 2}
 			/>
 		</button>
 	);

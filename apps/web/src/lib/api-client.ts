@@ -199,6 +199,11 @@ async function fetchWithAuth<T>(
 		throw new Error(errorData.error || `HTTP ${res.status}`);
 	}
 
+	// 204 No Content や空レスポンスはボディが存在しないためパースしない
+	if (res.status === 204 || res.headers.get("content-length") === "0") {
+		return undefined as T;
+	}
+
 	return res.json();
 }
 
@@ -3008,7 +3013,7 @@ export const tagsApi = {
 		const searchParams = new URLSearchParams();
 		if (force) searchParams.set("force", "true");
 		const query = searchParams.toString();
-		return fetchWithAuth<{ success: boolean; id: string }>(
+		return fetchWithAuth<void>(
 			`/api/admin/tags/${id}${query ? `?${query}` : ""}`,
 			{
 				method: "DELETE",
@@ -3237,6 +3242,10 @@ export interface UserCollectionListItem {
 	createdAt: string;
 	updatedAt: string;
 	itemCount: number;
+	/** targetType/targetId を指定してフェッチした場合のみ含まれる */
+	containsTarget?: boolean;
+	/** containsTarget=true の場合、削除に使用するアイテムID */
+	containsItemId?: string | null;
 }
 
 export interface TrackTarget {
