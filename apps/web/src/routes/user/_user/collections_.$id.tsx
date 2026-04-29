@@ -7,7 +7,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Settings, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Banner } from "@/components/ui/banner";
+import { CollectionUrlCopy } from "@/components/user/collection-url-copy";
 import { SortableCollectionItems } from "@/components/user/sortable-collection-items";
+import { VisibilityBadge } from "@/components/user/visibility-badge";
 import type {
 	UserCollectionDetail,
 	UserCollectionItem,
@@ -155,7 +157,18 @@ function CollectionDetailPage() {
 						{collection.isDefaultLiked && (
 							<span className="badge badge-error badge-sm">♥ Liked</span>
 						)}
+						{!collection.isDefaultLiked && (
+							<VisibilityBadge visibility={collection.visibility} />
+						)}
 					</div>
+					{!collection.isDefaultLiked &&
+						(collection.visibility === "unlisted" ||
+							collection.visibility === "public") &&
+						collection.shortId && (
+							<div className="mt-2">
+								<CollectionUrlCopy shortId={collection.shortId} />
+							</div>
+						)}
 				</div>
 				<div className="flex items-center gap-2">
 					<button

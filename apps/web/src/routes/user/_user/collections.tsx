@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
+import { VisibilityBadge } from "@/components/user/visibility-badge";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPageHead } from "@/lib/head";
 import { userCollectionsListQueryOptions } from "@/lib/user-collections-query-options";
@@ -61,6 +62,7 @@ function CollectionsListPage() {
 								<div className="flex items-center gap-2 text-base-content/50 text-xs">
 									<span>{c.itemCount} 件</span>
 									{c.ordered && <span>・並び替え可</span>}
+									<VisibilityBadge visibility={c.visibility} />
 								</div>
 							</div>
 						</Link>
