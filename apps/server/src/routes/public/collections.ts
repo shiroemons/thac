@@ -1,4 +1,4 @@
-import { db, eq, userCollections } from "@thac/db";
+import { db, eq, user, userCollections } from "@thac/db";
 import { Hono } from "hono";
 import { handleDbError } from "../../utils/api-error";
 import { loadCollectionItemsWithTargets } from "../../utils/collection-items-loader";
@@ -21,6 +21,7 @@ publicCollectionsRouter.get("/:shortId", async (c) => {
 				shortId: userCollections.shortId,
 				createdAt: userCollections.createdAt,
 				updatedAt: userCollections.updatedAt,
+				userId: userCollections.userId,
 			})
 			.from(userCollections)
 			.where(eq(userCollections.shortId, shortId))
@@ -37,9 +38,23 @@ publicCollectionsRouter.get("/:shortId", async (c) => {
 			return c.json({ error: "Not found", code: "NOT_FOUND" }, 404);
 		}
 
+		// owner 情報を取得
+		const ownerRows = await db
+			.select({ id: user.id, name: user.name })
+			.from(user)
+			.where(eq(user.id, collection.userId))
+			.limit(1);
+
+		const owner = ownerRows[0] ?? {
+			id: collection.userId,
+			name: "不明なユーザー",
+		};
+
 		const items = await loadCollectionItemsWithTargets(collection.id);
 
-		return c.json({ collection, items });
+		const { userId: _, ...collectionWithoutUserId } = collection;
+
+		return c.json({ collection: { ...collectionWithoutUserId, owner }, items });
 	} catch (error) {
 		return handleDbError(c, error, "GET /public/collections/:shortId");
 	}
