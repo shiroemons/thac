@@ -2,6 +2,7 @@ import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 import {
 	COLLECTION_ITEM_TARGET_TYPES,
+	COLLECTION_ITEM_TYPES,
 	COLLECTION_KINDS,
 	COLLECTION_VISIBILITIES,
 	userCollectionItems,
@@ -30,6 +31,7 @@ export const createUserCollectionSchema = z.object({
 	kind: z.enum(COLLECTION_KINDS).optional().default("collection"),
 	visibility: z.enum(COLLECTION_VISIBILITIES).optional().default("private"),
 	ordered: z.boolean().optional().default(false),
+	itemType: z.enum(COLLECTION_ITEM_TYPES).optional().nullable(),
 });
 
 export const updateUserCollectionSchema = z.object({

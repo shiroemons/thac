@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Disc3, Music, UserRound, Users } from "lucide-react";
 import { useState } from "react";
 import { Banner } from "@/components/ui/banner";
+import type { CollectionItemType } from "@/lib/api-client";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPageHead } from "@/lib/head";
 import { userCollectionMutations } from "@/lib/user-collections-query-options";
@@ -12,6 +13,21 @@ export const Route = createFileRoute("/user/_user/collections_/new")({
 	headers: () => CACHE_HEADERS.PRIVATE,
 	component: CollectionNewPage,
 });
+
+const ITEM_TYPE_OPTIONS: {
+	value: CollectionItemType;
+	label: string;
+	icon: React.ReactNode;
+}[] = [
+	{ value: "track", label: "楽曲", icon: <Music className="size-4" /> },
+	{ value: "release", label: "アルバム", icon: <Disc3 className="size-4" /> },
+	{ value: "circle", label: "サークル", icon: <Users className="size-4" /> },
+	{
+		value: "artist",
+		label: "アーティスト",
+		icon: <UserRound className="size-4" />,
+	},
+];
 
 function CollectionNewPage() {
 	const navigate = useNavigate();
@@ -23,6 +39,7 @@ function CollectionNewPage() {
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [ordered, setOrdered] = useState(false);
+	const [itemType, setItemType] = useState<CollectionItemType | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -35,11 +52,17 @@ function CollectionNewPage() {
 			return;
 		}
 
+		if (!itemType) {
+			setError("種別を選択してください");
+			return;
+		}
+
 		try {
 			const created = await createMutation.mutateAsync({
 				name: trimmedName,
 				description: description.trim() || null,
 				ordered,
+				itemType,
 				kind: "collection",
 				visibility: "private",
 			});
@@ -90,6 +113,40 @@ function CollectionNewPage() {
 						disabled={createMutation.isPending}
 					/>
 				</div>
+
+				<div>
+					<p className="label-text mb-2 font-medium">
+						種別 <span className="text-error">*</span>
+					</p>
+					<div className="grid grid-cols-2 gap-2">
+						{ITEM_TYPE_OPTIONS.map((opt) => (
+							<label
+								key={opt.value}
+								className={`flex cursor-pointer items-center gap-2 rounded-field border-2 p-3 transition-colors ${
+									itemType === opt.value
+										? "border-primary bg-primary/10"
+										: "border-base-300 hover:border-primary/50"
+								} ${createMutation.isPending ? "cursor-not-allowed opacity-50" : ""}`}
+							>
+								<input
+									type="radio"
+									className="sr-only"
+									name="itemType"
+									value={opt.value}
+									checked={itemType === opt.value}
+									onChange={() => setItemType(opt.value)}
+									disabled={createMutation.isPending}
+								/>
+								{opt.icon}
+								<span className="text-sm">{opt.label}</span>
+							</label>
+						))}
+					</div>
+					<p className="mt-1 text-base-content/50 text-xs">
+						※コレクション作成後は変更できません
+					</p>
+				</div>
+
 				<div>
 					<label className="label" htmlFor="new-description">
 						<span className="label-text">説明（任意）</span>

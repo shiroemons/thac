@@ -1,5 +1,6 @@
 import {
 	and,
+	artists,
 	COLLECTION_ITEM_TARGET_TYPES,
 	circles,
 	createId,
@@ -50,6 +51,14 @@ async function targetEntityExists(
 				.select({ id: circles.id })
 				.from(circles)
 				.where(eq(circles.id, id))
+				.limit(1);
+			return r.length > 0;
+		}
+		case "artist": {
+			const r = await db
+				.select({ id: artists.id })
+				.from(artists)
+				.where(eq(artists.id, id))
 				.limit(1);
 			return r.length > 0;
 		}
@@ -130,6 +139,7 @@ likesUserRouter.get("/check", async (c) => {
 			.filter((i) => i.type === "release")
 			.map((i) => i.id);
 		const circleIds = items.filter((i) => i.type === "circle").map((i) => i.id);
+		const artistIds = items.filter((i) => i.type === "artist").map((i) => i.id);
 
 		const conditions = [];
 		if (trackIds.length > 0) {
@@ -153,6 +163,14 @@ likesUserRouter.get("/check", async (c) => {
 				and(
 					eq(userCollectionItems.targetType, "circle"),
 					inArray(userCollectionItems.targetId, circleIds),
+				),
+			);
+		}
+		if (artistIds.length > 0) {
+			conditions.push(
+				and(
+					eq(userCollectionItems.targetType, "artist"),
+					inArray(userCollectionItems.targetId, artistIds),
 				),
 			);
 		}

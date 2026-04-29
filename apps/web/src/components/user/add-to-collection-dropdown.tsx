@@ -17,7 +17,7 @@ import {
 } from "@/lib/user-collections-query-options";
 
 interface AddToCollectionDropdownProps {
-	targetType: "track" | "release" | "circle";
+	targetType: "track" | "release" | "circle" | "artist";
 	targetId: string;
 	currentPath?: string;
 	/** ドロップダウンを上方向に展開する（FABとして使用する場合） */

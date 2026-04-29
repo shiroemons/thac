@@ -1,6 +1,7 @@
 import {
 	addUserCollectionItemSchema,
 	and,
+	artists,
 	circles,
 	count,
 	createId,
@@ -37,7 +38,8 @@ collectionsUserRouter.get("/", async (c) => {
 		const hasTarget =
 			(targetType === "track" ||
 				targetType === "release" ||
-				targetType === "circle") &&
+				targetType === "circle" ||
+				targetType === "artist") &&
 			!!targetId;
 
 		const excludeDefaultLiked = c.req.query("excludeDefaultLiked") === "true";
@@ -63,11 +65,16 @@ collectionsUserRouter.get("/", async (c) => {
 						and(
 							eq(
 								userCollectionItems.targetType,
-								targetType as "track" | "release" | "circle",
+								targetType as "track" | "release" | "circle" | "artist",
 							),
 							eq(userCollectionItems.targetId, targetId),
 						),
 					),
+			);
+
+			// targetType に一致する itemType のコレクションのみ表示（Liked は除外済み、itemType=null の場合も含む）
+			conditions.push(
+				sql`(${userCollections.itemType} IS NULL OR ${userCollections.itemType} = ${targetType})`,
 			);
 
 			const rows = await db
@@ -80,6 +87,7 @@ collectionsUserRouter.get("/", async (c) => {
 					visibility: userCollections.visibility,
 					ordered: userCollections.ordered,
 					isDefaultLiked: userCollections.isDefaultLiked,
+					itemType: userCollections.itemType,
 					shortId: userCollections.shortId,
 					coverImageUrl: userCollections.coverImageUrl,
 					createdAt: userCollections.createdAt,
@@ -110,6 +118,7 @@ collectionsUserRouter.get("/", async (c) => {
 				visibility: userCollections.visibility,
 				ordered: userCollections.ordered,
 				isDefaultLiked: userCollections.isDefaultLiked,
+				itemType: userCollections.itemType,
 				shortId: userCollections.shortId,
 				coverImageUrl: userCollections.coverImageUrl,
 				createdAt: userCollections.createdAt,
@@ -164,7 +173,8 @@ collectionsUserRouter.post("/", async (c) => {
 			);
 		}
 
-		const { name, description, kind, visibility, ordered } = parsed.data;
+		const { name, description, kind, visibility, ordered, itemType } =
+			parsed.data;
 		const shortId =
 			visibility === "unlisted" || visibility === "public" ? nanoid(8) : null;
 
@@ -178,6 +188,7 @@ collectionsUserRouter.post("/", async (c) => {
 				kind: kind ?? "collection",
 				visibility: visibility ?? "private",
 				ordered: ordered ?? false,
+				itemType: itemType ?? null,
 				shortId,
 			})
 			.returning();
@@ -417,7 +428,10 @@ collectionsUserRouter.post("/:id/items", async (c) => {
 
 		// コレクション存在 & 所有確認
 		const collectionRows = await db
-			.select({ ordered: userCollections.ordered })
+			.select({
+				ordered: userCollections.ordered,
+				itemType: userCollections.itemType,
+			})
 			.from(userCollections)
 			.where(
 				and(
@@ -445,6 +459,20 @@ collectionsUserRouter.post("/:id/items", async (c) => {
 					code: "NOT_FOUND",
 				},
 				404,
+			);
+		}
+
+		// itemType 整合性チェック（itemType=null の場合は全種別 OK）
+		if (
+			collectionMeta.itemType !== null &&
+			collectionMeta.itemType !== parsed.data.targetType
+		) {
+			return c.json(
+				{
+					error: `このコレクションには ${collectionMeta.itemType} 種別のアイテムのみ追加できます`,
+					code: "VALIDATION_ERROR",
+				},
+				400,
 			);
 		}
 
@@ -492,6 +520,15 @@ collectionsUserRouter.post("/:id/items", async (c) => {
 					.select({ id: circles.id })
 					.from(circles)
 					.where(eq(circles.id, targetId))
+					.limit(1);
+				exists = r.length > 0;
+				break;
+			}
+			case "artist": {
+				const r = await db
+					.select({ id: artists.id })
+					.from(artists)
+					.where(eq(artists.id, targetId))
 					.limit(1);
 				exists = r.length > 0;
 				break;

@@ -6,7 +6,7 @@ import { AddToCollectionDropdown } from "./add-to-collection-dropdown";
 import { LikeButton } from "./like-button";
 
 interface FloatingLikeActionsProps {
-	targetType: "track" | "release" | "circle";
+	targetType: "track" | "release" | "circle" | "artist";
 	targetId: string;
 }
 

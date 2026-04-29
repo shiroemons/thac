@@ -7,7 +7,7 @@ import { userLikesMutations } from "@/lib/user-collections-query-options";
 import { cn } from "@/lib/utils";
 
 interface LikeButtonProps {
-	targetType: "track" | "release" | "circle";
+	targetType: "track" | "release" | "circle" | "artist";
 	targetId: string;
 	isLiked: boolean;
 	size?: "sm" | "md" | "lg";

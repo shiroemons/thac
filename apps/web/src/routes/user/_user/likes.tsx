@@ -207,6 +207,8 @@ function LikesItemRow({ item, onRemove, removing }: LikesItemRowProps) {
 				return { label: "アルバム", to: "/releases/$id" };
 			case "circle":
 				return { label: "サークル", to: "/circles/$id" };
+			case "artist":
+				return { label: "アーティスト", to: "/artists/$id" };
 		}
 	})();
 

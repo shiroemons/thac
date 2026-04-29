@@ -20,6 +20,7 @@ import type {
 	CollectionItemAddInput,
 	CollectionItemReorderInput,
 	CollectionItemTargetType,
+	CollectionItemType,
 	LikeTarget,
 	UserCollectionDetail,
 	UserCollectionKind,
@@ -35,6 +36,7 @@ export function userCollectionsListQueryOptions(params?: {
 	kind?: UserCollectionKind;
 	target?: { type: CollectionItemTargetType; id: string };
 	excludeDefaultLiked?: boolean;
+	itemType?: CollectionItemType;
 }) {
 	const searchParams = new URLSearchParams();
 	if (params?.kind) searchParams.set("kind", params.kind);
@@ -44,6 +46,9 @@ export function userCollectionsListQueryOptions(params?: {
 	}
 	if (params?.excludeDefaultLiked) {
 		searchParams.set("excludeDefaultLiked", "true");
+	}
+	if (params?.itemType) {
+		searchParams.set("itemType", params.itemType);
 	}
 	const query = searchParams.toString();
 	const endpoint = query
@@ -67,7 +72,7 @@ export function userCollectionDetailQueryOptions(id: string) {
 
 export function userLikesCheckQueryOptions(
 	items: Array<{
-		targetType: "track" | "release" | "circle";
+		targetType: CollectionItemTargetType;
 		targetId: string;
 	}>,
 ) {
@@ -77,7 +82,7 @@ export function userLikesCheckQueryOptions(
 		queryFn: () =>
 			ssrFetch<{
 				results: Array<{
-					targetType: "track" | "release" | "circle";
+					targetType: CollectionItemTargetType;
 					targetId: string;
 					liked: boolean;
 				}>;

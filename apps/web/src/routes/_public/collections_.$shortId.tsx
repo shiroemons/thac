@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BookOpen, Disc3, Music, User } from "lucide-react";
+import { BookOpen, Disc3, Music, User, UserRound } from "lucide-react";
 import { PublicBreadcrumb } from "@/components/public";
 import { VisibilityBadge } from "@/components/user/visibility-badge";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
@@ -84,6 +84,9 @@ function CollectionHeader({ collection }: CollectionHeaderProps) {
 					)}
 					<div className="flex flex-wrap items-center gap-2 text-sm">
 						<VisibilityBadge visibility={collection.visibility} />
+						{collection.itemType && (
+							<ItemTypeBadge itemType={collection.itemType} />
+						)}
 						<span className="text-base-content/50">
 							{collection.items.length} 件
 						</span>
@@ -158,29 +161,61 @@ function PublicCollectionItemRow({ item }: PublicCollectionItemRowProps) {
 	);
 }
 
-function getItemMeta(targetType: "track" | "release" | "circle"): {
+type ItemTypeLiteral = "track" | "release" | "circle" | "artist";
+
+const ITEM_TYPE_META_PUBLIC: Record<
+	ItemTypeLiteral,
+	{
+		label: string;
+		to: "/tracks/$id" | "/releases/$id" | "/circles/$id" | "/artists/$id";
+		icon: React.ReactNode;
+		badgeClass: string;
+	}
+> = {
+	track: {
+		label: "楽曲",
+		to: "/tracks/$id",
+		icon: <Music className="size-3" />,
+		badgeClass: "badge-primary",
+	},
+	release: {
+		label: "アルバム",
+		to: "/releases/$id",
+		icon: <Disc3 className="size-3" />,
+		badgeClass: "badge-secondary",
+	},
+	circle: {
+		label: "サークル",
+		to: "/circles/$id",
+		icon: <BookOpen className="size-3" />,
+		badgeClass: "badge-accent",
+	},
+	artist: {
+		label: "アーティスト",
+		to: "/artists/$id",
+		icon: <UserRound className="size-3" />,
+		badgeClass: "badge-info",
+	},
+};
+
+interface ItemTypeBadgeProps {
+	itemType: ItemTypeLiteral;
+}
+
+function ItemTypeBadge({ itemType }: ItemTypeBadgeProps) {
+	const { label, icon, badgeClass } = ITEM_TYPE_META_PUBLIC[itemType];
+	return (
+		<span className={`badge badge-outline badge-xs gap-1 ${badgeClass}`}>
+			{icon}
+			{label}
+		</span>
+	);
+}
+
+function getItemMeta(targetType: ItemTypeLiteral): {
 	label: string;
-	to: "/tracks/$id" | "/releases/$id" | "/circles/$id";
+	to: "/tracks/$id" | "/releases/$id" | "/circles/$id" | "/artists/$id";
 	icon: React.ReactNode;
 } {
-	switch (targetType) {
-		case "track":
-			return {
-				label: "トラック",
-				to: "/tracks/$id",
-				icon: <Music className="size-3" />,
-			};
-		case "release":
-			return {
-				label: "アルバム",
-				to: "/releases/$id",
-				icon: <Disc3 className="size-3" />,
-			};
-		case "circle":
-			return {
-				label: "サークル",
-				to: "/circles/$id",
-				icon: <BookOpen className="size-3" />,
-			};
-	}
+	return ITEM_TYPE_META_PUBLIC[targetType];
 }

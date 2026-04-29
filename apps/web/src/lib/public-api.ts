@@ -600,6 +600,7 @@ export interface PublicCollectionDetail {
 	kind: "collection" | "playlist";
 	visibility: "public" | "unlisted";
 	ordered: boolean;
+	itemType: "track" | "release" | "circle" | "artist" | null;
 	owner: PublicCollectionOwner;
 	createdAt: string;
 	updatedAt: string;
@@ -610,7 +611,7 @@ export interface PublicCollectionDetail {
 export interface PublicCollectionItem {
 	id: string;
 	collectionId: string;
-	targetType: "track" | "release" | "circle";
+	targetType: "track" | "release" | "circle" | "artist";
 	targetId: string;
 	position: number | null;
 	note: string | null;

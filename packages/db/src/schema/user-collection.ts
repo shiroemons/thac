@@ -25,9 +25,18 @@ export const COLLECTION_ITEM_TARGET_TYPES = [
 	"circle",
 	"release",
 	"track",
+	"artist",
 ] as const;
 export type CollectionItemTargetType =
 	(typeof COLLECTION_ITEM_TARGET_TYPES)[number];
+
+export const COLLECTION_ITEM_TYPES = [
+	"track",
+	"release",
+	"circle",
+	"artist",
+] as const;
+export type CollectionItemType = (typeof COLLECTION_ITEM_TYPES)[number];
 
 export const userCollections = pgTable(
 	"user_collections",
@@ -42,6 +51,7 @@ export const userCollections = pgTable(
 		visibility: text("visibility").notNull().default("private"),
 		ordered: boolean("ordered").notNull().default(false),
 		isDefaultLiked: boolean("is_default_liked").notNull().default(false),
+		itemType: text("item_type"),
 		shortId: text("short_id"),
 		coverImageUrl: text("cover_image_url"),
 		createdAt: timestamp("created_at", { withTimezone: true })
@@ -67,6 +77,10 @@ export const userCollections = pgTable(
 		check(
 			"check_user_collections_visibility",
 			sql`"visibility" IN ('private','unlisted','public')`,
+		),
+		check(
+			"check_user_collections_item_type",
+			sql`"item_type" IS NULL OR "item_type" IN ('track','release','circle','artist')`,
 		),
 	],
 );
@@ -101,7 +115,7 @@ export const userCollectionItems = pgTable(
 			.where(sql`${table.position} IS NOT NULL`),
 		check(
 			"check_user_collection_items_target_type",
-			sql`"target_type" IN ('circle','release','track')`,
+			sql`"target_type" IN ('circle','release','track','artist')`,
 		),
 	],
 );

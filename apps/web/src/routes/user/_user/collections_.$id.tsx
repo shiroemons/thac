@@ -4,13 +4,22 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Settings, Trash2 } from "lucide-react";
+import {
+	ArrowLeft,
+	Disc3,
+	Music,
+	Settings,
+	Trash2,
+	UserRound,
+	Users,
+} from "lucide-react";
 import { useState } from "react";
 import { Banner } from "@/components/ui/banner";
 import { CollectionUrlCopy } from "@/components/user/collection-url-copy";
 import { SortableCollectionItems } from "@/components/user/sortable-collection-items";
 import { VisibilityBadge } from "@/components/user/visibility-badge";
 import type {
+	CollectionItemType,
 	UserCollectionDetail,
 	UserCollectionItem,
 	UserCollectionUpdateInput,
@@ -158,7 +167,12 @@ function CollectionDetailPage() {
 							<span className="badge badge-error badge-sm">♥ Liked</span>
 						)}
 						{!collection.isDefaultLiked && (
-							<VisibilityBadge visibility={collection.visibility} />
+							<>
+								{collection.itemType && (
+									<ItemTypeBadge itemType={collection.itemType} />
+								)}
+								<VisibilityBadge visibility={collection.visibility} />
+							</>
 						)}
 					</div>
 					{!collection.isDefaultLiked &&
@@ -260,6 +274,46 @@ interface CollectionItemRowProps {
 	removing: boolean;
 }
 
+const ITEM_TYPE_LABELS: Record<
+	CollectionItemType,
+	{ label: string; badgeClass: string; icon: React.ReactNode }
+> = {
+	track: {
+		label: "楽曲",
+		badgeClass: "badge-primary",
+		icon: <Music className="size-3" />,
+	},
+	release: {
+		label: "アルバム",
+		badgeClass: "badge-secondary",
+		icon: <Disc3 className="size-3" />,
+	},
+	circle: {
+		label: "サークル",
+		badgeClass: "badge-accent",
+		icon: <Users className="size-3" />,
+	},
+	artist: {
+		label: "アーティスト",
+		badgeClass: "badge-info",
+		icon: <UserRound className="size-3" />,
+	},
+};
+
+interface ItemTypeBadgeProps {
+	itemType: CollectionItemType;
+}
+
+function ItemTypeBadge({ itemType }: ItemTypeBadgeProps) {
+	const { label, badgeClass, icon } = ITEM_TYPE_LABELS[itemType];
+	return (
+		<span className={`badge badge-outline badge-xs gap-1 ${badgeClass}`}>
+			{icon}
+			{label}
+		</span>
+	);
+}
+
 function CollectionItemRow({
 	item,
 	onRemove,
@@ -273,6 +327,8 @@ function CollectionItemRow({
 				return { label: "アルバム", to: "/releases/$id" };
 			case "circle":
 				return { label: "サークル", to: "/circles/$id" };
+			case "artist":
+				return { label: "アーティスト", to: "/artists/$id" };
 		}
 	})();
 

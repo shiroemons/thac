@@ -18,6 +18,7 @@ publicCollectionsRouter.get("/:shortId", async (c) => {
 				kind: userCollections.kind,
 				visibility: userCollections.visibility,
 				ordered: userCollections.ordered,
+				itemType: userCollections.itemType,
 				shortId: userCollections.shortId,
 				createdAt: userCollections.createdAt,
 				updatedAt: userCollections.updatedAt,

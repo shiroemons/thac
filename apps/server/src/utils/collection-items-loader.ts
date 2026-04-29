@@ -1,4 +1,5 @@
 import {
+	artists,
 	asc,
 	circles,
 	db,
@@ -35,7 +36,14 @@ type CircleRow = {
 	nameEn: string | null;
 };
 
-type Target = TrackRow | ReleaseRow | CircleRow | null;
+type ArtistRow = {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+};
+
+type Target = TrackRow | ReleaseRow | CircleRow | ArtistRow | null;
 
 export type CollectionItemWithTarget = CollectionItem & { target: Target };
 
@@ -60,8 +68,11 @@ export async function loadCollectionItemsWithTargets(
 	const circleIds = items
 		.filter((i) => i.targetType === "circle")
 		.map((i) => i.targetId);
+	const artistIds = items
+		.filter((i) => i.targetType === "artist")
+		.map((i) => i.targetId);
 
-	const [trackRows, releaseRows, circleRows] = await Promise.all([
+	const [trackRows, releaseRows, circleRows, artistRows] = await Promise.all([
 		trackIds.length > 0
 			? db
 					.select({
@@ -97,11 +108,23 @@ export async function loadCollectionItemsWithTargets(
 					.from(circles)
 					.where(inArray(circles.id, circleIds))
 			: Promise.resolve([] as CircleRow[]),
+		artistIds.length > 0
+			? db
+					.select({
+						id: artists.id,
+						name: artists.name,
+						nameJa: artists.nameJa,
+						nameEn: artists.nameEn,
+					})
+					.from(artists)
+					.where(inArray(artists.id, artistIds))
+			: Promise.resolve([] as ArtistRow[]),
 	]);
 
 	const trackMap = new Map(trackRows.map((r) => [r.id, r]));
 	const releaseMap = new Map(releaseRows.map((r) => [r.id, r]));
 	const circleMap = new Map(circleRows.map((r) => [r.id, r]));
+	const artistMap = new Map(artistRows.map((r) => [r.id, r]));
 
 	return items.map((item) => {
 		let target: Target = null;
@@ -111,6 +134,8 @@ export async function loadCollectionItemsWithTargets(
 			target = releaseMap.get(item.targetId) ?? null;
 		} else if (item.targetType === "circle") {
 			target = circleMap.get(item.targetId) ?? null;
+		} else if (item.targetType === "artist") {
+			target = artistMap.get(item.targetId) ?? null;
 		}
 		return { ...item, target };
 	});

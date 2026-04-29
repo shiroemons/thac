@@ -3227,7 +3227,12 @@ export const albumRequestsApi = {
 
 export type UserCollectionKind = "collection" | "playlist";
 export type UserCollectionVisibility = "private" | "unlisted" | "public";
-export type CollectionItemTargetType = "track" | "release" | "circle";
+export type CollectionItemTargetType =
+	| "track"
+	| "release"
+	| "circle"
+	| "artist";
+export type CollectionItemType = "track" | "release" | "circle" | "artist";
 
 export interface UserCollectionListItem {
 	id: string;
@@ -3237,6 +3242,7 @@ export interface UserCollectionListItem {
 	visibility: UserCollectionVisibility;
 	ordered: boolean;
 	isDefaultLiked: boolean;
+	itemType: CollectionItemType | null;
 	shortId: string | null;
 	coverImageUrl: string | null;
 	createdAt: string;
@@ -3271,7 +3277,18 @@ export interface CircleTarget {
 	nameEn: string | null;
 }
 
-export type CollectionItemTarget = TrackTarget | ReleaseTarget | CircleTarget;
+export interface ArtistTarget {
+	id: string;
+	name: string;
+	nameJa: string | null;
+	nameEn: string | null;
+}
+
+export type CollectionItemTarget =
+	| TrackTarget
+	| ReleaseTarget
+	| CircleTarget
+	| ArtistTarget;
 
 export interface UserCollectionItem {
 	id: string;
@@ -3294,6 +3311,7 @@ export interface UserCollectionCreateInput {
 	kind?: UserCollectionKind;
 	visibility?: UserCollectionVisibility;
 	ordered?: boolean;
+	itemType?: CollectionItemType | null;
 }
 
 export interface UserCollectionUpdateInput {

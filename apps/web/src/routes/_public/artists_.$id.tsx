@@ -16,6 +16,7 @@ import {
 	WorkStatsSection,
 	WorkStatsSkeleton,
 } from "@/components/public";
+import { FloatingLikeActions } from "@/components/user/floating-like-actions";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import {
 	type ArtistDetailTab,
@@ -205,6 +206,7 @@ function ArtistDetailPage() {
 						{role.label}
 					</span>
 				))}
+				actions={<FloatingLikeActions targetType="artist" targetId={id} />}
 			/>
 
 			{/* 統計カード */}

@@ -1,7 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Disc3, Music, Plus, UserRound, Users } from "lucide-react";
 import { VisibilityBadge } from "@/components/user/visibility-badge";
+import type { CollectionItemType } from "@/lib/api-client";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPageHead } from "@/lib/head";
 import { userCollectionsListQueryOptions } from "@/lib/user-collections-query-options";
@@ -18,6 +19,32 @@ export const Route = createFileRoute("/user/_user/collections")({
 		),
 	component: CollectionsListPage,
 });
+
+const ITEM_TYPE_META: Record<
+	CollectionItemType,
+	{ label: string; icon: React.ReactNode; badgeClass: string }
+> = {
+	track: {
+		label: "楽曲",
+		icon: <Music className="size-3" />,
+		badgeClass: "badge-primary",
+	},
+	release: {
+		label: "アルバム",
+		icon: <Disc3 className="size-3" />,
+		badgeClass: "badge-secondary",
+	},
+	circle: {
+		label: "サークル",
+		icon: <Users className="size-3" />,
+		badgeClass: "badge-accent",
+	},
+	artist: {
+		label: "アーティスト",
+		icon: <UserRound className="size-3" />,
+		badgeClass: "badge-info",
+	},
+};
 
 function CollectionsListPage() {
 	const { data } = useSuspenseQuery(
@@ -62,6 +89,14 @@ function CollectionsListPage() {
 								<div className="flex items-center gap-2 text-base-content/50 text-xs">
 									<span>{c.itemCount} 件</span>
 									{c.ordered && <span>・並び替え可</span>}
+									{c.itemType && (
+										<span
+											className={`badge badge-outline badge-xs gap-1 ${ITEM_TYPE_META[c.itemType].badgeClass}`}
+										>
+											{ITEM_TYPE_META[c.itemType].icon}
+											{ITEM_TYPE_META[c.itemType].label}
+										</span>
+									)}
 									<VisibilityBadge visibility={c.visibility} />
 								</div>
 							</div>
