@@ -4,7 +4,15 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Settings, Trash2 } from "lucide-react";
+import {
+	ArrowLeft,
+	Disc3,
+	Music,
+	Settings,
+	Trash2,
+	UserRound,
+	Users,
+} from "lucide-react";
 import { useState } from "react";
 import { Banner } from "@/components/ui/banner";
 import { CollectionUrlCopy } from "@/components/user/collection-url-copy";
@@ -12,6 +20,7 @@ import { ItemTypeBadge } from "@/components/user/item-type-badge";
 import { SortableCollectionItems } from "@/components/user/sortable-collection-items";
 import { VisibilityBadge } from "@/components/user/visibility-badge";
 import type {
+	CollectionItemType,
 	UserCollectionDetail,
 	UserCollectionItem,
 	UserCollectionUpdateInput,
@@ -333,6 +342,21 @@ function CollectionItemRow({
 	);
 }
 
+const ITEM_TYPE_OPTIONS: {
+	value: CollectionItemType;
+	label: string;
+	icon: React.ReactNode;
+}[] = [
+	{ value: "track", label: "楽曲", icon: <Music className="size-4" /> },
+	{ value: "release", label: "アルバム", icon: <Disc3 className="size-4" /> },
+	{ value: "circle", label: "サークル", icon: <Users className="size-4" /> },
+	{
+		value: "artist",
+		label: "アーティスト",
+		icon: <UserRound className="size-4" />,
+	},
+];
+
 interface EditCollectionDialogProps {
 	collection: UserCollectionDetail;
 	onClose: () => void;
@@ -349,17 +373,25 @@ function EditCollectionDialog({
 	const [visibility, setVisibility] = useState<UserCollectionVisibility>(
 		collection.visibility,
 	);
+	const [itemType, setItemType] = useState<CollectionItemType | null>(null);
 	const [submitting, setSubmitting] = useState(false);
+
+	const canSetItemType =
+		collection.itemType === null && !collection.isDefaultLiked;
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setSubmitting(true);
 		try {
-			await onSubmit({
+			const input: UserCollectionUpdateInput = {
 				name: name.trim(),
 				description: description.trim() === "" ? null : description.trim(),
 				visibility,
-			});
+			};
+			if (canSetItemType && itemType !== null) {
+				input.itemType = itemType;
+			}
+			await onSubmit(input);
 		} finally {
 			setSubmitting(false);
 		}
@@ -421,6 +453,38 @@ function EditCollectionDialog({
 								<option value="unlisted">URLを知っている人のみ</option>
 								<option value="public">公開</option>
 							</select>
+						</div>
+					)}
+					{canSetItemType && (
+						<div>
+							<p className="label-text mb-2 font-medium">種別</p>
+							<div className="grid grid-cols-2 gap-2">
+								{ITEM_TYPE_OPTIONS.map((opt) => (
+									<label
+										key={opt.value}
+										className={`flex cursor-pointer items-center gap-2 rounded-field border-2 p-3 transition-colors ${
+											itemType === opt.value
+												? "border-primary bg-primary/10"
+												: "border-base-300 hover:border-primary/50"
+										} ${submitting ? "cursor-not-allowed opacity-50" : ""}`}
+									>
+										<input
+											type="radio"
+											className="sr-only"
+											name="edit-itemType"
+											value={opt.value}
+											checked={itemType === opt.value}
+											onChange={() => setItemType(opt.value)}
+											disabled={submitting}
+										/>
+										{opt.icon}
+										<span className="text-sm">{opt.label}</span>
+									</label>
+								))}
+							</div>
+							<p className="mt-1 text-base-content/50 text-xs">
+								※一度設定すると変更できません
+							</p>
 						</div>
 					)}
 					<div className="modal-action">

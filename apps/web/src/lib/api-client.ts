@@ -3319,6 +3319,7 @@ export interface UserCollectionUpdateInput {
 	description?: string | null;
 	visibility?: UserCollectionVisibility;
 	ordered?: boolean;
+	itemType?: CollectionItemType | null;
 }
 
 export interface CollectionItemAddInput {

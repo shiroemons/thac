@@ -60,7 +60,7 @@ function CollectionsListPage() {
 										{c.description}
 									</p>
 								)}
-								<div className="flex items-center gap-2 text-base-content/50 text-xs">
+								<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base-content/50 text-xs">
 									<span>{c.itemCount} 件</span>
 									{c.ordered && <span>・並び替え可</span>}
 									{c.itemType && (

@@ -39,6 +39,7 @@ export const updateUserCollectionSchema = z.object({
 	description: collectionDescriptionSchema.optional().nullable(),
 	visibility: z.enum(COLLECTION_VISIBILITIES).optional(),
 	ordered: z.boolean().optional(),
+	itemType: z.enum(COLLECTION_ITEM_TYPES).optional().nullable(),
 });
 
 export const addUserCollectionItemSchema = z.object({

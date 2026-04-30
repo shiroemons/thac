@@ -36,7 +36,9 @@ export function VisibilityBadge({
 	const sizeClass = size === "sm" ? "badge-sm" : "";
 
 	return (
-		<span className={`badge ${config.badgeClass} ${sizeClass} gap-1`}>
+		<span
+			className={`badge ${config.badgeClass} ${sizeClass} gap-1 whitespace-nowrap`}
+		>
 			<Icon className="size-3" />
 			{config.label}
 		</span>

@@ -259,6 +259,8 @@ collectionsUserRouter.patch("/:id", async (c) => {
 			.select({
 				visibility: userCollections.visibility,
 				shortId: userCollections.shortId,
+				isDefaultLiked: userCollections.isDefaultLiked,
+				itemType: userCollections.itemType,
 			})
 			.from(userCollections)
 			.where(
@@ -290,6 +292,28 @@ collectionsUserRouter.patch("/:id", async (c) => {
 			);
 		}
 
+		// itemType 更新ガード
+		if (parsed.data.itemType !== undefined) {
+			if (current.isDefaultLiked) {
+				return c.json(
+					{
+						error: "Liked コレクションには itemType を設定できません",
+						code: "VALIDATION_ERROR",
+					},
+					400,
+				);
+			}
+			if (current.itemType !== null) {
+				return c.json(
+					{
+						error: "itemType は変更できません",
+						code: "VALIDATION_ERROR",
+					},
+					400,
+				);
+			}
+		}
+
 		const newVisibility = parsed.data.visibility;
 
 		// visibility が unlisted/public に変わる時に shortId を採番（最大5回リトライ）
@@ -314,6 +338,8 @@ collectionsUserRouter.patch("/:id", async (c) => {
 			updateValues.visibility = parsed.data.visibility;
 		if (parsed.data.ordered !== undefined)
 			updateValues.ordered = parsed.data.ordered;
+		if (parsed.data.itemType !== undefined)
+			updateValues.itemType = parsed.data.itemType;
 		if (shortId !== current.shortId) updateValues.shortId = shortId;
 
 		const updated = await db
