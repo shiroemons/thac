@@ -47,7 +47,7 @@ function UserLayout() {
 				</div>
 			</header>
 			<main className="flex-1 bg-base-200/30">
-				<div className="mx-auto max-w-4xl p-4 lg:p-6">
+				<div className="mx-auto max-w-7xl p-4 lg:p-6">
 					{/* Header */}
 					<div className="mb-6">
 						<h1 className="font-bold text-2xl">マイページ</h1>
