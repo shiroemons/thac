@@ -4,22 +4,14 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-	ArrowLeft,
-	Disc3,
-	Music,
-	Settings,
-	Trash2,
-	UserRound,
-	Users,
-} from "lucide-react";
+import { ArrowLeft, Settings, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Banner } from "@/components/ui/banner";
 import { CollectionUrlCopy } from "@/components/user/collection-url-copy";
+import { ItemTypeBadge } from "@/components/user/item-type-badge";
 import { SortableCollectionItems } from "@/components/user/sortable-collection-items";
 import { VisibilityBadge } from "@/components/user/visibility-badge";
 import type {
-	CollectionItemType,
 	UserCollectionDetail,
 	UserCollectionItem,
 	UserCollectionUpdateInput,
@@ -55,6 +47,8 @@ function CollectionDetailPage() {
 	const { data: collection } = useSuspenseQuery(
 		userCollectionDetailQueryOptions(id),
 	);
+
+	const itemTypeLabel = getItemTypeLabel(collection.itemType);
 
 	const [feedback, setFeedback] = useState<Feedback | null>(null);
 	const [isEditing, setIsEditing] = useState(false);
@@ -235,7 +229,7 @@ function CollectionDetailPage() {
 			{collection.items.length === 0 ? (
 				<div className="rounded-field bg-base-100 p-12 text-center shadow-sm">
 					<p className="text-base-content/60">
-						アイテムがまだありません。楽曲・アルバム・サークルの詳細ページから追加してください。
+						{`アイテムがまだありません。${itemTypeLabel}の詳細ページから追加してください。`}
 					</p>
 				</div>
 			) : (
@@ -274,44 +268,18 @@ interface CollectionItemRowProps {
 	removing: boolean;
 }
 
-const ITEM_TYPE_LABELS: Record<
-	CollectionItemType,
-	{ label: string; badgeClass: string; icon: React.ReactNode }
-> = {
-	track: {
-		label: "楽曲",
-		badgeClass: "badge-primary",
-		icon: <Music className="size-3" />,
-	},
-	release: {
-		label: "アルバム",
-		badgeClass: "badge-secondary",
-		icon: <Disc3 className="size-3" />,
-	},
-	circle: {
-		label: "サークル",
-		badgeClass: "badge-accent",
-		icon: <Users className="size-3" />,
-	},
-	artist: {
-		label: "アーティスト",
-		badgeClass: "badge-info",
-		icon: <UserRound className="size-3" />,
-	},
+const ITEM_TYPE_LABEL_MAP: Record<string, string> = {
+	track: "楽曲",
+	release: "アルバム",
+	circle: "サークル",
+	artist: "アーティスト",
 };
 
-interface ItemTypeBadgeProps {
-	itemType: CollectionItemType;
-}
-
-function ItemTypeBadge({ itemType }: ItemTypeBadgeProps) {
-	const { label, badgeClass, icon } = ITEM_TYPE_LABELS[itemType];
-	return (
-		<span className={`badge badge-outline badge-xs gap-1 ${badgeClass}`}>
-			{icon}
-			{label}
-		</span>
-	);
+function getItemTypeLabel(itemType: string | null | undefined): string {
+	if (!itemType) {
+		return "楽曲・アルバム・サークル・アーティスト";
+	}
+	return ITEM_TYPE_LABEL_MAP[itemType] ?? itemType;
 }
 
 function CollectionItemRow({

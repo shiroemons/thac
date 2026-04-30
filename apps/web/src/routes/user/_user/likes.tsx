@@ -186,7 +186,7 @@ function LikesEmptyPage() {
 			/>
 			<h1 className="font-bold text-xl">お気に入り</h1>
 			<p className="mt-2 text-base-content/60">
-				楽曲・アルバム・サークルの詳細ページにある♥ボタンを押すと、ここに自動で集まります。
+				楽曲・アルバム・サークル・アーティストの詳細ページにある♥ボタンを押すと、ここに自動で集まります。
 			</p>
 		</div>
 	);

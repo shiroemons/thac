@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Disc3, Music, Plus, UserRound, Users } from "lucide-react";
+import { Plus } from "lucide-react";
+import { ItemTypeBadge } from "@/components/user/item-type-badge";
 import { VisibilityBadge } from "@/components/user/visibility-badge";
-import type { CollectionItemType } from "@/lib/api-client";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPageHead } from "@/lib/head";
 import { userCollectionsListQueryOptions } from "@/lib/user-collections-query-options";
@@ -19,32 +19,6 @@ export const Route = createFileRoute("/user/_user/collections")({
 		),
 	component: CollectionsListPage,
 });
-
-const ITEM_TYPE_META: Record<
-	CollectionItemType,
-	{ label: string; icon: React.ReactNode; badgeClass: string }
-> = {
-	track: {
-		label: "楽曲",
-		icon: <Music className="size-3" />,
-		badgeClass: "badge-primary",
-	},
-	release: {
-		label: "アルバム",
-		icon: <Disc3 className="size-3" />,
-		badgeClass: "badge-secondary",
-	},
-	circle: {
-		label: "サークル",
-		icon: <Users className="size-3" />,
-		badgeClass: "badge-accent",
-	},
-	artist: {
-		label: "アーティスト",
-		icon: <UserRound className="size-3" />,
-		badgeClass: "badge-info",
-	},
-};
 
 function CollectionsListPage() {
 	const { data } = useSuspenseQuery(
@@ -67,7 +41,7 @@ function CollectionsListPage() {
 			{data.items.length === 0 ? (
 				<div className="rounded-field bg-base-100 p-12 text-center shadow-sm">
 					<p className="text-base-content/60">
-						コレクションがまだありません。新規作成してお気に入りの楽曲・アルバム・サークルをまとめましょう。
+						コレクションがまだありません。新規作成してお気に入りの楽曲・アルバム・サークル・アーティストをまとめましょう。
 					</p>
 				</div>
 			) : (
@@ -90,12 +64,7 @@ function CollectionsListPage() {
 									<span>{c.itemCount} 件</span>
 									{c.ordered && <span>・並び替え可</span>}
 									{c.itemType && (
-										<span
-											className={`badge badge-outline badge-xs gap-1 ${ITEM_TYPE_META[c.itemType].badgeClass}`}
-										>
-											{ITEM_TYPE_META[c.itemType].icon}
-											{ITEM_TYPE_META[c.itemType].label}
-										</span>
+										<ItemTypeBadge itemType={c.itemType} size="sm" />
 									)}
 									<VisibilityBadge visibility={c.visibility} />
 								</div>

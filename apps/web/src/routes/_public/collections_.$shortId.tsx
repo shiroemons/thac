@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BookOpen, Disc3, Music, User, UserRound } from "lucide-react";
+import { Disc3, Music, User, UserRound, Users } from "lucide-react";
 import { PublicBreadcrumb } from "@/components/public";
+import { ItemTypeBadge } from "@/components/user/item-type-badge";
 import { VisibilityBadge } from "@/components/user/visibility-badge";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { APP_NAME } from "@/lib/head";
@@ -163,59 +164,40 @@ function PublicCollectionItemRow({ item }: PublicCollectionItemRowProps) {
 
 type ItemTypeLiteral = "track" | "release" | "circle" | "artist";
 
-const ITEM_TYPE_META_PUBLIC: Record<
+const ITEM_ROUTE_META: Record<
 	ItemTypeLiteral,
 	{
 		label: string;
 		to: "/tracks/$id" | "/releases/$id" | "/circles/$id" | "/artists/$id";
 		icon: React.ReactNode;
-		badgeClass: string;
 	}
 > = {
 	track: {
 		label: "楽曲",
 		to: "/tracks/$id",
 		icon: <Music className="size-3" />,
-		badgeClass: "badge-primary",
 	},
 	release: {
 		label: "アルバム",
 		to: "/releases/$id",
 		icon: <Disc3 className="size-3" />,
-		badgeClass: "badge-secondary",
 	},
 	circle: {
 		label: "サークル",
 		to: "/circles/$id",
-		icon: <BookOpen className="size-3" />,
-		badgeClass: "badge-accent",
+		icon: <Users className="size-3" />,
 	},
 	artist: {
 		label: "アーティスト",
 		to: "/artists/$id",
 		icon: <UserRound className="size-3" />,
-		badgeClass: "badge-info",
 	},
 };
-
-interface ItemTypeBadgeProps {
-	itemType: ItemTypeLiteral;
-}
-
-function ItemTypeBadge({ itemType }: ItemTypeBadgeProps) {
-	const { label, icon, badgeClass } = ITEM_TYPE_META_PUBLIC[itemType];
-	return (
-		<span className={`badge badge-outline badge-xs gap-1 ${badgeClass}`}>
-			{icon}
-			{label}
-		</span>
-	);
-}
 
 function getItemMeta(targetType: ItemTypeLiteral): {
 	label: string;
 	to: "/tracks/$id" | "/releases/$id" | "/circles/$id" | "/artists/$id";
 	icon: React.ReactNode;
 } {
-	return ITEM_TYPE_META_PUBLIC[targetType];
+	return ITEM_ROUTE_META[targetType];
 }
