@@ -233,7 +233,7 @@ Phase 2 初版では **動的画像生成は行わず、サイト共通の静的
 
 > **本仕様書ではスコープ外。将来「ジャケットモザイク入りのリッチカードを作りたい」となった時に着手する。設計判断を残すための記録**。
 
-- 技術選定候補: **satori (HTML → SVG) + @resvg/resvg-js (SVG → PNG)** を Hono ルートに実装。Bun ランタイム前提（`@vercel/og` 自体は Edge Runtime 依存のため不可、satori 単体採用）
+- 技術選定候補: **satori (HTML → SVG) + @resvg/resvg-js (SVG → PNG)** を Hono ルートに実装。Node.js ランタイム前提（`@vercel/og` 自体は Edge Runtime 依存のため不可、satori 単体採用）
 - 想定エンドポイント: `GET /api/public/playlists/:short_id/og.png`
 - 想定仕様:
   - 1200×630px、PNG
@@ -250,7 +250,7 @@ Phase 2 初版では **動的画像生成は行わず、サイト共通の静的
   - Noto Sans JP のサブセット化（フォントバンドル軽量化）
   - satori が `<img>` 経由でのアルバムジャケット読み込みに耐えるか（CDN 経由・タイムアウト・並列数）
   - 同人音楽のジャケット画像配信元の robots/利用規約と OG 画像転載の整合
-  - Hono + Bun + satori の実装事例調査（執筆時点で薄い領域）
+  - Hono + Node.js + satori の実装事例調査（執筆時点で薄い領域）
 - 移行手順（着手時）:
   1. `packages/og-image/` パッケージ新設、satori + resvg を依存に追加
   2. `apps/server/src/routes/public/playlist-og.ts` 新設し `og.png` ルート公開

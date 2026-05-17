@@ -320,7 +320,7 @@ pnpm --dir apps/web lint:jsx-nesting
 ### toLocaleString()のハイドレーション問題
 
 `Number.prototype.toLocaleString()` はサーバーとクライアントで異なる結果を返すことがある。
-これはロケール設定がサーバー（Node.js/Bun）とクライアント（ブラウザ）で異なるため。
+これはロケール設定がサーバー（Node.js）とクライアント（ブラウザ）で異なるため。
 
 ### formatNumber ユーティリティ
 

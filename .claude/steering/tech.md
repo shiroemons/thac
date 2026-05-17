@@ -7,8 +7,8 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 ## Core Technologies
 
 - **Language**: TypeScript（strict mode）
-- **Runtime**: Bun 1.2+
-- **Package Manager**: Bun（workspace catalog機能で依存関係バージョンを共有）
+- **Runtime**: Node.js 24.12.0
+- **Package Manager**: pnpm 11.1.2（workspace catalog機能で依存関係バージョンを共有）
 - **Monorepo Tool**: Turborepo
 
 ## Key Libraries
@@ -55,7 +55,7 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 - eslint-plugin-validate-jsx-nestingによるJSXネスト検証
 
 ### Testing
-- Bun Test Runner（サーバー側統合テスト）
+- Vitest（サーバー側統合テスト）
 - Testing Library（React コンポーネントテスト）
 
 #### サーバー統合テスト
@@ -105,7 +105,7 @@ devbox run -- pnpm dlx @hono/cli docs
 
 ### Required Tools
 - devbox（Nix ベースの開発環境管理）
-- Bun 1.3.8（devbox.json で管理）
+- Node.js 24.12.0 / pnpm 11.1.2（devbox.json で管理）
 
 ### データディレクトリ
 - `.devbox/virtenv/postgresql_18/data/` - PostgreSQLデータ（devboxプラグイン管理）
@@ -232,7 +232,7 @@ export const Route = createFileRoute("/_public/artists_/$id")({
 
 ## Key Technical Decisions
 
-- **Bunランタイム採用**: 高速な起動と実行、ネイティブTypeScriptサポート
+- **Node.jsランタイム採用**: GitHub Actions / Docker / devbox で同じ実行環境を維持
 - **Turborepoモノレポ**: 効率的なキャッシュとパラレルビルド
 - **TanStack Start**: Next.jsの代替としてのReact SSRフレームワーク
 - **Drizzle ORM**: TypeScriptファーストで軽量なSQLクエリビルダー

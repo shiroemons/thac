@@ -30,8 +30,20 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24.12.0
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+
+      - run: corepack enable
+      - run: corepack prepare pnpm@11.1.2 --activate
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v5
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - uses: actions/cache@v5
         with:
@@ -40,8 +52,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-turbo-
 
-      - run: corepack enable
-      - run: corepack prepare pnpm@11.1.2 --activate
       - run: pnpm install --frozen-lockfile
 
       - name: Run CI checks

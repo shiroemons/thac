@@ -25,7 +25,7 @@ Better-T-Stackを基盤としたモダンなフルスタックWebアプリケー
 
 ## Value Proposition
 
-- **開発者体験**: TypeScript + Bun + Biomeによる高速で快適な開発環境
+- **開発者体験**: TypeScript + Node.js + pnpm + Biomeによる安定した開発環境
 - **モジュラー設計**: 共有パッケージ（auth、db）による関心の分離
 - **スケーラビリティ**: モノレポ構成による将来の拡張性
 
