@@ -6,14 +6,6 @@
  * 楽観的ロック、ステータス遷移をテスト
  */
 
-import {
-	afterAll,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	test,
-} from "bun:test";
 import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
@@ -23,6 +15,14 @@ import {
 	releases,
 	user,
 } from "@thac/db";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+} from "vitest";
 import { albumRequestsAdminRouter } from "../../../src/routes/admin/album-requests/album-requests";
 import {
 	createTestAdminUser,

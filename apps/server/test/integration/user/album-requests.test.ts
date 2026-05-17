@@ -6,14 +6,6 @@
  * 認証、バリデーション、DB永続化をテスト
  */
 
-import {
-	afterAll,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	test,
-} from "bun:test";
 import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
@@ -23,6 +15,14 @@ import {
 	releases,
 	user,
 } from "@thac/db";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+} from "vitest";
 import { albumRequestsUserRouter } from "../../../src/routes/user/album-requests";
 import {
 	createTestAlbumRequest,

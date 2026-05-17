@@ -11,12 +11,14 @@
 	"type": "module",
 	"scripts": {
 		"check-types": "tsc --noEmit",
-		"test": "bun test",
-		"db:seed:admin": "bun run src/seed-admin.ts"
+		"test": "vitest run --config ../../vitest.config.ts packages/auth",
+		"db:seed:admin": "tsx src/seed-admin.ts"
 	},
 	"devDependencies": {
 		"typescript": "catalog:",
-		"@thac/config": "workspace:*"
+		"@thac/config": "workspace:*",
+		"tsx": "4.21.0",
+		"vitest": "^4.1.6"
 	},
 	"dependencies": {
 		"better-auth": "catalog:",

@@ -5,14 +5,6 @@
  * マスタデータ管理API（プラットフォーム、クレジットロール、別名タイプ、作品カテゴリ）のCRUD操作をテスト
  */
 
-import {
-	afterAll,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	test,
-} from "bun:test";
 import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
@@ -22,6 +14,14 @@ import {
 	officialWorkCategories,
 	platforms,
 } from "@thac/db";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+} from "vitest";
 import { aliasTypesRouter } from "../../../src/routes/admin/master/alias-types";
 import { creditRolesRouter } from "../../../src/routes/admin/master/credit-roles";
 import { officialWorkCategoriesRouter } from "../../../src/routes/admin/master/official-work-categories";

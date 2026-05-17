@@ -5,14 +5,6 @@
  * アーティスト別名管理APIのCRUD操作、認証、楽観的ロックをテスト
  */
 
-import {
-	afterAll,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	test,
-} from "bun:test";
 import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
@@ -20,6 +12,14 @@ import {
 	artistAliases,
 	artists,
 } from "@thac/db";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+} from "vitest";
 import { artistAliasesRouter } from "../../../src/routes/admin/artist-aliases";
 import {
 	createTestArtist,

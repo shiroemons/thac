@@ -1,11 +1,3 @@
-import {
-	afterAll,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	test,
-} from "bun:test";
 import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
@@ -19,6 +11,14 @@ import {
 	trackCredits,
 	tracks,
 } from "@thac/db";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+} from "vitest";
 import { trackCreditsRouter } from "../../../src/routes/admin/releases/track-credits";
 import {
 	createTestArtist,

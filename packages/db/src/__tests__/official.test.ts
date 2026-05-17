@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
 import { getTableName } from "drizzle-orm";
+import { describe, expect, test } from "vitest";
 import { officialSongLinks, officialWorkLinks } from "../schema/official";
 
 describe("official schema", () => {

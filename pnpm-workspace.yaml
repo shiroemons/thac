@@ -1,0 +1,19 @@
+packages:
+  - apps/*
+  - packages/*
+
+catalog:
+  dotenv: ^17.4.2
+  zod: ^4.3.6
+  typescript: ^5
+  "@types/node": ^24.12.0
+  better-auth: 1.6.8
+  postgres: ^3.4.9
+  "@electric-sql/pglite": ^0.4.4
+  nanoid: ^5.1.9
+
+minimumReleaseAge: 1440
+blockExoticSubdeps: true
+allowBuilds:
+  esbuild: true
+  lefthook: true

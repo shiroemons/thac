@@ -1,11 +1,3 @@
-import {
-	afterAll,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	test,
-} from "bun:test";
 import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
@@ -15,6 +7,14 @@ import {
 	releaseCircles,
 	releases,
 } from "@thac/db";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+} from "vitest";
 import { releaseCirclesRouter } from "../../../src/routes/admin/releases/release-circles";
 import { createTestCircle, createTestRelease } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";

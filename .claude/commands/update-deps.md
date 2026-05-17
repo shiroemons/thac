@@ -85,7 +85,7 @@ git checkout -b feat/update-deps-$(date +%Y%m%d)
 以下のコマンドで outdated パッケージを確認:
 
 ```bash
-bunx npm-check-updates --workspaces
+pnpm dlx npm-check-updates --workspaces
 ```
 
 このコマンドは以下をすべてチェックする:
@@ -166,7 +166,7 @@ Task(subagent_type="general-purpose", description="changelog zod", prompt="...")
 
 ### Phase 3. パッケージ更新（Task subagents - 直列実行）
 
-**Git 競合と bun.lockb 競合を回避するため、各パッケージグループは1つずつ順番に処理する。**
+**Git 競合と pnpm-lock.yaml 競合を回避するため、各パッケージグループは1つずつ順番に処理する。**
 
 #### Task Prompt Template（パッケージ更新用）
 
@@ -195,20 +195,20 @@ Task(subagent_type="general-purpose", description="changelog zod", prompt="...")
 
 ### 2. 依存関係のインストール
 ```bash
-bun install
+pnpm install --frozen-lockfile
 ```
 
 ### 3. 検証（全て成功すること）
 ```bash
-bun run check-types  # 型チェック
-bun run test         # テスト実行（存在する場合）
-bun run check        # Lint・フォーマット
-bun run build        # ビルド検証
+pnpm check-types  # 型チェック
+pnpm test         # テスト実行（存在する場合）
+pnpm check        # Lint・フォーマット
+pnpm build        # ビルド検証
 ```
 
 ### 4. コミット
 ```bash
-git add package.json bun.lockb [変更されたpackage.json]
+git add package.json pnpm-lock.yaml [変更されたpackage.json]
 git commit -m "fix(deps): update {package_name_or_group} to v{target_version}"
 ```
 
@@ -284,7 +284,7 @@ result2 = Task(subagent_type="general-purpose", description="update drizzle-*", 
 - **関連パッケージは一括更新** - @tanstack/* 等はまとめて更新
 - **メジャーバージョン変更時は必ず CHANGELOG を確認**
 - **検証は全て通す** - 型チェック、テスト、Lint、ビルドの全てが成功すること
-- **lockfile を必ずコミットに含める** - bun.lockb を忘れない
+- **lockfile を必ずコミットに含める** - pnpm-lock.yaml を忘れない
 - **検証失敗時はスキップするか修正するか選択させる**
 - **catalog を使用しているパッケージは catalog 側を更新する**
 - **CHANGELOG 取得は並列実行可能だが、パッケージ更新は直列実行必須**

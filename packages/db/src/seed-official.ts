@@ -1,10 +1,12 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { sql } from "drizzle-orm";
 import { officialSongs, officialWorks } from "./schema/official";
 import { createScriptClient } from "./utils/script-client";
 
 const { client, db } = createScriptClient();
+const currentDir = dirname(fileURLToPath(import.meta.url));
 
 // TSVファイルをパースする関数
 function parseTsv<T>(filePath: string): T[] {
@@ -47,7 +49,7 @@ interface SongTsv {
 async function seed() {
 	console.log("Seeding official data...");
 
-	const dataDir = join(import.meta.dir, "data");
+	const dataDir = join(currentDir, "data");
 
 	// Seed official works (batch)
 	console.log("Seeding official_works...");

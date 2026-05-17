@@ -4,15 +4,15 @@
  * 未保存変更がある場合のダイアログ閉じる操作を保護するカスタムフックをテストする。
  */
 
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // shouldBlockFn をキャプチャするための変数
 let capturedShouldBlockFn: (() => boolean) | null = null;
 
 // useBlocker をモックして shouldBlockFn をキャプチャ
-mock.module("@tanstack/react-router", () => ({
-	useBlocker: mock((options: { shouldBlockFn: () => boolean }) => {
+vi.mock("@tanstack/react-router", () => ({
+	useBlocker: vi.fn((options: { shouldBlockFn: () => boolean }) => {
 		capturedShouldBlockFn = options.shouldBlockFn;
 	}),
 }));
@@ -27,7 +27,7 @@ const { useUnsavedChangesGuard } = await import("./use-unsaved-changes-guard");
 describe("useUnsavedChangesGuard", () => {
 	describe("初期状態", () => {
 		test("初期状態では showConfirmDialog が false であること", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			const { result } = renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: false,
@@ -41,7 +41,7 @@ describe("useUnsavedChangesGuard", () => {
 
 	describe("guardedOnOpenChange（開く操作）", () => {
 		test("open=true の場合は onOpenChange(true) が呼ばれること", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			const { result } = renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -60,7 +60,7 @@ describe("useUnsavedChangesGuard", () => {
 
 	describe("guardedOnOpenChange（閉じる操作 - isDirty=false）", () => {
 		test("isDirty=false の場合は確認なしで onOpenChange(false) が呼ばれること", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			const { result } = renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: false,
@@ -80,7 +80,7 @@ describe("useUnsavedChangesGuard", () => {
 
 	describe("guardedOnOpenChange（閉じる操作 - isDirty=true）", () => {
 		test("isDirty=true の場合は確認ダイアログが表示されること（showConfirmDialog=true）", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			const { result } = renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -96,7 +96,7 @@ describe("useUnsavedChangesGuard", () => {
 		});
 
 		test("isDirty=true の場合は onOpenChange が呼ばれないこと", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			const { result } = renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -114,7 +114,7 @@ describe("useUnsavedChangesGuard", () => {
 
 	describe("guardedOnOpenChange（閉じる操作 - allowClose=true）", () => {
 		test("isDirty=true でも allowClose=true なら onOpenChange(false) が呼ばれること", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			const { result } = renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -135,7 +135,7 @@ describe("useUnsavedChangesGuard", () => {
 
 	describe("closeConfirmDialog", () => {
 		test("closeConfirmDialog を呼ぶと showConfirmDialog が false になること", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			const { result } = renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -158,7 +158,7 @@ describe("useUnsavedChangesGuard", () => {
 		});
 
 		test("closeConfirmDialog を呼んでも onOpenChange は呼ばれないこと", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			const { result } = renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -183,7 +183,7 @@ describe("useUnsavedChangesGuard", () => {
 
 	describe("confirmDiscard", () => {
 		test("confirmDiscard を呼ぶと showConfirmDialog が false になること", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			const { result } = renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -206,7 +206,7 @@ describe("useUnsavedChangesGuard", () => {
 		});
 
 		test("confirmDiscard を呼ぶと onOpenChange(false) が呼ばれること", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			const { result } = renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -233,7 +233,7 @@ describe("useUnsavedChangesGuard", () => {
 		test("isOpen=false の場合、isDirty=true でも保護が働かないこと（useBlockerのロジック確認用）", () => {
 			// isOpen=false の場合、guardedOnOpenChange は呼ばれる場面がないが
 			// useBlocker の shouldBlockFn が false を返すことを間接的に確認
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			const { result } = renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -265,7 +265,7 @@ describe("useUnsavedChangesGuard", () => {
 		});
 
 		test("isOpen=false の場合は false を返す（ブロックしない）", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -278,7 +278,7 @@ describe("useUnsavedChangesGuard", () => {
 		});
 
 		test("isDirty=false の場合は false を返す（ブロックしない）", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: false,
@@ -291,7 +291,7 @@ describe("useUnsavedChangesGuard", () => {
 		});
 
 		test("allowClose=true の場合は false を返す（ブロックしない）", () => {
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -305,9 +305,9 @@ describe("useUnsavedChangesGuard", () => {
 		});
 
 		test("isDirty=true, isOpen=true で window.confirm が true なら false を返す（ブロックしない）", () => {
-			window.confirm = mock(() => true);
+			window.confirm = vi.fn(() => true);
 
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,
@@ -323,9 +323,9 @@ describe("useUnsavedChangesGuard", () => {
 		});
 
 		test("isDirty=true, isOpen=true で window.confirm が false なら true を返す（ブロックする）", () => {
-			window.confirm = mock(() => false);
+			window.confirm = vi.fn(() => false);
 
-			const onOpenChange = mock(() => {});
+			const onOpenChange = vi.fn(() => {});
 			renderHook(() =>
 				useUnsavedChangesGuard(onOpenChange, {
 					isDirty: true,

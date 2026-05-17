@@ -2,28 +2,14 @@
 	"name": "thac",
 	"private": true,
 	"type": "module",
-	"workspaces": {
-		"packages": [
-			"apps/*",
-			"packages/*"
-		],
-		"catalog": {
-			"dotenv": "^17.4.2",
-			"zod": "^4.3.6",
-			"typescript": "^5",
-			"@types/bun": "^1.3.13",
-			"better-auth": "1.6.8",
-			"postgres": "^3.4.9",
-			"@electric-sql/pglite": "^0.4.4",
-			"nanoid": "^5.1.9"
-		}
-	},
 	"scripts": {
 		"postinstall": "command -v git >/dev/null 2>&1 && lefthook install || true",
-		"check": "bunx biome check --write .",
+		"check": "biome check --write .",
 		"dev": "turbo dev",
 		"build": "turbo build",
-		"test": "turbo test",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
 		"check-types": "turbo check-types",
 		"dev:native": "turbo -F native dev",
 		"dev:web": "turbo -F web dev",
@@ -32,8 +18,8 @@
 		"db:studio": "turbo -F @thac/db db:studio",
 		"db:generate": "turbo -F @thac/db db:generate",
 		"db:migrate": "turbo -F @thac/db db:migrate",
-		"db:seed": "bun run --cwd packages/auth db:seed:admin && bun run --cwd packages/db db:seed",
-		"db:truncate": "bun run --cwd packages/db db:truncate"
+		"db:seed": "pnpm --dir packages/auth db:seed:admin && pnpm --dir packages/db db:seed",
+		"db:truncate": "pnpm --dir packages/db db:truncate"
 	},
 	"dependencies": {
 		"@tanstack/react-router": "^1.168.23",
@@ -51,13 +37,15 @@
 		"@dnd-kit/core": "^6.3.1",
 		"@dnd-kit/sortable": "^10.0.0",
 		"@dnd-kit/utilities": "^3.2.2",
-		"@types/bun": "catalog:",
+		"@types/node": "catalog:",
+		"@vitest/coverage-v8": "^4.1.6",
 		"lefthook": "^2.1.6",
 		"turbo": "^2.9.6",
 		"typescript": "catalog:",
+		"vitest": "^4.1.6",
 		"web": "workspace:*"
 	},
-	"packageManager": "bun@1.3.13",
+	"packageManager": "pnpm@11.1.2",
 	"overrides": {
 		"glob": ">=13.0.0",
 		"diff": ">=8.0.3",

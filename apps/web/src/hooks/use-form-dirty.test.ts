@@ -4,8 +4,8 @@
  * フォームの初期値と現在値を比較してisDirtyを計算するフックの動作を検証する。
  */
 
-import { describe, expect, test } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
+import { describe, expect, test } from "vitest";
 import { useFormDirty } from "./use-form-dirty";
 
 // =============================================================================

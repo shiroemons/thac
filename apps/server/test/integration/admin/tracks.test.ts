@@ -5,14 +5,6 @@
  * スタンドアロントラック管理API（/admin/tracks）のCRUD操作、認証をテスト
  */
 
-import {
-	afterAll,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	test,
-} from "bun:test";
 import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
@@ -21,6 +13,14 @@ import {
 	releases,
 	tracks,
 } from "@thac/db";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+} from "vitest";
 import { tracksAdminRouter } from "../../../src/routes/admin/tracks";
 import {
 	createTestDisc,

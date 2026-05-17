@@ -31,7 +31,7 @@ processes:
       period_seconds: 5
 
   server:
-    command: bun run --cwd apps/server dev
+    command: corepack pnpm --dir apps/server dev
     depends_on:
       init_db:
         condition: process_completed_successfully
@@ -47,7 +47,7 @@ processes:
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-devbox_secret_key_change_in_production}
 
   web:
-    command: bun run --cwd apps/web dev
+    command: corepack pnpm --dir apps/web dev
     depends_on:
       server:
         condition: process_started

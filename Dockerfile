@@ -1,32 +1,36 @@
 # Stage 1: Base
-FROM oven/bun:1.3.8 AS base
+FROM node:24.12.0-bookworm-slim AS base
 WORKDIR /app
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@11.1.2 --activate
 
 # Stage 2: Install dependencies
 FROM base AS deps
-COPY package.json bun.lock bunfig.toml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY turbo.json ./
 COPY apps/web/package.json ./apps/web/
 COPY apps/server/package.json ./apps/server/
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/db/package.json ./packages/db/
 COPY packages/config/package.json ./packages/config/
-RUN bun install --frozen-lockfile
+COPY packages/search/package.json ./packages/search/
+COPY packages/utils/package.json ./packages/utils/
+RUN pnpm install --frozen-lockfile
 
 # Stage 3: Build
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-COPY --from=deps /app/apps/server/node_modules ./apps/server/node_modules
-COPY --from=deps /app/packages/auth/node_modules ./packages/auth/node_modules
-COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
 COPY . .
-RUN bun run build
+RUN pnpm build
 
 # Stage 4: Runner (non-root)
-FROM oven/bun:1.3.8-slim AS runner
+FROM node:24.12.0-bookworm-slim AS runner
 WORKDIR /app
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@11.1.2 --activate
 
 # Metadata
 LABEL org.opencontainers.image.title="thac"
@@ -42,8 +46,8 @@ COPY --from=builder /app/apps/web/dist ./apps/web/dist
 # Copy database package for db:push and db:seed operations
 COPY --from=builder /app/packages/db ./packages/db
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=builder /app/turbo.json ./turbo.json
 
 # Copy entrypoint script
@@ -51,12 +55,12 @@ COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh
 
 # Run as non-root user for security
-USER bun
+USER node
 
 EXPOSE 3001 3000
 
 # Health check for both services
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD bun -e "await fetch('http://localhost:3001').catch(() => process.exit(1))" || exit 1
+    CMD node -e "fetch('http://localhost:3001').catch(() => process.exit(1))" || exit 1
 
 ENTRYPOINT ["./entrypoint.sh"]

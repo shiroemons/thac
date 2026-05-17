@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { detectInitial, INITIAL_SCRIPTS } from "../initial-detector";
 
 describe("initial-detector", () => {

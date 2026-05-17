@@ -7,7 +7,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "cd \"$CLAUDE_PROJECT_DIR\" && bun run check || true"
+						"command": "cd \"$CLAUDE_PROJECT_DIR\" && pnpm check || true"
 					}
 				]
 			}

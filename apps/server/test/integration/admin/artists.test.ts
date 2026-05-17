@@ -1,3 +1,5 @@
+import type { PGlite } from "@electric-sql/pglite";
+import { __resetDatabase, __setTestDatabase, artists, db } from "@thac/db";
 import {
 	afterAll,
 	beforeAll,
@@ -5,9 +7,7 @@ import {
 	describe,
 	expect,
 	test,
-} from "bun:test";
-import type { PGlite } from "@electric-sql/pglite";
-import { __resetDatabase, __setTestDatabase, artists, db } from "@thac/db";
+} from "vitest";
 import { artistsRouter } from "../../../src/routes/admin/artists";
 import { createTestArtist } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";

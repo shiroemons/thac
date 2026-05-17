@@ -30,7 +30,7 @@ description: "Git worktree・ワークツリー管理（git-wt使用）。ワー
 ├──────────────────────────────────────────────────────────┤
 │ Step 2: worktree作成                                     │
 │   → Bash エージェント: git wt <branch-name>              │
-│   → hookで自動的にbun installが実行される                 │
+│   → hookで自動的にpnpm install --frozen-lockfileが実行される                 │
 ├──────────────────────────────────────────────────────────┤
 │ Step 3: ユーザーへの報告                                  │
 │   → 作成されたworktreeのパスを表示                        │
@@ -51,7 +51,7 @@ Task: worktree作成
 - worktreeパス: `.worktree/<branch-name>/`
 - 移動コマンド: `cd .worktree/<branch-name>/`
 - devboxサービスはメインworktreeで起動済みであることを案内
-- 個別アプリ起動: `devbox run -- bun run dev:web` 等
+- 個別アプリ起動: `devbox run -- pnpm dev:web` 等
 
 ### `/worktree list` - worktree一覧表示
 

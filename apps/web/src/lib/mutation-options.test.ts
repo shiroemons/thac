@@ -4,7 +4,7 @@
  * 各 mutation factory が正しい構造を返し、
  * onSuccess/onSettled で適切な queryKey を invalidate することを検証する。
  */
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, test, vi } from "vitest";
 import { ConflictError } from "./api-client";
 import {
 	aliasTypeMutations,
@@ -36,7 +36,7 @@ import {
 // モック QueryClient を作成するヘルパー
 function createMockQueryClient() {
 	return {
-		invalidateQueries: mock(() => Promise.resolve()),
+		invalidateQueries: vi.fn(() => Promise.resolve()),
 	};
 }
 
@@ -45,13 +45,13 @@ function createExtendedMockQueryClient() {
 	const queryCache = new Map<string, unknown>();
 
 	return {
-		invalidateQueries: mock(() => Promise.resolve()),
-		cancelQueries: mock(() => Promise.resolve()),
-		getQueriesData: mock(
+		invalidateQueries: vi.fn(() => Promise.resolve()),
+		cancelQueries: vi.fn(() => Promise.resolve()),
+		getQueriesData: vi.fn(
 			<T>(_filters: { queryKey: unknown[] }): [readonly unknown[], T][] => [],
 		),
-		getQueryData: mock(<T>(_queryKey: unknown[]): T | undefined => undefined),
-		setQueryData: mock(
+		getQueryData: vi.fn(<T>(_queryKey: unknown[]): T | undefined => undefined),
+		setQueryData: vi.fn(
 			<T>(_queryKey: unknown[], _data: T | ((old: T | undefined) => T)): T => {
 				return undefined as T;
 			},

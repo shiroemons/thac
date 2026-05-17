@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## 重要: コマンド実行ルール
 
@@ -15,7 +15,7 @@ devbox run -- pnpm dlx @hono/cli docs
 
 # 間違った例（直接実行は禁止）
 pnpm check-types
-pnpm install --frozen-lockfile
+pnpm install
 npx @hono/cli docs
 ```
 

@@ -5,6 +5,8 @@
  * サークル管理APIのCRUD操作、認証、楽観的ロックをテスト
  */
 
+import type { PGlite } from "@electric-sql/pglite";
+import { __resetDatabase, __setTestDatabase, circles } from "@thac/db";
 import {
 	afterAll,
 	beforeAll,
@@ -12,9 +14,7 @@ import {
 	describe,
 	expect,
 	test,
-} from "bun:test";
-import type { PGlite } from "@electric-sql/pglite";
-import { __resetDatabase, __setTestDatabase, circles } from "@thac/db";
+} from "vitest";
 import { circlesRouter } from "../../../src/routes/admin/circles";
 import { createTestCircle } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";

@@ -1,4 +1,6 @@
 import "dotenv/config";
+import { pathToFileURL } from "node:url";
+import { serve } from "@hono/node-server";
 import { auth } from "@thac/auth";
 import { cleanup } from "@thac/db";
 import { Hono } from "hono";
@@ -70,6 +72,8 @@ const cachePruningInterval = setInterval(
 	5 * 60 * 1000,
 ); // 5分
 
+let server: ReturnType<typeof serve> | undefined;
+
 const shutdown = async () => {
 	console.log("Shutting down gracefully...");
 	clearInterval(cachePruningInterval);
@@ -78,6 +82,17 @@ const shutdown = async () => {
 		process.exit(1);
 	}, 10000);
 	try {
+		if (server) {
+			await new Promise<void>((resolve, reject) => {
+				server?.close((error) => {
+					if (error) {
+						reject(error);
+						return;
+					}
+					resolve();
+				});
+			});
+		}
 		await cleanup();
 		console.log("Server stopped");
 	} finally {
@@ -98,7 +113,22 @@ process.on("unhandledRejection", (reason) => {
 	shutdown();
 });
 
-export default {
-	port: 3001,
-	fetch: app.fetch,
-};
+const isDirectRun =
+	process.argv[1] !== undefined &&
+	import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isDirectRun || process.env.SERVER_ENTRYPOINT === "1") {
+	const port = Number(process.env.PORT) || 3001;
+	server = serve(
+		{
+			fetch: app.fetch,
+			port,
+		},
+		(info) => {
+			console.log(`Server listening on http://localhost:${info.port}`);
+		},
+	);
+}
+
+export { app };
+export default app;

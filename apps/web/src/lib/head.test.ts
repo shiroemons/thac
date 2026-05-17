@@ -3,7 +3,7 @@
  *
  * ページヘッド生成関数が正しいタイトル、説明文、OGタグ、Twitterタグを返すことを検証する。
  */
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import {
 	APP_NAME,
 	createArtistAliasDetailHead,

@@ -93,7 +93,7 @@ GOOGLE_CLIENT_SECRET=取得したシークレット
 ### 4. サーバーを起動
 
 ```bash
-bun run dev
+pnpm dev
 ```
 
 ### 5. 動作確認

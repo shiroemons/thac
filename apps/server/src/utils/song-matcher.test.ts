@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { createSongMatcher, OTHER_SONG_ID } from "./song-matcher";
 
 // モックデータベース

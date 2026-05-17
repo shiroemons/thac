@@ -21,18 +21,20 @@
 		"db:generate": "drizzle-kit generate",
 		"db:studio": "drizzle-kit studio",
 		"db:migrate": "drizzle-kit migrate",
-		"db:seed": "bun run src/seed-master.ts && bun run src/seed-official.ts && bun run src/seed-official-links.ts",
-		"db:seed:master": "bun run src/seed-master.ts",
-		"db:seed:official": "bun run src/seed-official.ts",
-		"db:seed:official-links": "bun run src/seed-official-links.ts",
-		"db:truncate": "bun run src/truncate-non-master.ts",
-		"test": "bun test"
+		"db:seed": "tsx src/seed-master.ts && tsx src/seed-official.ts && tsx src/seed-official-links.ts",
+		"db:seed:master": "tsx src/seed-master.ts",
+		"db:seed:official": "tsx src/seed-official.ts",
+		"db:seed:official-links": "tsx src/seed-official-links.ts",
+		"db:truncate": "tsx src/truncate-non-master.ts",
+		"test": "vitest run --config ../../vitest.config.ts packages/db"
 	},
 	"devDependencies": {
 		"@electric-sql/pglite": "catalog:",
 		"drizzle-kit": "^0.31.10",
 		"typescript": "catalog:",
-		"@thac/config": "workspace:*"
+		"@thac/config": "workspace:*",
+		"tsx": "4.21.0",
+		"vitest": "^4.1.6"
 	},
 	"dependencies": {
 		"dotenv": "catalog:",

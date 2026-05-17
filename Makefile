@@ -62,7 +62,7 @@ wt-dev: ## worktree内でweb+serverを起動（メインのDB/Meilisearchに接�
 		echo "❌ ポート3001が使用中です。make stop-app で停止してください"; exit 1; \
 	fi
 	@echo "🚀 web + server を起動します..."
-	@devbox run -- sh -c 'trap "kill 0" EXIT; bun run --cwd apps/server dev & bun run --cwd apps/web dev & wait'
+	@devbox run -- sh -c 'trap "kill 0" EXIT; corepack pnpm --dir apps/server dev & corepack pnpm --dir apps/web dev & wait'
 
 # =============================================================================
 # 開発環境（Docker）
@@ -127,8 +127,8 @@ docker-reset: ## 完全リセット（ボリューム削除→再ビルド→起
 docker-reset-deps: ## コンテナ内のnode_modulesを再インストール
 	docker compose exec server rm -rf node_modules
 	docker compose exec web rm -rf node_modules
-	docker compose exec server bun install
-	docker compose exec web bun install
+	docker compose exec server pnpm install
+	docker compose exec web pnpm install
 
 docker-prune: ## Docker不要リソースを削除
 	docker system prune -f
@@ -145,65 +145,65 @@ docker-shell-web: ## Webコンテナにシェル接続
 # =============================================================================
 
 db-push: ## スキーマをDBにプッシュ
-	bun run db:push
+	pnpm db:push
 
 db-generate: ## マイグレーションを生成
-	bun run db:generate
+	pnpm db:generate
 
 db-migrate: ## マイグレーションを実行
-	bun run db:migrate
+	pnpm db:migrate
 
 db-seed: ## シードデータを投入
-	bun run db:seed
+	pnpm db:seed
 
 db-setup: ## DBセットアップ（push + seed）
-	bun run db:push
-	bun run db:seed
+	pnpm db:push
+	pnpm db:seed
 
 db-studio: ## Drizzle Studioを起動
-	bun run db:studio
+	pnpm db:studio
 
 db-truncate: ## マスタデータ・公式作品以外をトランケート
-	bun run db:truncate
+	pnpm db:truncate
 
 # =============================================================================
 # データベース（Docker）
 # =============================================================================
 
 docker-db-push: ## スキーマをDBにプッシュ（Docker）
-	docker compose exec server bun run --cwd /app db:push
+	docker compose exec server pnpm --dir /app db:push
 
 docker-db-generate: ## マイグレーションを生成（Docker）
-	docker compose exec server bun run --cwd /app db:generate
+	docker compose exec server pnpm --dir /app db:generate
 
 docker-db-migrate: ## マイグレーションを実行（Docker）
-	docker compose exec server bun run --cwd /app db:migrate
+	docker compose exec server pnpm --dir /app db:migrate
 
 docker-db-seed: ## シードデータを投入（Docker）
-	docker compose exec server bun run --cwd /app db:seed
+	docker compose exec server pnpm --dir /app db:seed
 
 docker-db-setup: ## DBセットアップ（push + seed）（Docker）
-	docker compose exec server bun run --cwd /app db:push
-	docker compose exec server bun run --cwd /app db:seed
+	docker compose exec server pnpm --dir /app db:push
+	docker compose exec server pnpm --dir /app db:seed
 
 docker-db-truncate: ## マスタデータ・公式作品以外をトランケート（Docker）
-	docker compose exec server bun run --cwd /app db:truncate
+	docker compose exec server pnpm --dir /app db:truncate
 
 # =============================================================================
 # ユーティリティ
 # =============================================================================
 
 install: ## 依存関係をインストール
-	bun install
+	pnpm install --frozen-lockfile
 
 check: ## Lint・フォーマットチェック
-	bun run check
+	pnpm check
 
 check-types: ## 型チェック
-	bun run check-types
+	pnpm check-types
 
 test: ## テストを実行
-	bun test
+	pnpm test
 
 lint-markuplint: ## Markuplintを実行
-	bun run --cwd apps/web lint:markuplint
+	pnpm --dir apps/web lint:markuplint

@@ -308,7 +308,7 @@ function Description({ children }: { children: React.ReactNode }) {
 
 ```bash
 # 手動実行
-bun run --cwd apps/web lint:jsx-nesting
+pnpm --dir apps/web lint:jsx-nesting
 ```
 
 ### 既知の修正済みコンポーネント

@@ -6,10 +6,10 @@ pre-commit:
   commands:
     biome:
       glob: "*.{js,ts,jsx,tsx,json,css}"
-      run: bun run check
+      run: pnpm check
     check-types:
       glob: "*.{js,ts,jsx,tsx}"
-      run: bun run check-types
+      run: pnpm check-types
     lint-jsx-nesting:
       glob: "apps/web/**/*.{tsx,jsx}"
-      run: bun run --cwd apps/web lint:jsx-nesting
+      run: pnpm --dir apps/web lint:jsx-nesting

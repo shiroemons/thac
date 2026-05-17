@@ -1,7 +1,7 @@
 # devbox 開発環境
 
 **重要**: このプロジェクトでは devbox を標準の開発環境として使用する。
-すべてのコマンド（bun, npm, npx など）は devbox 経由で実行すること。
+すべてのコマンド（pnpm, npm, npx など）は devbox 経由で実行すること。
 
 ## サービス構成
 
@@ -55,9 +55,9 @@ devbox.json に定義されていないコマンドを実行する場合:
 
 ```bash
 # devbox run -- <コマンド>
-devbox run -- bun install
-devbox run -- bun add <package>
-devbox run -- bunx <command>
+devbox run -- pnpm install --frozen-lockfile
+devbox run -- pnpm add <package>
+devbox run -- pnpm dlx <command>
 ```
 
 ## データディレクトリ

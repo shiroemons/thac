@@ -1,11 +1,3 @@
-import {
-	afterAll,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	test,
-} from "bun:test";
 import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
@@ -17,6 +9,14 @@ import {
 	events,
 	platforms,
 } from "@thac/db";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+} from "vitest";
 import { statsRouter } from "../../../src/routes/admin/stats";
 import { createTestArtist, createTestCircle } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";

@@ -80,7 +80,7 @@ const { data } = useQuery({
 `eslint-plugin-react-compiler`で自動検出:
 
 ```bash
-bun run --cwd apps/web lint:jsx-nesting
+pnpm --dir apps/web lint:jsx-nesting
 ```
 
 ### 参考

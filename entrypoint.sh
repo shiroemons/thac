@@ -7,10 +7,13 @@ if [ -n "$DATABASE_URL" ]; then
     RETRIES=30
     RETRY_INTERVAL=2
     for i in $(seq 1 $RETRIES); do
-        if bun -e "
-            const postgres = require('postgres');
-            const sql = postgres(process.env.DATABASE_URL);
-            sql\`SELECT 1\`.then(() => { sql.end(); process.exit(0); }).catch(() => process.exit(1));
+        if node -e "
+            import('postgres').then(async ({ default: postgres }) => {
+                const sql = postgres(process.env.DATABASE_URL);
+                await sql.unsafe('SELECT 1');
+                await sql.end();
+                process.exit(0);
+            }).catch(() => process.exit(1));
         " 2>/dev/null; then
             echo "Database is ready!"
             break
@@ -27,14 +30,14 @@ fi
 # Optional: Run database schema push (opt-in via INIT_DB=true)
 if [ "$INIT_DB" = "true" ]; then
     echo "Running database schema push..."
-    bun run --cwd /app/packages/db db:push
+    pnpm --dir /app/packages/db db:push
     echo "Database schema push completed!"
 fi
 
 # Optional: Run database seed (opt-in via SEED_DB=true)
 if [ "$SEED_DB" = "true" ]; then
     echo "Running database seed..."
-    bun run --cwd /app/packages/db db:seed
+    pnpm --dir /app/packages/db db:seed
     echo "Database seed completed!"
 fi
 
@@ -42,12 +45,12 @@ fi
 # またはサービスごとに別コンテナで起動することを推奨
 # Start Hono API server in background
 echo "Starting API server on port 3001..."
-bun run /app/apps/server/dist/index.js &
+node /app/apps/server/dist/index.js &
 SERVER_PID=$!
 
 # Start TanStack Start SSR server in background
 echo "Starting Web server on port 3000..."
-bun run /app/apps/web/dist/server/server.js &
+node /app/apps/web/dist/server/server.js &
 WEB_PID=$!
 
 # Function to handle shutdown

@@ -1,11 +1,3 @@
-import {
-	afterAll,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	test,
-} from "bun:test";
 import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
@@ -15,6 +7,14 @@ import {
 	trackIsrcs,
 	tracks,
 } from "@thac/db";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+} from "vitest";
 import { trackIsrcsRouter } from "../../../src/routes/admin/tracks/isrcs";
 import { createTestRelease, createTestTrack } from "../../helpers/fixtures";
 import { createTestAdminApp } from "../../helpers/test-app";

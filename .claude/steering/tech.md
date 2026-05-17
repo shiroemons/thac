@@ -64,9 +64,9 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 
 ```bash
 # テスト実行
-bun test                # 全テスト
-bun test --watch        # ウォッチモード
-bun test --coverage     # カバレッジ付き
+pnpm test                # 全テスト
+pnpm test:watch        # ウォッチモード
+pnpm test:coverage     # カバレッジ付き
 ```
 
 **テストヘルパー**:
@@ -99,8 +99,8 @@ devbox run check
 devbox run check-types
 
 # 任意のコマンド実行
-devbox run -- bun install
-devbox run -- bunx @hono/cli docs
+devbox run -- pnpm install --frozen-lockfile
+devbox run -- pnpm dlx @hono/cli docs
 ```
 
 ### Required Tools

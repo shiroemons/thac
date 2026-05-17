@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { createId } from "../utils/id";
 
 // TypeID形式: プレフィックス + "_" + 26文字のbase32エンコード（小文字英数字）

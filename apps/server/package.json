@@ -5,15 +5,15 @@
 	"scripts": {
 		"build": "tsdown",
 		"check-types": "tsc -b",
-		"compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
-		"dev": "bun run --hot src/index.ts",
-		"start": "bun run dist/index.js",
-		"test": "bun test",
-		"test:watch": "bun test --watch",
-		"test:coverage": "bun test --coverage",
-		"test:ci": "bun test --bail --coverage --coverage-reporter=lcov"
+		"dev": "SERVER_ENTRYPOINT=1 tsx watch src/index.ts",
+		"start": "SERVER_ENTRYPOINT=1 node dist/index.js",
+		"test": "vitest run --config ../../vitest.config.ts apps/server",
+		"test:watch": "vitest --config ../../vitest.config.ts apps/server",
+		"test:coverage": "vitest run --config ../../vitest.config.ts --coverage apps/server",
+		"test:ci": "vitest run --config ../../vitest.config.ts --coverage --coverage.reporter=lcov apps/server"
 	},
 	"dependencies": {
+		"@hono/node-server": "^2.0.2",
 		"@thac/auth": "workspace:*",
 		"@thac/db": "workspace:*",
 		"@thac/search": "workspace:*",
@@ -27,11 +27,13 @@
 	"devDependencies": {
 		"@electric-sql/pglite": "catalog:",
 		"@thac/config": "workspace:*",
-		"@types/bun": "catalog:",
+		"@types/node": "catalog:",
+		"@vitest/coverage-v8": "^4.1.6",
 		"drizzle-kit": "^0.31.10",
 		"drizzle-orm": "^0.45.2",
 		"nanoid": "catalog:",
 		"tsdown": "^0.21.10",
+		"tsx": "4.21.0",
 		"typescript": "catalog:"
 	}
 }

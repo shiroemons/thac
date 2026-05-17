@@ -74,7 +74,7 @@ git stash pop
 ```bash
 git config wt.basedir ".worktree"       # 配置場所
 git config wt.copyignored true          # .env等をコピー
-git config --add wt.hook "devbox run -- bun install"  # 依存関係を自動インストール
+git config --add wt.hook "devbox run -- pnpm install --frozen-lockfile"  # 依存関係を自動インストール
 git config --add wt.nocopy "node_modules"  # bunのsymlinkが壊れるためコピー除外
 git config --add wt.nocopy ".turbo/"       # キャッシュはworktree毎に再生成
 git config --add wt.nocopy "dist/"         # ビルド成果物は再生成

@@ -16,11 +16,11 @@
 | カテゴリ | 技術 |
 |---------|------|
 | フロントエンド | React, TanStack Start, TanStack Router, TailwindCSS v4, daisyUI |
-| バックエンド | Hono (Bun) |
+| バックエンド | Hono (Node.js) |
 | データベース | PostgreSQL, Drizzle ORM |
 | 検索 | Meilisearch |
 | 認証 | Better-Auth（Email/Password, Google/Discord/GitHub OAuth） |
-| ビルド | Turborepo, Bun |
+| ビルド | Turborepo, pnpm |
 | コード品質 | Biome, Lefthook |
 | 開発環境 | devbox（推奨）, Docker |
 
@@ -74,7 +74,7 @@ devbox services up
 
 `devbox run setup` は以下を一括実行します：
 
-1. `bun install` — 依存関係のインストール
+1. `pnpm install --frozen-lockfile` — 依存関係のインストール
 2. PostgreSQL起動確認（未起動なら起動）
 3. データベース作成（`thac`）
 4. スキーマ適用 + シードデータ投入（管理者ユーザー、マスターデータ、公式作品データ）
@@ -164,7 +164,7 @@ direnv allow
 ## Git Hooks
 
 このプロジェクトはlefthookを使用してpre-commitフックを設定しています。
-`bun install` 時に自動でhooksがインストールされます。
+`pnpm install` 時に自動でhooksがインストールされます。
 
 コミット前に以下が自動実行されます：
 
@@ -185,10 +185,10 @@ direnv allow
 
 CIでは以下のチェックが実行されます：
 
-- `bun run check` - Lint・フォーマット
-- `bun run check-types` - 型チェック
-- `bun run --cwd apps/web lint:jsx-nesting` - JSXネスト検証
-- `bun run test` - テスト
+- `pnpm check` - Lint・フォーマット
+- `pnpm check-types` - 型チェック
+- `pnpm --dir apps/web lint:jsx-nesting` - JSXネスト検証
+- `pnpm test` - テスト
 
 ---
 
@@ -258,15 +258,15 @@ make db-setup
 git pull
 
 # 2. ローカルの依存関係を更新
-bun install
+pnpm install --frozen-lockfile
 
 # 3. Dockerコンテナの依存関係を更新（ボリューム共有のため通常は不要）
-docker compose exec web bun install
-docker compose exec server bun install
+docker compose exec web pnpm install
+docker compose exec server pnpm install
 ```
 
 > **Note**: Docker環境はホストの`node_modules`をボリュームマウントしているため、
-> ローカルで`bun install`を実行すればコンテナにも反映されます。
+> ローカルで`pnpm install --frozen-lockfile`を実行すればコンテナにも反映されます。
 
 </details>
 

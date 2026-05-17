@@ -1,11 +1,13 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { sql } from "drizzle-orm";
 import { officialSongLinks, officialWorkLinks } from "./schema/official";
 import { createId } from "./utils/id";
 import { createScriptClient } from "./utils/script-client";
 
 const { client, db } = createScriptClient();
+const currentDir = dirname(fileURLToPath(import.meta.url));
 
 // TSVファイルをパースする関数
 function parseTsv<T>(filePath: string): T[] {
@@ -55,7 +57,7 @@ const platformMapping: Record<string, { code: string; sortOrder: number }> = {
 async function seed() {
 	console.log("Seeding official links data...");
 
-	const dataDir = join(import.meta.dir, "data");
+	const dataDir = join(currentDir, "data");
 
 	// Seed official work links (batch)
 	console.log("Seeding official_work_links...");

@@ -8,7 +8,7 @@
 # 依存関係のインストール
 devbox run install
 # または
-devbox run -- bun install
+devbox run -- pnpm install --frozen-lockfile
 
 # 全サービス起動（推奨）
 devbox services up
@@ -16,9 +16,9 @@ devbox services up
 # 全アプリ（web + server）を開発モードで起動
 devbox run dev
 
-# 個別アプリの起動（devbox run -- bun run 経由）
-devbox run -- bun run dev:web      # Webアプリ http://localhost:3000
-devbox run -- bun run dev:server   # APIサーバー http://localhost:3001
+# 個別アプリの起動（devbox run -- pnpm 経由）
+devbox run -- pnpm dev:web      # Webアプリ http://localhost:3000
+devbox run -- pnpm dev:server   # APIサーバー http://localhost:3001
 
 # 全アプリのビルド
 devbox run build

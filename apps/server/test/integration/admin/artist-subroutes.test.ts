@@ -1,11 +1,3 @@
-import {
-	afterAll,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	test,
-} from "bun:test";
 import type { PGlite } from "@electric-sql/pglite";
 import {
 	__resetDatabase,
@@ -21,6 +13,14 @@ import {
 	tracks,
 } from "@thac/db";
 import { Hono } from "hono";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	test,
+} from "vitest";
 import type { AdminContext } from "../../../src/middleware/admin-auth";
 import { artistCirclesRouter } from "../../../src/routes/admin/artists/circles";
 import { artistTracksRouter } from "../../../src/routes/admin/artists/tracks";

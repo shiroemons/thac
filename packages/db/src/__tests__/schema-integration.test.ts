@@ -8,18 +8,11 @@
  * - real型フィールドの数値精度検証
  */
 
-import {
-	afterAll,
-	afterEach,
-	beforeAll,
-	describe,
-	expect,
-	test,
-} from "bun:test";
 import { PGlite } from "@electric-sql/pglite";
 import { pushSchema } from "drizzle-kit/api";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "vitest";
 import { __resetDatabase, __setTestDatabase } from "../index";
 import {
 	artistAliases,
@@ -54,7 +47,7 @@ import { createId } from "../utils/id";
 
 /**
  * drizzle のクエリビルダ（thenable）を明示的にPromiseに変換するヘルパー。
- * bun:test の expect().rejects がthenableを正しくハンドリングしない場合に使用。
+ * Vitest の expect().rejects がthenableを正しくハンドリングしない場合に使用。
  */
 // biome-ignore lint/suspicious/noExplicitAny: テスト用ヘルパー
 async function execute(query: PromiseLike<any>): Promise<any> {
