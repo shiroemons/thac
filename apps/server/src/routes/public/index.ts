@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { artistsRouter } from "./artists";
 import { categoriesRouter } from "./categories";
 import { circlesRouter } from "./circles";
+import { publicCollectionsRouter } from "./collections";
 import { eventSeriesRouter } from "./event-series";
 import { eventsRouter } from "./events";
 import { genresRouter } from "./genres";
@@ -29,5 +30,6 @@ publicRouter.route("/tracks", tracksRouter);
 publicRouter.route("/tags", tagsRouter);
 publicRouter.route("/stats", statsRouter);
 publicRouter.route("/search", searchRouter);
+publicRouter.route("/collections", publicCollectionsRouter);
 
 export { publicRouter };

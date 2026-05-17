@@ -12,6 +12,9 @@
 		"test": "vitest run --config ../../vitest.config.ts apps/web"
 	},
 	"dependencies": {
+		"@dnd-kit/core": "catalog:",
+		"@dnd-kit/sortable": "catalog:",
+		"@dnd-kit/utilities": "catalog:",
 		"@nivo/bar": "^0.99.0",
 		"date-fns": "^4.1.0",
 		"@nivo/core": "^0.99.0",

@@ -7,6 +7,7 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { ToastProvider } from "@/components/ui/toast";
 import { APP_NAME } from "@/lib/head";
 import { ThemeProvider } from "@/lib/theme";
 import appCss from "../index.css?url";
@@ -68,9 +69,11 @@ function RootDocument() {
 			</head>
 			<body>
 				<QueryClientProvider client={queryClient}>
-					<ThemeProvider>
-						<Outlet />
-					</ThemeProvider>
+					<ToastProvider>
+						<ThemeProvider>
+							<Outlet />
+						</ThemeProvider>
+					</ToastProvider>
 				</QueryClientProvider>
 				<TanStackRouterDevtools position="bottom-left" />
 				<Scripts />

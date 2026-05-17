@@ -37,6 +37,11 @@ export interface EntityDetailHeaderProps {
 	 * ヘッダー右側に表示される
 	 */
 	children?: ReactNode;
+	/**
+	 * カード内右下に配置するアクション要素（LikeButton、コレクション追加ボタンなど）
+	 * absolute 配置でカード右下に表示される
+	 */
+	actions?: ReactNode;
 }
 
 /**
@@ -90,12 +95,15 @@ export function EntityDetailHeader({
 	subtitle,
 	badges,
 	children,
+	actions,
 }: EntityDetailHeaderProps) {
 	const containerClass = gradientClass
-		? `${gradientClass} rounded-2xl shadow-sm transition-shadow duration-300 hover:shadow-lg`
-		: "rounded-2xl bg-base-100 shadow-sm transition-shadow duration-300 hover:shadow-lg";
+		? `relative ${gradientClass} rounded-2xl shadow-sm transition-shadow duration-300 hover:shadow-lg`
+		: "relative rounded-2xl bg-base-100 shadow-sm transition-shadow duration-300 hover:shadow-lg";
 
-	const innerClass = gradientClass ? "glass-card-light rounded-2xl p-6" : "p-6";
+	const innerClass = gradientClass
+		? "glass-card-light rounded-2xl p-6 pb-16"
+		: "p-6 pb-16";
 
 	return (
 		<div className={containerClass}>
@@ -132,6 +140,13 @@ export function EntityDetailHeader({
 					)}
 				</div>
 			</div>
+
+			{/* カード内右下アクション */}
+			{actions && (
+				<div className="absolute right-4 bottom-4 z-10 sm:right-6 sm:bottom-4">
+					{actions}
+				</div>
+			)}
 		</div>
 	);
 }

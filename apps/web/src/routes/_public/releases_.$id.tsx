@@ -11,6 +11,7 @@ import {
 	StatsCardGrid,
 	TagBadgeList,
 } from "@/components/public";
+import { FloatingLikeActions } from "@/components/user/floating-like-actions";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import { createPublicReleaseHead } from "@/lib/head";
 import { type PublicReleaseDetail, publicApi } from "@/lib/public-api";
@@ -124,6 +125,9 @@ function ReleaseDetailPage() {
 								</span>,
 							]
 						: undefined
+				}
+				actions={
+					<FloatingLikeActions targetType="release" targetId={release.id} />
 				}
 			>
 				{/* サークル一覧 */}

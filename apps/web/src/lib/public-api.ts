@@ -585,6 +585,53 @@ export interface PublicTagCloudItem {
 	weight: number;
 }
 
+/** 公開コレクションのオーナー情報 */
+export interface PublicCollectionOwner {
+	id: string;
+	name: string;
+}
+
+/** 公開コレクション詳細 */
+export interface PublicCollectionDetail {
+	id: string;
+	shortId: string;
+	name: string;
+	description: string | null;
+	kind: "collection" | "playlist";
+	visibility: "public" | "unlisted";
+	ordered: boolean;
+	itemType: "track" | "release" | "circle" | "artist" | null;
+	owner: PublicCollectionOwner;
+	createdAt: string;
+	updatedAt: string;
+	items: PublicCollectionItem[];
+}
+
+/** 公開コレクションのアイテム */
+export interface PublicCollectionItem {
+	id: string;
+	collectionId: string;
+	targetType: "track" | "release" | "circle" | "artist";
+	targetId: string;
+	position: number | null;
+	note: string | null;
+	addedAt: string;
+	target: {
+		id: string;
+		name: string;
+		nameJa: string | null;
+		nameEn: string | null;
+		releaseId?: string;
+		releaseDate?: string | null;
+	} | null;
+}
+
+/** 公開コレクション API レスポンス */
+interface PublicCollectionResponse {
+	collection: Omit<PublicCollectionDetail, "items">;
+	items: PublicCollectionItem[];
+}
+
 /** ジャンルマスタ項目 */
 export interface PublicGenreItem {
 	code: string;
@@ -1197,6 +1244,16 @@ export const publicApi = {
 			return publicFetch<{ data: PublicTagCloudItem[] }>(
 				`/api/public/tags/cloud${query ? `?${query}` : ""}`,
 			);
+		},
+	},
+
+	collections: {
+		/** 公開コレクション詳細を shortId で取得 */
+		getByShortId: async (shortId: string): Promise<PublicCollectionDetail> => {
+			const res = await publicFetch<PublicCollectionResponse>(
+				`/api/public/collections/${shortId}`,
+			);
+			return { ...res.collection, items: res.items };
 		},
 	},
 };

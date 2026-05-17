@@ -4,7 +4,7 @@ import {
 	Outlet,
 	redirect,
 } from "@tanstack/react-router";
-import { Settings, User } from "lucide-react";
+import { FolderHeart, Heart, Settings, User } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import UserMenu from "@/components/user-menu";
 import { getUser } from "@/functions/get-user";
@@ -13,7 +13,7 @@ import { createPageHead } from "@/lib/head";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/user/_user")({
-	head: () => createPageHead("ユーザー設定"),
+	head: () => createPageHead("マイページ"),
 	headers: () => CACHE_HEADERS.PRIVATE,
 	beforeLoad: async () => {
 		const session = await getUser();
@@ -47,10 +47,10 @@ function UserLayout() {
 				</div>
 			</header>
 			<main className="flex-1 bg-base-200/30">
-				<div className="mx-auto max-w-4xl p-4 lg:p-6">
+				<div className="mx-auto max-w-7xl p-4 lg:p-6">
 					{/* Header */}
 					<div className="mb-6">
-						<h1 className="font-bold text-2xl">アカウント設定</h1>
+						<h1 className="font-bold text-2xl">マイページ</h1>
 						<p className="text-base-content/70 text-sm">{user.email}</p>
 					</div>
 
@@ -72,6 +72,22 @@ function UserLayout() {
 										icon={<Settings className="h-5 w-5" />}
 									>
 										設定
+									</NavLink>
+								</li>
+								<li>
+									<NavLink
+										to="/user/collections"
+										icon={<FolderHeart className="h-5 w-5" />}
+									>
+										コレクション
+									</NavLink>
+								</li>
+								<li>
+									<NavLink
+										to="/user/likes"
+										icon={<Heart className="h-5 w-5" />}
+									>
+										お気に入り
 									</NavLink>
 								</li>
 							</ul>
@@ -104,7 +120,7 @@ function NavLink({ to, icon, children }: NavLinkProps) {
 		<Link
 			to={to}
 			className={cn("flex items-center gap-2")}
-			activeProps={{ className: "active" }}
+			activeProps={{ className: "menu-active" }}
 		>
 			{icon}
 			{children}

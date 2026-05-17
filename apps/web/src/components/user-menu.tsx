@@ -63,6 +63,12 @@ export default function UserMenu() {
 				<li>
 					<Link to="/user/album-requests">アルバム情報の提供</Link>
 				</li>
+				<li>
+					<Link to="/user/collections">コレクション</Link>
+				</li>
+				<li>
+					<Link to="/user/likes">お気に入り</Link>
+				</li>
 				<div className="divider my-0" />
 				<li>
 					<button type="button" onClick={handleSignOut} className="text-error">

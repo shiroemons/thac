@@ -26,6 +26,7 @@ import {
 	WorkStatsSection,
 	WorkStatsSkeleton,
 } from "@/components/public";
+import { FloatingLikeActions } from "@/components/user/floating-like-actions";
 import { CACHE_HEADERS } from "@/lib/cache-headers";
 import {
 	type CircleDetailTab,
@@ -253,6 +254,9 @@ function CircleDetailPage() {
 								</span>,
 							]
 						: undefined
+				}
+				actions={
+					<FloatingLikeActions targetType="circle" targetId={circle.id} />
 				}
 			>
 				{circle.links.length > 0 &&
