@@ -17,8 +17,8 @@
 	"devDependencies": {
 		"typescript": "catalog:",
 		"@thac/config": "workspace:*",
-		"tsx": "4.21.0",
-		"vitest": "^4.1.6"
+		"tsx": "4.23.9",
+		"vitest": "^4.1.10"
 	},
 	"dependencies": {
 		"better-auth": "catalog:",

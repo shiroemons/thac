@@ -5,6 +5,12 @@ export default defineConfig({
 	format: "esm",
 	outDir: "./dist",
 	clean: true,
-	// TODO: `noExternal` is deprecated in tsdown 0.21+. Migrate to `deps.alwaysBundle`.
-	noExternal: [/@thac\/.*/],
+	deps: {
+		// Workspace packages are bundled so the Docker runner only needs dist.
+		alwaysBundle: [/^@thac\//],
+		// Better Auth loads OpenTelemetry dynamically and falls back when absent.
+		neverBundle: ["@opentelemetry/api"],
+		// Bundling the remaining runtime graph is intentional for the standalone output.
+		onlyBundle: false,
+	},
 });

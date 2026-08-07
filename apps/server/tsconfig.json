@@ -3,12 +3,13 @@
 	"compilerOptions": {
 		"composite": true,
 		"outDir": "dist",
-		"baseUrl": ".",
+		"rootDir": "./src",
 		"paths": {
 			"@/*": ["./src/*"]
 		},
 		"jsx": "react-jsx",
 		"jsxImportSource": "hono/jsx"
 	},
+	"include": ["src/**/*"],
 	"exclude": ["test/**/*", "dist/**/*"]
 }
