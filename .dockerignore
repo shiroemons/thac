@@ -44,6 +44,12 @@ coverage
 *.md
 
 # Project specific
+.agents
+.codex
+.devbox
+.meilisearch
+.worktree
 .kiro
 .serena
 .claude
+data

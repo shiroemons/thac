@@ -1,12 +1,12 @@
 {
-	"$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.13.0/.schema/devbox.schema.json",
+	"$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.5/.schema/devbox.schema.json",
 	"packages": [
-		"nodejs@24.12.0",
-		"postgresql_18@18.1",
+		"github:NixOS/nixpkgs/395a4438c3d0bbcefbefda83a4d24af48f6c7e1a#nodejs_24",
+		"postgresql_18@18.4",
 		"git@latest",
 		"curl@latest",
 		"gnumake@latest",
-		"meilisearch@1.41.0"
+		"meilisearch@1.51.0"
 	],
 	"env": {
 		"NODE_ENV": "development",
@@ -36,11 +36,14 @@
 			"  echo \"random_page_cost = 1.1\" >> $PGDATA/postgresql.conf",
 			"  echo \"log_min_duration_statement = 1000\" >> $PGDATA/postgresql.conf",
 			"fi",
-			"corepack prepare pnpm@11.1.2 --activate >/dev/null 2>&1 || true",
+			"mkdir -p \"$PWD/.devbox/corepack-bin\"",
+			"corepack install -g pnpm@11.20.0 >/dev/null",
+			"corepack enable --install-directory \"$PWD/.devbox/corepack-bin\" >/dev/null",
+			"export PATH=\"$PWD/.devbox/corepack-bin:$PATH\"",
 			"echo ''",
 			"echo '📦 thac devbox environment'",
 			"echo '   Node.js: '$(node --version)",
-			"echo '   pnpm: '$(corepack pnpm --version 2>/dev/null || echo '11.1.2 unavailable')",
+			"echo '   pnpm: '$(corepack pnpm --version 2>/dev/null || echo '11.20.0 unavailable')",
 			"echo '   Meilisearch: '$(meilisearch --version | head -1)",
 			"echo '   PostgreSQL: '$(postgres --version)",
 			"echo ''",

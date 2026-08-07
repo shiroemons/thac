@@ -25,27 +25,27 @@ jobs:
     # テストはPGlite（インメモリPostgreSQL互換エンジン）を使用するため、
     # 外部のPostgreSQLインスタンスなしでPostgreSQL互換テストを実行可能
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
-          node-version: 24.12.0
+          node-version: 24.18.1
 
       - run: corepack enable
-      - run: corepack prepare pnpm@11.1.2 --activate
+      - run: corepack install -g pnpm@11.20.0
 
       - name: Get pnpm store path
         id: pnpm-store
         run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: .turbo
           key: ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml') }}

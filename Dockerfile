@@ -1,9 +1,9 @@
 # Stage 1: Base
-FROM node:24.12.0-bookworm-slim AS base
+FROM node:24.18.1-bookworm-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@11.1.2 --activate
+RUN corepack enable && corepack install -g pnpm@11.20.0
 
 # Stage 2: Install dependencies
 FROM base AS deps
@@ -26,11 +26,11 @@ COPY . .
 RUN pnpm build
 
 # Stage 4: Runner (non-root)
-FROM node:24.12.0-bookworm-slim AS runner
+FROM node:24.18.1-bookworm-slim AS runner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@11.1.2 --activate
+RUN corepack enable && corepack install -g pnpm@11.20.0
 
 # Metadata
 LABEL org.opencontainers.image.title="thac"
