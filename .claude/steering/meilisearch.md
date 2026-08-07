@@ -6,7 +6,7 @@
 
 ## 開発環境
 
-- **バージョン**: 1.41.0（devbox.json で `meilisearch@1.41.0` 指定、docker-compose.yml も `getmeili/meilisearch:v1.41.0` に揃える）
+- **バージョン**: 1.51.0（devbox.json で `meilisearch@1.51.0` 指定、docker-compose.yml も `getmeili/meilisearch:v1.51.0` に揃える）
 - **ポート**: 7700
 - **Search Preview**: http://localhost:7700
 - **起動方法**: `devbox services up`（process-compose経由）
@@ -103,13 +103,13 @@ Meilisearch v1.10.2以降は日本語を**最適化サポート**している。
 
 ```bash
 # ログ確認
-make logs-meilisearch
+devbox run -- make logs-meilisearch
 
 # シェル接続
-make shell-meilisearch
+devbox run -- make shell-meilisearch
 
 # ヘルスチェック
-curl http://localhost:7700/health
+devbox run -- curl http://localhost:7700/health
 ```
 
 ## バージョンアップ
@@ -122,10 +122,10 @@ curl http://localhost:7700/health
 
 ### devbox でのアップグレード（推奨）
 
-devbox は `meilisearch@latest` を使用するため、Nix パッケージの更新で自動的に最新版が適用される。
+devbox と Docker Compose は同じ安定版へ固定する。`@latest` は使用せず、リリースノートとデータベース互換性を確認してから明示的に更新する。
 
 ```bash
-# devbox パッケージ更新
+# devbox.json のバージョン固定を変更した後にロックを更新
 devbox update
 
 # バージョン確認
@@ -136,47 +136,72 @@ devbox run -- meilisearch --version
 
 ```bash
 # 1. 現在のバージョン確認
-curl -s -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/version
+devbox run -- curl -s -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/version
 
-# 2. スナップショット作成（バックアップ）
-curl -X POST -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/snapshots
+# 2. dumpを作成し、taskのsucceededを確認
+devbox run -- curl -X POST -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/dumps
+devbox run -- curl -H "Authorization: Bearer $MEILI_MASTER_KEY" "http://localhost:7700/tasks?types=dumpCreation"
 
-# 3. コンテナ停止
-docker compose stop meilisearch
+# 3. コンテナ停止後、外部volumeを非破壊コピー
+devbox run -- docker compose stop meilisearch
 
 # 4. docker-compose.yml のイメージタグを更新
-# image: getmeili/meilisearch:v1.34 → v1.35 など
+# image: getmeili/meilisearch:v1.50.0 → v1.51.0 など
 
-# 5. 古いコンテナ削除・新バージョンで起動
-docker compose up -d meilisearch
+# 5. DB更新が必要な場合、新バージョンを --upgrade-db 付きで一度だけ隔離起動
+# upgradeDatabase taskのsucceededを確認して停止する
 
-# 6. バージョン確認
-curl -s -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/version
+# 6. 以後は --upgrade-db なしで通常起動
+devbox run -- docker compose up -d meilisearch
+
+# 7. health、version、indexes、文書数、settings、代表検索を移行前と照合
+devbox run -- curl http://localhost:7700/health
+devbox run -- curl -s -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/version
 ```
 
-### Dumplessアップグレード（v1.12+ → v1.13+）
+### Dumplessアップグレード
 
-データ移行なしでアップグレード可能。内部で自動的にデータベースを更新。
+対応するバージョン間では dump のimportを介さず、`--upgrade-db` を付けた新バージョンを一度だけ起動して更新できる。新バージョンのバイナリを、旧形式のDBへ `--upgrade-db` なしで起動してはならない。
+
+```bash
+# ローカルDBの例（既存プロセス停止・バックアップ検証後に実行）
+devbox run -- meilisearch \
+  --db-path ./data/meilisearch \
+  --http-addr 127.0.0.1:17701 \
+  --upgrade-db
+```
+
+起動後は `/tasks?types=upgradeDatabase` の最新taskについて、`details.upgradeFrom` と `details.upgradeTo` が意図どおりで、`status: succeeded` かつ `error: null` であることを確認する。失敗時は即座に停止し、自動復元や再実行はせず原因を調査する。
 
 ### Dump経由のアップグレード（大きなバージョン差がある場合）
 
 ```bash
 # 1. ダンプ作成
-curl -X POST -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/dumps
+devbox run -- curl -X POST -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/dumps
 
 # 2. タスク完了を確認
-curl -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/tasks?types=dumpCreation
+devbox run -- curl -H "Authorization: Bearer $MEILI_MASTER_KEY" "http://localhost:7700/tasks?types=dumpCreation"
 
 # 3. ダンプファイルをコピー（ボリューム内）
-docker compose exec meilisearch ls /meili_data/dumps/
+devbox run -- docker compose exec meilisearch ls /meili_data/dumps/
 
 # 4. 新バージョンで --import-dump オプション付きで起動
 ```
 
+### 1.41.0 → 1.51.0 移行記録（2026-08-08 JST）
+
+- local `data/meilisearch`: `upgradeDatabase` task 128 が成功（`upgradeFrom: v1.41.0`、`upgradeTo: v1.51.0`、errorなし）。フラグなし再起動でもhealth available、1 index `tracks`、primary key `id`、4,482文書、indexing停止、代表検索3件を確認した。DBサイズ、最終更新時刻、全settingsは移行前と一致した。
+- Docker external volume `thac_meilisearch_data`: 明示した `getmeili/meilisearch:v1.51.0` でtask 1が成功（errorなし）。Composeのフラグなし再起動でもhealth available、version 1.51.0、index 0件、`lastUpdate: null` を確認した。
+- local cold backup: `data/meilisearch.pre-1.51.20260807T235015+0900.bak`（移行直前にsourceと全7ファイル一致、tree SHA-256 `4ffee2cea74149847aa0999013a96e520a0f5575374efc3413ad092e08ec276c`）
+- local dump: `.meilisearch/dumps/devbox-1.41.0-20260807-145301252.dump`（SHA-256 `0526d35f67fd6091158a47c6fa7fff8088880a77bbb9ce971a263ff933c12804`）
+- Docker raw volume backup: `/private/tmp/thac-meilisearch-preupgrade-20260807TmpeK6I/docker-volume-thac_meilisearch_data`（tree SHA-256 `d44f3f1b754589c768ee5c97f84ff30430e8d6cb86f9ee29421114f88a0e1341`）
+- Docker dump: `.meilisearch/dumps/docker-volume-1.41.0-20260807-145438954.dump`（SHA-256 `240c948a3b0683029def76833ab8726cac8af77d9e1c5520f695809933f1627c`）
+
 ### ベストプラクティス
 
-- アップグレード前に必ずスナップショット作成
+- アップグレード前にAPI dumpと、停止状態のDB/volume cold copyを作成して検証
 - [リリースノート](https://github.com/meilisearch/meilisearch/releases)で破壊的変更を確認
+- index数、文書数、primary key、settings、代表検索を移行前後で照合
 - 開発環境で事前テスト
 - 月1回程度の定期的なバージョン確認を推奨
 
