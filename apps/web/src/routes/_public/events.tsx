@@ -382,14 +382,14 @@ function EventsPage() {
 										onClick={() => toggleSeries(series.id)}
 										aria-expanded={expandedSeries.has(series.id)}
 									>
-										<div className="flex items-center gap-3">
+										<span className="flex items-center gap-3">
 											{expandedSeries.has(series.id) ? (
 												<ChevronDown className="size-5" aria-hidden="true" />
 											) : (
 												<ChevronRight className="size-5" aria-hidden="true" />
 											)}
 											<span className="font-bold text-lg">{series.name}</span>
-										</div>
+										</span>
 										<span className="badge badge-ghost">
 											{series.events.length}回
 										</span>

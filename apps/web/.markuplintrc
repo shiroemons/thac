@@ -14,6 +14,13 @@
 				"attrs": [{ "name": "charset", "value": "UTF-8" }]
 			}
 		},
+		{
+			"selector": "th[data-slot='table-head']",
+			"as": {
+				"element": "th",
+				"attrs": [{ "name": "role", "value": "columnheader" }]
+			}
+		},
 		{ "selector": "Table", "as": "table" },
 		{ "selector": "TableHeader", "as": "thead" },
 		{ "selector": "TableBody", "as": "tbody" },
@@ -21,6 +28,7 @@
 		{ "selector": "TableRow", "as": "tr" },
 		{ "selector": "TableHead", "as": "th" },
 		{ "selector": "TableCell", "as": "td" },
+		{ "selector": "IndexRow", "as": "tr" },
 		{ "selector": "DialogTitle", "as": "div" },
 		{ "selector": "Label", "as": "label" }
 	],

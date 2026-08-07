@@ -61,7 +61,6 @@ export function DateRangeFilter({
 						value={dateRange.from || ""}
 						onChange={(e) => handleFromChange(e.target.value)}
 						className="input input-sm w-36"
-						placeholder="YYYY-MM"
 					/>
 				</div>
 
@@ -74,7 +73,6 @@ export function DateRangeFilter({
 						value={dateRange.to || ""}
 						onChange={(e) => handleToChange(e.target.value)}
 						className="input input-sm w-36"
-						placeholder="YYYY-MM"
 					/>
 				</div>
 

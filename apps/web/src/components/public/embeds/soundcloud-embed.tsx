@@ -23,10 +23,8 @@ export function SoundCloudEmbed({
 				title={title}
 				allow="autoplay"
 				loading="lazy"
-				className="w-full rounded-lg"
+				className="w-full overflow-hidden rounded-lg border-0"
 				height="166"
-				scrolling="no"
-				frameBorder="no"
 			/>
 		</div>
 	);

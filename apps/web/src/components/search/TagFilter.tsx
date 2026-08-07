@@ -247,10 +247,10 @@ export function TagFilter({
 										onClick={() => addTag(tag)}
 										className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left transition-colors hover:bg-base-200"
 									>
-										<div className="flex items-center gap-2">
+										<span className="flex items-center gap-2">
 											<Tag className="h-4 w-4 text-base-content/60" />
 											<span>{tag.name}</span>
-										</div>
+										</span>
 									</button>
 								))
 							)}

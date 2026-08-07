@@ -212,13 +212,15 @@ export function ArtistRoleFilter({
 											key={artist.id}
 											type="button"
 											onClick={() => toggleArtist(artist)}
+											aria-pressed={isSelected}
 											className={cn(
 												"flex w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-base-200",
 												isSelected &&
 													"bg-accent font-medium text-accent-content",
 											)}
 										>
-											<div
+											<span
+												aria-hidden="true"
 												className={cn(
 													"flex h-4 w-4 shrink-0 items-center justify-center rounded border",
 													isSelected
@@ -227,7 +229,7 @@ export function ArtistRoleFilter({
 												)}
 											>
 												{isSelected && <Check className="h-3 w-3" />}
-											</div>
+											</span>
 											<span>{artist.name}</span>
 											{artist.nameJa && artist.nameJa !== artist.name && (
 												<span className="text-base-content/50 text-sm">

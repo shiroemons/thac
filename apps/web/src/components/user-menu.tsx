@@ -42,7 +42,12 @@ export default function UserMenu() {
 				className="btn btn-ghost btn-circle avatar"
 			>
 				<div className="w-10 rounded-full">
-					<img src={avatarUrl} alt={session.user.name || "ユーザー"} />
+					<img
+						src={avatarUrl}
+						alt={session.user.name || "ユーザー"}
+						width={40}
+						height={40}
+					/>
 				</div>
 			</div>
 			<ul
@@ -53,7 +58,7 @@ export default function UserMenu() {
 				<li className="px-4 pb-2 text-base-content/60 text-xs">
 					{session.user.email}
 				</li>
-				<div className="divider my-0" />
+				<li className="divider my-0" aria-hidden="true" />
 				<li>
 					<Link to="/user/profile">プロフィール</Link>
 				</li>
@@ -63,7 +68,7 @@ export default function UserMenu() {
 				<li>
 					<Link to="/user/album-requests">アルバム情報の提供</Link>
 				</li>
-				<div className="divider my-0" />
+				<li className="divider my-0" aria-hidden="true" />
 				<li>
 					<button type="button" onClick={handleSignOut} className="text-error">
 						ログアウト

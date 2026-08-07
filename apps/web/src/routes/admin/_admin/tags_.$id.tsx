@@ -13,7 +13,7 @@ import {
 	Unlock,
 	X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DataTablePagination } from "@/components/admin/data-table-pagination";
 import { DetailPageSkeleton } from "@/components/admin/detail-page-skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +50,13 @@ function TagDetailPage() {
 	// 編集モード
 	const [isEditing, setIsEditing] = useState(false);
 	const [editName, setEditName] = useState("");
+	const editInputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (isEditing) {
+			editInputRef.current?.focus();
+		}
+	}, [isEditing]);
 
 	// 削除確認ダイアログ
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -251,7 +258,7 @@ function TagDetailPage() {
 										value={editName}
 										onChange={(e) => setEditName(e.target.value)}
 										className="max-w-xs"
-										autoFocus
+										ref={editInputRef}
 									/>
 									<Button
 										variant="ghost"

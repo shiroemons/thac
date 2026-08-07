@@ -1185,6 +1185,10 @@ function SongMappingRow({
 	selectMode,
 	onSelectModeChange,
 }: SongMappingRowProps) {
+	const modeId = useId();
+	const customModeId = `${modeId}-custom`;
+	const selectModeId = `${modeId}-select`;
+
 	const getStatusBadge = () => {
 		if (match.matchType === "none") {
 			if (selectMode === "select" && selectedId) {
@@ -1220,8 +1224,9 @@ function SongMappingRow({
 			{match.matchType === "none" ? (
 				<div className="mt-3 space-y-3 pl-6">
 					{/* その他に登録 */}
-					<label className="flex cursor-pointer items-start gap-2">
+					<div className="flex items-start gap-2">
 						<input
+							id={customModeId}
 							type="radio"
 							name={`song-mode-${match.originalName}`}
 							className="radio radio-sm mt-0.5"
@@ -1233,7 +1238,12 @@ function SongMappingRow({
 							}}
 						/>
 						<div className="flex-1">
-							<span className="block text-sm">その他に登録</span>
+							<label
+								htmlFor={customModeId}
+								className="block cursor-pointer text-sm"
+							>
+								その他に登録
+							</label>
 							{selectMode === "custom" && (
 								<input
 									type="text"
@@ -1248,11 +1258,12 @@ function SongMappingRow({
 								/>
 							)}
 						</div>
-					</label>
+					</div>
 
 					{/* 原曲を選択 */}
-					<label className="flex cursor-pointer items-start gap-2">
+					<div className="flex items-start gap-2">
 						<input
+							id={selectModeId}
 							type="radio"
 							name={`song-mode-${match.originalName}`}
 							className="radio radio-primary radio-sm mt-0.5"
@@ -1263,7 +1274,12 @@ function SongMappingRow({
 							}}
 						/>
 						<div className="flex-1">
-							<span className="block text-sm">原曲を選択</span>
+							<label
+								htmlFor={selectModeId}
+								className="block cursor-pointer text-sm"
+							>
+								原曲を選択
+							</label>
 							{selectMode === "select" && allSongOptions && (
 								<div className="mt-2 max-w-xl">
 									<SearchableSelect
@@ -1277,7 +1293,7 @@ function SongMappingRow({
 								</div>
 							)}
 						</div>
-					</label>
+					</div>
 				</div>
 			) : (
 				<div className="mt-2 pl-6">

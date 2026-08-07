@@ -244,13 +244,15 @@ export function OriginalSongFilter({
 															key={option.value}
 															type="button"
 															onClick={() => toggleSong(option)}
+															aria-pressed={isSelected}
 															className={cn(
 																"flex w-full items-center gap-2 py-2 pr-4 pl-10 text-left transition-colors hover:bg-base-200",
 																isSelected &&
 																	"bg-primary font-medium text-primary-content",
 															)}
 														>
-															<div
+															<span
+																aria-hidden="true"
 																className={cn(
 																	"flex h-4 w-4 shrink-0 items-center justify-center rounded border",
 																	isSelected
@@ -259,7 +261,7 @@ export function OriginalSongFilter({
 																)}
 															>
 																{isSelected && <Check className="h-3 w-3" />}
-															</div>
+															</span>
 															<span>{option.label}</span>
 														</button>
 													);

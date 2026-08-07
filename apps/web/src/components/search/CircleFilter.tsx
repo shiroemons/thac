@@ -154,13 +154,15 @@ export function CircleFilter({
 											key={circle.id}
 											type="button"
 											onClick={() => toggleCircle(circle)}
+											aria-pressed={isSelected}
 											className={cn(
 												"flex w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-base-200",
 												isSelected &&
 													"bg-primary font-medium text-primary-content",
 											)}
 										>
-											<div
+											<span
+												aria-hidden="true"
 												className={cn(
 													"flex h-4 w-4 shrink-0 items-center justify-center rounded border",
 													isSelected
@@ -169,7 +171,7 @@ export function CircleFilter({
 												)}
 											>
 												{isSelected && <Check className="h-3 w-3" />}
-											</div>
+											</span>
 											<span>{circle.name}</span>
 											{circle.nameJa && circle.nameJa !== circle.name && (
 												<span className="text-base-content/50 text-sm">

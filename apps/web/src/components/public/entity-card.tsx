@@ -29,7 +29,13 @@ export function EntityCard({
 			<Card className="transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/10">
 				{image && (
 					<figure className="aspect-square bg-base-200">
-						<img src={image} alt={title} className="size-full object-cover" />
+						<img
+							src={image}
+							alt={title}
+							width={640}
+							height={640}
+							className="size-full object-cover"
+						/>
 					</figure>
 				)}
 				<div className="card-body p-5">

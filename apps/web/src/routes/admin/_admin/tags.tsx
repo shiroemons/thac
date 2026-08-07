@@ -493,7 +493,6 @@ function TagsPage() {
 									value={newTagName}
 									onChange={(e) => setNewTagName(e.target.value)}
 									placeholder="タグ名を入力"
-									autoFocus
 									autoComplete="off"
 									data-1p-ignore
 									data-lpignore="true"
@@ -607,7 +606,7 @@ function TagsPage() {
 							>
 								{selectedTagsList.map((tag) => (
 									<option key={tag.id} value={tag.id}>
-										{tag.name} ({tag.trackCount}件)
+										{`${tag.name} (${tag.trackCount}件)`}
 									</option>
 								))}
 							</select>
@@ -672,7 +671,6 @@ function TagsPage() {
 									value={editName}
 									onChange={(e) => setEditName(e.target.value)}
 									placeholder="タグ名を入力"
-									autoFocus
 									autoComplete="off"
 									data-1p-ignore
 									data-lpignore="true"

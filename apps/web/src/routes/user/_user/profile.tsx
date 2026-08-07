@@ -120,6 +120,8 @@ function ProfilePage() {
 											`https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name || "User")}&background=random`
 										}
 										alt="アバター"
+										width={64}
+										height={64}
 									/>
 								</div>
 							</div>

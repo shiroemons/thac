@@ -8,7 +8,7 @@ import {
 	Trash2,
 	X,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useDebounce } from "@/hooks/use-debounce";
 import { type TagWithCount, tagsApi } from "@/lib/api-client";
@@ -58,7 +58,14 @@ function TagManagementDialogContent({
 
 	// 前回のdebouncedSearchを追跡してページリセットを制御
 	const prevDebouncedSearchRef = useRef<string>("");
+	const editingInputRef = useRef<HTMLInputElement>(null);
 	const debouncedSearch = useDebounce(search, 300);
+
+	useEffect(() => {
+		if (editingTagId) {
+			editingInputRef.current?.focus();
+		}
+	}, [editingTagId]);
 
 	// 検索が変わったらページをリセット（イベントハンドラ内で処理）
 	if (debouncedSearch !== prevDebouncedSearchRef.current) {
@@ -302,7 +309,7 @@ function TagManagementDialogContent({
 															value={editingName}
 															onChange={(e) => setEditingName(e.target.value)}
 															className="input-sm max-w-48"
-															autoFocus
+															ref={editingInputRef}
 															onKeyDown={(e) => {
 																if (e.key === "Enter") saveEditing();
 																if (e.key === "Escape") cancelEditing();
@@ -461,7 +468,7 @@ function TagManagementDialogContent({
 							>
 								{mergeTargetOptions.map((tag) => (
 									<option key={tag.id} value={tag.id}>
-										{tag.name} ({tag.trackCount}件)
+										{`${tag.name} (${tag.trackCount}件)`}
 									</option>
 								))}
 							</select>
