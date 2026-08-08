@@ -14,7 +14,7 @@ Task: devboxロールバック
     3. 必要なら data/meilisearch をバックアップから復元:
        rm -rf data/meilisearch
        mv data/meilisearch.bak data/meilisearch
-    4. devbox run -- meilisearch --version で確認
+    4. meilisearch --version で確認
 ```
 
 ### Docker環境
@@ -46,7 +46,7 @@ Task: データ復旧
     devbox環境:
       1. data/meilisearch を削除して Dump から再構築
       2. data/meilisearch.bak があればそこから復元
-      3. devbox services restart
+      3. task restart
 
     Docker環境:
       1. docker compose stop meilisearch && docker compose rm -f meilisearch

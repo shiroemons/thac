@@ -358,10 +358,10 @@ function validateTagName(name: string): { valid: boolean; error?: string } {
 
 ```bash
 # スキーマをDBに反映
-make db-push
+task db:push
 
 # 動作確認
-make db-studio
+task db:studio
 ```
 
 ### 7.2 ロールバック

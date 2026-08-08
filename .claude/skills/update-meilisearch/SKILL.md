@@ -88,7 +88,7 @@ Task 1-A: 現在のバージョン取得
     現在のMeilisearchバージョンを取得してください。
 
     devbox環境:
-      devbox run -- meilisearch --version
+      meilisearch --version
 
     Docker環境:
       grep -o 'getmeili/meilisearch:v[0-9.]*' docker-compose.yml
@@ -170,7 +170,7 @@ Task 5-devbox-normal: devbox標準アップグレード
     1. devbox search meilisearch で利用可能なバージョンを確認
     2. 目的バージョンがあれば: devbox update meilisearch
     3. devbox install
-    4. devbox run -- meilisearch --version で確認
+    4. meilisearch --version で確認
 ```
 
 **回避策フロー（devbox search に未反映の場合）:**

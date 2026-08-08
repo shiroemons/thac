@@ -47,7 +47,7 @@ Step 3: インポート結果表示
 #### 0.1 events.eventSeriesId を nullable に変更
 - **ファイル**: `packages/db/src/schema/event.ts`
 - `eventSeriesId: text("event_series_id").notNull()` → `eventSeriesId: text("event_series_id")`
-- マイグレーション: `make db-generate && make db-migrate`
+- マイグレーション: `task db:generate`の成功後に`task db:migrate`
 
 ### Phase 1: サーバー側基盤
 

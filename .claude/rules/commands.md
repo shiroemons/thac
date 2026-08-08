@@ -1,60 +1,58 @@
 # コマンド
 
-**重要**: すべてのコマンドは devbox 経由で実行すること。
+**重要**: 定型操作はTask経由で実行すること。miseがDevbox環境を自動読込するため、Taskにない一時的なコマンドは直接実行する。
 
 ## ビルド・開発コマンド
 
 ```bash
 # 依存関係のインストール
-devbox run install
-# または
-devbox run -- pnpm install --frozen-lockfile
+task install
 
 # 全サービス起動（推奨）
-devbox services up
+task up
 
 # 全アプリ（web + server）を開発モードで起動
-devbox run dev
+task dev
 
-# 個別アプリの起動（devbox run -- pnpm 経由）
-devbox run -- pnpm dev:web      # Webアプリ http://localhost:3000
-devbox run -- pnpm dev:server   # APIサーバー http://localhost:3001
+# 個別アプリの起動
+pnpm dev:web      # Webアプリ http://localhost:3000
+pnpm dev:server   # APIサーバー http://localhost:3001
 
 # 全アプリのビルド
-devbox run build
+task build
 
 # 型チェック
-devbox run check-types
+task check-types
 
 # Lint・フォーマット（Biome）
-devbox run check
+task check
 ```
 
 ## データベースコマンド
 
-データベース操作は Makefile で定義されている `make db-xxx` を使用する。
+データベース操作はTaskfileで定義されている`task db:xxx`を使用する。
 
 ```bash
 # スキーマをDBにプッシュ
-make db-push
+task db:push
 
 # マイグレーションを生成
-make db-generate
+task db:generate
 
 # マイグレーションを実行
-make db-migrate
+task db:migrate
 
 # シードデータを投入
-make db-seed
+task db:seed
 
 # DBセットアップ（push + seed）
-make db-setup
+task db:setup
 
 # Drizzle Studioを起動
-make db-studio
+task db:studio
 
 # マスタデータ・公式作品以外をトランケート
-make db-truncate
+task db:truncate
 ```
 
 ## Meilisearch再インデックス
@@ -72,15 +70,18 @@ Web管理画面（/admin）の検索管理ページから実行可能。
 ## devbox サービス管理
 
 ```bash
-# 全サービス起動（TUI付き）
-devbox services up
+# 全サービス起動（バックグラウンド）
+task up
 
-# バックグラウンド起動
-devbox services up -b
+# 全サービス起動（TUI付き）
+task services:dev
 
 # サービス停止
-devbox services stop
+task down
 
 # サービス再起動
-devbox services restart
+task restart
+
+# サービス状態
+task status
 ```

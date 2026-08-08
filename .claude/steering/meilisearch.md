@@ -9,7 +9,7 @@
 - **バージョン**: 1.51.0（devbox.json で `meilisearch@1.51.0` 指定、docker-compose.yml も `getmeili/meilisearch:v1.51.0` に揃える）
 - **ポート**: 7700
 - **Search Preview**: http://localhost:7700
-- **起動方法**: `devbox services up`（process-compose経由）
+- **起動方法**: `task up`（process-compose経由）
 - **データ保存先**: `data/meilisearch/`
 
 ## 日本語対応
@@ -103,13 +103,13 @@ Meilisearch v1.10.2以降は日本語を**最適化サポート**している。
 
 ```bash
 # ログ確認
-devbox run -- make logs-meilisearch
+devbox services attach
 
-# シェル接続
-devbox run -- make shell-meilisearch
+# devbox環境のシェルへ接続
+devbox shell
 
 # ヘルスチェック
-devbox run -- curl http://localhost:7700/health
+curl http://localhost:7700/health
 ```
 
 ## バージョンアップ
@@ -129,21 +129,21 @@ devbox と Docker Compose は同じ安定版へ固定する。`@latest` は使�
 devbox update
 
 # バージョン確認
-devbox run -- meilisearch --version
+meilisearch --version
 ```
 
 ### Docker Compose でのアップグレード手順（本番/CI用）
 
 ```bash
 # 1. 現在のバージョン確認
-devbox run -- curl -s -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/version
+curl -s -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/version
 
 # 2. dumpを作成し、taskのsucceededを確認
-devbox run -- curl -X POST -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/dumps
-devbox run -- curl -H "Authorization: Bearer $MEILI_MASTER_KEY" "http://localhost:7700/tasks?types=dumpCreation"
+curl -X POST -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/dumps
+curl -H "Authorization: Bearer $MEILI_MASTER_KEY" "http://localhost:7700/tasks?types=dumpCreation"
 
 # 3. コンテナ停止後、外部volumeを非破壊コピー
-devbox run -- docker compose stop meilisearch
+docker compose stop meilisearch
 
 # 4. docker-compose.yml のイメージタグを更新
 # image: getmeili/meilisearch:v1.50.0 → v1.51.0 など
@@ -152,11 +152,11 @@ devbox run -- docker compose stop meilisearch
 # upgradeDatabase taskのsucceededを確認して停止する
 
 # 6. 以後は --upgrade-db なしで通常起動
-devbox run -- docker compose up -d meilisearch
+docker compose up -d meilisearch
 
 # 7. health、version、indexes、文書数、settings、代表検索を移行前と照合
-devbox run -- curl http://localhost:7700/health
-devbox run -- curl -s -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/version
+curl http://localhost:7700/health
+curl -s -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/version
 ```
 
 ### Dumplessアップグレード
@@ -165,7 +165,7 @@ devbox run -- curl -s -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localh
 
 ```bash
 # ローカルDBの例（既存プロセス停止・バックアップ検証後に実行）
-devbox run -- meilisearch \
+meilisearch \
   --db-path ./data/meilisearch \
   --http-addr 127.0.0.1:17701 \
   --upgrade-db
@@ -177,13 +177,13 @@ devbox run -- meilisearch \
 
 ```bash
 # 1. ダンプ作成
-devbox run -- curl -X POST -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/dumps
+curl -X POST -H "Authorization: Bearer $MEILI_MASTER_KEY" http://localhost:7700/dumps
 
 # 2. タスク完了を確認
-devbox run -- curl -H "Authorization: Bearer $MEILI_MASTER_KEY" "http://localhost:7700/tasks?types=dumpCreation"
+curl -H "Authorization: Bearer $MEILI_MASTER_KEY" "http://localhost:7700/tasks?types=dumpCreation"
 
 # 3. ダンプファイルをコピー（ボリューム内）
-devbox run -- docker compose exec meilisearch ls /meili_data/dumps/
+docker compose exec meilisearch ls /meili_data/dumps/
 
 # 4. 新バージョンで --import-dump オプション付きで起動
 ```

@@ -7,8 +7,8 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 ## Core Technologies
 
 - **Language**: TypeScript（strict mode）
-- **Runtime**: Node.js 24.12.0
-- **Package Manager**: pnpm 11.1.2（workspace catalog機能で依存関係バージョンを共有）
+- **Runtime**: Node.js 24.18.1
+- **Package Manager**: pnpm 11.20.0（workspace catalog機能で依存関係バージョンを共有）
 - **Monorepo Tool**: Turborepo
 
 ## Key Libraries
@@ -35,7 +35,7 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 - **日付処理**: date-fns
 
 ### Search
-- **Search Engine**: Meilisearch（devbox: latest）
+- **Search Engine**: Meilisearch 1.51.0
 - **用途**: アーティスト、サークル、楽曲等の全文検索
 - **ポート**: 7700（開発環境）
 
@@ -64,9 +64,9 @@ Turborepoによるモノレポ構成のフルスタックアプリケーショ�
 
 ```bash
 # テスト実行
-pnpm test                # 全テスト
-pnpm test:watch        # ウォッチモード
-pnpm test:coverage     # カバレッジ付き
+task test                # 全テスト
+task test:watch          # ウォッチモード
+task test:coverage       # カバレッジ付き
 ```
 
 **テストヘルパー**:
@@ -78,34 +78,36 @@ pnpm test:coverage     # カバレッジ付き
 
 ## Development Environment
 
-### devbox（標準開発環境）
+### mise + Task + devbox（標準開発環境）
 
-すべてのコマンドは devbox 経由で実行する。
+miseはTaskとDevboxを管理し、プロジェクト移動時にDevboxの実行環境を現在のシェルへ読み込む。Taskfile内でも一時的な操作でもコマンドを直接実行できる。
 
 ```bash
 # サービス起動（web + server + meilisearch）
-devbox services up
+task up
 
 # 開発サーバー起動
-devbox run dev
+task dev
 
 # ビルド
-devbox run build
+task build
 
 # Lint/Format
-devbox run check
+task check
 
 # 型チェック
-devbox run check-types
+task check-types
 
 # 任意のコマンド実行
-devbox run -- pnpm install --frozen-lockfile
-devbox run -- pnpm dlx @hono/cli docs
+pnpm install --frozen-lockfile
+pnpm dlx @hono/cli docs
 ```
 
 ### Required Tools
-- devbox（Nix ベースの開発環境管理）
-- Node.js 24.12.0 / pnpm 11.1.2（devbox.json で管理）
+- mise（Task・Devboxのバージョン管理と環境自動読込）
+- Task（タスクランナー、miseからインストール）
+- devbox（Nixベースの開発ツール管理、miseからインストール）
+- Node.js 24.18.1 / pnpm 11.20.0（devbox.json / package.json で管理）
 
 ### データディレクトリ
 - `.devbox/virtenv/postgresql_18/data/` - PostgreSQLデータ（devboxプラグイン管理）

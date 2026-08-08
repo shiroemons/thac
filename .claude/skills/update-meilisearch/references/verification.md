@@ -11,7 +11,7 @@ Task 6: 検証
 
     devbox環境:
       1. バージョン確認:
-         devbox run -- meilisearch --version
+         meilisearch --version
 
       2. サービス起動中なら以下を全て確認:
          a. ヘルスチェック:

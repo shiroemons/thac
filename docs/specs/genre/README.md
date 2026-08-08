@@ -434,13 +434,13 @@ graph TD
 
 ```bash
 # 1. スキーマ反映
-make db-push
+task db:push
 
 # 2. シードデータ投入
-make db-seed
+task db:seed
 
 # 3. 動作確認
-make db-studio
+task db:studio
 ```
 
 ### 9.2 ロールバック手順

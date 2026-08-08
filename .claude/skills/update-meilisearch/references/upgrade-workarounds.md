@@ -33,7 +33,7 @@ Task 5-devbox-workaround: nixpkgs直接参照でアップグレード
 
     6. devbox install でインストール
 
-    7. devbox run -- meilisearch --version で確認
+    7. meilisearch --version で確認
 ```
 
 ## 通常フローとの使い分け

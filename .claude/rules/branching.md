@@ -74,7 +74,7 @@ git stash pop
 ```bash
 git config wt.basedir ".worktree"       # 配置場所
 git config wt.copyignored true          # .env等をコピー
-git config --add wt.hook "devbox run -- pnpm install --frozen-lockfile"  # 依存関係を自動インストール
+git config --add wt.hook "pnpm install --frozen-lockfile"  # 依存関係を自動インストール
 git config --add wt.nocopy "node_modules"  # 依存関係はworktreeごとに再インストール
 git config --add wt.nocopy ".turbo/"       # キャッシュはworktree毎に再生成
 git config --add wt.nocopy "dist/"         # ビルド成果物は再生成
@@ -84,12 +84,12 @@ git config --add wt.nocopy "data/"         # ローカルデータは共有
 
 ## worktreeでの開発手順
 
-1. メインworktreeで `make up`（全サービス起動）
-2. メインworktreeで `make stop-app`（web+serverのみ停止、DB/Meilisearchは維持）
+1. メインworktreeで `task up`（全サービス起動）
+2. メインworktreeで `task services:stop-app`（web+serverのみ停止、DB/Meilisearchは維持）
 3. worktreeに移動: `cd .worktree/<branch-name>/`
-4. `make wt-dev`（web+serverをworktreeのコードで起動）
+4. `task worktree:dev`（web+serverをworktreeのコードで起動）
 5. 作業完了後 Ctrl+C で停止
-6. メインに戻って `make restart` または `make up` で復帰
+6. メインに戻って `task restart` または `task up` で復帰
 
 ## PR作成後のフロー
 

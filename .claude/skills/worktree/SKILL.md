@@ -51,7 +51,7 @@ Task: worktree作成
 - worktreeパス: `.worktree/<branch-name>/`
 - 移動コマンド: `cd .worktree/<branch-name>/`
 - devboxサービスはメインworktreeで起動済みであることを案内
-- 個別アプリ起動: `devbox run -- pnpm dev:web` 等
+- worktree内のアプリ起動: `task worktree:dev`
 
 ### `/worktree list` - worktree一覧表示
 
@@ -70,7 +70,7 @@ Task: worktree一覧
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ Step 1: devboxサービス停止確認                            │
-│   → ユーザーに確認後、devbox services stop               │
+│   → ユーザーに確認後、task down                          │
 ├──────────────────────────────────────────────────────────┤
 │ Step 2: worktree一覧取得                                 │
 │   → Bash エージェント: git wt --json                     │
@@ -95,7 +95,7 @@ Task: worktree一覧
 ```
 Task 1: devboxサービス停止
 - subagent_type: Bash
-- prompt: devbox services stop を実行してください。
+- prompt: task down を実行してください。
 
 Task 2: worktree一覧取得
 - subagent_type: Bash

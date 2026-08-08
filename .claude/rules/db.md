@@ -26,19 +26,19 @@ packages/db/
 ## コマンド
 
 ```bash
-make db-push       # スキーマをDBにプッシュ
-make db-generate   # マイグレーションを生成
-make db-migrate    # マイグレーションを実行
-make db-seed       # シードデータを投入
-make db-setup      # DBセットアップ（push + seed）
-make db-studio     # Drizzle Studioを起動
+task db:push       # スキーマをDBにプッシュ
+task db:generate   # マイグレーションを生成
+task db:migrate    # マイグレーションを実行
+task db:seed       # シードデータを投入
+task db:setup      # DBセットアップ（push + seed）
+task db:studio     # Drizzle Studioを起動
 ```
 
 ## 開発ガイドライン
 
 - スキーマは`src/schema/`配下に配置
 - 新しいテーブルを追加したら`src/schema/index.ts`でエクスポート
-- スキーマ変更後は`make db-generate`でマイグレーション生成
+- スキーマ変更後は`task db:generate`でマイグレーション生成
 - `@thac/db`として他パッケージからインポート可能
 
 ## DB設計原則

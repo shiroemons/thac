@@ -1,7 +1,7 @@
 # devbox 開発環境
 
-**重要**: このプロジェクトでは devbox を標準の開発環境として使用する。
-すべてのコマンド（pnpm, npm, npx など）は devbox 経由で実行すること。
+**重要**: このプロジェクトではdevboxを標準の実行環境として使用する。
+miseがdevboxをインストールし、その環境を現在のシェルへ自動で読み込む。定型操作はTask、一時的なコマンドは直接実行すること。
 
 ## サービス構成
 
@@ -19,46 +19,47 @@ devbox services（process-compose）で以下のサービスが起動する：
 ### サービス起動
 
 ```bash
-# 全サービス起動（TUI付き）- 推奨
-devbox services up
+# 全サービス起動（バックグラウンド）
+task up
 
-# バックグラウンド起動
-devbox services up -b
+# 全サービス起動（TUI付き）
+task services:dev
 
 # サービス停止
-devbox services stop
+task down
 ```
 
 ### スクリプト実行
 
 ```bash
 # 開発サーバー起動
-devbox run dev
+task dev
 
 # 個別アプリ起動
-devbox run dev:web      # Webアプリのみ
-devbox run dev:server   # APIサーバーのみ
+pnpm dev:web      # Webアプリのみ
+pnpm dev:server   # APIサーバーのみ
 
 # ビルド
-devbox run build
+task build
 
 # Lint/フォーマット
-devbox run check
+task check
 
 # 型チェック
-devbox run check-types
+task check-types
 ```
 
 ### 任意のコマンド実行
 
-devbox.json に定義されていないコマンドを実行する場合:
+Taskfileに定義されていないコマンドを実行する場合:
 
 ```bash
-# devbox run -- <コマンド>
-devbox run -- pnpm install --frozen-lockfile
-devbox run -- pnpm add <package>
-devbox run -- pnpm dlx <command>
+pnpm install --frozen-lockfile
+pnpm add <package>
+pnpm dlx <command>
 ```
+
+`devbox run --`や`mise exec --`の付与は不要。コマンドが見つからない場合は、miseのシェル有効化・設定のtrust・`mise install`を確認する。
 
 ## データディレクトリ
 

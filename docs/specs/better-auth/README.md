@@ -1504,8 +1504,8 @@ erDiagram
 npx @better-auth/cli generate --config ./packages/auth/src/auth.ts
 
 # Drizzle マイグレーション
-make db-generate
-make db-migrate
+task db:generate
+task db:migrate
 ```
 
 ---

@@ -1,6 +1,6 @@
 # ワークフロー
 
-**重要**: すべてのコマンドは devbox 経由で実行すること。
+**重要**: 定型操作はTask経由で実行すること。miseがDevbox環境を自動読込するため、一時的なコマンドは直接実行する。
 
 ## ブランチとワークツリー
 
@@ -15,10 +15,10 @@
 
 ```bash
 # 型チェック
-devbox run check-types
+task check-types
 
 # Lint・フォーマット
-devbox run check
+task check
 ```
 
 **重要**: 型チェックは全パッケージ（packages/*, apps/*）に対して実行される。
@@ -63,8 +63,12 @@ git status
 未コミットの変更がある場合は、直前のコミットに含める:
 
 ```bash
-git add -A && git commit --amend --no-edit
+git add -- path/to/changed-file
+git diff --cached
+git commit --amend --no-edit
 ```
+
+`git add -A`と`git add .`は禁止。対象ファイルを必ず明示する。`git add -p`も原則使用せず、同一ファイル内の差分を分ける必要がある場合はユーザーへ確認する。
 
 **注意**: PR作成前に必ず `git status` で未コミットの変更がないことを確認すること。
 

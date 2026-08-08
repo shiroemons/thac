@@ -241,9 +241,9 @@ const invalidateTrackQuery = () => {
 
 2. **isSubmitting と mutationError の保持**: tracks_.$id.tsx では他のダイアログ（クレジット追加など）でこれらの状態を使用しているため、削除しない
 
-3. **型チェックの実行**: 変更後は必ず `make check-types` で型エラーがないことを確認
+3. **型チェックの実行**: 変更後は必ず `task check-types` で型エラーがないことを確認
 
-4. **Lint/フォーマット**: `make check` でコードスタイルを確認
+4. **Lint/フォーマット**: `task check` でコードスタイルを確認
 
 ---
 

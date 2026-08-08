@@ -22,7 +22,8 @@
 | 認証 | Better-Auth（Email/Password, Google/Discord/GitHub OAuth） |
 | ビルド | Turborepo, pnpm |
 | コード品質 | Biome, Lefthook |
-| 開発環境 | devbox（推奨）, Docker |
+| タスク実行 | Task（miseでバージョン管理） |
+| 開発環境 | mise + Devbox, Docker |
 
 ## プロジェクト構成
 
@@ -37,6 +38,10 @@ thac/
 │   ├── search/         # 検索エンジン統合（Meilisearch）
 │   ├── utils/          # 共通ユーティリティ
 │   └── config/         # 共有設定（TypeScript）
+├── taskfiles/          # ドメイン別Task定義
+├── Taskfile.yml        # タスクのエントリーポイント
+├── mise.toml           # 開発ツール設定
+├── mise.lock           # Task・Devboxのバージョン・checksum固定
 └── data/               # ローカル開発データ（.gitignore）
     └── meilisearch/    # Meilisearchインデックス
 ```
@@ -54,25 +59,41 @@ packages/search → @thac/db
 
 ### 前提条件
 
-- [devbox](https://www.jetify.com/devbox)（推奨）
+- [mise](https://mise.jdx.dev/)（Task・Devboxのインストールと環境自動読込）
 
 ### セットアップ
 
 ```bash
-# 1. devboxをインストール（未インストールの場合）
-curl -fsSL https://get.jetify.com/devbox | bash
+# 1. miseをインストール（未インストールの場合）
+curl https://mise.run | sh
 
-# 2. devbox shellに入る
-devbox shell
+# 2. ~/.zshrcの末尾へ追加し、シェルを再起動（初回のみ）
+echo 'eval "$($HOME/.local/bin/mise activate zsh)"' >> ~/.zshrc
+exec zsh
 
-# 3. セットアップ（依存関係インストール + DB初期化 + シードデータ投入）
-devbox run setup
+# 3. リポジトリのmise設定を信頼
+mise trust
 
-# 4. 全サービスを起動
-devbox services up
+# 4. mise.lockに固定されたTask・Devboxをインストール
+mise install
+
+# 5. 依存関係 + DB初期化 + シードデータ投入
+task setup
+
+# 6. 全サービスをバックグラウンドで起動
+task up
 ```
 
-`devbox run setup` は以下を一括実行します：
+Devboxを別途グローバルインストールする必要はありません。miseはプロジェクトへ移動したときにDevbox環境を現在のシェルへ読み込み、Node.js・pnpm・PostgreSQL・Meilisearchを直接使える状態にします。
+
+```text
+mise activate
+├── Task 3.x           ── task up / task check / task test
+├── Devbox 0.17.x
+└── devbox shellenv    ── node / pnpm / postgres / meilisearch
+```
+
+`task setup`は以下を一括実行します：
 
 1. `pnpm install --frozen-lockfile` — 依存関係のインストール
 2. PostgreSQL起動確認（未起動なら起動）
@@ -100,66 +121,63 @@ devbox services up
 
 ## 利用可能なコマンド
 
-### 開発（devbox）
+miseがTaskとDevboxを同列に管理し、Devboxの環境をシェルへ一度だけ読み込みます。Taskfile内はコマンドを直接実行するため、毎回サブシェルを作るオーバーヘッドがありません。
+
+普段は`task up`などの短いタスクを使います。Taskにない一時的な操作も`pnpm add ...`や`meilisearch --version`のように直接実行でき、`devbox run --`や`mise exec --`は不要です。
+
+### 開発・品質チェック
 
 | コマンド | 説明 |
 |---------|------|
-| `devbox run setup` | セットアップ（依存関係 + DB初期化 + シード） |
-| `devbox run install` | 依存関係のインストール |
-| `devbox services up` | 全サービスを起動（フォアグラウンド） |
-| `devbox services up -b` | 全サービスをバックグラウンド起動 |
-| `devbox services stop` | サービスを停止 |
-| `devbox run dev` | 開発サーバーを起動 |
-| `devbox run build` | ビルドを実行 |
-| `devbox run check` | Lint・フォーマットチェック |
-| `devbox run check-types` | 型チェック |
+| `task setup` | 依存関係・DBをセットアップ |
+| `task` | 利用可能なタスクを表示 |
+| `task dev` | Web・API開発サーバーを起動 |
+| `task build` / `task b` | アプリケーションをビルド |
+| `task install` / `task i` | pnpm依存関係をインストール |
+| `task check` / `task lint` | Lint・フォーマットを変更せずに検査 |
+| `task check:fix` / `task fix` | Lint・フォーマット違反を自動修正 |
+| `task check-types` / `task types` | 型チェック |
+| `task test` | テストを実行 |
+| `task ci` | CIと同じ全チェックを実行 |
 
 ### データベース操作
 
 | コマンド | 説明 |
 |---------|------|
-| `make db-push` | スキーマをDBにプッシュ |
-| `make db-generate` | マイグレーションを生成 |
-| `make db-migrate` | マイグレーションを実行 |
-| `make db-seed` | シードデータを投入（管理者 + マスター + 公式） |
-| `make db-setup` | DBセットアップ（push + seed） |
-| `make db-studio` | Drizzle Studioを起動 |
-| `make db-truncate` | マスタデータ・公式作品以外をトランケート |
-
-### ユーティリティ
-
-| コマンド | 説明 |
-|---------|------|
-| `make install` | 依存関係をインストール |
-| `make check` | Lint・フォーマットチェック |
-| `make check-types` | 型チェック |
-| `make test` | テストを実行 |
-
-`make help` で全コマンドを確認できます。
+| `task db:push` | スキーマをDBにプッシュ |
+| `task db:generate` | マイグレーションを生成 |
+| `task db:migrate` | マイグレーションを実行 |
+| `task db:seed` | シードデータを投入（管理者 + マスター + 公式） |
+| `task db:setup` | DBセットアップ（push + seed） |
+| `task db:studio` | Drizzle Studioを起動 |
+| `task db:truncate` | マスタデータ・公式作品以外をトランケート（確認あり） |
 
 ### サービス管理
 
+| コマンド | 説明 |
+|---------|------|
+| `task up` | 全サービスをバックグラウンドで起動 |
+| `task down` | 全サービスを停止 |
+| `task status` / `task ps` | サービス状態を表示 |
+| `task restart` | 全サービスを再起動 |
+| `task services:dev` | 全サービスをフォアグラウンドで起動（TUI） |
+| `task services:stop-app` | Web・APIのみ停止 |
+| `task worktree:dev` | worktreeのWeb・APIを起動 |
+
+`task --list`で説明付きタスク、`task --list-all`で全公開タスクを確認できます。内部タスクは直接実行できません。
+
+### Task・Devboxのバージョン管理
+
 ```bash
-devbox services up       # フォアグラウンドで起動（TUI付き）
-devbox services up -b    # バックグラウンドで起動
-devbox services ls       # サービス一覧
-devbox services stop     # 停止
+# 既存のmise.lockを使って両方をインストール
+mise install
+
+# 設定した範囲内で更新し、対応プラットフォームのlockを更新
+mise upgrade aqua:go-task/task aqua:jetify-com/devbox
+mise lock --platform linux-x64,macos-arm64 aqua:go-task/task aqua:jetify-com/devbox
 ```
 
-### direnv を使用する場合（オプション）
-
-direnvと組み合わせると、ディレクトリ移動時に自動で環境が切り替わります。
-
-```bash
-# macOS
-brew install direnv
-
-# シェルにフックを追加（~/.zshrc）
-eval "$(direnv hook zsh)"
-
-# 環境を許可
-direnv allow
-```
+miseは既存の`mise.lock`を通常の`mise install`でも利用します。CIではロックファイルとの不整合をエラーにするlocked modeを有効にし、CIに必要なTaskだけをインストールします。`mise.toml`と`mise.lock`は必ず同時にコミットしてください。環境の自動切替もmiseが担うため、direnvは不要です。
 
 ## Git Hooks
 
@@ -183,7 +201,7 @@ direnv allow
 
 > **Note**: Markdown、docs/、LICENSEへの変更はCIをスキップします。
 
-CIでは以下のチェックが実行されます：
+CIでは`task ci`から以下のチェックが順番に実行されます：
 
 - `pnpm check` - Lint・フォーマット
 - `pnpm check-types` - 型チェック
@@ -205,10 +223,10 @@ CIでは以下のチェックが実行されます：
 
 ```bash
 # 開発環境を起動（Docker Compose）
-make docker-dev
+task docker:dev
 
 # バックグラウンドで起動する場合
-make docker-up
+task docker:up
 ```
 
 - Web: http://localhost:3000
@@ -218,7 +236,7 @@ make docker-up
 
 ```bash
 # 開発環境を起動後、DBセットアップ（スキーマ適用 + シードデータ投入）
-make db-setup
+task docker:db:setup
 ```
 
 ### Docker コマンド一覧
@@ -227,29 +245,29 @@ make db-setup
 
 | コマンド | 説明 |
 |---------|------|
-| `make docker-dev` | 開発環境を起動（フォアグラウンド） |
-| `make docker-up` | 開発環境を起動（バックグラウンド） |
-| `make docker-down` | 開発環境を停止 |
-| `make docker-logs` | ログを表示（フォロー） |
-| `make docker-logs-server` | Serverのログを表示 |
-| `make docker-logs-web` | Webのログを表示 |
-| `make docker-ps` | コンテナの状態を表示 |
-| `make docker-restart` | コンテナを再起動 |
+| `task docker:dev` | 開発環境を起動（フォアグラウンド） |
+| `task docker:up` | 開発環境を起動（バックグラウンド） |
+| `task docker:down` | 開発環境を停止 |
+| `task docker:logs` | ログを表示（フォロー） |
+| `task docker:logs:server` | Serverのログを表示 |
+| `task docker:logs:web` | Webのログを表示 |
+| `task docker:status` | コンテナの状態を表示 |
+| `task docker:restart` | コンテナを再起動 |
 
 #### メンテナンス
 
 | コマンド | 説明 |
 |---------|------|
-| `make docker-rebuild` | イメージを再ビルドして起動 |
-| `make docker-clean` | コンテナ・ボリューム・イメージを削除 |
-| `make docker-shell-server` | Serverコンテナにシェル接続 |
-| `make docker-shell-web` | Webコンテナにシェル接続 |
+| `task docker:rebuild` | イメージを再ビルドして起動 |
+| `task docker:clean` | コンテナ・ボリューム・イメージを削除（確認あり） |
+| `task docker:shell:server` | Serverコンテナにシェル接続 |
+| `task docker:shell:web` | Webコンテナにシェル接続 |
 
 #### テスト
 
 | コマンド | 説明 |
 |---------|------|
-| `make test` | テストを実行（Docker） |
+| `task test` | miseが読み込んだ開発環境でテストを実行 |
 
 #### 依存関係の更新後（Docker使用時）
 
@@ -258,7 +276,7 @@ make db-setup
 git pull
 
 # 2. ローカルの依存関係を更新
-pnpm install --frozen-lockfile
+task install
 
 # 3. Dockerコンテナの依存関係を更新（ボリューム共有のため通常は不要）
 docker compose exec web pnpm install
