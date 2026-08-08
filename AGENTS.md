@@ -21,6 +21,8 @@ npx @hono/cli docs
 
 TaskとDevboxは`mise.toml`と`mise.lock`でバージョンを固定する。Node.js・pnpm・PostgreSQL・MeilisearchはDevboxで固定し、`scripts/mise/load-devbox.sh`から環境を読み込む。新しい定型操作は`Taskfile.yml`または`taskfiles/`へ追加し、Task内ではコマンドを直接実行する。`mise.toml`・Taskfile・`devbox.json`の責務を重複させないこと。
 
+責務の境界は次のとおり。`mise`・`task`・`git`は開発環境を制御する側なので直接実行する。Node.js・pnpm・PostgreSQL・MeilisearchなどDevboxで管理するコマンドは、miseが現在のシェルへ読み込んだDevbox環境上で実行する。通常はこれらもコマンド名だけでよく、個別の`devbox run --`は不要。
+
 ## Gitステージングルール
 
 `git add -A`と`git add .`は禁止。変更内容を確認したうえで、`git add -- <対象ファイル...>`のように対象ファイルを明示し、意図した差分だけをステージすること。`git add -p`も原則使用しない。同一ファイル内の差分を分ける必要がある場合は、ステージング前にユーザーへ確認すること。

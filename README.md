@@ -125,6 +125,8 @@ miseがTaskとDevboxを同列に管理し、Devboxの環境をシェルへ一度
 
 普段は`task up`などの短いタスクを使います。Taskにない一時的な操作も`pnpm add ...`や`meilisearch --version`のように直接実行でき、`devbox run --`や`mise exec --`は不要です。
 
+`mise`・`task`・`git`は環境を制御する側のコマンドとして直接実行します。Node.js・pnpm・PostgreSQL・MeilisearchなどのDevbox管理対象は、miseが読み込んだDevbox環境から提供されます。
+
 ### 開発・品質チェック
 
 | コマンド | 説明 |

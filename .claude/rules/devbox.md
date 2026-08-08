@@ -3,6 +3,10 @@
 **重要**: このプロジェクトではdevboxを標準の実行環境として使用する。
 miseがdevboxをインストールし、その環境を現在のシェルへ自動で読み込む。定型操作はTask、一時的なコマンドは直接実行すること。
 
+- 制御側の`mise`・`task`・`git`は直接実行する
+- Devbox管理対象のNode.js・pnpm・PostgreSQL・Meilisearchなどは、miseが読み込んだDevbox環境上で実行する
+- 通常の開発フローでは`devbox run --`を個別に付けない
+
 ## サービス構成
 
 devbox services（process-compose）で以下のサービスが起動する：
