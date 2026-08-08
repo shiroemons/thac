@@ -66,5 +66,12 @@ temp
 # Devbox
 .devbox/
 
+# Task / mise
+.task/
+mise.local.toml
+mise.local.lock
+!mise.toml
+!mise.lock
+
 # Local data (devbox)
 /data/

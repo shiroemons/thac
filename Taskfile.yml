@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: '3'
+
+includes:
+  app:
+    taskfile: ./taskfiles/app.yml
+    flatten: true
+  services: ./taskfiles/services.yml
+  db: ./taskfiles/db.yml
+  docker: ./taskfiles/docker.yml
+  worktree: ./taskfiles/worktree.yml
+
+tasks:
+  default:
+    desc: 利用可能なタスクを表示
+    cmds:
+      - task --list
+    silent: true
+
+  up:
+    desc: 全開発サービスをバックグラウンドで起動
+    cmds:
+      - task: services:up
+
+  down:
+    desc: 全開発サービスを停止
+    cmds:
+      - task: services:down
+
+  status:
+    desc: 開発サービスの状態を表示
+    aliases:
+      - ps
+    cmds:
+      - task: services:status
+
+  restart:
+    desc: 全開発サービスを再起動
+    cmds:
+      - task: services:restart
+
+  setup:
+    desc: 依存関係・PostgreSQL・データベースをセットアップ
+    cmds:
+      - task: install
+      - task: services:ensure-postgres
+      - task: db:setup

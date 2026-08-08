@@ -1,0 +1,143 @@
+version: '3'
+
+vars:
+  COMPOSE: docker compose
+  IMAGE: thac
+  SCRIPTS_DIR: '{{.ROOT_DIR}}/scripts/tasks'
+
+tasks:
+  dev:
+    desc: Docker開発環境をフォアグラウンドで起動
+    cmds:
+      - '{{.COMPOSE}} up'
+    interactive: true
+
+  up:
+    desc: Docker開発環境をバックグラウンドで起動
+    cmds:
+      - '{{.COMPOSE}} up -d'
+
+  down:
+    desc: Docker開発環境を停止
+    cmds:
+      - '{{.COMPOSE}} down'
+
+  logs:
+    desc: 全Dockerサービスのログを追跡
+    cmds:
+      - '{{.COMPOSE}} logs -f'
+    interactive: true
+
+  logs:server:
+    desc: APIサーバーのDockerログを追跡
+    cmds:
+      - '{{.COMPOSE}} logs -f server'
+    interactive: true
+
+  logs:web:
+    desc: WebのDockerログを追跡
+    cmds:
+      - '{{.COMPOSE}} logs -f web'
+    interactive: true
+
+  status:
+    desc: Dockerコンテナの状態を表示
+    cmds:
+      - '{{.COMPOSE}} ps'
+
+  restart:
+    desc: Dockerコンテナを再起動
+    cmds:
+      - '{{.COMPOSE}} restart'
+
+  build:
+    desc: 本番用Dockerイメージをビルド
+    cmds:
+      - docker build -t {{.IMAGE}} .
+
+  run:
+    desc: 本番用Dockerコンテナを起動
+    cmds:
+      - bash "{{.SCRIPTS_DIR}}/docker-run.sh" "{{.IMAGE}}"
+    interactive: true
+
+  clean:
+    desc: コンテナ・ボリューム・ローカルイメージを削除
+    prompt: Dockerコンテナ・ボリューム・ローカルイメージを削除します。続行しますか？
+    cmds:
+      - '{{.COMPOSE}} down -v --rmi local'
+
+  rebuild:
+    desc: Dockerイメージをキャッシュなしで再ビルドして起動
+    cmds:
+      - '{{.COMPOSE}} down'
+      - '{{.COMPOSE}} build --no-cache'
+      - '{{.COMPOSE}} up -d'
+
+  reset:
+    desc: ボリュームを削除してDocker環境を完全再構築
+    prompt: Dockerボリュームを含む開発環境を完全リセットします。続行しますか？
+    cmds:
+      - '{{.COMPOSE}} down -v --remove-orphans'
+      - '{{.COMPOSE}} build --no-cache'
+      - '{{.COMPOSE}} up -d'
+
+  reset-deps:
+    desc: Dockerコンテナ内のnode_modulesを再インストール
+    prompt: Dockerコンテナ内のnode_modulesを削除して再インストールします。続行しますか？
+    cmds:
+      - '{{.COMPOSE}} exec server rm -rf node_modules'
+      - '{{.COMPOSE}} exec web rm -rf node_modules'
+      - '{{.COMPOSE}} exec server pnpm install'
+      - '{{.COMPOSE}} exec web pnpm install'
+
+  prune:
+    desc: Dockerの未使用リソースを削除
+    prompt: Dockerの未使用コンテナ・ネットワーク・イメージ・ビルドキャッシュを削除します。続行しますか？
+    cmds:
+      - docker system prune -f
+      - docker builder prune -f
+
+  shell:server:
+    desc: APIサーバーコンテナのシェルへ接続
+    cmds:
+      - '{{.COMPOSE}} exec server sh'
+    interactive: true
+
+  shell:web:
+    desc: Webコンテナのシェルへ接続
+    cmds:
+      - '{{.COMPOSE}} exec web sh'
+    interactive: true
+
+  db:push:
+    desc: Docker内からスキーマをデータベースへ反映
+    cmds:
+      - '{{.COMPOSE}} exec server pnpm --dir /app db:push'
+
+  db:generate:
+    desc: Docker内でマイグレーションを生成
+    cmds:
+      - '{{.COMPOSE}} exec server pnpm --dir /app db:generate'
+
+  db:migrate:
+    desc: Docker内でマイグレーションを実行
+    cmds:
+      - '{{.COMPOSE}} exec server pnpm --dir /app db:migrate'
+
+  db:seed:
+    desc: Docker内からシードデータを投入
+    cmds:
+      - '{{.COMPOSE}} exec server pnpm --dir /app db:seed'
+
+  db:setup:
+    desc: Docker内からスキーマ反映後にシードデータを投入
+    cmds:
+      - task: db:push
+      - task: db:seed
+
+  db:truncate:
+    desc: Docker内からマスタデータ・公式作品以外を削除
+    prompt: Docker環境のマスタデータ・公式作品以外を削除します。続行しますか？
+    cmds:
+      - '{{.COMPOSE}} exec server pnpm --dir /app db:truncate'

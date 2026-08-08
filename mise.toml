@@ -1,0 +1,11 @@
+#:schema https://mise.jdx.dev/schema/mise.json
+
+min_version = "2026.7.17"
+
+[env]
+_.source = { path = "scripts/mise/load-devbox.sh", tools = true }
+_.path = { path = [".devbox/corepack-bin", ".devbox/nix/profile/default/bin"], tools = true }
+
+[tools]
+"aqua:go-task/task" = "3"
+"aqua:jetify-com/devbox" = "0.17"

@@ -1,0 +1,11 @@
+version: '3'
+
+vars:
+  SCRIPTS_DIR: '{{.ROOT_DIR}}/scripts/tasks'
+
+tasks:
+  dev:
+    desc: worktreeのWeb・APIをメイン環境のDB・Meilisearchへ接続して起動
+    cmds:
+      - bash "{{.SCRIPTS_DIR}}/worktree-dev.sh"
+    interactive: true

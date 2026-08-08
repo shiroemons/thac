@@ -5,7 +5,7 @@
 		"postgresql_18@18.4",
 		"git@latest",
 		"curl@latest",
-		"gnumake@latest",
+		"lsof@latest",
 		"meilisearch@1.51.0"
 	],
 	"env": {
@@ -24,48 +24,11 @@
 	},
 	"shell": {
 		"init_hook": [
-			"# PostgreSQL初期化（初回のみ）",
-			"if [ ! -f $PGDATA/PG_VERSION ]; then",
-			"  initdb --no-locale --encoding=UTF8",
-			"  echo \"listen_addresses = 'localhost'\" >> $PGDATA/postgresql.conf",
-			"  echo \"port = 5432\" >> $PGDATA/postgresql.conf",
-			"  echo \"# Development-optimized settings\" >> $PGDATA/postgresql.conf",
-			"  echo \"shared_buffers = 128MB\" >> $PGDATA/postgresql.conf",
-			"  echo \"work_mem = 4MB\" >> $PGDATA/postgresql.conf",
-			"  echo \"effective_cache_size = 512MB\" >> $PGDATA/postgresql.conf",
-			"  echo \"random_page_cost = 1.1\" >> $PGDATA/postgresql.conf",
-			"  echo \"log_min_duration_statement = 1000\" >> $PGDATA/postgresql.conf",
-			"fi",
+			"bash scripts/tasks/init-postgres.sh",
 			"mkdir -p \"$PWD/.devbox/corepack-bin\"",
-			"corepack install -g pnpm@11.20.0 >/dev/null",
 			"corepack enable --install-directory \"$PWD/.devbox/corepack-bin\" >/dev/null",
 			"export PATH=\"$PWD/.devbox/corepack-bin:$PATH\"",
-			"echo ''",
-			"echo '📦 thac devbox environment'",
-			"echo '   Node.js: '$(node --version)",
-			"echo '   pnpm: '$(corepack pnpm --version 2>/dev/null || echo '11.20.0 unavailable')",
-			"echo '   Meilisearch: '$(meilisearch --version | head -1)",
-			"echo '   PostgreSQL: '$(postgres --version)",
-			"echo ''",
-			"echo '🌐 Ports:'",
-			"echo '   Web:          http://localhost:3000'",
-			"echo '   Server:       http://localhost:3001'",
-			"echo '   PostgreSQL:   localhost:5432'",
-			"echo '   Meilisearch:  http://localhost:7700'",
-			"echo ''",
-			"echo '🚀 Quick start:'",
-			"echo '   devbox services up     - Start all services'",
-			"echo '   devbox services up -b  - Start in background'",
-			"echo ''",
 			"mkdir -p data"
-		],
-		"scripts": {
-			"dev": "corepack pnpm dev",
-			"build": "corepack pnpm build",
-			"check": "corepack pnpm check",
-			"check-types": "corepack pnpm check-types",
-			"install": "corepack pnpm install --frozen-lockfile",
-			"setup": "corepack pnpm install --frozen-lockfile && (pg_isready -q || pg_ctl start -l $PGDATA/postgresql.log -w) && (createdb thac 2>/dev/null || true) && make db-setup"
-		}
+		]
 	}
 }

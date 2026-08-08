@@ -6,7 +6,7 @@ pre-commit:
   commands:
     biome:
       glob: "*.{js,ts,jsx,tsx,json,css}"
-      run: pnpm check
+      run: pnpm check:fix
     check-types:
       glob: "*.{js,ts,jsx,tsx}"
       run: pnpm check-types

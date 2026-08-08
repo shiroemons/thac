@@ -1,0 +1,40 @@
+version: '3'
+
+tasks:
+  push:
+    desc: スキーマをデータベースへ反映
+    cmds:
+      - pnpm db:push
+
+  generate:
+    desc: マイグレーションを生成
+    cmds:
+      - pnpm db:generate
+
+  migrate:
+    desc: マイグレーションを実行
+    cmds:
+      - pnpm db:migrate
+
+  seed:
+    desc: シードデータを投入
+    cmds:
+      - pnpm db:seed
+
+  setup:
+    desc: スキーマ反映後にシードデータを投入
+    cmds:
+      - task: push
+      - task: seed
+
+  studio:
+    desc: Drizzle Studioを起動
+    cmds:
+      - pnpm db:studio
+    interactive: true
+
+  truncate:
+    desc: マスタデータ・公式作品以外を削除
+    prompt: マスタデータ・公式作品以外を削除します。続行しますか？
+    cmds:
+      - pnpm db:truncate

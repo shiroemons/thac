@@ -1,0 +1,77 @@
+version: '3'
+
+tasks:
+  dev:
+    desc: Web・API開発サーバーを起動
+    cmds:
+      - pnpm dev
+    interactive: true
+
+  build:
+    desc: アプリケーションをビルド
+    aliases:
+      - b
+    cmds:
+      - pnpm build
+
+  install:
+    desc: pnpm依存関係をインストール
+    aliases:
+      - i
+    cmds:
+      - pnpm install --frozen-lockfile
+
+  check:
+    desc: Lint・フォーマットを変更せずに検査
+    aliases:
+      - lint
+    cmds:
+      - pnpm check
+
+  check:fix:
+    desc: Lint・フォーマット違反を自動修正
+    aliases:
+      - fix
+    cmds:
+      - pnpm check:fix
+
+  check-types:
+    desc: TypeScriptの型を検査
+    aliases:
+      - types
+    cmds:
+      - pnpm check-types
+
+  test:
+    desc: テストを実行
+    cmds:
+      - pnpm test
+
+  test:watch:
+    desc: テストをwatchモードで実行
+    cmds:
+      - pnpm test:watch
+    interactive: true
+
+  test:coverage:
+    desc: カバレッジ付きでテストを実行
+    cmds:
+      - pnpm test:coverage
+
+  lint:jsx-nesting:
+    desc: JSXのネストを検査
+    cmds:
+      - pnpm --dir apps/web lint:jsx-nesting
+
+  lint:markuplint:
+    desc: Markuplintを実行
+    cmds:
+      - pnpm --dir apps/web lint:markuplint
+
+  ci:
+    desc: CIと同じ品質チェックを実行
+    cmds:
+      - task: check
+      - task: check-types
+      - task: lint:jsx-nesting
+      - task: test
