@@ -74,7 +74,8 @@ git stash pop
 ```bash
 git config wt.basedir ".worktree"       # 配置場所
 git config wt.copyignored true          # .env等をコピー
-git config --add wt.hook "pnpm install --frozen-lockfile"  # 依存関係を自動インストール
+# mise未有効のシェル（Claude Code等）でもpnpmを解決できるようmise exec経由で実行する
+git config --add wt.hook "mise exec -- pnpm install --frozen-lockfile"  # 依存関係を自動インストール
 git config --add wt.nocopy "node_modules"  # 依存関係はworktreeごとに再インストール
 git config --add wt.nocopy ".turbo/"       # キャッシュはworktree毎に再生成
 git config --add wt.nocopy "dist/"         # ビルド成果物は再生成
